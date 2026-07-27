@@ -14,12 +14,9 @@
   max-width: var(--app-frame-width);
   height: 100vh;
   height: 100dvh;
-  overflow-x: hidden;
-  overflow-y: auto;
-  overscroll-behavior: contain;
+  overflow: hidden;
   background: var(--color-background);
   box-shadow: var(--shadow-frame);
-  scrollbar-width: thin;
 }
 
 @media (max-width: 412px) {
