@@ -1,0 +1,24 @@
+.app-shell {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  justify-content: center;
+  background: #eee9e7;
+}
+
+.mobile-frame {
+  position: relative;
+  width: 100%;
+  max-width: var(--app-frame-width);
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow: hidden;
+  background: var(--color-background);
+  box-shadow: var(--shadow-frame);
+}
+
+@media (max-width: 412px) {
+  .mobile-frame {
+    box-shadow: none;
+  }
+}
