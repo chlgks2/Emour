@@ -1,10 +1,10 @@
 import MobileLayout from './layouts/MobileLayout/MobileLayout'
-import CoupleConnectPage from './pages/CoupleConnectPage/CoupleConnectPage'
+import CalendarPage from './pages/CalendarPage/CalendarPage'
 
 function App() {
   return (
     <MobileLayout>
-      <CoupleConnectPage />
+      <CalendarPage />
     </MobileLayout>
   )
 }
