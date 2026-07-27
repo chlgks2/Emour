@@ -1,8 +1,6 @@
 import { useState } from 'react'
 import './CoupleConnectPage.css'
 
-const ROOM_CODE_LENGTH = 6
-
 function CoupleConnectPage() {
   const [roomCode, setRoomCode] = useState('')
   const [feedback, setFeedback] = useState({
@@ -11,11 +9,8 @@ function CoupleConnectPage() {
   })
 
   const handleRoomCodeChange = (event) => {
-    const normalizedCode = event.target.value
-      .replace(/[^a-zA-Z0-9]/g, '')
-      .toUpperCase()
+    setRoomCode(event.target.value)
 
-    setRoomCode(normalizedCode)
     setFeedback({
       type: '',
       message: '',
@@ -23,7 +18,13 @@ function CoupleConnectPage() {
   }
 
   const handleCreateRoom = () => {
-    // 추후 Spring 방 생성 API 호출
+    /*
+      추후 Spring 방 생성 API를 연결합니다.
+
+      예시:
+      POST /api/couple-rooms
+    */
+
     setFeedback({
       type: 'info',
       message: '백엔드 연결 후 방 생성 기능이 실행됩니다.',
@@ -33,38 +34,43 @@ function CoupleConnectPage() {
   const handleJoinRoom = (event) => {
     event.preventDefault()
 
-    if (!roomCode) {
+    const trimmedRoomCode = roomCode.trim()
+
+    if (!trimmedRoomCode) {
       setFeedback({
         type: 'error',
         message: '방 코드를 입력해주세요.',
       })
+
       return
     }
 
-    if (roomCode.length !== ROOM_CODE_LENGTH) {
-      setFeedback({
-        type: 'error',
-        message: `방 코드 ${ROOM_CODE_LENGTH}자리를 확인해주세요.`,
-      })
-      return
-    }
+    /*
+      추후 Spring 방 참여 API를 연결합니다.
 
-    // 추후 Spring 방 참여 API 호출
+      예시:
+      POST /api/couple-rooms/join
+
+      요청 데이터:
+      {
+        roomCode: trimmedRoomCode
+      }
+    */
+
     setFeedback({
       type: 'success',
-      message: `${roomCode} 방 코드를 확인했습니다.`,
+      message: `${trimmedRoomCode} 방 코드를 확인했습니다.`,
     })
   }
 
   return (
     <main className="couple-connect-page">
       <section className="couple-connect-content">
-        <div className="pearl-symbol" aria-hidden="true">
-          <span className="pearl-layer pearl-layer-back" />
-          <span className="pearl-layer pearl-layer-middle" />
-          <span className="pearl-layer pearl-layer-front">
-            ♥
-          </span>
+        <div
+          className="couple-heart-symbol"
+          aria-hidden="true"
+        >
+          <span className="couple-heart-icon">♥</span>
         </div>
 
         <div className="couple-connect-heading">
@@ -78,7 +84,7 @@ function CoupleConnectPage() {
             시작해볼까요?
           </h1>
 
-          <p>
+          <p className="couple-connect-description">
             새로운 방을 만들거나
             <br />
             전달받은 코드로 연인과 연결해보세요.
@@ -90,11 +96,20 @@ function CoupleConnectPage() {
           className="create-room-button"
           onClick={handleCreateRoom}
         >
-          <span aria-hidden="true">＋</span>
+          <span
+            className="create-room-icon"
+            aria-hidden="true"
+          >
+            ＋
+          </span>
+
           방 생성하기
         </button>
 
-        <div className="connect-divider" aria-hidden="true">
+        <div
+          className="connect-divider"
+          aria-hidden="true"
+        >
           <span>또는</span>
         </div>
 
@@ -104,7 +119,10 @@ function CoupleConnectPage() {
         >
           <div className="room-code-heading">
             <h2>방 코드로 참여하기</h2>
-            <p>연인에게 전달받은 코드를 입력해주세요.</p>
+
+            <p>
+              연인에게 전달받은 방 코드를 입력해주세요.
+            </p>
           </div>
 
           <label htmlFor="roomCode">
@@ -114,23 +132,19 @@ function CoupleConnectPage() {
           <div className="room-code-input-wrapper">
             <input
               id="roomCode"
+              name="roomCode"
               type="text"
               value={roomCode}
-              maxLength={ROOM_CODE_LENGTH}
-              placeholder="ABC123"
+              placeholder="방 코드를 입력해주세요"
               autoComplete="off"
               onChange={handleRoomCodeChange}
             />
-
-            <span>
-              {roomCode.length}/{ROOM_CODE_LENGTH}
-            </span>
           </div>
 
           <button
             type="submit"
             className="join-room-button"
-            disabled={roomCode.length !== ROOM_CODE_LENGTH}
+            disabled={!roomCode.trim()}
           >
             연결하기
           </button>

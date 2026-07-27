@@ -1,8 +1,10 @@
 .app-shell {
-  min-height: 100vh;
-  min-height: 100dvh;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
   display: flex;
   justify-content: center;
+  overflow: hidden;
   background: #eee9e7;
 }
 
@@ -10,11 +12,14 @@
   position: relative;
   width: 100%;
   max-width: var(--app-frame-width);
-  min-height: 100vh;
-  min-height: 100dvh;
-  overflow: hidden;
+  height: 100vh;
+  height: 100dvh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   background: var(--color-background);
   box-shadow: var(--shadow-frame);
+  scrollbar-width: thin;
 }
 
 @media (max-width: 412px) {

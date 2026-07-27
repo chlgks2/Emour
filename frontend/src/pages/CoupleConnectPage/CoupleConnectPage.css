@@ -1,13 +1,13 @@
 .couple-connect-page {
   position: relative;
-  min-height: 100vh;
-  min-height: 100dvh;
+  width: 100%;
+  min-height: 100%;
   display: flex;
   align-items: center;
   padding:
     var(--page-padding-y)
     var(--page-padding-x);
-  overflow: hidden;
+  overflow-x: hidden;
   background:
     radial-gradient(
       circle at 12% 12%,
@@ -33,47 +33,37 @@
   box-shadow: 0 20px 50px rgba(104, 74, 65, 0.1);
 }
 
-.pearl-symbol {
-  position: relative;
-  width: 88px;
-  height: 80px;
+/* 상단 원형 하트 아이콘 */
+.couple-heart-symbol {
+  width: 82px;
+  height: 82px;
   margin: 0 auto 28px;
-}
-
-.pearl-layer {
-  position: absolute;
-  left: 50%;
-  width: 56px;
-  height: 56px;
-  border: 1px solid rgba(185, 142, 128, 0.3);
-  border-radius: 50%;
-  transform: translateX(-50%);
-  box-shadow:
-    inset 7px 7px 12px rgba(255, 255, 255, 0.7),
-    inset -7px -7px 12px rgba(170, 125, 111, 0.1),
-    0 7px 16px rgba(90, 60, 52, 0.08);
-}
-
-.pearl-layer-back {
-  top: 0;
-  background: #f6ebe7;
-}
-
-.pearl-layer-middle {
-  top: 12px;
-  background: var(--color-secondary);
-}
-
-.pearl-layer-front {
-  top: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--color-primary);
-  color: #ffffff;
-  font-size: 17px;
+  border: 1px solid rgba(185, 142, 128, 0.38);
+  border-radius: 50%;
+  background:
+    radial-gradient(
+      circle at 35% 28%,
+      rgba(255, 255, 255, 0.85),
+      transparent 38%
+    ),
+    var(--color-primary);
+  box-shadow:
+    inset 7px 7px 14px rgba(255, 255, 255, 0.38),
+    inset -8px -8px 16px rgba(153, 105, 92, 0.12),
+    0 12px 24px rgba(121, 84, 73, 0.14);
 }
 
+.couple-heart-icon {
+  color: #ffffff;
+  font-size: 25px;
+  line-height: 1;
+  transform: translateY(1px);
+}
+
+/* 제목 영역 */
 .couple-connect-heading {
   text-align: center;
 }
@@ -88,48 +78,32 @@
 
 .couple-connect-heading h1 {
   margin: 0;
+  color: var(--color-text-primary);
   font-size: 27px;
   line-height: 1.35;
   letter-spacing: -0.8px;
 }
 
-.couple-connect-heading > p:last-child {
+.couple-connect-description {
   margin: 14px 0 28px;
   color: var(--color-text-secondary);
   font-size: 14px;
   line-height: 1.65;
 }
 
+/* 공통 버튼 */
 .create-room-button,
 .join-room-button {
   width: 100%;
   height: 52px;
+  border: 0;
   border-radius: var(--radius-medium);
+  color: var(--color-text-primary);
   font-weight: 700;
   transition:
     transform 0.15s ease,
     opacity 0.15s ease,
     box-shadow 0.15s ease;
-}
-
-.create-room-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  background: var(--color-primary);
-  box-shadow: var(--shadow-button);
-}
-
-.create-room-button span {
-  display: flex;
-  width: 22px;
-  height: 22px;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.55);
-  font-size: 17px;
 }
 
 .create-room-button:hover,
@@ -142,6 +116,29 @@
   transform: translateY(0);
 }
 
+/* 방 생성 버튼 */
+.create-room-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--color-primary);
+  box-shadow: var(--shadow-button);
+}
+
+.create-room-icon {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.55);
+  font-size: 17px;
+  line-height: 1;
+}
+
+/* 또는 구분선 */
 .connect-divider {
   display: flex;
   align-items: center;
@@ -159,6 +156,7 @@
   background: var(--color-border);
 }
 
+/* 방 코드 입력 영역 */
 .room-code-form {
   padding: 20px;
   border: 1px solid var(--color-border);
@@ -172,6 +170,7 @@
 
 .room-code-heading h2 {
   margin: 0 0 5px;
+  color: var(--color-text-primary);
   font-size: 16px;
 }
 
@@ -185,6 +184,7 @@
 .room-code-form label {
   display: block;
   margin-bottom: 8px;
+  color: var(--color-text-primary);
   font-size: 13px;
   font-weight: 700;
 }
@@ -197,15 +197,15 @@
 .room-code-input-wrapper input {
   width: 100%;
   height: 52px;
-  padding: 0 56px 0 16px;
+  padding: 0 16px;
   border: 1px solid #ddcfca;
   border-radius: 14px;
+  outline: none;
   background: var(--color-surface);
   color: var(--color-text-primary);
-  font-size: 17px;
-  font-weight: 700;
-  letter-spacing: 4px;
-  text-transform: uppercase;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 1px;
   transition:
     border-color 0.15s ease,
     box-shadow 0.15s ease;
@@ -218,29 +218,26 @@
 
 .room-code-input-wrapper input::placeholder {
   color: #c2b5b0;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0;
 }
 
-.room-code-input-wrapper span {
-  position: absolute;
-  top: 50%;
-  right: 14px;
-  color: #a49691;
-  font-size: 11px;
-  transform: translateY(-50%);
-}
-
+/* 연결 버튼 */
 .join-room-button {
   background: var(--color-success);
-  color: var(--color-text-primary);
+  box-shadow: 0 9px 18px rgba(139, 164, 99, 0.16);
 }
 
 .join-room-button:disabled {
   cursor: not-allowed;
   background: #e4e0dd;
   color: #aaa29e;
+  box-shadow: none;
   opacity: 0.8;
 }
 
+/* 처리 결과 메시지 */
 .connect-feedback {
   margin: 16px 0 0;
   padding: 11px 13px;
@@ -265,12 +262,32 @@
   color: #884f4f;
 }
 
+/* 세로 길이가 짧은 화면 */
 @media (max-height: 760px) {
   .couple-connect-page {
     align-items: flex-start;
   }
 
-  .pearl-symbol {
+  .couple-heart-symbol {
     margin-bottom: 20px;
+  }
+}
+
+/* 작은 모바일 화면 */
+@media (max-width: 360px) {
+  .couple-connect-page {
+    padding: 20px 16px;
+  }
+
+  .couple-connect-content {
+    padding: 32px 20px 24px;
+  }
+
+  .couple-connect-heading h1 {
+    font-size: 24px;
+  }
+
+  .room-code-form {
+    padding: 18px;
   }
 }
