@@ -1,11 +1,20 @@
 import { useMemo, useState } from 'react'
-import BottomNavigation from '../../components/common/BottomNavigation/BottomNavigation'
+import {
+  ChevronLeft,
+  ChevronRight,
+  Menu,
+  Pencil,
+  Plus,
+} from 'lucide-react'
+
 import ScheduleModal from '../../components/calendar/ScheduleModal/ScheduleModal'
+import BottomNavigation from '../../components/common/BottomNavigation/BottomNavigation'
 import {
   EMPTY_MOOD_COLOR,
   MOOD_META,
 } from '../../constants/moodMeta'
 import { INITIAL_CALENDAR_DATA } from '../../data/calendarMockData'
+
 import './CalendarPage.css'
 
 const WEEK_LABELS = ['일', '월', '화', '수', '목', '금', '토']
@@ -30,12 +39,19 @@ function createDateKey(year, monthIndex, day) {
 function createMonthCells(monthDate) {
   const year = monthDate.getFullYear()
   const monthIndex = monthDate.getMonth()
-  const firstWeekday = new Date(year, monthIndex, 1).getDay()
+
+  const firstWeekday = new Date(
+    year,
+    monthIndex,
+    1,
+  ).getDay()
+
   const currentMonthDays = new Date(
     year,
     monthIndex + 1,
     0,
   ).getDate()
+
   const previousMonthDays = new Date(
     year,
     monthIndex,
@@ -46,21 +62,22 @@ function createMonthCells(monthDate) {
     const calculatedDay = index - firstWeekday + 1
 
     if (calculatedDay <= 0) {
-      const date = previousMonthDays + calculatedDay
+      const day = previousMonthDays + calculatedDay
+
       const previousMonthDate = new Date(
         year,
         monthIndex - 1,
-        date,
+        day,
       )
 
       return {
-        day: date,
+        day,
         year: previousMonthDate.getFullYear(),
         monthIndex: previousMonthDate.getMonth(),
         dateKey: createDateKey(
           previousMonthDate.getFullYear(),
           previousMonthDate.getMonth(),
-          date,
+          day,
         ),
         isCurrentMonth: false,
         weekday: index % 7,
@@ -68,21 +85,22 @@ function createMonthCells(monthDate) {
     }
 
     if (calculatedDay > currentMonthDays) {
-      const date = calculatedDay - currentMonthDays
+      const day = calculatedDay - currentMonthDays
+
       const nextMonthDate = new Date(
         year,
         monthIndex + 1,
-        date,
+        day,
       )
 
       return {
-        day: date,
+        day,
         year: nextMonthDate.getFullYear(),
         monthIndex: nextMonthDate.getMonth(),
         dateKey: createDateKey(
           nextMonthDate.getFullYear(),
           nextMonthDate.getMonth(),
-          date,
+          day,
         ),
         isCurrentMonth: false,
         weekday: index % 7,
@@ -133,15 +151,20 @@ function CalendarPage() {
   const [currentMonth, setCurrentMonth] = useState(
     new Date(2026, 6, 1),
   )
+
   const [selectedDate, setSelectedDate] = useState(
     '2026-07-21',
   )
+
   const [calendarData, setCalendarData] = useState(
     INITIAL_CALENDAR_DATA,
   )
+
   const [isDiaryEditing, setIsDiaryEditing] =
     useState(false)
+
   const [diaryDraft, setDiaryDraft] = useState('')
+
   const [scheduleModal, setScheduleModal] = useState({
     isOpen: false,
     mode: 'create',
@@ -164,6 +187,7 @@ function CalendarPage() {
   const myMoodInformation = getMoodInformation(
     selectedDayData.myMood,
   )
+
   const partnerMoodInformation = getMoodInformation(
     selectedDayData.partnerMood,
   )
@@ -176,6 +200,7 @@ function CalendarPage() {
     )
 
     setCurrentMonth(nextMonth)
+
     setSelectedDate(
       createDateKey(
         nextMonth.getFullYear(),
@@ -187,6 +212,7 @@ function CalendarPage() {
     setIsDiaryEditing(false)
     setDiaryDraft('')
   }
+
   const handleDateSelect = (cell) => {
     setSelectedDate(cell.dateKey)
     setIsDiaryEditing(false)
@@ -198,7 +224,6 @@ function CalendarPage() {
       )
     }
   }
-  
 
   const openCreateScheduleModal = () => {
     setScheduleModal({
@@ -272,14 +297,12 @@ function CalendarPage() {
       return nextCalendarData
     })
 
-    setSelectedDate(scheduleInput.date)
-    setCurrentMonth(() => {
-      const [year, month] = scheduleInput.date
-        .split('-')
-        .map(Number)
+    const [year, month] = scheduleInput.date
+      .split('-')
+      .map(Number)
 
-      return new Date(year, month - 1, 1)
-    })
+    setSelectedDate(scheduleInput.date)
+    setCurrentMonth(new Date(year, month - 1, 1))
 
     closeScheduleModal()
   }
@@ -346,9 +369,11 @@ function CalendarPage() {
             console.log('메뉴 열기')
           }}
         >
-          <span />
-          <span />
-          <span />
+          <Menu
+            size={22}
+            strokeWidth={2}
+            aria-hidden="true"
+          />
         </button>
 
         <h1>캘린더</h1>
@@ -364,7 +389,11 @@ function CalendarPage() {
               aria-label="이전 달"
               onClick={() => handleMonthChange(-1)}
             >
-              ‹
+              <ChevronLeft
+                size={21}
+                strokeWidth={2}
+                aria-hidden="true"
+              />
             </button>
 
             <h2>{currentMonthLabel}</h2>
@@ -374,7 +403,11 @@ function CalendarPage() {
               aria-label="다음 달"
               onClick={() => handleMonthChange(1)}
             >
-              ›
+              <ChevronRight
+                size={21}
+                strokeWidth={2}
+                aria-hidden="true"
+              />
             </button>
           </div>
 
@@ -404,6 +437,7 @@ function CalendarPage() {
               const myMood = getMoodInformation(
                 dayData.myMood,
               )
+
               const partnerMood = getMoodInformation(
                 dayData.partnerMood,
               )
@@ -411,21 +445,35 @@ function CalendarPage() {
               const isSelected =
                 selectedDate === cell.dateKey
 
+              const dayCellClassName = [
+                'calendar-day-cell',
+                !cell.isCurrentMonth
+                  ? 'calendar-day-cell-outside'
+                  : '',
+                isSelected
+                  ? 'calendar-day-cell-selected'
+                  : '',
+              ]
+                .filter(Boolean)
+                .join(' ')
+
+              const dayNumberClassName = [
+                'calendar-day-number',
+                cell.weekday === 0
+                  ? 'calendar-day-number-sunday'
+                  : '',
+                cell.weekday === 6
+                  ? 'calendar-day-number-saturday'
+                  : '',
+              ]
+                .filter(Boolean)
+                .join(' ')
+
               return (
                 <button
                   key={cell.dateKey}
                   type="button"
-                  className={[
-                    'calendar-day-cell',
-                    !cell.isCurrentMonth
-                      ? 'calendar-day-cell-outside'
-                      : '',
-                    isSelected
-                      ? 'calendar-day-cell-selected'
-                      : '',
-                  ]
-                    .filter(Boolean)
-                    .join(' ')}
+                  className={dayCellClassName}
                   style={{
                     '--my-mood-color': myMood.color,
                     '--partner-mood-color':
@@ -433,19 +481,7 @@ function CalendarPage() {
                   }}
                   onClick={() => handleDateSelect(cell)}
                 >
-                  <span
-                    className={[
-                      'calendar-day-number',
-                      cell.weekday === 0
-                        ? 'calendar-day-number-sunday'
-                        : '',
-                      cell.weekday === 6
-                        ? 'calendar-day-number-saturday'
-                        : '',
-                    ]
-                      .filter(Boolean)
-                      .join(' ')}
-                  >
+                  <span className={dayNumberClassName}>
                     {cell.day}
                   </span>
 
@@ -467,7 +503,7 @@ function CalendarPage() {
         <section className="selected-day-card">
           <div className="selected-day-header">
             <div>
-              <p>{currentMonth.getFullYear()}년</p>
+              <p>{selectedDate.slice(0, 4)}년</p>
 
               <h2>{formatSelectedDate(selectedDate)}</h2>
             </div>
@@ -477,7 +513,13 @@ function CalendarPage() {
               className="add-schedule-button"
               onClick={openCreateScheduleModal}
             >
-              ＋ 일정
+              <Plus
+                size={16}
+                strokeWidth={2.2}
+                aria-hidden="true"
+              />
+
+              <span>일정</span>
             </button>
           </div>
 
@@ -520,6 +562,7 @@ function CalendarPage() {
             <div className="selected-day-section-title">
               <h3>
                 일정
+
                 <span>
                   {selectedDayData.schedules.length}
                 </span>
@@ -544,7 +587,12 @@ function CalendarPage() {
 
                       <span>{schedule.title}</span>
 
-                      <strong>›</strong>
+                      <ChevronRight
+                        className="schedule-list-chevron"
+                        size={18}
+                        strokeWidth={1.8}
+                        aria-hidden="true"
+                      />
                     </button>
                   ),
                 )}
@@ -560,6 +608,7 @@ function CalendarPage() {
             <div className="selected-day-section-title">
               <h3>
                 기념일
+
                 <span>
                   {selectedDayData.anniversaries.length}
                 </span>
@@ -575,6 +624,7 @@ function CalendarPage() {
                       className="anniversary-list-item"
                     >
                       <span className="anniversary-dot" />
+
                       <strong>
                         {anniversary.title}
                       </strong>
@@ -598,11 +648,19 @@ function CalendarPage() {
                   type="button"
                   className="diary-edit-button"
                   onClick={() => {
-                    setDiaryDraft(selectedDayData.diary ?? '')
+                    setDiaryDraft(
+                      selectedDayData.diary ?? '',
+                    )
                     setIsDiaryEditing(true)
                   }}
                 >
-                  수정
+                  <Pencil
+                    size={13}
+                    strokeWidth={2}
+                    aria-hidden="true"
+                  />
+
+                  <span>수정</span>
                 </button>
               )}
             </div>

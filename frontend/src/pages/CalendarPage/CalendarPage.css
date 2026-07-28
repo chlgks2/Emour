@@ -31,19 +31,18 @@
   width: 38px;
   height: 38px;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 5px;
+  padding: 0;
+  border: 0;
   border-radius: 12px;
   background: transparent;
+  color: var(--color-text-primary);
+  cursor: pointer;
 }
 
-.calendar-menu-button span {
-  width: 20px;
-  height: 2px;
-  border-radius: 999px;
-  background: var(--color-text-primary);
+.calendar-menu-button:hover {
+  background: rgba(238, 221, 214, 0.45);
 }
 
 .calendar-header-spacer {
@@ -84,11 +83,19 @@
 .calendar-month-navigation button {
   width: 38px;
   height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
   border-radius: 12px;
   background: var(--color-secondary);
   color: var(--color-text-primary);
-  font-size: 29px;
-  line-height: 1;
+  cursor: pointer;
+}
+
+.calendar-month-navigation button:hover {
+  background: var(--color-primary);
 }
 
 .calendar-weekdays,
@@ -123,9 +130,10 @@
 
 .calendar-day-cell {
   position: relative;
-  aspect-ratio: 1 / 1;
   min-width: 0;
+  aspect-ratio: 1 / 1;
   overflow: hidden;
+  padding: 0;
   border: 1px solid transparent;
   border-radius: 12px;
   background:
@@ -137,6 +145,7 @@
       var(--partner-mood-color) 100%
     );
   color: var(--color-text-primary);
+  cursor: pointer;
   transition:
     transform 0.15s ease,
     box-shadow 0.15s ease;
@@ -232,12 +241,22 @@
 .add-schedule-button {
   flex-shrink: 0;
   height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
   padding: 0 13px;
+  border: 0;
   border-radius: 12px;
   background: var(--color-primary);
   color: var(--color-text-primary);
   font-size: 12px;
   font-weight: 750;
+  cursor: pointer;
+}
+
+.add-schedule-button:hover {
+  filter: brightness(0.97);
 }
 
 .mood-summary {
@@ -326,14 +345,20 @@
   width: 100%;
   min-height: 40px;
   display: grid;
-  grid-template-columns: 66px 1fr 14px;
+  grid-template-columns: 66px 1fr 18px;
   align-items: center;
   gap: 8px;
   padding: 9px 10px;
+  border: 0;
   border-radius: 12px;
   background: var(--color-background);
   color: var(--color-text-primary);
   text-align: left;
+  cursor: pointer;
+}
+
+.schedule-list-item:hover {
+  background: var(--color-secondary);
 }
 
 .schedule-list-item time {
@@ -351,9 +376,8 @@
   white-space: nowrap;
 }
 
-.schedule-list-item strong {
+.schedule-list-chevron {
   color: #aa9b95;
-  font-size: 20px;
 }
 
 .anniversary-list {
@@ -386,12 +410,18 @@
 }
 
 .diary-edit-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
   padding: 6px 11px;
+  border: 0;
   border-radius: 10px;
   background: var(--color-secondary);
   color: var(--color-text-primary);
   font-size: 11px;
   font-weight: 700;
+  cursor: pointer;
 }
 
 .diary-editor textarea {
@@ -423,17 +453,21 @@
 .diary-save-button {
   height: 34px;
   padding: 0 13px;
+  border: 0;
   border-radius: 10px;
   font-size: 11px;
   font-weight: 700;
+  cursor: pointer;
 }
 
 .diary-cancel-button {
   background: var(--color-secondary);
+  color: var(--color-text-primary);
 }
 
 .diary-save-button {
   background: var(--color-success);
+  color: var(--color-text-primary);
 }
 
 @media (max-width: 360px) {
