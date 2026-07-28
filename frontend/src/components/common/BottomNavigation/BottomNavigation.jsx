@@ -37,9 +37,9 @@ const NAVIGATION_ITEMS = [
   {
     id: 'mypage',
     label: '마이',
-    path: null,
+    path: '/mypage',
     icon: UserRound,
-  },
+  }
 ]
 
 function BottomNavigation() {
