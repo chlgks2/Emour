@@ -1,62 +1,88 @@
+import {
+  CalendarDays,
+  House,
+  Images,
+  MessageCircle,
+  UserRound,
+} from 'lucide-react'
+
 import './BottomNavigation.css'
 
 const NAVIGATION_ITEMS = [
   {
     id: 'home',
     label: '홈',
-    icon: '⌂',
+    icon: House,
   },
   {
     id: 'chat',
     label: '채팅',
-    icon: '○',
+    icon: MessageCircle,
   },
   {
     id: 'calendar',
     label: '캘린더',
-    icon: '▦',
+    icon: CalendarDays,
   },
   {
     id: 'album',
     label: '앨범',
-    icon: '▧',
+    icon: Images,
   },
   {
     id: 'mypage',
     label: '마이',
-    icon: '♙',
+    icon: UserRound,
   },
 ]
 
-function BottomNavigation() {
+function BottomNavigation({
+  activeMenu = 'calendar',
+  onMenuChange,
+}) {
+  const handleMenuClick = (menuId) => {
+    if (onMenuChange) {
+      onMenuChange(menuId)
+      return
+    }
+
+    console.log(`${menuId} 화면으로 이동`)
+  }
+
   return (
     <nav
       className="bottom-navigation"
-      aria-label="하단 메뉴"
+      aria-label="하단 내비게이션"
     >
       {NAVIGATION_ITEMS.map((item) => {
-        const isActive = item.id === 'calendar'
+        const Icon = item.icon
+        const isActive = item.id === activeMenu
 
         return (
           <button
             key={item.id}
             type="button"
-            className={`bottom-navigation-item ${
-              isActive ? 'bottom-navigation-item-active' : ''
-            }`}
+            className={[
+              'bottom-navigation-item',
+              isActive
+                ? 'bottom-navigation-item-active'
+                : '',
+            ]
+              .filter(Boolean)
+              .join(' ')}
             aria-current={isActive ? 'page' : undefined}
-            onClick={() => {
-              console.log(`${item.label} 화면 이동`)
-            }}
+            onClick={() => handleMenuClick(item.id)}
           >
-            <span
+            <Icon
               className="bottom-navigation-icon"
+              size={23}
+              strokeWidth={isActive ? 2.2 : 1.8}
               aria-hidden="true"
-            >
-              {item.icon}
-            </span>
+            />
 
-            <span>{item.label}</span>
+            <span className="bottom-navigation-label">
+              {item.label}
+            </span>
           </button>
         )
       })}
