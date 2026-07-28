@@ -651,7 +651,7 @@ function CalendarPage() {
         </section>
       </div>
 
-      <BottomNavigation />
+      <BottomNavigation activeMenu="calendar" />
 
       {scheduleModal.isOpen && (
         <ScheduleModal
