@@ -1,18 +1,16 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+}
+
 body {
-  color: var(--color-text-primary);
-  background: #eee9e7;
-  font-family:
-    Pretendard,
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    sans-serif;
-}
-
-button {
-  color: inherit;
-}
-
-button:not(:disabled) {
-  cursor: pointer;
+  min-width: 320px;
+  overflow: hidden;
 }
