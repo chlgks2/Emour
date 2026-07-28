@@ -20,13 +20,13 @@ import {
   getChatPhotos,
   updateAlbumPhotoMemo,
   uploadAlbumPhoto,
-} from '../../api/albumApi'
+} from '../../api/albumApi.js'
 
-import BottomNavigation from '../../components/common/BottomNavigation/BottomNavigation'
+import BottomNavigation from '../../components/common/BottomNavigation/BottomNavigation.jsx'
 
 import {
   PHOTO_SOURCE,
-} from '../../mappers/albumMapper'
+} from '../../mappers/albumMapper.js'
 
 import './AlbumPage.css'
 
@@ -48,25 +48,28 @@ function formatPhotoDate(value) {
     return '날짜 정보 없음'
   }
 
-  const [year, month, day] = value
-    .slice(0, 10)
-    .split('-')
+  const date = new Date(value)
+
+  if (Number.isNaN(date.getTime())) {
+    return value.slice(0, 10).replaceAll('-', '.')
+  }
+
+  const year = date.getFullYear()
+  const month = String(
+    date.getMonth() + 1,
+  ).padStart(2, '0')
+  const day = String(date.getDate()).padStart(
+    2,
+    '0',
+  )
 
   return `${year}.${month}.${day}`
 }
 
 function getPhotoDateLabel(source) {
   return source === PHOTO_SOURCE.ALBUM
-    ? '촬영일'
+    ? '등록일'
     : '전송일'
-}
-
-function getFileTakenAt(file) {
-  const fileDate = file.lastModified
-    ? new Date(file.lastModified)
-    : new Date()
-
-  return fileDate.toISOString().slice(0, 10)
 }
 
 function AlbumPage() {
@@ -97,14 +100,18 @@ function AlbumPage() {
   const [memoDraft, setMemoDraft] =
     useState('')
 
-  const visiblePhotos =
-    photosBySource[activeTab]
+  const [isProcessing, setIsProcessing] =
+    useState(false)
+
+  const visiblePhotos = useMemo(
+    () => photosBySource[activeTab] ?? [],
+    [activeTab, photosBySource],
+  )
 
   const selectedPhoto = useMemo(
     () =>
       visiblePhotos.find(
-        (photo) =>
-          photo.id === selectedPhotoId,
+        (photo) => photo.id === selectedPhotoId,
       ) ?? null,
     [selectedPhotoId, visiblePhotos],
   )
@@ -175,6 +182,10 @@ function AlbumPage() {
   }
 
   const openFilePicker = () => {
+    if (isProcessing) {
+      return
+    }
+
     fileInputRef.current?.click()
   }
 
@@ -195,13 +206,14 @@ function AlbumPage() {
     }
 
     try {
+      setIsProcessing(true)
+
       const uploadedPhoto =
         await uploadAlbumPhoto({
           coupleRoomId:
             TEMP_COUPLE_ROOM_ID,
           file,
           memo: '',
-          takenAt: getFileTakenAt(file),
         })
 
       setPhotosBySource(
@@ -225,13 +237,16 @@ function AlbumPage() {
         error.message ||
           '사진 업로드에 실패했습니다.',
       )
+    } finally {
+      setIsProcessing(false)
     }
   }
 
   const handlePhotoDelete = async () => {
     if (
       !selectedPhoto ||
-      !selectedPhoto.canDelete
+      !selectedPhoto.canDelete ||
+      isProcessing
     ) {
       return
     }
@@ -245,6 +260,8 @@ function AlbumPage() {
     }
 
     try {
+      setIsProcessing(true)
+
       await deleteAlbumPhoto(
         selectedPhoto.resourceId,
       )
@@ -273,13 +290,16 @@ function AlbumPage() {
         error.message ||
           '사진 삭제에 실패했습니다.',
       )
+    } finally {
+      setIsProcessing(false)
     }
   }
 
   const startMemoEditing = () => {
     if (
       !selectedPhoto ||
-      !selectedPhoto.canEditMemo
+      !selectedPhoto.canEditMemo ||
+      isProcessing
     ) {
       return
     }
@@ -289,6 +309,10 @@ function AlbumPage() {
   }
 
   const cancelMemoEditing = () => {
+    if (isProcessing) {
+      return
+    }
+
     setMemoDraft('')
     setIsMemoEditing(false)
   }
@@ -296,16 +320,19 @@ function AlbumPage() {
   const saveMemo = async () => {
     if (
       !selectedPhoto ||
-      !selectedPhoto.canEditMemo
+      !selectedPhoto.canEditMemo ||
+      isProcessing
     ) {
       return
     }
 
     try {
+      setIsProcessing(true)
+
       const updatedPhoto =
         await updateAlbumPhotoMemo(
           selectedPhoto.resourceId,
-          memoDraft.trim(),
+          memoDraft,
         )
 
       setPhotosBySource(
@@ -322,12 +349,15 @@ function AlbumPage() {
         }),
       )
 
+      setMemoDraft(updatedPhoto.memo)
       setIsMemoEditing(false)
     } catch (error) {
       window.alert(
         error.message ||
           '사진 메모 수정에 실패했습니다.',
       )
+    } finally {
+      setIsProcessing(false)
     }
   }
 
@@ -355,6 +385,7 @@ function AlbumPage() {
           type="button"
           className="album-add-button"
           aria-label="앨범 사진 추가"
+          disabled={isProcessing}
           onClick={openFilePicker}
         >
           <Plus
@@ -432,7 +463,7 @@ function AlbumPage() {
 
                   const photoDate =
                     formatPhotoDate(
-                      photo.takenAt,
+                      photo.createdAt,
                     )
 
                   return (
@@ -457,7 +488,7 @@ function AlbumPage() {
                     >
                       <img
                         src={photo.imageUrl}
-                        alt={`${photoDate}에 기록된 사진`}
+                        alt={`${photoDate}에 등록된 사진`}
                       />
 
                       {isSelected && (
@@ -498,6 +529,7 @@ function AlbumPage() {
                   PHOTO_SOURCE.ALBUM && (
                   <button
                     type="button"
+                    disabled={isProcessing}
                     onClick={openFilePicker}
                   >
                     사진 추가하기
@@ -512,8 +544,8 @@ function AlbumPage() {
                 <img
                   src={selectedPhoto.imageUrl}
                   alt={`${formatPhotoDate(
-                    selectedPhoto.takenAt,
-                  )}에 기록된 사진`}
+                    selectedPhoto.createdAt,
+                  )}에 등록된 사진`}
                 />
 
                 <div className="album-detail-information">
@@ -535,11 +567,11 @@ function AlbumPage() {
                       <dd>
                         <time
                           dateTime={
-                            selectedPhoto.takenAt
+                            selectedPhoto.createdAt
                           }
                         >
                           {formatPhotoDate(
-                            selectedPhoto.takenAt,
+                            selectedPhoto.createdAt,
                           )}
                         </time>
                       </dd>
@@ -552,6 +584,7 @@ function AlbumPage() {
                     type="button"
                     className="album-delete-button"
                     aria-label="선택한 사진 삭제"
+                    disabled={isProcessing}
                     onClick={handlePhotoDelete}
                   >
                     <Trash2
@@ -572,6 +605,7 @@ function AlbumPage() {
                       <button
                         type="button"
                         className="album-memo-edit-button"
+                        disabled={isProcessing}
                         onClick={startMemoEditing}
                       >
                         <Pencil
@@ -590,6 +624,7 @@ function AlbumPage() {
                       <textarea
                         value={memoDraft}
                         rows={3}
+                        disabled={isProcessing}
                         placeholder="이 사진에 대한 추억을 기록해주세요"
                         onChange={(event) =>
                           setMemoDraft(
@@ -602,6 +637,7 @@ function AlbumPage() {
                         <button
                           type="button"
                           className="album-memo-cancel-button"
+                          disabled={isProcessing}
                           onClick={cancelMemoEditing}
                         >
                           취소
@@ -610,9 +646,12 @@ function AlbumPage() {
                         <button
                           type="button"
                           className="album-memo-save-button"
+                          disabled={isProcessing}
                           onClick={saveMemo}
                         >
-                          저장
+                          {isProcessing
+                            ? '저장 중'
+                            : '저장'}
                         </button>
                       </div>
                     </div>

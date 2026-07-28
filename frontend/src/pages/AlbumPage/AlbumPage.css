@@ -452,3 +452,13 @@
     height: 86px;
   }
 }
+
+.album-add-button:disabled,
+.album-delete-button:disabled,
+.album-memo-edit-button:disabled,
+.album-memo-cancel-button:disabled,
+.album-memo-save-button:disabled,
+.album-empty-state button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}

@@ -3,80 +3,99 @@ export const PHOTO_SOURCE = {
   CHAT: 'CHAT',
 }
 
+function getFirstValue(...values) {
+  return values.find(
+    (value) => value !== undefined && value !== null,
+  )
+}
+
 export function mapAlbumPhotoResponse(response) {
-  const photoId =
-    response.photoId ??
-    response.photo_id
+  const photoId = getFirstValue(
+    response.photoId,
+    response.photo_id,
+  )
 
   return {
     id: `album-${photoId}`,
     resourceId: photoId,
     source: PHOTO_SOURCE.ALBUM,
 
-    coupleRoomId:
-      response.coupleRoomId ??
-      response.couple_room_id,
+    userId: getFirstValue(
+      response.userId,
+      response.user_id,
+    ),
 
-    imageUrl:
-      response.imageUrl ??
-      response.image_url ??
-      response.image,
+    coupleRoomId: getFirstValue(
+      response.coupleRoomId,
+      response.couple_room_id,
+    ),
+
+    imageUrl: getFirstValue(
+      response.imageUrl,
+      response.image_url,
+    ),
 
     memo: response.memo ?? '',
 
-    takenAt:
-      response.takenAt ??
-      response.taken_at,
-
-    createdAt:
-      response.createdAt ??
+    createdAt: getFirstValue(
+      response.createdAt,
       response.created_at,
+    ),
 
-    updatedAt:
-      response.updatedAt ??
+    updatedAt: getFirstValue(
+      response.updatedAt,
       response.updated_at,
+    ),
 
-    canEditMemo: true,
-    canDelete: true,
+    canEditMemo: getFirstValue(
+      response.canEditMemo,
+      response.can_edit_memo,
+      true,
+    ),
+
+    canDelete: getFirstValue(
+      response.canDelete,
+      response.can_delete,
+      true,
+    ),
   }
 }
 
 export function mapChatPhotoResponse(response) {
-  const messageId =
-    response.messageId ??
-    response.message_id
+  const messageId = getFirstValue(
+    response.messageId,
+    response.message_id,
+  )
 
   return {
     id: `chat-${messageId}`,
     resourceId: messageId,
     source: PHOTO_SOURCE.CHAT,
 
-    coupleRoomId:
-      response.coupleRoomId ??
-      response.couple_room_id,
-
-    userId:
-      response.userId ??
+    userId: getFirstValue(
+      response.userId,
       response.user_id,
+    ),
 
-    imageUrl:
-      response.imageUrl ??
-      response.image_url ??
+    coupleRoomId: getFirstValue(
+      response.coupleRoomId,
+      response.couple_room_id,
+    ),
+
+    imageUrl: getFirstValue(
+      response.imageUrl,
+      response.image_url,
       response.content,
+    ),
 
     memo: '',
 
-    takenAt:
-      response.sendAt ??
+    createdAt: getFirstValue(
+      response.sendAt,
       response.send_at,
+    ),
 
-    createdAt:
-      response.sendAt ??
-      response.send_at,
-
-    updatedAt:
-      response.updatedAt ??
-      response.updated_at,
+    updatedAt: null,
 
     canEditMemo: false,
     canDelete: false,
