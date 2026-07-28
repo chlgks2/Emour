@@ -5,6 +5,7 @@ import {
   MessageCircle,
   UserRound,
 } from 'lucide-react'
+import { NavLink } from 'react-router-dom'
 
 import './BottomNavigation.css'
 
@@ -12,43 +13,36 @@ const NAVIGATION_ITEMS = [
   {
     id: 'home',
     label: '홈',
+    path: null,
     icon: House,
   },
   {
     id: 'chat',
     label: '채팅',
+    path: null,
     icon: MessageCircle,
   },
   {
     id: 'calendar',
     label: '캘린더',
+    path: '/calendar',
     icon: CalendarDays,
   },
   {
     id: 'album',
     label: '앨범',
+    path: '/album',
     icon: Images,
   },
   {
     id: 'mypage',
     label: '마이',
+    path: null,
     icon: UserRound,
   },
 ]
 
-function BottomNavigation({
-  activeMenu = 'calendar',
-  onMenuChange,
-}) {
-  const handleMenuClick = (menuId) => {
-    if (onMenuChange) {
-      onMenuChange(menuId)
-      return
-    }
-
-    console.log(`${menuId} 화면으로 이동`)
-  }
-
+function BottomNavigation() {
   return (
     <nav
       className="bottom-navigation"
@@ -56,34 +50,60 @@ function BottomNavigation({
     >
       {NAVIGATION_ITEMS.map((item) => {
         const Icon = item.icon
-        const isActive = item.id === activeMenu
+
+        if (!item.path) {
+          return (
+            <button
+              key={item.id}
+              type="button"
+              className="bottom-navigation-item"
+              disabled
+              aria-label={`${item.label} 페이지 준비 중`}
+            >
+              <Icon
+                className="bottom-navigation-icon"
+                size={23}
+                strokeWidth={1.8}
+                aria-hidden="true"
+              />
+
+              <span className="bottom-navigation-label">
+                {item.label}
+              </span>
+            </button>
+          )
+        }
 
         return (
-          <button
+          <NavLink
             key={item.id}
-            type="button"
-            className={[
-              'bottom-navigation-item',
-              isActive
-                ? 'bottom-navigation-item-active'
-                : '',
-            ]
-              .filter(Boolean)
-              .join(' ')}
-            aria-current={isActive ? 'page' : undefined}
-            onClick={() => handleMenuClick(item.id)}
+            to={item.path}
+            className={({ isActive }) =>
+              [
+                'bottom-navigation-item',
+                isActive
+                  ? 'bottom-navigation-item-active'
+                  : '',
+              ]
+                .filter(Boolean)
+                .join(' ')
+            }
           >
-            <Icon
-              className="bottom-navigation-icon"
-              size={23}
-              strokeWidth={isActive ? 2.2 : 1.8}
-              aria-hidden="true"
-            />
+            {({ isActive }) => (
+              <>
+                <Icon
+                  className="bottom-navigation-icon"
+                  size={23}
+                  strokeWidth={isActive ? 2.2 : 1.8}
+                  aria-hidden="true"
+                />
 
-            <span className="bottom-navigation-label">
-              {item.label}
-            </span>
-          </button>
+                <span className="bottom-navigation-label">
+                  {item.label}
+                </span>
+              </>
+            )}
+          </NavLink>
         )
       })}
     </nav>
