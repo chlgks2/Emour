@@ -1,188 +1,178 @@
-export const INITIAL_CALENDAR_DATA = {
-  '2026-07-01': {
-    myMood: 'FLUTTER',
-    partnerMood: 'SHY',
-    schedules: [],
-    anniversaries: [
-      {
-        id: 'anniversary-1',
-        title: '처음 만난 날',
-      },
-    ],
-    diary: '',
+export const MOCK_MOOD_RESPONSES = [
+  {
+    mood_id: 1,
+    user_id: 1,
+    couple_room_id: 1,
+    mood_type: 'JOY',
+    created_at: '2026-07-03T21:10:00',
   },
+  {
+    mood_id: 2,
+    user_id: 2,
+    couple_room_id: 1,
+    mood_type: 'COMFORT',
+    created_at: '2026-07-03T22:10:00',
+  },
+  {
+    mood_id: 3,
+    user_id: 1,
+    couple_room_id: 1,
+    mood_type: 'FLUTTER',
+    created_at: '2026-07-08T20:00:00',
+  },
+  {
+    mood_id: 4,
+    user_id: 2,
+    couple_room_id: 1,
+    mood_type: 'JOY',
+    created_at: '2026-07-08T20:20:00',
+  },
+  {
+    mood_id: 5,
+    user_id: 1,
+    couple_room_id: 1,
+    mood_type: 'WORRY',
+    created_at: '2026-07-12T19:20:00',
+  },
+  {
+    mood_id: 6,
+    user_id: 2,
+    couple_room_id: 1,
+    mood_type: 'COMFORT',
+    created_at: '2026-07-12T19:25:00',
+  },
+  {
+    mood_id: 7,
+    user_id: 1,
+    couple_room_id: 1,
+    mood_type: 'HURT',
+    created_at: '2026-07-18T23:10:00',
+  },
+  {
+    mood_id: 8,
+    user_id: 2,
+    couple_room_id: 1,
+    mood_type: 'WORRY',
+    created_at: '2026-07-18T23:20:00',
+  },
+  {
+    mood_id: 9,
+    user_id: 1,
+    couple_room_id: 1,
+    mood_type: 'JOY',
+    created_at: '2026-07-21T22:10:00',
+  },
+  {
+    mood_id: 10,
+    user_id: 2,
+    couple_room_id: 1,
+    mood_type: 'COMFORT',
+    created_at: '2026-07-21T22:15:00',
+  },
+  {
+    mood_id: 11,
+    user_id: 1,
+    couple_room_id: 1,
+    mood_type: 'GRATITUDE',
+    created_at: '2026-07-25T21:00:00',
+  },
+  {
+    mood_id: 12,
+    user_id: 2,
+    couple_room_id: 1,
+    mood_type: 'FLUTTER',
+    created_at: '2026-07-25T21:05:00',
+  },
+]
 
-  '2026-07-02': {
-    myMood: 'JOY',
-    partnerMood: 'COMFORT',
-    schedules: [],
-    anniversaries: [],
-    diary: '',
+export const MOCK_SCHEDULE_RESPONSES = [
+  {
+    schedule_id: 1,
+    user_id: 1,
+    couple_room_id: 1,
+    name: '저녁 데이트',
+    date: '2026-07-08',
+    time: '18:30',
+    type: 'SCHEDULE',
+    created_at: '2026-07-01T12:00:00',
+    updated_at: '2026-07-01T12:00:00',
   },
+  {
+    schedule_id: 2,
+    user_id: 2,
+    couple_room_id: 1,
+    name: '영화 보기',
+    date: '2026-07-12',
+    time: '19:20',
+    type: 'SCHEDULE',
+    created_at: '2026-07-03T15:00:00',
+    updated_at: '2026-07-03T15:00:00',
+  },
+  {
+    schedule_id: 3,
+    user_id: 1,
+    couple_room_id: 1,
+    name: '함께 운동하기',
+    date: '2026-07-21',
+    time: '17:30',
+    type: 'SCHEDULE',
+    created_at: '2026-07-10T11:00:00',
+    updated_at: '2026-07-10T11:00:00',
+  },
+  {
+    schedule_id: 4,
+    user_id: 2,
+    couple_room_id: 1,
+    name: '저녁 식사',
+    date: '2026-07-21',
+    time: '19:00',
+    type: 'SCHEDULE',
+    created_at: '2026-07-10T11:10:00',
+    updated_at: '2026-07-10T11:10:00',
+  },
+  {
+    schedule_id: 5,
+    user_id: 1,
+    couple_room_id: 1,
+    name: '우리의 100일',
+    date: '2026-07-21',
+    time: '',
+    type: 'ANNIVERSARY',
+    created_at: '2026-07-05T10:00:00',
+    updated_at: '2026-07-05T10:00:00',
+  },
+  {
+    schedule_id: 6,
+    user_id: 1,
+    couple_room_id: 1,
+    name: '첫 데이트 기념일',
+    date: '2026-07-25',
+    time: '',
+    type: 'ANNIVERSARY',
+    created_at: '2026-07-05T10:30:00',
+    updated_at: '2026-07-05T10:30:00',
+  },
+]
 
-  '2026-07-03': {
-    myMood: 'ORDINARY',
-    partnerMood: 'WORRY',
-    schedules: [
-      {
-        id: 'schedule-1',
-        title: '전화하기',
-        date: '2026-07-03',
-        time: '21:00',
-        memo: '',
-      },
-    ],
-    anniversaries: [],
-    diary: '',
+export const MOCK_DIARY_RESPONSES = [
+  {
+    diary_id: 1,
+    user_id: 1,
+    couple_room_id: 1,
+    date: '2026-07-08',
+    content: '오늘은 오랜만에 함께 저녁을 먹었다.',
+    created_at: '2026-07-08T23:10:00',
+    updated_at: '2026-07-08T23:10:00',
+    deleted_at: null,
   },
-
-  '2026-07-08': {
-    myMood: 'SHY',
-    partnerMood: 'FLUTTER',
-    schedules: [],
-    anniversaries: [
-      {
-        id: 'anniversary-2',
-        title: '100일',
-      },
-    ],
-    diary: '',
+  {
+    diary_id: 2,
+    user_id: 1,
+    couple_room_id: 1,
+    date: '2026-07-21',
+    content: '함께 운동하고 맛있는 저녁도 먹어서 행복했다.',
+    created_at: '2026-07-21T23:20:00',
+    updated_at: '2026-07-21T23:20:00',
+    deleted_at: null,
   },
-
-  '2026-07-14': {
-    myMood: 'CURIOUS',
-    partnerMood: 'ORDINARY',
-    schedules: [
-      {
-        id: 'schedule-2',
-        title: '카페 데이트',
-        date: '2026-07-14',
-        time: '15:00',
-        memo: '새로 생긴 카페 방문',
-      },
-    ],
-    anniversaries: [],
-    diary: '',
-  },
-
-  '2026-07-16': {
-    myMood: 'GRATITUDE',
-    partnerMood: 'COMFORT',
-    schedules: [
-      {
-        id: 'schedule-3',
-        title: '저녁 식사',
-        date: '2026-07-16',
-        time: '19:00',
-        memo: '',
-      },
-    ],
-    anniversaries: [],
-    diary: '',
-  },
-
-  '2026-07-19': {
-    myMood: 'WORRY',
-    partnerMood: 'HURT',
-    schedules: [
-      {
-        id: 'schedule-4',
-        title: '산책하기',
-        date: '2026-07-19',
-        time: '20:00',
-        memo: '',
-      },
-    ],
-    anniversaries: [],
-    diary: '',
-  },
-
-  '2026-07-21': {
-    myMood: 'JOY',
-    partnerMood: 'COMFORT',
-    schedules: [
-      {
-        id: 'schedule-5',
-        title: '영화 보기',
-        date: '2026-07-21',
-        time: '10:00',
-        memo: '',
-      },
-      {
-        id: 'schedule-6',
-        title: '저녁 식사 예약',
-        date: '2026-07-21',
-        time: '18:00',
-        memo: '창가 자리',
-      },
-    ],
-    anniversaries: [
-      {
-        id: 'anniversary-3',
-        title: '200일',
-      },
-    ],
-    diary: '오늘은 좀 더 기분 좋은 하루였어!',
-  },
-
-  '2026-07-23': {
-    myMood: 'APOLOGY',
-    partnerMood: 'HURT',
-    schedules: [
-      {
-        id: 'schedule-7',
-        title: '통화하기',
-        date: '2026-07-23',
-        time: '22:00',
-        memo: '',
-      },
-    ],
-    anniversaries: [],
-    diary: '',
-  },
-
-  '2026-07-24': {
-    myMood: 'COMFORT',
-    partnerMood: 'JOY',
-    schedules: [
-      {
-        id: 'schedule-8',
-        title: '사진 정리',
-        date: '2026-07-24',
-        time: '',
-        memo: '',
-      },
-    ],
-    anniversaries: [],
-    diary: '',
-  },
-
-  '2026-07-26': {
-    myMood: 'SADNESS',
-    partnerMood: 'WORRY',
-    schedules: [],
-    anniversaries: [
-      {
-        id: 'anniversary-4',
-        title: '기념일',
-      },
-    ],
-    diary: '',
-  },
-
-  '2026-07-28': {
-    myMood: 'SURPRISE',
-    partnerMood: 'JOY',
-    schedules: [
-      {
-        id: 'schedule-9',
-        title: '전시회 보기',
-        date: '2026-07-28',
-        time: '14:00',
-        memo: '',
-      },
-    ],
-    anniversaries: [],
-    diary: '',
-  },
-}
+]

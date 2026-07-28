@@ -1,21 +1,28 @@
 import { useState } from 'react'
 import { Trash2, X } from 'lucide-react'
 
+import {
+  SCHEDULE_TYPE,
+} from '../../../mappers/calendarMapper.js'
+
 import './ScheduleModal.css'
 
 function ScheduleModal({
   mode,
   selectedDate,
   schedule,
+  isProcessing,
   onClose,
   onSave,
   onDelete,
 }) {
   const [formData, setFormData] = useState(() => ({
-    title: schedule?.title ?? '',
+    name: schedule?.name ?? '',
     date: schedule?.date ?? selectedDate,
     time: schedule?.time ?? '',
-    memo: schedule?.memo ?? '',
+    type:
+      schedule?.type ??
+      SCHEDULE_TYPE.SCHEDULE,
   }))
 
   const handleChange = (event) => {
@@ -30,15 +37,19 @@ function ScheduleModal({
   const handleSubmit = (event) => {
     event.preventDefault()
 
-    if (!formData.title.trim() || !formData.date) {
+    if (
+      !formData.name.trim() ||
+      !formData.date ||
+      isProcessing
+    ) {
       return
     }
 
     onSave({
-      title: formData.title.trim(),
+      name: formData.name.trim(),
       date: formData.date,
       time: formData.time,
-      memo: formData.memo.trim(),
+      type: formData.type,
     })
   }
 
@@ -47,7 +58,10 @@ function ScheduleModal({
       className="schedule-modal-backdrop"
       role="presentation"
       onMouseDown={(event) => {
-        if (event.target === event.currentTarget) {
+        if (
+          event.target === event.currentTarget &&
+          !isProcessing
+        ) {
           onClose()
         }
       }}
@@ -62,12 +76,14 @@ function ScheduleModal({
 
         <header className="schedule-modal-header">
           <div>
-            <p>선택 날짜의 일정을 관리해보세요</p>
+            <p>
+              일정과 기념일을 관리해보세요
+            </p>
 
             <h2 id="schedule-modal-title">
               {mode === 'edit'
-                ? '일정 수정'
-                : '일정 추가'}
+                ? '기록 수정'
+                : '기록 추가'}
             </h2>
           </div>
 
@@ -75,6 +91,7 @@ function ScheduleModal({
             type="button"
             className="schedule-modal-close"
             aria-label="일정 팝업 닫기"
+            disabled={isProcessing}
             onClick={onClose}
           >
             <X
@@ -90,13 +107,44 @@ function ScheduleModal({
           onSubmit={handleSubmit}
         >
           <label>
-            일정 제목
+            구분
+
+            <select
+              name="type"
+              value={formData.type}
+              disabled={isProcessing}
+              onChange={handleChange}
+            >
+              <option
+                value={SCHEDULE_TYPE.SCHEDULE}
+              >
+                일반 일정
+              </option>
+
+              <option
+                value={
+                  SCHEDULE_TYPE.ANNIVERSARY
+                }
+              >
+                기념일
+              </option>
+            </select>
+          </label>
+
+          <label>
+            이름
 
             <input
-              name="title"
+              name="name"
               type="text"
-              value={formData.title}
-              placeholder="일정 제목을 입력해주세요"
+              value={formData.name}
+              disabled={isProcessing}
+              placeholder={
+                formData.type ===
+                SCHEDULE_TYPE.ANNIVERSARY
+                  ? '기념일 이름을 입력해주세요'
+                  : '일정 이름을 입력해주세요'
+              }
               onChange={handleChange}
             />
           </label>
@@ -109,6 +157,7 @@ function ScheduleModal({
                 name="date"
                 type="date"
                 value={formData.date}
+                disabled={isProcessing}
                 onChange={handleChange}
               />
             </label>
@@ -120,28 +169,18 @@ function ScheduleModal({
                 name="time"
                 type="time"
                 value={formData.time}
+                disabled={isProcessing}
                 onChange={handleChange}
               />
             </label>
           </div>
-
-          <label>
-            메모
-
-            <textarea
-              name="memo"
-              value={formData.memo}
-              placeholder="일정에 대한 메모를 입력해주세요"
-              rows={3}
-              onChange={handleChange}
-            />
-          </label>
 
           <div className="schedule-modal-actions">
             {mode === 'edit' && (
               <button
                 type="button"
                 className="schedule-delete-button"
+                disabled={isProcessing}
                 onClick={onDelete}
               >
                 <Trash2
@@ -157,6 +196,7 @@ function ScheduleModal({
             <button
               type="button"
               className="schedule-cancel-button"
+              disabled={isProcessing}
               onClick={onClose}
             >
               취소
@@ -166,10 +206,14 @@ function ScheduleModal({
               type="submit"
               className="schedule-save-button"
               disabled={
-                !formData.title.trim() || !formData.date
+                isProcessing ||
+                !formData.name.trim() ||
+                !formData.date
               }
             >
-              저장
+              {isProcessing
+                ? '저장 중'
+                : '저장'}
             </button>
           </div>
         </form>
