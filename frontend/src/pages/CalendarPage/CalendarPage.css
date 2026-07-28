@@ -8,6 +8,10 @@
   background: var(--color-background);
 }
 
+/* =========================
+   상단 헤더
+========================= */
+
 .calendar-header {
   position: relative;
   z-index: 10;
@@ -49,6 +53,10 @@
   width: 38px;
 }
 
+/* =========================
+   스크롤 영역
+========================= */
+
 .calendar-scroll-area {
   min-height: 0;
   overflow-x: hidden;
@@ -57,6 +65,31 @@
   overscroll-behavior: contain;
   scrollbar-width: thin;
 }
+
+/* =========================
+   로딩 및 오류 메시지
+========================= */
+
+.calendar-status {
+  margin-bottom: 12px;
+  padding: 11px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 13px;
+  background: var(--color-secondary);
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  text-align: center;
+}
+
+.calendar-status-error {
+  border-color: rgba(211, 153, 153, 0.5);
+  background: rgba(211, 153, 153, 0.12);
+  color: #985c5c;
+}
+
+/* =========================
+   월간 캘린더 카드
+========================= */
 
 .calendar-month-section {
   padding: 18px 12px 14px;
@@ -94,9 +127,13 @@
   cursor: pointer;
 }
 
-.calendar-month-navigation button:hover {
+.calendar-month-navigation button:hover:not(:disabled) {
   background: var(--color-primary);
 }
+
+/* =========================
+   요일
+========================= */
 
 .calendar-weekdays,
 .calendar-grid {
@@ -124,26 +161,24 @@
   color: #7187b1;
 }
 
+/* =========================
+   날짜 그리드
+========================= */
+
 .calendar-grid {
   gap: 5px;
 }
 
 .calendar-day-cell {
   position: relative;
+  isolation: isolate;
   min-width: 0;
   aspect-ratio: 1 / 1;
   overflow: hidden;
   padding: 0;
   border: 1px solid transparent;
   border-radius: 12px;
-  background:
-    linear-gradient(
-      to right,
-      var(--my-mood-color) 0%,
-      var(--my-mood-color) 50%,
-      var(--partner-mood-color) 50%,
-      var(--partner-mood-color) 100%
-    );
+  background: transparent;
   color: var(--color-text-primary);
   cursor: pointer;
   transition:
@@ -151,7 +186,42 @@
     box-shadow 0.15s ease;
 }
 
-.calendar-day-cell:hover {
+/*
+  나의 감정 색상
+  날짜 셀의 왼쪽 절반을 담당
+*/
+.calendar-day-cell::before {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  top: 0;
+  right: 50%;
+  bottom: 0;
+  left: 0;
+  background: var(--my-mood-color);
+}
+
+/*
+  상대방 감정 색상
+  날짜 셀의 오른쪽 절반을 담당
+*/
+.calendar-day-cell::after {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 50%;
+  background: var(--partner-mood-color);
+}
+
+/* 날짜와 표시 점을 배경보다 위에 배치 */
+.calendar-day-cell > * {
+  z-index: 1;
+}
+
+.calendar-day-cell:hover:not(:disabled) {
   transform: translateY(-1px);
 }
 
@@ -183,6 +253,10 @@
   color: #5f79aa;
 }
 
+/* =========================
+   기념일·일정 표시 점
+========================= */
+
 .calendar-day-dots {
   position: absolute;
   right: 0;
@@ -209,6 +283,10 @@
 .schedule-dot {
   background: #e99c48;
 }
+
+/* =========================
+   선택 날짜 상세 카드
+========================= */
 
 .selected-day-card {
   margin-top: 14px;
@@ -255,9 +333,13 @@
   cursor: pointer;
 }
 
-.add-schedule-button:hover {
+.add-schedule-button:hover:not(:disabled) {
   filter: brightness(0.97);
 }
+
+/* =========================
+   감정 요약
+========================= */
 
 .mood-summary {
   display: grid;
@@ -302,6 +384,10 @@
   font-size: 14px;
 }
 
+/* =========================
+   상세 공통 섹션
+========================= */
+
 .selected-day-section,
 .diary-section {
   padding: 17px 0;
@@ -334,6 +420,10 @@
   background: var(--color-secondary);
   font-size: 10px;
 }
+
+/* =========================
+   일정 목록
+========================= */
 
 .schedule-list {
   display: flex;
@@ -380,6 +470,10 @@
   color: #aa9b95;
 }
 
+/* =========================
+   기념일 목록
+========================= */
+
 .anniversary-list {
   display: flex;
   flex-direction: column;
@@ -387,19 +481,38 @@
 }
 
 .anniversary-list-item {
+  width: 100%;
   min-height: 40px;
   display: flex;
   align-items: center;
   gap: 9px;
   padding: 9px 11px;
+  border: 0;
   border-radius: 12px;
   background: rgba(211, 153, 153, 0.16);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.anniversary-list-item:hover {
+  background: rgba(211, 153, 153, 0.24);
 }
 
 .anniversary-list-item strong {
+  flex: 1;
   color: #7c5555;
   font-size: 13px;
 }
+
+.anniversary-list-item > svg {
+  flex-shrink: 0;
+  color: #a88c8c;
+}
+
+/* =========================
+   비어 있는 영역
+========================= */
 
 .empty-section-message,
 .diary-content {
@@ -408,6 +521,10 @@
   font-size: 12px;
   line-height: 1.6;
 }
+
+/* =========================
+   한줄 일기
+========================= */
 
 .diary-edit-button {
   display: inline-flex;
@@ -469,6 +586,24 @@
   background: var(--color-success);
   color: var(--color-text-primary);
 }
+
+/* =========================
+   비활성화 상태
+========================= */
+
+.calendar-month-navigation button:disabled,
+.calendar-day-cell:disabled,
+.add-schedule-button:disabled,
+.diary-edit-button:disabled,
+.diary-cancel-button:disabled,
+.diary-save-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* =========================
+   작은 화면 대응
+========================= */
 
 @media (max-width: 360px) {
   .calendar-scroll-area {

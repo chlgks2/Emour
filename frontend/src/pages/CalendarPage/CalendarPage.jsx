@@ -1,4 +1,9 @@
-import { useMemo, useState } from 'react'
+import {
+  useEffect,
+  useMemo,
+  useState,
+} from 'react'
+
 import {
   ChevronLeft,
   ChevronRight,
@@ -7,30 +12,50 @@ import {
   Plus,
 } from 'lucide-react'
 
-import ScheduleModal from '../../components/calendar/ScheduleModal/ScheduleModal'
-import BottomNavigation from '../../components/common/BottomNavigation/BottomNavigation'
+import {
+  createSchedule,
+  deleteSchedule,
+  getMonthlyCalendar,
+  saveDiary,
+  updateSchedule,
+} from '../../api/calendarApi.js'
+
+import ScheduleModal from '../../components/calendar/ScheduleModal/ScheduleModal.jsx'
+import BottomNavigation from '../../components/common/BottomNavigation/BottomNavigation.jsx'
+
 import {
   EMPTY_MOOD_COLOR,
   MOOD_META,
-} from '../../constants/moodMeta'
-import { INITIAL_CALENDAR_DATA } from '../../data/calendarMockData'
+} from '../../constants/moodMeta.js'
+
+import {
+  createEmptyCalendarDay,
+  SCHEDULE_TYPE,
+} from '../../mappers/calendarMapper.js'
 
 import './CalendarPage.css'
 
-const WEEK_LABELS = ['일', '월', '화', '수', '목', '금', '토']
+const TEMP_COUPLE_ROOM_ID = 1
 
-function createEmptyDayData() {
-  return {
-    myMood: null,
-    partnerMood: null,
-    schedules: [],
-    anniversaries: [],
-    diary: '',
-  }
-}
+const WEEK_LABELS = [
+  '일',
+  '월',
+  '화',
+  '수',
+  '목',
+  '금',
+  '토',
+]
 
-function createDateKey(year, monthIndex, day) {
-  const month = String(monthIndex + 1).padStart(2, '0')
+function createDateKey(
+  year,
+  monthIndex,
+  day,
+) {
+  const month = String(
+    monthIndex + 1,
+  ).padStart(2, '0')
+
   const date = String(day).padStart(2, '0')
 
   return `${year}-${month}-${date}`
@@ -58,72 +83,88 @@ function createMonthCells(monthDate) {
     0,
   ).getDate()
 
-  return Array.from({ length: 42 }, (_, index) => {
-    const calculatedDay = index - firstWeekday + 1
+  return Array.from(
+    { length: 42 },
+    (_, index) => {
+      const calculatedDay =
+        index - firstWeekday + 1
 
-    if (calculatedDay <= 0) {
-      const day = previousMonthDays + calculatedDay
+      if (calculatedDay <= 0) {
+        const day =
+          previousMonthDays + calculatedDay
 
-      const previousMonthDate = new Date(
-        year,
-        monthIndex - 1,
-        day,
-      )
+        const previousMonthDate = new Date(
+          year,
+          monthIndex - 1,
+          day,
+        )
+
+        return {
+          day,
+          year:
+            previousMonthDate.getFullYear(),
+          monthIndex:
+            previousMonthDate.getMonth(),
+          dateKey: createDateKey(
+            previousMonthDate.getFullYear(),
+            previousMonthDate.getMonth(),
+            day,
+          ),
+          isCurrentMonth: false,
+          weekday: index % 7,
+        }
+      }
+
+      if (
+        calculatedDay > currentMonthDays
+      ) {
+        const day =
+          calculatedDay -
+          currentMonthDays
+
+        const nextMonthDate = new Date(
+          year,
+          monthIndex + 1,
+          day,
+        )
+
+        return {
+          day,
+          year:
+            nextMonthDate.getFullYear(),
+          monthIndex:
+            nextMonthDate.getMonth(),
+          dateKey: createDateKey(
+            nextMonthDate.getFullYear(),
+            nextMonthDate.getMonth(),
+            day,
+          ),
+          isCurrentMonth: false,
+          weekday: index % 7,
+        }
+      }
 
       return {
-        day,
-        year: previousMonthDate.getFullYear(),
-        monthIndex: previousMonthDate.getMonth(),
-        dateKey: createDateKey(
-          previousMonthDate.getFullYear(),
-          previousMonthDate.getMonth(),
-          day,
-        ),
-        isCurrentMonth: false,
-        weekday: index % 7,
-      }
-    }
-
-    if (calculatedDay > currentMonthDays) {
-      const day = calculatedDay - currentMonthDays
-
-      const nextMonthDate = new Date(
-        year,
-        monthIndex + 1,
-        day,
-      )
-
-      return {
-        day,
-        year: nextMonthDate.getFullYear(),
-        monthIndex: nextMonthDate.getMonth(),
-        dateKey: createDateKey(
-          nextMonthDate.getFullYear(),
-          nextMonthDate.getMonth(),
-          day,
-        ),
-        isCurrentMonth: false,
-        weekday: index % 7,
-      }
-    }
-
-    return {
-      day: calculatedDay,
-      year,
-      monthIndex,
-      dateKey: createDateKey(
+        day: calculatedDay,
         year,
         monthIndex,
-        calculatedDay,
-      ),
-      isCurrentMonth: true,
-      weekday: index % 7,
-    }
-  })
+        dateKey: createDateKey(
+          year,
+          monthIndex,
+          calculatedDay,
+        ),
+        isCurrentMonth: true,
+        weekday: index % 7,
+      }
+    },
+  )
 }
 
 function getMoodInformation(moodCode) {
-  if (!moodCode || !MOOD_META[moodCode]) {
+  if (
+    !moodCode ||
+    !MOOD_META[moodCode]
+  ) {
     return {
       label: '기록 없음',
       color: EMPTY_MOOD_COLOR,
@@ -147,30 +188,53 @@ function formatSelectedDate(dateKey) {
   return `${month}월 ${day}일 (${WEEK_LABELS[weekday]})`
 }
 
+function sortSchedules(schedules) {
+  return [...schedules].sort(
+    (first, second) =>
+      (first.time || '99:99').localeCompare(
+        second.time || '99:99',
+      ),
+  )
+}
+
 function CalendarPage() {
-  const [currentMonth, setCurrentMonth] = useState(
-    new Date(2026, 6, 1),
-  )
+  const [currentMonth, setCurrentMonth] =
+    useState(new Date(2026, 6, 1))
 
-  const [selectedDate, setSelectedDate] = useState(
-    '2026-07-21',
-  )
+  const [selectedDate, setSelectedDate] =
+    useState('2026-07-21')
 
-  const [calendarData, setCalendarData] = useState(
-    INITIAL_CALENDAR_DATA,
-  )
+  const [calendarData, setCalendarData] =
+    useState({})
+
+  const [isLoading, setIsLoading] =
+    useState(true)
+
+  const [errorMessage, setErrorMessage] =
+    useState('')
+
+  const [isProcessing, setIsProcessing] =
+    useState(false)
 
   const [isDiaryEditing, setIsDiaryEditing] =
     useState(false)
 
-  const [diaryDraft, setDiaryDraft] = useState('')
+  const [diaryDraft, setDiaryDraft] =
+    useState('')
 
-  const [scheduleModal, setScheduleModal] = useState({
-    isOpen: false,
-    mode: 'create',
-    sourceDate: '',
-    schedule: null,
-  })
+  const [scheduleModal, setScheduleModal] =
+    useState({
+      isOpen: false,
+      mode: 'create',
+      sourceDate: '',
+      schedule: null,
+    })
+
+  const currentYear =
+    currentMonth.getFullYear()
+
+  const currentMonthNumber =
+    currentMonth.getMonth() + 1
 
   const monthCells = useMemo(
     () => createMonthCells(currentMonth),
@@ -178,39 +242,86 @@ function CalendarPage() {
   )
 
   const selectedDayData =
-    calendarData[selectedDate] ?? createEmptyDayData()
+    calendarData[selectedDate] ??
+    createEmptyCalendarDay(selectedDate)
 
-  const currentMonthLabel = `${
-    currentMonth.getFullYear()
-  }년 ${currentMonth.getMonth() + 1}월`
+  const currentMonthLabel =
+    `${currentYear}년 ${currentMonthNumber}월`
 
-  const myMoodInformation = getMoodInformation(
-    selectedDayData.myMood,
-  )
+  const myMoodInformation =
+    getMoodInformation(
+      selectedDayData.myMood,
+    )
 
-  const partnerMoodInformation = getMoodInformation(
-    selectedDayData.partnerMood,
-  )
+  const partnerMoodInformation =
+    getMoodInformation(
+      selectedDayData.partnerMood,
+    )
+
+  useEffect(() => {
+    let isCancelled = false
+
+    getMonthlyCalendar(
+      TEMP_COUPLE_ROOM_ID,
+      currentYear,
+      currentMonthNumber,
+    )
+      .then((monthData) => {
+        if (isCancelled) {
+          return
+        }
+
+        setCalendarData(monthData)
+        setErrorMessage('')
+        setIsLoading(false)
+      })
+      .catch((error) => {
+        if (isCancelled) {
+          return
+        }
+
+        setErrorMessage(
+          error.message ||
+            '캘린더를 불러오지 못했습니다.',
+        )
+
+        setIsLoading(false)
+      })
+
+    return () => {
+      isCancelled = true
+    }
+  }, [currentMonthNumber, currentYear])
+
+  const changeCurrentMonth = (
+    nextMonth,
+    nextSelectedDate,
+  ) => {
+    setIsLoading(true)
+    setErrorMessage('')
+    setCalendarData({})
+    setCurrentMonth(nextMonth)
+    setSelectedDate(nextSelectedDate)
+    setIsDiaryEditing(false)
+    setDiaryDraft('')
+  }
 
   const handleMonthChange = (direction) => {
     const nextMonth = new Date(
-      currentMonth.getFullYear(),
-      currentMonth.getMonth() + direction,
+      currentYear,
+      currentMonth.getMonth() +
+        direction,
       1,
     )
 
-    setCurrentMonth(nextMonth)
-
-    setSelectedDate(
+    changeCurrentMonth(
+      nextMonth,
       createDateKey(
         nextMonth.getFullYear(),
         nextMonth.getMonth(),
         1,
       ),
     )
-
-    setIsDiaryEditing(false)
-    setDiaryDraft('')
   }
 
   const handleDateSelect = (cell) => {
@@ -219,8 +330,13 @@ function CalendarPage() {
     setDiaryDraft('')
 
     if (!cell.isCurrentMonth) {
-      setCurrentMonth(
-        new Date(cell.year, cell.monthIndex, 1),
+      changeCurrentMonth(
+        new Date(
+          cell.year,
+          cell.monthIndex,
+          1,
+        ),
+        cell.dateKey,
       )
     }
   }
@@ -234,7 +350,9 @@ function CalendarPage() {
     })
   }
 
-  const openEditScheduleModal = (schedule) => {
+  const openEditScheduleModal = (
+    schedule,
+  ) => {
     setScheduleModal({
       isOpen: true,
       mode: 'edit',
@@ -244,6 +362,10 @@ function CalendarPage() {
   }
 
   const closeScheduleModal = () => {
+    if (isProcessing) {
+      return
+    }
+
     setScheduleModal({
       isOpen: false,
       mode: 'create',
@@ -252,110 +374,275 @@ function CalendarPage() {
     })
   }
 
-  const handleScheduleSave = (scheduleInput) => {
-    const savedSchedule = {
-      id:
-        scheduleModal.schedule?.id ??
-        `schedule-${Date.now()}`,
-      ...scheduleInput,
+  const updateCalendarSchedule = (
+    savedSchedule,
+  ) => {
+    setCalendarData(
+      (previousCalendarData) => {
+        const nextCalendarData = {
+          ...previousCalendarData,
+        }
+
+        if (
+          scheduleModal.mode === 'edit' &&
+          scheduleModal.schedule
+        ) {
+          const sourceDay =
+            nextCalendarData[
+              scheduleModal.sourceDate
+            ] ??
+            createEmptyCalendarDay(
+              scheduleModal.sourceDate,
+            )
+
+          nextCalendarData[
+            scheduleModal.sourceDate
+          ] = {
+            ...sourceDay,
+            schedules:
+              sourceDay.schedules.filter(
+                (schedule) =>
+                  schedule.scheduleId !==
+                  savedSchedule.scheduleId,
+              ),
+            anniversaries:
+              sourceDay.anniversaries.filter(
+                (schedule) =>
+                  schedule.scheduleId !==
+                  savedSchedule.scheduleId,
+              ),
+          }
+        }
+
+        const targetDay =
+          nextCalendarData[
+            savedSchedule.date
+          ] ??
+          createEmptyCalendarDay(
+            savedSchedule.date,
+          )
+
+        if (
+          savedSchedule.type ===
+          SCHEDULE_TYPE.ANNIVERSARY
+        ) {
+          nextCalendarData[
+            savedSchedule.date
+          ] = {
+            ...targetDay,
+            anniversaries:
+              sortSchedules([
+                ...targetDay.anniversaries,
+                savedSchedule,
+              ]),
+          }
+        } else {
+          nextCalendarData[
+            savedSchedule.date
+          ] = {
+            ...targetDay,
+            schedules: sortSchedules([
+              ...targetDay.schedules,
+              savedSchedule,
+            ]),
+          }
+        }
+
+        return nextCalendarData
+      },
+    )
+  }
+
+  const handleScheduleSave = async (
+    scheduleInput,
+  ) => {
+    if (isProcessing) {
+      return
     }
 
-    setCalendarData((previousCalendarData) => {
-      const nextCalendarData = {
-        ...previousCalendarData,
-      }
+    try {
+      setIsProcessing(true)
 
-      if (
+      const savedSchedule =
         scheduleModal.mode === 'edit' &&
         scheduleModal.schedule
-      ) {
-        const sourceDateData =
-          nextCalendarData[scheduleModal.sourceDate] ??
-          createEmptyDayData()
+          ? await updateSchedule(
+              scheduleModal.schedule
+                .scheduleId,
+              scheduleInput,
+            )
+          : await createSchedule({
+              coupleRoomId:
+                TEMP_COUPLE_ROOM_ID,
+              ...scheduleInput,
+            })
 
-        nextCalendarData[scheduleModal.sourceDate] = {
-          ...sourceDateData,
-          schedules: sourceDateData.schedules.filter(
-            (schedule) =>
-              schedule.id !== scheduleModal.schedule.id,
-          ),
-        }
-      }
+      const [targetYear, targetMonth] =
+        savedSchedule.date
+          .split('-')
+          .map(Number)
 
-      const targetDateData =
-        nextCalendarData[scheduleInput.date] ??
-        createEmptyDayData()
+      const isSameMonth =
+        targetYear === currentYear &&
+        targetMonth ===
+          currentMonthNumber
 
-      nextCalendarData[scheduleInput.date] = {
-        ...targetDateData,
-        schedules: [
-          ...targetDateData.schedules,
+      if (isSameMonth) {
+        updateCalendarSchedule(
           savedSchedule,
-        ],
-      }
+        )
 
-      return nextCalendarData
-    })
-
-    const [year, month] = scheduleInput.date
-      .split('-')
-      .map(Number)
-
-    setSelectedDate(scheduleInput.date)
-    setCurrentMonth(new Date(year, month - 1, 1))
-
-    closeScheduleModal()
-  }
-
-  const handleScheduleDelete = () => {
-    if (!scheduleModal.schedule) {
-      return
-    }
-
-    const shouldDelete = window.confirm(
-      '이 일정을 삭제하시겠습니까?',
-    )
-
-    if (!shouldDelete) {
-      return
-    }
-
-    setCalendarData((previousCalendarData) => {
-      const sourceDateData =
-        previousCalendarData[scheduleModal.sourceDate] ??
-        createEmptyDayData()
-
-      return {
-        ...previousCalendarData,
-        [scheduleModal.sourceDate]: {
-          ...sourceDateData,
-          schedules: sourceDateData.schedules.filter(
-            (schedule) =>
-              schedule.id !== scheduleModal.schedule.id,
+        setSelectedDate(
+          savedSchedule.date,
+        )
+      } else {
+        changeCurrentMonth(
+          new Date(
+            targetYear,
+            targetMonth - 1,
+            1,
           ),
-        },
+          savedSchedule.date,
+        )
       }
-    })
 
-    closeScheduleModal()
+      setScheduleModal({
+        isOpen: false,
+        mode: 'create',
+        sourceDate: '',
+        schedule: null,
+      })
+    } catch (error) {
+      window.alert(
+        error.message ||
+          '일정 저장에 실패했습니다.',
+      )
+    } finally {
+      setIsProcessing(false)
+    }
   }
 
-  const handleDiarySave = () => {
-    setCalendarData((previousCalendarData) => {
-      const dayData =
-        previousCalendarData[selectedDate] ??
-        createEmptyDayData()
-
-      return {
-        ...previousCalendarData,
-        [selectedDate]: {
-          ...dayData,
-          diary: diaryDraft.trim(),
-        },
+  const handleScheduleDelete =
+    async () => {
+      if (
+        !scheduleModal.schedule ||
+        isProcessing
+      ) {
+        return
       }
-    })
 
-    setIsDiaryEditing(false)
+      const shouldDelete =
+        window.confirm(
+          '선택한 기록을 삭제하시겠습니까?',
+        )
+
+      if (!shouldDelete) {
+        return
+      }
+
+      try {
+        setIsProcessing(true)
+
+        await deleteSchedule(
+          scheduleModal.schedule
+            .scheduleId,
+        )
+
+        setCalendarData(
+          (previousCalendarData) => {
+            const sourceDay =
+              previousCalendarData[
+                scheduleModal.sourceDate
+              ] ??
+              createEmptyCalendarDay(
+                scheduleModal.sourceDate,
+              )
+
+            return {
+              ...previousCalendarData,
+              [scheduleModal.sourceDate]: {
+                ...sourceDay,
+                schedules:
+                  sourceDay.schedules.filter(
+                    (schedule) =>
+                      schedule.scheduleId !==
+                      scheduleModal.schedule
+                        .scheduleId,
+                  ),
+                anniversaries:
+                  sourceDay.anniversaries.filter(
+                    (schedule) =>
+                      schedule.scheduleId !==
+                      scheduleModal.schedule
+                        .scheduleId,
+                  ),
+              },
+            }
+          },
+        )
+
+        setScheduleModal({
+          isOpen: false,
+          mode: 'create',
+          sourceDate: '',
+          schedule: null,
+        })
+      } catch (error) {
+        window.alert(
+          error.message ||
+            '일정 삭제에 실패했습니다.',
+        )
+      } finally {
+        setIsProcessing(false)
+      }
+    }
+
+  const handleDiarySave = async () => {
+    if (isProcessing) {
+      return
+    }
+
+    try {
+      setIsProcessing(true)
+
+      const savedDiary =
+        await saveDiary({
+          coupleRoomId:
+            TEMP_COUPLE_ROOM_ID,
+          date: selectedDate,
+          content: diaryDraft,
+        })
+
+      setCalendarData(
+        (previousCalendarData) => {
+          const dayData =
+            previousCalendarData[
+              selectedDate
+            ] ??
+            createEmptyCalendarDay(
+              selectedDate,
+            )
+
+          return {
+            ...previousCalendarData,
+            [selectedDate]: {
+              ...dayData,
+              diary: savedDiary,
+            },
+          }
+        },
+      )
+
+      setDiaryDraft(savedDiary.content)
+      setIsDiaryEditing(false)
+    } catch (error) {
+      window.alert(
+        error.message ||
+          '한줄 일기 저장에 실패했습니다.',
+      )
+    } finally {
+      setIsProcessing(false)
+    }
   }
 
   return (
@@ -382,12 +669,27 @@ function CalendarPage() {
       </header>
 
       <div className="calendar-scroll-area">
+        {isLoading && (
+          <div className="calendar-status">
+            캘린더를 불러오고 있습니다.
+          </div>
+        )}
+
+        {!isLoading && errorMessage && (
+          <div className="calendar-status calendar-status-error">
+            {errorMessage}
+          </div>
+        )}
+
         <section className="calendar-month-section">
           <div className="calendar-month-navigation">
             <button
               type="button"
               aria-label="이전 달"
-              onClick={() => handleMonthChange(-1)}
+              disabled={isLoading}
+              onClick={() =>
+                handleMonthChange(-1)
+              }
             >
               <ChevronLeft
                 size={21}
@@ -401,7 +703,10 @@ function CalendarPage() {
             <button
               type="button"
               aria-label="다음 달"
-              onClick={() => handleMonthChange(1)}
+              disabled={isLoading}
+              onClick={() =>
+                handleMonthChange(1)
+              }
             >
               <ChevronRight
                 size={21}
@@ -412,38 +717,45 @@ function CalendarPage() {
           </div>
 
           <div className="calendar-weekdays">
-            {WEEK_LABELS.map((weekday, index) => (
-              <span
-                key={weekday}
-                className={
-                  index === 0
-                    ? 'weekday-sunday'
-                    : index === 6
-                      ? 'weekday-saturday'
-                      : ''
-                }
-              >
-                {weekday}
-              </span>
-            ))}
+            {WEEK_LABELS.map(
+              (weekday, index) => (
+                <span
+                  key={weekday}
+                  className={
+                    index === 0
+                      ? 'weekday-sunday'
+                      : index === 6
+                        ? 'weekday-saturday'
+                        : ''
+                  }
+                >
+                  {weekday}
+                </span>
+              ),
+            )}
           </div>
 
           <div className="calendar-grid">
             {monthCells.map((cell) => {
               const dayData =
                 calendarData[cell.dateKey] ??
-                createEmptyDayData()
+                createEmptyCalendarDay(
+                  cell.dateKey,
+                )
 
-              const myMood = getMoodInformation(
-                dayData.myMood,
-              )
+              const myMood =
+                getMoodInformation(
+                  dayData.myMood,
+                )
 
-              const partnerMood = getMoodInformation(
-                dayData.partnerMood,
-              )
+              const partnerMood =
+                getMoodInformation(
+                  dayData.partnerMood,
+                )
 
               const isSelected =
-                selectedDate === cell.dateKey
+                selectedDate ===
+                cell.dateKey
 
               const dayCellClassName = [
                 'calendar-day-cell',
@@ -473,24 +785,37 @@ function CalendarPage() {
                 <button
                   key={cell.dateKey}
                   type="button"
-                  className={dayCellClassName}
+                  className={
+                    dayCellClassName
+                  }
+                  disabled={isLoading}
                   style={{
-                    '--my-mood-color': myMood.color,
+                    '--my-mood-color':
+                      myMood.color,
                     '--partner-mood-color':
                       partnerMood.color,
                   }}
-                  onClick={() => handleDateSelect(cell)}
+                  onClick={() =>
+                    handleDateSelect(cell)
+                  }
                 >
-                  <span className={dayNumberClassName}>
+                  <span
+                    className={
+                      dayNumberClassName
+                    }
+                  >
                     {cell.day}
                   </span>
 
                   <span className="calendar-day-dots">
-                    {dayData.anniversaries.length > 0 && (
+                    {dayData
+                      .anniversaries
+                      .length > 0 && (
                       <span className="anniversary-dot" />
                     )}
 
-                    {dayData.schedules.length > 0 && (
+                    {dayData.schedules
+                      .length > 0 && (
                       <span className="schedule-dot" />
                     )}
                   </span>
@@ -503,15 +828,27 @@ function CalendarPage() {
         <section className="selected-day-card">
           <div className="selected-day-header">
             <div>
-              <p>{selectedDate.slice(0, 4)}년</p>
+              <p>
+                {selectedDate.slice(0, 4)}
+                년
+              </p>
 
-              <h2>{formatSelectedDate(selectedDate)}</h2>
+              <h2>
+                {formatSelectedDate(
+                  selectedDate,
+                )}
+              </h2>
             </div>
 
             <button
               type="button"
               className="add-schedule-button"
-              onClick={openCreateScheduleModal}
+              disabled={
+                isLoading || isProcessing
+              }
+              onClick={
+                openCreateScheduleModal
+              }
             >
               <Plus
                 size={16}
@@ -519,7 +856,7 @@ function CalendarPage() {
                 aria-hidden="true"
               />
 
-              <span>일정</span>
+              <span>추가</span>
             </button>
           </div>
 
@@ -530,7 +867,8 @@ function CalendarPage() {
               <div>
                 <i
                   style={{
-                    background: myMoodInformation.color,
+                    background:
+                      myMoodInformation.color,
                   }}
                 />
 
@@ -547,12 +885,15 @@ function CalendarPage() {
                 <i
                   style={{
                     background:
-                      partnerMoodInformation.color,
+                      partnerMoodInformation
+                        .color,
                   }}
                 />
 
                 <strong>
-                  {partnerMoodInformation.label}
+                  {
+                    partnerMoodInformation.label
+                  }
                 </strong>
               </div>
             </div>
@@ -564,28 +905,39 @@ function CalendarPage() {
                 일정
 
                 <span>
-                  {selectedDayData.schedules.length}
+                  {
+                    selectedDayData
+                      .schedules.length
+                  }
                 </span>
               </h3>
             </div>
 
-            {selectedDayData.schedules.length > 0 ? (
+            {selectedDayData.schedules
+              .length > 0 ? (
               <div className="schedule-list">
                 {selectedDayData.schedules.map(
                   (schedule) => (
                     <button
-                      key={schedule.id}
+                      key={
+                        schedule.scheduleId
+                      }
                       type="button"
                       className="schedule-list-item"
                       onClick={() =>
-                        openEditScheduleModal(schedule)
+                        openEditScheduleModal(
+                          schedule,
+                        )
                       }
                     >
                       <time>
-                        {schedule.time || '시간 미정'}
+                        {schedule.time ||
+                          '시간 미정'}
                       </time>
 
-                      <span>{schedule.title}</span>
+                      <span>
+                        {schedule.name}
+                      </span>
 
                       <ChevronRight
                         className="schedule-list-chevron"
@@ -610,27 +962,45 @@ function CalendarPage() {
                 기념일
 
                 <span>
-                  {selectedDayData.anniversaries.length}
+                  {
+                    selectedDayData
+                      .anniversaries.length
+                  }
                 </span>
               </h3>
             </div>
 
-            {selectedDayData.anniversaries.length > 0 ? (
+            {selectedDayData.anniversaries
+              .length > 0 ? (
               <div className="anniversary-list">
-                {selectedDayData.anniversaries.map(
-                  (anniversary) => (
-                    <div
-                      key={anniversary.id}
+                {selectedDayData
+                  .anniversaries
+                  .map((anniversary) => (
+                    <button
+                      key={
+                        anniversary.scheduleId
+                      }
+                      type="button"
                       className="anniversary-list-item"
+                      onClick={() =>
+                        openEditScheduleModal(
+                          anniversary,
+                        )
+                      }
                     >
                       <span className="anniversary-dot" />
 
                       <strong>
-                        {anniversary.title}
+                        {anniversary.name}
                       </strong>
-                    </div>
-                  ),
-                )}
+
+                      <ChevronRight
+                        size={17}
+                        strokeWidth={1.8}
+                        aria-hidden="true"
+                      />
+                    </button>
+                  ))}
               </div>
             ) : (
               <p className="empty-section-message">
@@ -647,9 +1017,11 @@ function CalendarPage() {
                 <button
                   type="button"
                   className="diary-edit-button"
+                  disabled={isProcessing}
                   onClick={() => {
                     setDiaryDraft(
-                      selectedDayData.diary ?? '',
+                      selectedDayData.diary
+                        .content ?? '',
                     )
                     setIsDiaryEditing(true)
                   }}
@@ -671,8 +1043,11 @@ function CalendarPage() {
                   value={diaryDraft}
                   placeholder="오늘의 한줄 일기를 작성해주세요"
                   rows={3}
+                  disabled={isProcessing}
                   onChange={(event) =>
-                    setDiaryDraft(event.target.value)
+                    setDiaryDraft(
+                      event.target.value,
+                    )
                   }
                 />
 
@@ -680,11 +1055,12 @@ function CalendarPage() {
                   <button
                     type="button"
                     className="diary-cancel-button"
+                    disabled={isProcessing}
                     onClick={() => {
-                      setDiaryDraft(
-                        selectedDayData.diary ?? '',
+                      setDiaryDraft('')
+                      setIsDiaryEditing(
+                        false,
                       )
-                      setIsDiaryEditing(false)
                     }}
                   >
                     취소
@@ -693,15 +1069,19 @@ function CalendarPage() {
                   <button
                     type="button"
                     className="diary-save-button"
+                    disabled={isProcessing}
                     onClick={handleDiarySave}
                   >
-                    저장
+                    {isProcessing
+                      ? '저장 중'
+                      : '저장'}
                   </button>
                 </div>
               </div>
             ) : (
               <p className="diary-content">
-                {selectedDayData.diary ||
+                {selectedDayData.diary
+                  .content ||
                   '작성된 한줄 일기가 없습니다.'}
               </p>
             )}
@@ -716,9 +1096,12 @@ function CalendarPage() {
           mode={scheduleModal.mode}
           selectedDate={selectedDate}
           schedule={scheduleModal.schedule}
+          isProcessing={isProcessing}
           onClose={closeScheduleModal}
           onSave={handleScheduleSave}
-          onDelete={handleScheduleDelete}
+          onDelete={
+            handleScheduleDelete
+          }
         />
       )}
     </div>
