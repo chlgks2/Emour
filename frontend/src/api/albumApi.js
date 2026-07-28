@@ -1,15 +1,16 @@
 import {
   MOCK_ALBUM_PHOTO_RESPONSES,
   MOCK_CHAT_PHOTO_RESPONSES,
-} from '../data/albumMockData'
+} from '../data/albumMockData.js'
 
 import {
   mapAlbumPhotoResponse,
   mapAlbumPhotoResponses,
   mapChatPhotoResponses,
-} from '../mappers/albumMapper'
+} from '../mappers/albumMapper.js'
 
 const MOCK_DELAY = 250
+const MOCK_CURRENT_USER_ID = 1
 
 let mockAlbumPhotos = [
   ...MOCK_ALBUM_PHOTO_RESPONSES,
@@ -31,7 +32,9 @@ function readFileAsDataUrl(file) {
 
     reader.onerror = () => {
       reject(
-        new Error('사진 파일을 불러오지 못했습니다.'),
+        new Error(
+          '사진 파일을 불러오지 못했습니다.',
+        ),
       )
     }
 
@@ -44,11 +47,16 @@ export async function getAlbumPhotos(
 ) {
   await wait()
 
-  const responses = mockAlbumPhotos.filter(
-    (photo) =>
-      photo.couple_room_id === coupleRoomId &&
-      photo.deleted_at === null,
-  )
+  const responses = mockAlbumPhotos
+    .filter(
+      (photo) =>
+        photo.couple_room_id === coupleRoomId,
+    )
+    .sort(
+      (firstPhoto, secondPhoto) =>
+        new Date(secondPhoto.created_at) -
+        new Date(firstPhoto.created_at),
+    )
 
   return mapAlbumPhotoResponses(responses)
 }
@@ -58,12 +66,17 @@ export async function getChatPhotos(
 ) {
   await wait()
 
-  const responses =
-    MOCK_CHAT_PHOTO_RESPONSES.filter(
+  const responses = MOCK_CHAT_PHOTO_RESPONSES
+    .filter(
       (message) =>
-        message.couple_room_id === coupleRoomId &&
-        message.message_type === 'IMAGE' &&
-        message.deleted_at === null,
+        message.couple_room_id ===
+          coupleRoomId &&
+        message.message_type === 'IMAGE',
+    )
+    .sort(
+      (firstMessage, secondMessage) =>
+        new Date(secondMessage.send_at) -
+        new Date(firstMessage.send_at),
     )
 
   return mapChatPhotoResponses(responses)
@@ -73,22 +86,26 @@ export async function uploadAlbumPhoto({
   coupleRoomId,
   file,
   memo = '',
-  takenAt,
 }) {
   await wait()
 
-  const image = await readFileAsDataUrl(file)
+  if (!file) {
+    throw new Error(
+      '업로드할 사진을 선택해주세요.',
+    )
+  }
+
+  const imageUrl = await readFileAsDataUrl(file)
   const now = new Date().toISOString()
 
   const response = {
     photo_id: Date.now(),
+    user_id: MOCK_CURRENT_USER_ID,
     couple_room_id: coupleRoomId,
-    image,
-    memo,
-    taken_at: takenAt,
+    image_url: imageUrl,
+    memo: memo.trim(),
     created_at: now,
     updated_at: now,
-    deleted_at: null,
   }
 
   mockAlbumPhotos = [
@@ -115,7 +132,7 @@ export async function updateAlbumPhotoMemo(
 
       updatedResponse = {
         ...photo,
-        memo,
+        memo: memo.trim(),
         updated_at: new Date().toISOString(),
       }
 
@@ -145,14 +162,7 @@ export async function deleteAlbumPhoto(photoId) {
     )
   }
 
-  mockAlbumPhotos = mockAlbumPhotos.map(
-    (photo) =>
-      photo.photo_id === photoId
-        ? {
-            ...photo,
-            deleted_at:
-              new Date().toISOString(),
-          }
-        : photo,
+  mockAlbumPhotos = mockAlbumPhotos.filter(
+    (photo) => photo.photo_id !== photoId,
   )
 }
