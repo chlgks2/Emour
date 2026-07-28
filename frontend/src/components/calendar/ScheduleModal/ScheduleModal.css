@@ -46,11 +46,19 @@
 .schedule-modal-close {
   width: 34px;
   height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
   border-radius: 50%;
   background: var(--color-secondary);
   color: var(--color-text-primary);
-  font-size: 24px;
-  line-height: 1;
+  cursor: pointer;
+}
+
+.schedule-modal-close:hover {
+  background: var(--color-primary);
 }
 
 .schedule-modal-form {
@@ -111,12 +119,18 @@
 
 .schedule-modal-actions button {
   height: 48px;
+  border: 0;
   border-radius: 14px;
   font-weight: 700;
+  cursor: pointer;
 }
 
 .schedule-delete-button {
-  flex: 0.75;
+  flex: 0.85;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
   background: rgba(211, 153, 153, 0.25);
   color: #935757;
 }

@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { Trash2, X } from 'lucide-react'
+
 import './ScheduleModal.css'
 
 function ScheduleModal({
@@ -54,7 +56,7 @@ function ScheduleModal({
         className="schedule-modal"
         role="dialog"
         aria-modal="true"
-        aria-labelledby="scheduleModalTitle"
+        aria-labelledby="schedule-modal-title"
       >
         <div className="schedule-modal-handle" />
 
@@ -62,8 +64,10 @@ function ScheduleModal({
           <div>
             <p>선택 날짜의 일정을 관리해보세요</p>
 
-            <h2 id="scheduleModalTitle">
-              {mode === 'edit' ? '일정 수정' : '일정 추가'}
+            <h2 id="schedule-modal-title">
+              {mode === 'edit'
+                ? '일정 수정'
+                : '일정 추가'}
             </h2>
           </div>
 
@@ -73,7 +77,11 @@ function ScheduleModal({
             aria-label="일정 팝업 닫기"
             onClick={onClose}
           >
-            ×
+            <X
+              size={20}
+              strokeWidth={2}
+              aria-hidden="true"
+            />
           </button>
         </header>
 
@@ -136,7 +144,13 @@ function ScheduleModal({
                 className="schedule-delete-button"
                 onClick={onDelete}
               >
-                삭제
+                <Trash2
+                  size={15}
+                  strokeWidth={2}
+                  aria-hidden="true"
+                />
+
+                <span>삭제</span>
               </button>
             )}
 
@@ -151,7 +165,9 @@ function ScheduleModal({
             <button
               type="submit"
               className="schedule-save-button"
-              disabled={!formData.title.trim() || !formData.date}
+              disabled={
+                !formData.title.trim() || !formData.date
+              }
             >
               저장
             </button>
