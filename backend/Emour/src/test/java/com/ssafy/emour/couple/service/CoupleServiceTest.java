@@ -90,7 +90,32 @@ class CoupleServiceTest {
     }
 
     @Test
-    void 기존_대기방이_있으면_새_방을_만들지_않고_코드를_재발급한다() {
+    void 유효한_기존_초대_코드가_있으면_같은_코드를_반환한다() {
+        CoupleRoom waitingRoom = CoupleRoom.waiting(
+                "KEEP-CODE",
+                LocalDateTime.now().plusHours(1)
+        );
+        ReflectionTestUtils.setField(waitingRoom, "id", ROOM_ID);
+
+        givenLockedMember();
+        given(coupleMemberRepository.existsActiveCoupleByUserId(USER_ID))
+                .willReturn(false);
+        given(coupleMemberRepository.findWaitingRoomsByUserId(
+                any(Long.class),
+                any(Pageable.class)
+        )).willReturn(List.of(waitingRoom));
+
+        CoupleInvitationResponse response = coupleService.createInvitation(USER_ID);
+
+        assertThat(response.roomId()).isEqualTo(ROOM_ID);
+        assertThat(response.invitationCode()).isEqualTo("KEEP-CODE");
+        verify(invitationCodeGenerator, never()).generate();
+        verify(coupleRoomRepository, never()).save(any(CoupleRoom.class));
+        verify(coupleMemberRepository, never()).save(any(CoupleMember.class));
+    }
+
+    @Test
+    void 기존_초대_코드가_만료되면_새_방을_만들지_않고_코드를_재발급한다() {
         CoupleRoom waitingRoom = CoupleRoom.waiting(
                 "OLD1-CODE",
                 LocalDateTime.now().minusDays(1)

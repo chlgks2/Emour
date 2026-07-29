@@ -57,22 +57,30 @@ public class CoupleService {
             throw new CustomException(ErrorCode.ALREADY_COUPLED);
         }
 
-        String invitationCode = generateUniqueCode();
-        LocalDateTime expiresAt = LocalDateTime.now().plusHours(invitationValidityHours);
-
         List<CoupleRoom> waitingRooms = coupleMemberRepository.findWaitingRoomsByUserId(
                 userId,
                 PageRequest.of(0, 1)
         );
 
-        CoupleRoom waitingRoom;
-        if (waitingRooms.isEmpty()) {
-            waitingRoom = createWaitingRoom(userId, invitationCode, expiresAt);
-        } else {
-            waitingRoom = waitingRooms.get(0);
-            waitingRoom.refreshInvitation(invitationCode, expiresAt);
+        LocalDateTime currentTime = LocalDateTime.now();
+        if (!waitingRooms.isEmpty()) {
+            CoupleRoom waitingRoom = waitingRooms.get(0);
+            if (waitingRoom.hasValidInvitationAt(currentTime)) {
+                return CoupleInvitationResponse.from(waitingRoom);
+            }
+
+            waitingRoom.refreshInvitation(
+                    generateUniqueCode(),
+                    currentTime.plusHours(invitationValidityHours)
+            );
+            return CoupleInvitationResponse.from(waitingRoom);
         }
 
+        CoupleRoom waitingRoom = createWaitingRoom(
+                userId,
+                generateUniqueCode(),
+                currentTime.plusHours(invitationValidityHours)
+        );
         return CoupleInvitationResponse.from(waitingRoom);
     }
 

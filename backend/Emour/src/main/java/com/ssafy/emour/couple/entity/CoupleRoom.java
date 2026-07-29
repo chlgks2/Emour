@@ -75,6 +75,12 @@ public class CoupleRoom {
         this.roomCodeExpiresAt = expiresAt;
     }
 
+    public boolean hasValidInvitationAt(LocalDateTime currentTime) {
+        return status == CoupleRoomStatus.WAITING
+                && roomCodeExpiresAt != null
+                && roomCodeExpiresAt.isAfter(currentTime);
+    }
+
     public void activate(LocalDate startedAt) {
         if (status != CoupleRoomStatus.WAITING) {
             throw new IllegalStateException("대기 중인 커플방만 연결할 수 있습니다.");
