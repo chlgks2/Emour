@@ -51,6 +51,17 @@ public class ChatBookmarkService {
         return toResponse(bookmark);
     }
 
+    @Transactional
+    public void removeBookmark(Long messageId, Long userId) {
+        ChatMessage message = chatMessageService.findMessage(messageId);
+        validateActiveMember(userId, message.getRoomId());
+
+        // 이미 취소된 북마크라면 오류를 내지 않고 그대로 끝냅니다.
+        chatBookmarkRepository
+                .findByUserIdAndMessage_MessageId(userId, messageId)
+                .ifPresent(chatBookmarkRepository::delete);
+    }
+
     @Transactional(readOnly = true)
     public ChatBookmarkListResponse getBookmarks(
             Long roomId,

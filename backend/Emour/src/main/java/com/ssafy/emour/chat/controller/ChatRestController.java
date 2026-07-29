@@ -19,13 +19,16 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -175,6 +178,22 @@ public class ChatRestController {
             @RequestParam Long userId
     ) {
         return chatBookmarkService.addBookmark(messageId, userId);
+    }
+
+    /**
+     * 저장했던 메시지의 북마크를 취소합니다.
+     */
+    @DeleteMapping("/{messageId}/bookmark")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "메시지 북마크 취소")
+    public void removeBookmark(
+            @Parameter(description = "저장 취소할 메시지 번호", example = "100")
+            @PathVariable Long messageId,
+
+            @Parameter(description = "저장 취소하는 사용자 번호", example = "1")
+            @RequestParam Long userId
+    ) {
+        chatBookmarkService.removeBookmark(messageId, userId);
     }
 
     /**
