@@ -4,10 +4,11 @@ spring:
     name: Emour
   profiles:
     active: local   # 로컬 실행 시 application-local.yml 을 함께 적용
-
+  config:
+    import: optional:file:.env[.properties]
 # ===== JWT 설정 =====
 # secret 은 실제로는 환경변수(JWT_SECRET)로 주입. 없으면 아래 기본값 사용(로컬 전용).
 jwt:
-  secret: ${JWT_SECRET:ThisIsALocalDevSecretKeyChangeMeToALongRandom256BitValue!!}
+  secret: ${JWT_SECRET}
   access-token-validity-ms: 1800000       # Access Token 유효기간: 30분
   refresh-token-validity-ms: 1209600000   # Refresh Token 유효기간: 14일

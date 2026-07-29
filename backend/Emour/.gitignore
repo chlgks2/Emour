@@ -4,7 +4,7 @@ build/
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
 !**/src/test/**/build/
-
+/Emour_SQL_schema.sql
 ### STS ###
 .apt_generated
 .classpath
@@ -35,3 +35,6 @@ out/
 
 ### VS Code ###
 .vscode/
+
+### 민감정보(validation) ###
+.env
