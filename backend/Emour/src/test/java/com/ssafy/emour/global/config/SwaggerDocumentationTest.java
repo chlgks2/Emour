@@ -46,6 +46,29 @@ class SwaggerDocumentationTest {
                 ).exists());
     }
 
+    // 로그인 화면에서 이메일과 비밀번호를 입력할 수 있는지 확인합니다.
+    @Test
+    void exposesLoginInputSchema() throws Exception {
+        mockMvc.perform(get("/v3/api-docs"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath(
+                        "$.paths['/auth/login'].post.summary"
+                ).value("이메일 로그인"))
+                .andExpect(jsonPath(
+                        "$.paths['/auth/login'].post.requestBody.required"
+                ).value(true))
+                .andExpect(jsonPath(
+                        "$.paths['/auth/login'].post.requestBody"
+                                + ".content['application/json'].schema['$ref']"
+                ).value("#/components/schemas/LoginRequest"))
+                .andExpect(jsonPath(
+                        "$.components.schemas.LoginRequest.properties.email"
+                ).exists())
+                .andExpect(jsonPath(
+                        "$.components.schemas.LoginRequest.properties.password"
+                ).exists());
+    }
+
     // WebSocket 채팅 테스트 화면이 정상적으로 열리는지 확인합니다.
     @Test
     void opensWebSocketTestPage() throws Exception {

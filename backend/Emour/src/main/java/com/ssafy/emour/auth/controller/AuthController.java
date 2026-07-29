@@ -9,6 +9,11 @@ import com.ssafy.emour.auth.dto.response.TokenResponse;
 import com.ssafy.emour.auth.service.AuthService;
 import com.ssafy.emour.global.response.ApiResponse;
 import com.ssafy.emour.global.util.SecurityUtil;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -31,6 +36,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
+@Tag(name = "Authentication", description = "회원가입, 로그인 및 토큰 관리 API")
 public class AuthController {
 
     private final AuthService authService;
@@ -56,6 +62,27 @@ public class AuthController {
      * 이메일 로그인.  POST /auth/login
      * 성공 시 Access/Refresh 토큰과 회원 정보를 반환한다.
      */
+    @Operation(
+            summary = "이메일 로그인",
+            description = "이메일과 비밀번호를 입력하면 Access Token과 Refresh Token을 발급합니다.",
+            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    required = true,
+                    description = "로그인할 회원의 이메일과 비밀번호",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = LoginRequest.class),
+                            examples = @ExampleObject(
+                                    name = "로그인 요청 예시",
+                                    value = """
+                                            {
+                                              "email": "test@ssafy.com",
+                                              "password": "password123!"
+                                            }
+                                            """
+                            )
+                    )
+            )
+    )
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<LoginResponse>> login(
             @Valid @RequestBody LoginRequest request
