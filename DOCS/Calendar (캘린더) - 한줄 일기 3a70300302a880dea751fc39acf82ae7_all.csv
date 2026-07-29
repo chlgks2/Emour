@@ -1,0 +1,5 @@
+﻿기능,METHOD,URL,담당자,상태
+한줄 일기 목록 조회,GET,/diaries,하영 기,시작 전
+한줄 일기 삭제,DELETE,/diaries/{diaryId},하영 기,시작 전
+한줄 일기 수정,PATCH,/diaries/{diaryId},하영 기,시작 전
+한줄 일기 작성 (100자 이내),POST,/diaries,하영 기,시작 전

@@ -1,0 +1,5 @@
+﻿기능,METHOD,URL,담당자,상태
+기념일 목록 조회,GET,/anniversaries,하영 기,시작 전
+기념일 삭제,DELETE,/anniversaries/{anniversaryId},하영 기,시작 전
+기념일 수정,PATCH,/anniversaries/{anniversaryId},하영 기,시작 전
+기념일 등록,POST,/anniversaries,하영 기,시작 전

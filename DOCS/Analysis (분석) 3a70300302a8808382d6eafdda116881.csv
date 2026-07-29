@@ -1,0 +1,6 @@
+﻿기능,METHOD,URL,담당자,상태
+감정 흐름 (2시간 단위 긍정/부정),GET,/analysis/emotion-flow,신승민,시작 전
+자주 사용하는 단어,GET,/analysis/frequent-words,신승민,시작 전
+주요 감정 (일/월/년 %),GET,/analysis/emotions,신승민,시작 전
+대화 흐름 (활발한 시간/응답 속도),GET,/analysis/conversation,신승민,시작 전
+정량적 기록 (사진 수/반응 수),GET,/analysis/statistics,신승민,시작 전
