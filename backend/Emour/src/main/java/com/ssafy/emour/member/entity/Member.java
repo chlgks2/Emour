@@ -95,4 +95,9 @@ public class Member {
     public void verifyEmail() {
         this.emailVerified = true;
     }
+
+    /** 비밀번호 변경 (이미 BCrypt 로 암호화된 값을 받는다) */
+    public void changePassword(String encodedPassword) {
+        this.passwordHash = encodedPassword;
+    }
 }

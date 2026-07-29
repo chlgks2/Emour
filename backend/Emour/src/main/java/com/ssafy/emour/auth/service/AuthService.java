@@ -24,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class AuthService {
 
     private static final String PURPOSE_SIGN_UP = "SIGN_UP";
+    private static final String PURPOSE_PASSWORD_RESET = "PASSWORD_RESET";
 
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
@@ -167,5 +168,54 @@ public class AuthService {
 
         // 3) 사용한 코드는 삭제(재사용 방지)
         verificationCodeService.delete(PURPOSE_SIGN_UP, email);
+    }
+
+    /**
+     * 비밀번호 재설정 코드 발송.
+     * 보안: 가입되지 않은 이메일인지 알려주지 않기 위해, 회원이 있을 때만 실제로 보내고
+     *       응답은 항상 성공으로 통일한다(이메일 존재 여부 노출 방지).
+     */
+    public void sendPasswordResetCode(String email) {
+        memberRepository.findByEmail(email).ifPresent(member -> {
+            String code = verificationCodeService.generateAndStore(PURPOSE_PASSWORD_RESET, email);
+            emailSender.send(
+                    email,
+                    "[Emour] 비밀번호 재설정 인증코드",
+                    "인증코드는 [" + code + "] 입니다. 5분 안에 입력해 주세요."
+            );
+        });
+    }
+
+    /**
+     * 비밀번호 재설정 코드 확인. (프론트가 새 비밀번호 입력 화면으로 넘어갈지 판단용)
+     * 여기선 코드를 소비하지 않는다 — 실제 소비는 재설정(resetPassword)에서.
+     */
+    public void verifyPasswordResetCode(String email, String code) {
+        if (!verificationCodeService.verify(PURPOSE_PASSWORD_RESET, email, code)) {
+            throw new CustomException(ErrorCode.INVALID_VERIFICATION_CODE);
+        }
+    }
+
+    /**
+     * 비밀번호 재설정.
+     * 코드를 다시 검증한 뒤 새 비밀번호로 변경하고, 코드 삭제 + 기존 로그인(refresh) 무효화.
+     */
+    @Transactional
+    public void resetPassword(String email, String code, String newPassword) {
+        // 1) 코드 재검증
+        if (!verificationCodeService.verify(PURPOSE_PASSWORD_RESET, email, code)) {
+            throw new CustomException(ErrorCode.INVALID_VERIFICATION_CODE);
+        }
+
+        // 2) 회원 조회
+        Member member = memberRepository.findByEmail(email)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        // 3) 새 비밀번호 암호화 후 변경 (dirty checking 으로 자동 UPDATE)
+        member.changePassword(passwordEncoder.encode(newPassword));
+
+        // 4) 코드 소비 + 보안상 기존 refresh 토큰 삭제(비번 바뀌면 다시 로그인)
+        verificationCodeService.delete(PURPOSE_PASSWORD_RESET, email);
+        refreshTokenService.delete(member.getId());
     }
 }
