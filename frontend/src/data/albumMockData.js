@@ -1,8 +1,8 @@
-function createMockImage({
+function createMockImage(
+  label,
   startColor,
   endColor,
-  symbol,
-}) {
+) {
   const svg = `
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -33,39 +33,34 @@ function createMockImage({
       <rect
         width="600"
         height="600"
-        rx="48"
         fill="url(#background)"
       />
 
       <circle
-        cx="480"
-        cy="115"
-        r="95"
-        fill="rgba(255, 255, 255, 0.22)"
-      />
-
-      <circle
-        cx="110"
-        cy="505"
-        r="135"
-        fill="rgba(255, 255, 255, 0.13)"
+        cx="300"
+        cy="245"
+        r="118"
+        fill="rgba(255,255,255,0.28)"
       />
 
       <path
-        d="M80 400 C190 300, 300 510, 520 315"
-        fill="none"
-        stroke="rgba(255, 255, 255, 0.22)"
-        stroke-width="28"
-        stroke-linecap="round"
+        d="
+          M110 535
+          C165 390, 435 390, 490 535
+        "
+        fill="rgba(255,255,255,0.32)"
       />
 
       <text
         x="300"
-        y="335"
+        y="570"
         text-anchor="middle"
-        font-size="120"
+        font-family="Arial, sans-serif"
+        font-size="28"
+        font-weight="700"
+        fill="rgba(64,64,64,0.72)"
       >
-        ${symbol}
+        ${label}
       </text>
     </svg>
   `
@@ -75,125 +70,111 @@ function createMockImage({
   )}`
 }
 
-export const MOCK_ALBUM_PHOTO_RESPONSES = [
+/*
+ * album_photo 테이블 응답
+ */
+export const MOCK_ALBUM_PHOTO_RESPONSE = [
   {
     photo_id: 1,
-    user_id: 1,
-    couple_room_id: 1,
-    image_url: createMockImage({
-      startColor: '#F3A76F',
-      endColor: '#D77D75',
-      symbol: '🌇',
-    }),
-    memo: '함께 노을을 보면서 천천히 걸었던 날.',
-    created_at: '2026-07-02T19:10:00',
-    updated_at: '2026-07-02T19:10:00',
+    room_id: 1,
+    uploader_id: 1,
+    image_url: createMockImage(
+      '우리의 첫 여행',
+      '#F5D8CF',
+      '#E7B9B4',
+    ),
+    memo: '부산에서 함께 본 바다',
+    created_at:
+      '2026-07-26T15:30:00',
+    updated_at:
+      '2026-07-26T15:30:00',
   },
   {
     photo_id: 2,
-    user_id: 2,
-    couple_room_id: 1,
-    image_url: createMockImage({
-      startColor: '#D7A7BE',
-      endColor: '#A989B8',
-      symbol: '💐',
-    }),
-    memo: '서로에게 어울리는 꽃을 골라줬다.',
-    created_at: '2026-07-05T15:20:00',
-    updated_at: '2026-07-05T15:20:00',
+    room_id: 1,
+    uploader_id: 2,
+    image_url: createMockImage(
+      '카페 데이트',
+      '#F4E4C4',
+      '#D8C39A',
+    ),
+    memo: '분위기가 좋았던 카페',
+    created_at:
+      '2026-07-22T13:10:00',
+    updated_at:
+      '2026-07-22T13:10:00',
   },
   {
     photo_id: 3,
-    user_id: 1,
-    couple_room_id: 1,
-    image_url: createMockImage({
-      startColor: '#A86E55',
-      endColor: '#543F4B',
-      symbol: '✨',
-    }),
-    memo: '조명이 예뻤던 카페에서 오래 이야기했다.',
-    created_at: '2026-07-08T21:10:00',
-    updated_at: '2026-07-08T21:10:00',
-  },
-  {
-    photo_id: 4,
-    user_id: 2,
-    couple_room_id: 1,
-    image_url: createMockImage({
-      startColor: '#CDB59D',
-      endColor: '#9B7666',
-      symbol: '☕',
-    }),
-    memo: '비 오는 날 함께 마신 따뜻한 커피.',
-    created_at: '2026-07-12T16:30:00',
-    updated_at: '2026-07-12T16:30:00',
-  },
-  {
-    photo_id: 5,
-    user_id: 1,
-    couple_room_id: 1,
-    image_url: createMockImage({
-      startColor: '#E7B8C8',
-      endColor: '#B58991',
-      symbol: '🌸',
-    }),
-    memo: '올해 벚꽃이 정말 예뻤던 날! 함께 걸어서 더 행복했다.',
-    created_at: '2026-07-15T18:30:00',
-    updated_at: '2026-07-15T18:30:00',
-  },
-  {
-    photo_id: 6,
-    user_id: 2,
-    couple_room_id: 1,
-    image_url: createMockImage({
-      startColor: '#9FC9D5',
-      endColor: '#6D91B6',
-      symbol: '🌊',
-    }),
-    memo: '바다를 보면서 다음 여행 계획을 세웠다.',
-    created_at: '2026-07-18T17:40:00',
-    updated_at: '2026-07-18T17:40:00',
+    room_id: 1,
+    uploader_id: 1,
+    image_url: createMockImage(
+      '한강 산책',
+      '#DCE8D0',
+      '#AFC7A0',
+    ),
+    memo: '',
+    created_at:
+      '2026-07-18T18:20:00',
+    updated_at:
+      '2026-07-18T18:20:00',
   },
 ]
 
-export const MOCK_CHAT_PHOTO_RESPONSES = [
+/*
+ * chat_message_image 테이블 응답
+ */
+export const MOCK_CHAT_IMAGE_RESPONSE = [
   {
-    message_id: 101,
-    user_id: 2,
-    couple_room_id: 1,
-    message_type: 'IMAGE',
-    content: createMockImage({
-      startColor: '#E5C19A',
-      endColor: '#A87965',
-      symbol: '🍽️',
-    }),
-    read_at: '2026-07-20T20:31:00',
-    send_at: '2026-07-20T20:30:00',
+    image_id: 101,
+    message_id: 501,
+    image_url: createMockImage(
+      '오늘의 저녁',
+      '#F0D7D1',
+      '#CCABA4',
+    ),
+    display_order: 1,
+    created_at:
+      '2026-07-28T19:20:00',
+    deleted_at: null,
   },
   {
-    message_id: 102,
-    user_id: 1,
-    couple_room_id: 1,
-    message_type: 'IMAGE',
-    content: createMockImage({
-      startColor: '#DCC7AD',
-      endColor: '#A68D7F',
-      symbol: '🐈',
-    }),
-    read_at: '2026-07-21T14:11:00',
-    send_at: '2026-07-21T14:10:00',
+    image_id: 102,
+    message_id: 525,
+    image_url: createMockImage(
+      '귀여운 강아지',
+      '#E0D9EF',
+      '#B9ACD1',
+    ),
+    display_order: 1,
+    created_at:
+      '2026-07-27T14:05:00',
+    deleted_at: null,
   },
   {
-    message_id: 103,
-    user_id: 2,
-    couple_room_id: 1,
-    message_type: 'IMAGE',
-    content: createMockImage({
-      startColor: '#D8C1B9',
-      endColor: '#A9918B',
-      symbol: '🤝',
-    }),
-    read_at: '2026-07-23T18:11:00',
-    send_at: '2026-07-23T18:10:00',
+    image_id: 103,
+    message_id: 541,
+    image_url: createMockImage(
+      '퇴근길 하늘',
+      '#D6E6ED',
+      '#A9C4D0',
+    ),
+    display_order: 1,
+    created_at:
+      '2026-07-25T18:40:00',
+    deleted_at: null,
+  },
+  {
+    image_id: 104,
+    message_id: 550,
+    image_url: createMockImage(
+      '디저트',
+      '#F3DADB',
+      '#D7AEB2',
+    ),
+    display_order: 2,
+    created_at:
+      '2026-07-24T16:30:00',
+    deleted_at: null,
   },
 ]
