@@ -11,3 +11,7 @@ jwt:
   secret: ${JWT_SECRET:ThisIsALocalDevSecretKeyChangeMeToALongRandom256BitValue!!}
   access-token-validity-ms: 1800000       # Access Token 유효기간: 30분
   refresh-token-validity-ms: 1209600000   # Refresh Token 유효기간: 14일
+
+# ===== 커플 초대 설정 =====
+couple:
+  invitation-validity-hours: ${COUPLE_INVITATION_VALIDITY_HOURS:24}

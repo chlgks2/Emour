@@ -1,0 +1,30 @@
+package com.ssafy.emour.couple.controller;
+
+import com.ssafy.emour.couple.dto.response.CoupleInvitationResponse;
+import com.ssafy.emour.couple.service.CoupleService;
+import com.ssafy.emour.global.response.ApiResponse;
+import com.ssafy.emour.global.util.SecurityUtil;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@RequestMapping("/couples")
+@RequiredArgsConstructor
+public class CoupleController {
+
+    private final CoupleService coupleService;
+
+    @PostMapping("/invitation")
+    public ResponseEntity<ApiResponse<CoupleInvitationResponse>> createInvitation() {
+        CoupleInvitationResponse response = coupleService.createInvitation(
+                SecurityUtil.getCurrentUserId()
+        );
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(ApiResponse.success("커플 초대 코드가 생성되었습니다.", response));
+    }
+}
