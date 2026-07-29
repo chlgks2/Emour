@@ -6,7 +6,6 @@ import com.ssafy.emour.chat.dto.ChatHistoryResponse;
 import com.ssafy.emour.chat.dto.ChatMessageResponse;
 import com.ssafy.emour.chat.dto.ChatReadResponse;
 import com.ssafy.emour.chat.dto.ChatRestMessageRequest;
-import com.ssafy.emour.chat.dto.ChatSentImageListResponse;
 import com.ssafy.emour.chat.dto.ChatUnreadCountResponse;
 import com.ssafy.emour.chat.service.ChatBookmarkService;
 import com.ssafy.emour.chat.service.ChatMessageService;
@@ -113,42 +112,6 @@ public class ChatRestController {
             @RequestParam Long userId
     ) {
         return chatReadService.getUnreadCount(roomId, userId);
-    }
-
-    /**
-     * 채팅방에서 주고받은 사진만 최신순으로 모아 봅니다.
-     */
-    @GetMapping("/images")
-    @Operation(
-            summary = "채팅으로 주고받은 사진 모아보기",
-            description = """
-                    사진 메시지에 포함된 사진을 최신순으로 조회합니다.
-                    응답의 nextCursor를 다음 요청의 beforeImageId로 보내면
-                    더 오래된 사진을 이어서 확인할 수 있습니다.
-                    """
-    )
-    public ChatSentImageListResponse getSentImages(
-            @Parameter(description = "커플방 번호", example = "1")
-            @RequestParam Long roomId,
-
-            @Parameter(description = "조회하는 사용자 번호", example = "1")
-            @RequestParam Long userId,
-
-            @Parameter(
-                    description = "이 사진 번호보다 오래된 사진을 조회하며 첫 조회에서는 생략",
-                    example = "30"
-            )
-            @RequestParam(required = false) Long beforeImageId,
-
-            @Parameter(description = "조회 개수, 최소 1개부터 최대 100개", example = "30")
-            @RequestParam(required = false) Integer size
-    ) {
-        return chatMessageService.getSentImages(
-                roomId,
-                userId,
-                beforeImageId,
-                size
-        );
     }
 
     /**

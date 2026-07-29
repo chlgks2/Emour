@@ -42,9 +42,6 @@ class SwaggerDocumentationTest {
                 ).exists())
                 .andExpect(jsonPath(
                         "$.paths['/chats/bookmarks']"
-                ).exists())
-                .andExpect(jsonPath(
-                        "$.paths['/chats/images']"
                 ).exists());
     }
 

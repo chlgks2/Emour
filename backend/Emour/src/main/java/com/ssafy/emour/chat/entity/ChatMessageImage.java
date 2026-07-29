@@ -68,16 +68,4 @@ public class ChatMessageImage {
     public Integer getDisplayOrder() {
         return displayOrder;
     }
-
-    public Long getMessageId() {
-        return message.getMessageId();
-    }
-
-    public Long getSenderId() {
-        return message.getSenderId();
-    }
-
-    public LocalDateTime getSentAt() {
-        return message.getSentAt();
-    }
 }
