@@ -88,4 +88,12 @@ public class CoupleRoom {
         this.status = CoupleRoomStatus.ACTIVE;
         this.startedAt = startedAt;
     }
+
+    public void deactivate(LocalDateTime endedAt) {
+        if (status != CoupleRoomStatus.ACTIVE) {
+            throw new IllegalStateException("활성 상태의 커플방만 연결을 해제할 수 있습니다.");
+        }
+        this.status = CoupleRoomStatus.INACTIVE;
+        this.endedAt = endedAt;
+    }
 }

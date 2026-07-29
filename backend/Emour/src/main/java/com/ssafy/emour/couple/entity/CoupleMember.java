@@ -42,4 +42,12 @@ public class CoupleMember {
         member.status = CoupleMemberStatus.ACTIVE;
         return member;
     }
+
+    public void leave(LocalDateTime leftAt) {
+        if (status != CoupleMemberStatus.ACTIVE) {
+            throw new IllegalStateException("활성 상태의 커플 멤버만 연결을 해제할 수 있습니다.");
+        }
+        this.status = CoupleMemberStatus.LEFT;
+        this.leftAt = leftAt;
+    }
 }

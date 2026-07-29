@@ -2,6 +2,7 @@ package com.ssafy.emour.couple.service;
 
 import com.ssafy.emour.couple.dto.request.CoupleConnectRequest;
 import com.ssafy.emour.couple.dto.response.CoupleConnectResponse;
+import com.ssafy.emour.couple.dto.response.CoupleDisconnectResponse;
 import com.ssafy.emour.couple.dto.response.CoupleInvitationResponse;
 import com.ssafy.emour.couple.entity.CoupleMember;
 import com.ssafy.emour.couple.entity.CoupleMemberId;
@@ -105,6 +106,42 @@ public class CoupleService {
         return CoupleConnectResponse.from(room);
     }
 
+    @Transactional
+    public CoupleDisconnectResponse disconnect(Long userId) {
+        memberRepository.findByIdForUpdate(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        CoupleRoom room = findRoomToLeave(userId);
+
+        CoupleMember member = coupleMemberRepository.findById(
+                        new CoupleMemberId(userId, room.getId())
+                )
+                .orElseThrow(() -> new CustomException(ErrorCode.ACTIVE_COUPLE_NOT_FOUND));
+
+        LocalDateTime disconnectedAt = LocalDateTime.now();
+        long activeMemberCount = coupleMemberRepository.countByIdRoomIdAndStatus(
+                room.getId(),
+                CoupleMemberStatus.ACTIVE
+        );
+
+        if (activeMemberCount < 1 || activeMemberCount > 2) {
+            throw new CustomException(ErrorCode.INTERNAL_ERROR);
+        }
+
+        member.leave(disconnectedAt);
+
+        if (activeMemberCount == 2) {
+            room.deactivate(disconnectedAt);
+            return CoupleDisconnectResponse.of(room, disconnectedAt, false);
+        }
+
+        coupleMemberRepository.deleteAll(
+                coupleMemberRepository.findAllByIdRoomId(room.getId())
+        );
+        coupleRoomRepository.delete(room);
+        return CoupleDisconnectResponse.of(room, disconnectedAt, true);
+    }
+
     private CoupleRoom createWaitingRoom(
             Long userId,
             String invitationCode,
@@ -125,6 +162,21 @@ public class CoupleService {
             }
         }
         throw new CustomException(ErrorCode.INVITATION_CODE_GENERATION_FAILED);
+    }
+
+    private CoupleRoom findRoomToLeave(Long userId) {
+        return coupleRoomRepository.findActiveRoomByUserIdForUpdate(userId)
+                .orElseGet(() -> {
+                    List<CoupleRoom> inactiveRooms =
+                            coupleRoomRepository.findRetainedInactiveRoomsByUserIdForUpdate(
+                                    userId,
+                                    PageRequest.of(0, 1)
+                            );
+                    if (inactiveRooms.isEmpty()) {
+                        throw new CustomException(ErrorCode.ACTIVE_COUPLE_NOT_FOUND);
+                    }
+                    return inactiveRooms.get(0);
+                });
     }
 
     private String normalizeInvitationCode(String invitationCode) {
