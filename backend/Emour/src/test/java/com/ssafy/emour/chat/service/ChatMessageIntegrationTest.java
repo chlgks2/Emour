@@ -102,6 +102,24 @@ class ChatMessageIntegrationTest {
                 .extracting(image -> image.displayOrder())
                 .containsExactly(1, 2);
         assertThat(chatAnalysisRepository.count()).isZero();
+
+        // 다시 채팅 내역을 조회해도 사진 두 장이 메시지 하나에 함께 들어 있어야 합니다.
+        ChatHistoryResponse history = chatMessageService.getMessages(
+                1L,
+                10L,
+                null,
+                50
+        );
+
+        assertThat(history.messages()).hasSize(1);
+        assertThat(history.messages().get(0).messageId())
+                .isEqualTo(sent.messageId());
+        assertThat(history.messages().get(0).images())
+                .extracting(image -> image.imageUrl())
+                .containsExactly(
+                        "https://image/first.jpg",
+                        "https://image/second.jpg"
+                );
     }
 
     @Test
