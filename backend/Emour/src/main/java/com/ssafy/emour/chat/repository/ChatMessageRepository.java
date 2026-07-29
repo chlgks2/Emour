@@ -14,6 +14,8 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
             String clientMessageId
     );
 
+    Optional<ChatMessage> findByMessageIdAndDeletedAtIsNull(Long messageId);
+
     List<ChatMessage> findByRoomIdAndDeletedAtIsNullOrderByMessageIdDesc(
             Long roomId,
             Pageable pageable
@@ -23,5 +25,18 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
             Long roomId,
             Long messageId,
             Pageable pageable
+    );
+
+    // 채팅을 한 번도 읽지 않은 경우 상대방이 보낸 전체 메시지를 셉니다.
+    long countByRoomIdAndSenderIdNotAndDeletedAtIsNull(
+            Long roomId,
+            Long userId
+    );
+
+    // 마지막 읽은 메시지보다 뒤에 온 상대방 메시지만 셉니다.
+    long countByRoomIdAndSenderIdNotAndMessageIdGreaterThanAndDeletedAtIsNull(
+            Long roomId,
+            Long userId,
+            Long lastReadMessageId
     );
 }

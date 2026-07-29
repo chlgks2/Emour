@@ -95,6 +95,27 @@ public class ChatMessageService {
         return new ChatHistoryResponse(responses, nextCursor, hasNext);
     }
 
+    @Transactional(readOnly = true)
+    public ChatMessage findMessageInRoom(Long messageId, Long roomId) {
+        ChatMessage message = findMessage(messageId);
+
+        if (!message.getRoomId().equals(roomId)) {
+            throw new ChatException("다른 채팅방의 메시지는 읽음 처리할 수 없습니다.");
+        }
+        return message;
+    }
+
+    @Transactional(readOnly = true)
+    public ChatMessage findMessage(Long messageId) {
+        if (messageId == null) {
+            throw new ChatException("메시지 번호는 꼭 필요합니다.");
+        }
+
+        return chatMessageRepository
+                .findByMessageIdAndDeletedAtIsNull(messageId)
+                .orElseThrow(() -> new ChatException("메시지를 찾을 수 없습니다."));
+    }
+
     private ChatMessageResponse saveNewMessage(
             Long roomId,
             ChatMessageRequest request

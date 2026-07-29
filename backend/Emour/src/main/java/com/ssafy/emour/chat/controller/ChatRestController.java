@@ -2,8 +2,11 @@ package com.ssafy.emour.chat.controller;
 
 import com.ssafy.emour.chat.dto.ChatHistoryResponse;
 import com.ssafy.emour.chat.dto.ChatMessageResponse;
+import com.ssafy.emour.chat.dto.ChatReadResponse;
 import com.ssafy.emour.chat.dto.ChatRestMessageRequest;
+import com.ssafy.emour.chat.dto.ChatUnreadCountResponse;
 import com.ssafy.emour.chat.service.ChatMessageService;
+import com.ssafy.emour.chat.service.ChatReadService;
 import com.ssafy.emour.global.response.ErrorResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -15,6 +18,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -31,6 +35,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class ChatRestController {
 
     private final ChatMessageService chatMessageService;
+    private final ChatReadService chatReadService;
     private final SimpMessagingTemplate messagingTemplate;
 
     /**
@@ -79,6 +84,45 @@ public class ChatRestController {
                 beforeMessageId,
                 size
         );
+    }
+
+    /**
+     * 메인 화면에서 채팅 아이콘 옆에 표시할 숫자를 조회합니다.
+     */
+    @GetMapping("/unread-count")
+    @Operation(
+            summary = "안 읽은 채팅 개수 조회",
+            description = """
+                    마지막 읽은 메시지 이후 상대방이 보낸 메시지 개수를 조회합니다.
+                    다른 화면에 있을 때 채팅 아이콘의 숫자 배지로 사용할 수 있습니다.
+                    """
+    )
+    public ChatUnreadCountResponse getUnreadCount(
+            @Parameter(description = "커플방 번호", example = "1")
+            @RequestParam Long roomId,
+
+            @Parameter(description = "조회하는 사용자 번호", example = "1")
+            @RequestParam Long userId
+    ) {
+        return chatReadService.getUnreadCount(roomId, userId);
+    }
+
+    /**
+     * 특정 메시지까지 읽었다고 저장합니다.
+     */
+    @PostMapping("/{messageId}/read")
+    @Operation(
+            summary = "메시지 읽음 처리",
+            description = "선택한 메시지까지 읽었다는 위치를 저장합니다."
+    )
+    public ChatReadResponse markAsRead(
+            @Parameter(description = "마지막으로 읽은 메시지 번호", example = "100")
+            @PathVariable Long messageId,
+
+            @Parameter(description = "읽은 사용자 번호", example = "1")
+            @RequestParam Long userId
+    ) {
+        return chatReadService.markMessageAsRead(messageId, userId);
     }
 
     /**

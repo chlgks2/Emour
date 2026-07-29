@@ -2,7 +2,10 @@ package com.ssafy.emour.chat.controller;
 
 import com.ssafy.emour.chat.dto.ChatMessageRequest;
 import com.ssafy.emour.chat.dto.ChatMessageResponse;
+import com.ssafy.emour.chat.dto.ChatReadRequest;
+import com.ssafy.emour.chat.dto.ChatReadResponse;
 import com.ssafy.emour.chat.service.ChatMessageService;
+import com.ssafy.emour.chat.service.ChatReadService;
 import com.ssafy.emour.global.response.ErrorResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
@@ -17,6 +20,7 @@ import org.springframework.stereotype.Controller;
 public class ChatMessageController {
 
     private final ChatMessageService chatMessageService;
+    private final ChatReadService chatReadService;
 
     /**
      * "/pub/chat/rooms/1/messages"로 온 메시지를 받습니다.
@@ -30,6 +34,18 @@ public class ChatMessageController {
     ) {
         // DB 저장이 성공한 메시지만 채팅방 사람들에게 전달합니다.
         return chatMessageService.sendMessage(roomId, request);
+    }
+
+    /**
+     * 사용자가 마지막으로 읽은 메시지를 저장하고 같은 방에 알려줍니다.
+     */
+    @MessageMapping("/chat/rooms/{roomId}/read")
+    @SendTo("/sub/chat/rooms/{roomId}/read")
+    public ChatReadResponse readMessage(
+            @DestinationVariable Long roomId,
+            ChatReadRequest request
+    ) {
+        return chatReadService.markAsRead(roomId, request);
     }
 
     /**
