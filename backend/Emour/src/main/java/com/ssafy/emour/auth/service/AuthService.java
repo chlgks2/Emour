@@ -5,6 +5,7 @@ import com.ssafy.emour.auth.dto.request.SignUpRequest;
 import com.ssafy.emour.auth.dto.response.LoginResponse;
 import com.ssafy.emour.auth.dto.response.SignUpResponse;
 import com.ssafy.emour.auth.dto.response.TokenResponse;
+import com.ssafy.emour.global.email.EmailSender;
 import com.ssafy.emour.global.exception.CustomException;
 import com.ssafy.emour.global.exception.ErrorCode;
 import com.ssafy.emour.global.security.jwt.JwtTokenProvider;
@@ -22,10 +23,14 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class AuthService {
 
+    private static final String PURPOSE_SIGN_UP = "SIGN_UP";
+
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
-    private final JwtTokenProvider jwtTokenProvider;       // 토큰 발급/검증
-    private final RefreshTokenService refreshTokenService; // Redis 에 refresh 저장
+    private final JwtTokenProvider jwtTokenProvider;             // 토큰 발급/검증
+    private final RefreshTokenService refreshTokenService;       // Redis 에 refresh 저장
+    private final VerificationCodeService verificationCodeService; // 이메일 인증코드 관리
+    private final EmailSender emailSender;                       // 이메일 발송
 
     /**
      * 이메일 회원가입.
@@ -128,5 +133,39 @@ public class AuthService {
         // 3) 새 Access Token 발급
         String newAccessToken = jwtTokenProvider.createAccessToken(userId);
         return TokenResponse.ofAccessToken(newAccessToken);
+    }
+
+    /**
+     * 이메일 인증코드 발송.
+     * 6자리 코드를 만들어 Redis(5분)에 저장하고 이메일로 보낸다(지금은 콘솔 출력).
+     */
+    public void sendSignUpVerificationCode(String email) {
+        String code = verificationCodeService.generateAndStore(PURPOSE_SIGN_UP, email);
+        emailSender.send(
+                email,
+                "[Emour] 이메일 인증코드",
+                "인증코드는 [" + code + "] 입니다. 5분 안에 입력해 주세요."
+        );
+    }
+
+    /**
+     * 이메일 인증코드 확인.
+     * 코드가 맞으면 해당 회원의 is_email_verified 를 true 로 바꾼다.
+     * (Member 를 조회해 verifyEmail() 만 호출하면 트랜잭션 종료 시 JPA 가 자동 UPDATE)
+     */
+    @Transactional
+    public void verifySignUpCode(String email, String code) {
+        // 1) 코드 검증
+        if (!verificationCodeService.verify(PURPOSE_SIGN_UP, email, code)) {
+            throw new CustomException(ErrorCode.INVALID_VERIFICATION_CODE);
+        }
+
+        // 2) 회원의 이메일 인증 상태를 true 로
+        Member member = memberRepository.findByEmail(email)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        member.verifyEmail();
+
+        // 3) 사용한 코드는 삭제(재사용 방지)
+        verificationCodeService.delete(PURPOSE_SIGN_UP, email);
     }
 }

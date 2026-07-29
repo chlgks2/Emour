@@ -1,5 +1,7 @@
 package com.ssafy.emour.auth.controller;
 
+import com.ssafy.emour.auth.dto.request.EmailSendRequest;
+import com.ssafy.emour.auth.dto.request.EmailVerifyRequest;
 import com.ssafy.emour.auth.dto.request.LoginRequest;
 import com.ssafy.emour.auth.dto.request.SignUpRequest;
 import com.ssafy.emour.auth.dto.request.TokenReissueRequest;
@@ -64,6 +66,28 @@ public class AuthController {
         return ResponseEntity.ok(
                 ApiResponse.success("로그인에 성공했습니다.", response)
         );
+    }
+
+    /**
+     * 이메일 인증코드 발송.  POST /auth/email/send
+     */
+    @PostMapping("/email/send")
+    public ResponseEntity<ApiResponse<Void>> sendEmailCode(
+            @Valid @RequestBody EmailSendRequest request
+    ) {
+        authService.sendSignUpVerificationCode(request.email());
+        return ResponseEntity.ok(ApiResponse.success("인증코드를 발송했습니다."));
+    }
+
+    /**
+     * 이메일 인증코드 확인.  POST /auth/email/verify
+     */
+    @PostMapping("/email/verify")
+    public ResponseEntity<ApiResponse<Void>> verifyEmailCode(
+            @Valid @RequestBody EmailVerifyRequest request
+    ) {
+        authService.verifySignUpCode(request.email(), request.code());
+        return ResponseEntity.ok(ApiResponse.success("이메일 인증이 완료되었습니다."));
     }
 
     /**

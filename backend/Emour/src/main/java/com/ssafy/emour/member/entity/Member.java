@@ -88,4 +88,11 @@ public class Member {
         this.passwordHash = passwordHash;
         this.nickname = nickname;
     }
+
+    // ===== 상태를 바꾸는 행위는 setter 대신 의미 있는 메서드로 표현한다 =====
+
+    /** 이메일 인증 완료 처리 */
+    public void verifyEmail() {
+        this.emailVerified = true;
+    }
 }
