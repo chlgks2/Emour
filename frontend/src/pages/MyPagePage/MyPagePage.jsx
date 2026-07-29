@@ -161,8 +161,8 @@ function MyPagePage() {
   }, [])
 
   const openNotificationSettings = () => {
-    window.alert(
-      '알림 설정 화면은 추후 연결됩니다.',
+  navigate(
+      '/mypage/notification-settings',
     )
   }
 
