@@ -42,8 +42,9 @@ class ChatReadServiceTest {
     @InjectMocks
     private ChatReadService chatReadService;
 
+    // 사용자가 마지막으로 읽은 메시지 위치를 저장합니다.
     @Test
-    void 마지막으로_읽은_메시지를_저장한다() {
+    void savesReadPosition() {
         when(coupleMemberRepository.existsByIdAndStatus(
                 new CoupleMemberId(10L, 1L),
                 CoupleMemberStatus.ACTIVE
@@ -73,8 +74,9 @@ class ChatReadServiceTest {
         assertThat(response.readAt()).isNotNull();
     }
 
+    // 읽은 기록이 없으면 상대방 메시지를 모두 안 읽은 것으로 계산합니다.
     @Test
-    void 채팅을_읽은_적이_없으면_상대방의_모든_메시지를_안_읽은_개수로_센다() {
+    void countsAllUnreadMessages() {
         when(coupleMemberRepository.existsByIdAndStatus(
                 new CoupleMemberId(10L, 1L),
                 CoupleMemberStatus.ACTIVE
@@ -93,8 +95,9 @@ class ChatReadServiceTest {
         assertThat(response.unreadCount()).isEqualTo(3L);
     }
 
+    // 마지막으로 읽은 위치 뒤의 상대방 메시지만 계산합니다.
     @Test
-    void 마지막으로_읽은_메시지_뒤의_상대방_메시지만_센다() {
+    void countsUnreadAfterLastRead() {
         when(coupleMemberRepository.existsByIdAndStatus(
                 new CoupleMemberId(10L, 1L),
                 CoupleMemberStatus.ACTIVE

@@ -41,8 +41,9 @@ class ChatMessageServiceTest {
     @InjectMocks
     private ChatMessageService chatMessageService;
 
+    // 텍스트 메시지를 저장하면 감정 분석 대기 데이터도 생성합니다.
     @Test
-    void 텍스트_메시지를_저장하고_감정분석_대기를_만든다() {
+    void sendsTextMessage() {
         String clientMessageId = "7cc9768e-344a-4a96-b1b6-dfa93668ac6c";
         ChatMessageRequest request = new ChatMessageRequest(
                 10L,
@@ -73,8 +74,9 @@ class ChatMessageServiceTest {
         verify(chatAnalysisRepository).save(any(ChatAnalysis.class));
     }
 
+    // 사진 여러 장을 한 메시지에 입력한 순서대로 저장합니다.
     @Test
-    void 이미지_메시지는_여러_이미지를_순서대로_저장한다() {
+    void savesImagesInOrder() {
         String clientMessageId = "318b3db8-d3ce-4a76-99ab-748ad7069b19";
         ChatMessageRequest request = new ChatMessageRequest(
                 10L,
@@ -99,8 +101,9 @@ class ChatMessageServiceTest {
         assertThat(response.images().get(1).displayOrder()).isEqualTo(2);
     }
 
+    // 내용이 비어 있는 텍스트 메시지는 전송할 수 없습니다.
     @Test
-    void 빈_텍스트_메시지는_보낼_수_없다() {
+    void rejectsBlankText() {
         ChatMessageRequest request = new ChatMessageRequest(
                 10L,
                 "7cc9768e-344a-4a96-b1b6-dfa93668ac6c",
@@ -114,8 +117,9 @@ class ChatMessageServiceTest {
                 .hasMessage("텍스트 메시지 내용을 입력해 주세요.");
     }
 
+    // 채팅방 멤버가 아닌 사용자의 메시지는 거절합니다.
     @Test
-    void 채팅방_멤버가_아니면_메시지를_보낼_수_없다() {
+    void rejectsNonMember() {
         ChatMessageRequest request = new ChatMessageRequest(
                 10L,
                 "7cc9768e-344a-4a96-b1b6-dfa93668ac6c",

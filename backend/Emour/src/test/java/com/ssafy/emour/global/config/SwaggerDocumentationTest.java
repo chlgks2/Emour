@@ -19,8 +19,9 @@ class SwaggerDocumentationTest {
     @Autowired
     private MockMvc mockMvc;
 
+    // Swagger 문서에 채팅 REST API가 표시되는지 확인합니다.
     @Test
-    void OpenAPI_문서에_채팅_REST_API가_표시된다() throws Exception {
+    void exposesChatApis() throws Exception {
         mockMvc.perform(get("/v3/api-docs"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.info.title")
@@ -45,8 +46,9 @@ class SwaggerDocumentationTest {
                 ).exists());
     }
 
+    // WebSocket 채팅 테스트 화면이 정상적으로 열리는지 확인합니다.
     @Test
-    void WebSocket_채팅_테스트_화면을_열_수_있다() throws Exception {
+    void opensWebSocketTestPage() throws Exception {
         mockMvc.perform(get("/websocket-test.html"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(

@@ -53,8 +53,9 @@ class ChatMessageIntegrationTest {
         coupleMemberRepository.save(CoupleMember.active(20L, 1L));
     }
 
+    // 텍스트 메시지를 DB에 저장한 뒤 채팅 내역으로 다시 조회합니다.
     @Test
-    void 텍스트_메시지를_DB에_저장하고_다시_조회한다() {
+    void savesAndLoadsText() {
         ChatMessageResponse sent = chatMessageService.sendMessage(
                 1L,
                 new ChatMessageRequest(
@@ -80,8 +81,9 @@ class ChatMessageIntegrationTest {
         assertThat(history.messages().get(0).content()).isEqualTo("안녕!");
     }
 
+    // 사진 여러 장을 메시지 하나에 묶어서 저장하고 조회합니다.
     @Test
-    void 이미지_메시지에_이미지_여러_장을_저장한다() {
+    void savesMultipleImages() {
         ChatMessageResponse sent = chatMessageService.sendMessage(
                 1L,
                 new ChatMessageRequest(
@@ -122,8 +124,9 @@ class ChatMessageIntegrationTest {
                 );
     }
 
+    // 마지막 읽은 위치 뒤의 상대방 메시지만 안 읽은 메시지로 계산합니다.
     @Test
-    void 마지막으로_읽은_메시지_뒤의_상대방_메시지만_안_읽음으로_센다() {
+    void countsUnreadMessages() {
         ChatMessageResponse firstPartnerMessage = chatMessageService.sendMessage(
                 1L,
                 textRequest(
@@ -160,8 +163,9 @@ class ChatMessageIntegrationTest {
         assertThat(response.unreadCount()).isEqualTo(1L);
     }
 
+    // 같은 채팅방에서 검색어가 포함된 메시지만 찾습니다.
     @Test
-    void 메시지_내용을_검색한다() {
+    void searchesMessages() {
         chatMessageService.sendMessage(
                 1L,
                 textRequest(
@@ -192,8 +196,9 @@ class ChatMessageIntegrationTest {
                 .isEqualTo("오늘 저녁에 치킨 먹을까?");
     }
 
+    // 메시지 북마크의 저장, 조회, 취소 과정을 확인합니다.
     @Test
-    void 메시지를_북마크하고_모아서_본_뒤_취소한다() {
+    void managesBookmarks() {
         ChatMessageResponse message = chatMessageService.sendMessage(
                 1L,
                 textRequest(
