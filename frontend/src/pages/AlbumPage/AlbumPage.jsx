@@ -6,140 +6,152 @@ import {
 } from 'react'
 
 import {
-  Check,
+  ImageOff,
   ImagePlus,
-  Menu,
-  Pencil,
-  Plus,
+  Images,
+  MessageCircle,
+  PencilLine,
   Trash2,
+  X,
 } from 'lucide-react'
 
 import {
   deleteAlbumPhoto,
+  deleteChatPhoto,
   getAlbumPhotos,
-  getChatPhotos,
-  updateAlbumPhotoMemo,
   uploadAlbumPhoto,
 } from '../../api/albumApi.js'
 
 import BottomNavigation from '../../components/common/BottomNavigation/BottomNavigation.jsx'
 
-import {
-  PHOTO_SOURCE,
-} from '../../mappers/albumMapper.js'
-
 import './AlbumPage.css'
-
-const TEMP_COUPLE_ROOM_ID = 1
 
 const ALBUM_TABS = [
   {
-    id: PHOTO_SOURCE.ALBUM,
+    id: 'ALBUM',
     label: '앨범 사진',
+    icon: Images,
   },
   {
-    id: PHOTO_SOURCE.CHAT,
+    id: 'CHAT',
     label: '채팅 사진',
+    icon: MessageCircle,
   },
 ]
 
+const INITIAL_PHOTOS = {
+  ALBUM: [],
+  CHAT: [],
+}
+
+const ALLOWED_IMAGE_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+]
+
+const MAX_IMAGE_SIZE =
+  10 * 1024 * 1024
+
+const MAX_MEMO_LENGTH = 500
+
 function formatPhotoDate(value) {
   if (!value) {
-    return '날짜 정보 없음'
+    return ''
   }
 
   const date = new Date(value)
 
   if (Number.isNaN(date.getTime())) {
-    return value.slice(0, 10).replaceAll('-', '.')
+    return ''
   }
 
-  const year = date.getFullYear()
-  const month = String(
-    date.getMonth() + 1,
-  ).padStart(2, '0')
-  const day = String(date.getDate()).padStart(
-    2,
-    '0',
-  )
-
-  return `${year}.${month}.${day}`
-}
-
-function getPhotoDateLabel(source) {
-  return source === PHOTO_SOURCE.ALBUM
-    ? '등록일'
-    : '전송일'
+  return new Intl.DateTimeFormat(
+    'ko-KR',
+    {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    },
+  ).format(date)
 }
 
 function AlbumPage() {
   const fileInputRef = useRef(null)
 
-  const [activeTab, setActiveTab] = useState(
-    PHOTO_SOURCE.ALBUM,
-  )
+  const [activeTab, setActiveTab] =
+    useState('ALBUM')
 
-  const [photosBySource, setPhotosBySource] =
-    useState({
-      [PHOTO_SOURCE.ALBUM]: [],
-      [PHOTO_SOURCE.CHAT]: [],
-    })
+  const [
+    photosBySource,
+    setPhotosBySource,
+  ] = useState(INITIAL_PHOTOS)
 
-  const [selectedPhotoId, setSelectedPhotoId] =
-    useState(null)
+  const [
+    selectedPhoto,
+    setSelectedPhoto,
+  ] = useState(null)
+
+  const [
+    deleteTarget,
+    setDeleteTarget,
+  ] = useState(null)
+
+  const [
+    uploadFile,
+    setUploadFile,
+  ] = useState(null)
+
+  const [
+    uploadPreviewUrl,
+    setUploadPreviewUrl,
+  ] = useState('')
+
+  const [
+    uploadMemo,
+    setUploadMemo,
+  ] = useState('')
+
+  const [
+    isUploadModalOpen,
+    setIsUploadModalOpen,
+  ] = useState(false)
 
   const [isLoading, setIsLoading] =
     useState(true)
 
+  const [isUploading, setIsUploading] =
+    useState(false)
+
+  const [isDeleting, setIsDeleting] =
+    useState(false)
+
   const [errorMessage, setErrorMessage] =
     useState('')
 
-  const [isMemoEditing, setIsMemoEditing] =
-    useState(false)
+  const [
+    noticeMessage,
+    setNoticeMessage,
+  ] = useState('')
 
-  const [memoDraft, setMemoDraft] =
-    useState('')
-
-  const [isProcessing, setIsProcessing] =
-    useState(false)
-
-  const visiblePhotos = useMemo(
-    () => photosBySource[activeTab] ?? [],
-    [activeTab, photosBySource],
-  )
-
-  const selectedPhoto = useMemo(
-    () =>
-      visiblePhotos.find(
-        (photo) => photo.id === selectedPhotoId,
-      ) ?? null,
-    [selectedPhotoId, visiblePhotos],
-  )
-
+  /*
+   * 앨범 사진과 채팅 사진을 조회합니다.
+   */
   useEffect(() => {
     let isCancelled = false
 
-    const request =
-      activeTab === PHOTO_SOURCE.ALBUM
-        ? getAlbumPhotos(TEMP_COUPLE_ROOM_ID)
-        : getChatPhotos(TEMP_COUPLE_ROOM_ID)
-
-    request
-      .then((photos) => {
+    getAlbumPhotos()
+      .then((response) => {
         if (isCancelled) {
           return
         }
 
-        setPhotosBySource(
-          (previousPhotosBySource) => ({
-            ...previousPhotosBySource,
-            [activeTab]: photos,
-          }),
-        )
-
-        setSelectedPhotoId(
-          photos[0]?.id ?? null,
-        )
+        setPhotosBySource({
+          ALBUM:
+            response.albumPhotos ?? [],
+          CHAT:
+            response.chatPhotos ?? [],
+        })
 
         setErrorMessage('')
         setIsLoading(false)
@@ -160,526 +172,808 @@ function AlbumPage() {
     return () => {
       isCancelled = true
     }
-  }, [activeTab])
+  }, [])
+
+  /*
+   * URL.createObjectURL로 만든
+   * 미리보기 주소를 정리합니다.
+   */
+  useEffect(() => {
+    return () => {
+      if (uploadPreviewUrl) {
+        URL.revokeObjectURL(
+          uploadPreviewUrl,
+        )
+      }
+    }
+  }, [uploadPreviewUrl])
+
+  const visiblePhotos = useMemo(
+    () =>
+      photosBySource[activeTab] ?? [],
+    [activeTab, photosBySource],
+  )
+
+  const showNotice = (message) => {
+    setNoticeMessage(message)
+
+    window.setTimeout(() => {
+      setNoticeMessage('')
+    }, 2200)
+  }
 
   const handleTabChange = (tabId) => {
-    if (tabId === activeTab) {
+    setActiveTab(tabId)
+    setSelectedPhoto(null)
+  }
+
+  /*
+   * 상단의 사진 추가 버튼에서는
+   * 파일 탐색기를 바로 열지 않고
+   * 먼저 사진 등록 모달을 엽니다.
+   */
+  const openUploadModal = () => {
+    if (isUploading) {
       return
     }
 
-    setActiveTab(tabId)
-    setSelectedPhotoId(null)
-    setIsMemoEditing(false)
-    setMemoDraft('')
-    setErrorMessage('')
-    setIsLoading(true)
+    setUploadFile(null)
+    setUploadPreviewUrl('')
+    setUploadMemo('')
+    setIsUploadModalOpen(true)
   }
 
-  const handlePhotoSelect = (photoId) => {
-    setSelectedPhotoId(photoId)
-    setIsMemoEditing(false)
-    setMemoDraft('')
-  }
-
+  /*
+   * 등록 모달 내부의 사진 선택 버튼에서
+   * 실제 파일 탐색기를 엽니다.
+   */
   const openFilePicker = () => {
-    if (isProcessing) {
+    if (isUploading) {
       return
     }
 
     fileInputRef.current?.click()
   }
 
-  const handlePhotoUpload = async (event) => {
-    const file = event.target.files?.[0]
+  const resetUploadForm = () => {
+    setUploadFile(null)
+    setUploadPreviewUrl('')
+    setUploadMemo('')
+    setIsUploadModalOpen(false)
+  }
 
+  const closeUploadModal = () => {
+    if (isUploading) {
+      return
+    }
+
+    resetUploadForm()
+  }
+
+  /*
+   * 파일을 선택하면 업로드하지 않고
+   * 미리보기와 선택 파일만 저장합니다.
+   */
+  const handleFileChange = (event) => {
+    const file =
+      event.target.files?.[0]
+
+    /*
+     * 같은 파일을 다시 선택해도
+     * change 이벤트가 발생하도록 초기화합니다.
+     */
     event.target.value = ''
 
     if (!file) {
       return
     }
 
-    if (!file.type.startsWith('image/')) {
+    if (
+      !ALLOWED_IMAGE_TYPES.includes(
+        file.type,
+      )
+    ) {
       window.alert(
-        '이미지 파일만 업로드할 수 있습니다.',
+        'JPG, PNG, WEBP 이미지 파일만 등록할 수 있습니다.',
       )
       return
     }
 
-    try {
-      setIsProcessing(true)
+    if (file.size > MAX_IMAGE_SIZE) {
+      window.alert(
+        '사진은 10MB 이하만 등록할 수 있습니다.',
+      )
+      return
+    }
 
-      const uploadedPhoto =
+    const previewUrl =
+      URL.createObjectURL(file)
+
+    setUploadFile(file)
+    setUploadPreviewUrl(previewUrl)
+  }
+
+  /*
+   * 등록 버튼을 눌렀을 때
+   * 선택한 사진과 메모를 함께 전송합니다.
+   */
+  const handleUploadSubmit = async (
+    event,
+  ) => {
+    event.preventDefault()
+
+    if (!uploadFile || isUploading) {
+      return
+    }
+
+    try {
+      setIsUploading(true)
+
+      const createdPhoto =
         await uploadAlbumPhoto({
-          coupleRoomId:
-            TEMP_COUPLE_ROOM_ID,
-          file,
-          memo: '',
+          file: uploadFile,
+          memo: uploadMemo.trim(),
         })
 
+      if (!createdPhoto) {
+        throw new Error(
+          '등록된 사진 정보를 확인하지 못했습니다.',
+        )
+      }
+
       setPhotosBySource(
-        (previousPhotosBySource) => ({
-          ...previousPhotosBySource,
-          [PHOTO_SOURCE.ALBUM]: [
-            uploadedPhoto,
-            ...previousPhotosBySource[
-              PHOTO_SOURCE.ALBUM
-            ],
+        (previous) => ({
+          ...previous,
+
+          ALBUM: [
+            createdPhoto,
+            ...previous.ALBUM,
           ],
         }),
       )
 
-      setActiveTab(PHOTO_SOURCE.ALBUM)
-      setSelectedPhotoId(uploadedPhoto.id)
-      setIsMemoEditing(false)
-      setMemoDraft('')
+      setActiveTab('ALBUM')
+      resetUploadForm()
+
+      showNotice(
+        '앨범에 사진이 추가되었습니다.',
+      )
     } catch (error) {
       window.alert(
         error.message ||
-          '사진 업로드에 실패했습니다.',
+          '사진을 추가하지 못했습니다.',
       )
     } finally {
-      setIsProcessing(false)
+      setIsUploading(false)
     }
   }
 
-  const handlePhotoDelete = async () => {
+  const openPhoto = (photo) => {
+    setSelectedPhoto(photo)
+  }
+
+  const closePhoto = () => {
+    if (isDeleting) {
+      return
+    }
+
+    setSelectedPhoto(null)
+  }
+
+  const openDeleteConfirm = (photo) => {
+    if (isDeleting) {
+      return
+    }
+
+    setDeleteTarget(photo)
+  }
+
+  const closeDeleteConfirm = () => {
+    if (isDeleting) {
+      return
+    }
+
+    setDeleteTarget(null)
+  }
+
+  const handleDeletePhoto = async () => {
     if (
-      !selectedPhoto ||
-      !selectedPhoto.canDelete ||
-      isProcessing
-    ) {
-      return
-    }
-
-    const shouldDelete = window.confirm(
-      '선택한 사진을 삭제하시겠습니까?',
-    )
-
-    if (!shouldDelete) {
-      return
-    }
-
-    try {
-      setIsProcessing(true)
-
-      await deleteAlbumPhoto(
-        selectedPhoto.resourceId,
-      )
-
-      const nextPhotos = visiblePhotos.filter(
-        (photo) =>
-          photo.id !== selectedPhoto.id,
-      )
-
-      setPhotosBySource(
-        (previousPhotosBySource) => ({
-          ...previousPhotosBySource,
-          [PHOTO_SOURCE.ALBUM]:
-            nextPhotos,
-        }),
-      )
-
-      setSelectedPhotoId(
-        nextPhotos[0]?.id ?? null,
-      )
-
-      setIsMemoEditing(false)
-      setMemoDraft('')
-    } catch (error) {
-      window.alert(
-        error.message ||
-          '사진 삭제에 실패했습니다.',
-      )
-    } finally {
-      setIsProcessing(false)
-    }
-  }
-
-  const startMemoEditing = () => {
-    if (
-      !selectedPhoto ||
-      !selectedPhoto.canEditMemo ||
-      isProcessing
-    ) {
-      return
-    }
-
-    setMemoDraft(selectedPhoto.memo ?? '')
-    setIsMemoEditing(true)
-  }
-
-  const cancelMemoEditing = () => {
-    if (isProcessing) {
-      return
-    }
-
-    setMemoDraft('')
-    setIsMemoEditing(false)
-  }
-
-  const saveMemo = async () => {
-    if (
-      !selectedPhoto ||
-      !selectedPhoto.canEditMemo ||
-      isProcessing
+      !deleteTarget ||
+      isDeleting
     ) {
       return
     }
 
     try {
-      setIsProcessing(true)
+      setIsDeleting(true)
 
-      const updatedPhoto =
-        await updateAlbumPhotoMemo(
-          selectedPhoto.resourceId,
-          memoDraft,
+      if (
+        deleteTarget.source ===
+        'ALBUM'
+      ) {
+        await deleteAlbumPhoto(
+          deleteTarget.photoId,
         )
+      } else {
+        await deleteChatPhoto(
+          deleteTarget.imageId,
+        )
+      }
 
       setPhotosBySource(
-        (previousPhotosBySource) => ({
-          ...previousPhotosBySource,
-          [PHOTO_SOURCE.ALBUM]:
-            previousPhotosBySource[
-              PHOTO_SOURCE.ALBUM
-            ].map((photo) =>
-              photo.id === updatedPhoto.id
-                ? updatedPhoto
-                : photo,
+        (previous) => ({
+          ...previous,
+
+          [deleteTarget.source]:
+            previous[
+              deleteTarget.source
+            ].filter(
+              (photo) =>
+                photo.id !==
+                deleteTarget.id,
             ),
         }),
       )
 
-      setMemoDraft(updatedPhoto.memo)
-      setIsMemoEditing(false)
+      setSelectedPhoto(null)
+
+      if (
+        deleteTarget.source ===
+        'CHAT'
+      ) {
+        showNotice(
+          '사진이 삭제되었습니다. 채팅에서는 삭제된 이미지로 표시됩니다.',
+        )
+      } else {
+        showNotice(
+          '앨범 사진이 삭제되었습니다.',
+        )
+      }
+
+      setDeleteTarget(null)
     } catch (error) {
       window.alert(
         error.message ||
-          '사진 메모 수정에 실패했습니다.',
+          '사진을 삭제하지 못했습니다.',
       )
     } finally {
-      setIsProcessing(false)
+      setIsDeleting(false)
     }
   }
 
   return (
     <div className="album-page">
       <header className="album-header">
-        <button
-          type="button"
-          className="album-header-button"
-          aria-label="메뉴 열기"
-          onClick={() => {
-            console.log('메뉴 열기')
-          }}
-        >
-          <Menu
-            size={22}
-            strokeWidth={2}
-            aria-hidden="true"
-          />
-        </button>
+        <div>
+          <p>OUR MEMORIES</p>
 
-        <h1>앨범</h1>
+          <h1>앨범</h1>
+        </div>
 
         <button
           type="button"
           className="album-add-button"
-          aria-label="앨범 사진 추가"
-          disabled={isProcessing}
-          onClick={openFilePicker}
+          disabled={isUploading}
+          onClick={openUploadModal}
         >
-          <Plus
-            size={23}
-            strokeWidth={2}
+          <ImagePlus
+            size={18}
+            strokeWidth={1.9}
             aria-hidden="true"
           />
+
+          <span>사진 추가</span>
         </button>
 
         <input
           ref={fileInputRef}
           className="album-file-input"
           type="file"
-          accept="image/*"
-          onChange={handlePhotoUpload}
+          accept="image/jpeg,image/png,image/webp"
+          onChange={handleFileChange}
         />
       </header>
 
-      <main className="album-scroll-area">
-        <section className="album-content">
-          <div
-            className="album-tabs"
-            role="tablist"
-            aria-label="사진 종류"
-          >
-            {ALBUM_TABS.map((tab) => {
-              const isActive =
-                activeTab === tab.id
+      <main className="album-content">
+        <nav
+          className="album-tabs"
+          aria-label="앨범 사진 종류"
+        >
+          {ALBUM_TABS.map((tab) => {
+            const Icon = tab.icon
 
-              return (
-                <button
-                  key={tab.id}
-                  type="button"
-                  role="tab"
-                  aria-selected={isActive}
-                  className={[
-                    'album-tab',
-                    isActive
-                      ? 'album-tab-active'
-                      : '',
-                  ]
-                    .filter(Boolean)
-                    .join(' ')}
-                  onClick={() =>
-                    handleTabChange(tab.id)
+            const isActive =
+              activeTab === tab.id
+
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                className={
+                  isActive
+                    ? 'album-tab album-tab-active'
+                    : 'album-tab'
+                }
+                onClick={() =>
+                  handleTabChange(
+                    tab.id,
+                  )
+                }
+              >
+                <Icon
+                  size={17}
+                  strokeWidth={1.9}
+                  aria-hidden="true"
+                />
+
+                <span>{tab.label}</span>
+
+                <strong>
+                  {
+                    photosBySource[
+                      tab.id
+                    ].length
                   }
-                >
-                  {tab.label}
-                </button>
-              )
-            })}
+                </strong>
+              </button>
+            )
+          })}
+        </nav>
+
+        <section className="album-section">
+          <div className="album-section-header">
+            <div>
+              <h2>
+                {activeTab === 'ALBUM'
+                  ? '앨범에 추가한 사진'
+                  : '채팅에서 보낸 사진'}
+              </h2>
+
+              <p>
+                {activeTab === 'ALBUM'
+                  ? '두 사람이 함께 보관한 사진이에요.'
+                  : '채팅으로 주고받은 사진을 모아봤어요.'}
+              </p>
+            </div>
+
+            <span>
+              총 {visiblePhotos.length}장
+            </span>
           </div>
 
           {isLoading && (
             <div className="album-status">
               <span className="album-loading-spinner" />
 
-              <p>사진을 불러오고 있습니다.</p>
-            </div>
-          )}
-
-          {!isLoading && errorMessage && (
-            <div className="album-status album-error">
-              <p>{errorMessage}</p>
+              <p>
+                사진을 불러오고 있습니다.
+              </p>
             </div>
           )}
 
           {!isLoading &&
+            errorMessage && (
+              <div className="album-status album-status-error">
+                <ImageOff
+                  size={30}
+                  strokeWidth={1.6}
+                  aria-hidden="true"
+                />
+
+                <p>{errorMessage}</p>
+              </div>
+            )}
+
+          {!isLoading &&
             !errorMessage &&
-            visiblePhotos.length > 0 && (
-              <div className="album-photo-grid">
-                {visiblePhotos.map((photo) => {
-                  const isSelected =
-                    photo.id === selectedPhotoId
+            visiblePhotos.length ===
+              0 && (
+              <div className="album-status">
+                <ImageOff
+                  size={32}
+                  strokeWidth={1.6}
+                  aria-hidden="true"
+                />
 
-                  const photoDate =
-                    formatPhotoDate(
-                      photo.createdAt,
-                    )
+                <h3>
+                  {activeTab === 'ALBUM'
+                    ? '아직 추가한 사진이 없어요'
+                    : '채팅 사진이 없어요'}
+                </h3>
 
-                  return (
+                <p>
+                  {activeTab === 'ALBUM'
+                    ? '사진 추가 버튼으로 추억을 남겨보세요.'
+                    : '채팅으로 주고받은 사진이 여기에 표시돼요.'}
+                </p>
+              </div>
+            )}
+
+          {!isLoading &&
+            !errorMessage &&
+            visiblePhotos.length >
+              0 && (
+              <div className="album-grid">
+                {visiblePhotos.map(
+                  (photo) => (
                     <button
                       key={photo.id}
                       type="button"
-                      className={[
-                        'album-photo-item',
-                        isSelected
-                          ? 'album-photo-item-selected'
-                          : '',
-                      ]
-                        .filter(Boolean)
-                        .join(' ')}
-                      aria-label={`${photoDate} 사진 선택`}
-                      aria-pressed={isSelected}
+                      className="album-photo-card"
                       onClick={() =>
-                        handlePhotoSelect(
-                          photo.id,
-                        )
+                        openPhoto(photo)
                       }
                     >
                       <img
-                        src={photo.imageUrl}
-                        alt={`${photoDate}에 등록된 사진`}
-                      />
-
-                      {isSelected && (
-                        <span className="album-photo-check">
-                          <Check
-                            size={15}
-                            strokeWidth={3}
-                            aria-hidden="true"
-                          />
-                        </span>
-                      )}
-                    </button>
-                  )
-                })}
-              </div>
-            )}
-
-          {!isLoading &&
-            !errorMessage &&
-            visiblePhotos.length === 0 && (
-              <div className="album-empty-state">
-                <span>
-                  <ImagePlus
-                    size={32}
-                    strokeWidth={1.7}
-                    aria-hidden="true"
-                  />
-                </span>
-
-                <strong>
-                  {activeTab ===
-                  PHOTO_SOURCE.ALBUM
-                    ? '등록된 앨범 사진이 없습니다.'
-                    : '공유된 채팅 사진이 없습니다.'}
-                </strong>
-
-                {activeTab ===
-                  PHOTO_SOURCE.ALBUM && (
-                  <button
-                    type="button"
-                    disabled={isProcessing}
-                    onClick={openFilePicker}
-                  >
-                    사진 추가하기
-                  </button>
-                )}
-              </div>
-            )}
-
-          {selectedPhoto && (
-            <section className="album-detail-card">
-              <div className="album-detail-header">
-                <img
-                  src={selectedPhoto.imageUrl}
-                  alt={`${formatPhotoDate(
-                    selectedPhoto.createdAt,
-                  )}에 등록된 사진`}
-                />
-
-                <div className="album-detail-information">
-                  <span className="album-source-badge">
-                    {selectedPhoto.source ===
-                    PHOTO_SOURCE.ALBUM
-                      ? '앨범 사진'
-                      : '채팅 사진'}
-                  </span>
-
-                  <dl>
-                    <div>
-                      <dt>
-                        {getPhotoDateLabel(
-                          selectedPhoto.source,
-                        )}
-                      </dt>
-
-                      <dd>
-                        <time
-                          dateTime={
-                            selectedPhoto.createdAt
-                          }
-                        >
-                          {formatPhotoDate(
-                            selectedPhoto.createdAt,
-                          )}
-                        </time>
-                      </dd>
-                    </div>
-                  </dl>
-                </div>
-
-                {selectedPhoto.canDelete && (
-                  <button
-                    type="button"
-                    className="album-delete-button"
-                    aria-label="선택한 사진 삭제"
-                    disabled={isProcessing}
-                    onClick={handlePhotoDelete}
-                  >
-                    <Trash2
-                      size={18}
-                      strokeWidth={2}
-                      aria-hidden="true"
-                    />
-                  </button>
-                )}
-              </div>
-
-              {selectedPhoto.canEditMemo ? (
-                <div className="album-memo-section">
-                  <div className="album-memo-header">
-                    <h2>사진 메모</h2>
-
-                    {!isMemoEditing && (
-                      <button
-                        type="button"
-                        className="album-memo-edit-button"
-                        disabled={isProcessing}
-                        onClick={startMemoEditing}
-                      >
-                        <Pencil
-                          size={13}
-                          strokeWidth={2}
-                          aria-hidden="true"
-                        />
-
-                        <span>수정</span>
-                      </button>
-                    )}
-                  </div>
-
-                  {isMemoEditing ? (
-                    <div className="album-memo-editor">
-                      <textarea
-                        value={memoDraft}
-                        rows={3}
-                        disabled={isProcessing}
-                        placeholder="이 사진에 대한 추억을 기록해주세요"
-                        onChange={(event) =>
-                          setMemoDraft(
-                            event.target.value,
-                          )
+                        src={
+                          photo.imageUrl
+                        }
+                        alt={
+                          photo.memo ||
+                          '앨범 사진'
                         }
                       />
 
-                      <div className="album-memo-actions">
-                        <button
-                          type="button"
-                          className="album-memo-cancel-button"
-                          disabled={isProcessing}
-                          onClick={cancelMemoEditing}
-                        >
-                          취소
-                        </button>
-
-                        <button
-                          type="button"
-                          className="album-memo-save-button"
-                          disabled={isProcessing}
-                          onClick={saveMemo}
-                        >
-                          {isProcessing
-                            ? '저장 중'
-                            : '저장'}
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="album-memo-content">
-                      {selectedPhoto.memo ||
-                        '작성된 사진 메모가 없습니다.'}
-                    </p>
-                  )}
-                </div>
-              ) : (
-                <div className="chat-photo-information">
-                  <p>
-                    채팅방에서 공유된 사진입니다.
-                  </p>
-
-                  <span>
-                    메모 수정과 삭제는 앨범
-                    사진에서만 가능합니다.
-                  </span>
-                </div>
-              )}
-            </section>
-          )}
+                      <span className="album-photo-overlay">
+                        {formatPhotoDate(
+                          photo.createdAt,
+                        )}
+                      </span>
+                    </button>
+                  ),
+                )}
+              </div>
+            )}
         </section>
       </main>
 
       <BottomNavigation />
+
+      {noticeMessage && (
+        <div
+          className="album-toast"
+          role="status"
+        >
+          {noticeMessage}
+        </div>
+      )}
+
+      {/* 사진 등록 모달 */}
+      {isUploadModalOpen && (
+        <div
+          className="album-upload-backdrop"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (
+              event.target ===
+              event.currentTarget
+            ) {
+              closeUploadModal()
+            }
+          }}
+        >
+          <section
+            className="album-upload-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="album-upload-title"
+          >
+            <header className="album-upload-header">
+              <div>
+                <p>NEW MEMORY</p>
+
+                <h2 id="album-upload-title">
+                  사진 추가
+                </h2>
+              </div>
+
+              <button
+                type="button"
+                aria-label="사진 등록 닫기"
+                disabled={isUploading}
+                onClick={closeUploadModal}
+              >
+                <X
+                  size={21}
+                  aria-hidden="true"
+                />
+              </button>
+            </header>
+
+            <form
+              className="album-upload-form"
+              onSubmit={
+                handleUploadSubmit
+              }
+            >
+              <div
+                className={
+                  uploadPreviewUrl
+                    ? 'album-upload-preview album-upload-preview-selected'
+                    : 'album-upload-preview'
+                }
+              >
+                {uploadPreviewUrl ? (
+                  <img
+                    src={
+                      uploadPreviewUrl
+                    }
+                    alt="등록할 사진 미리보기"
+                  />
+                ) : (
+                  <button
+                    type="button"
+                    className="album-upload-select-area"
+                    disabled={isUploading}
+                    onClick={
+                      openFilePicker
+                    }
+                  >
+                    <span className="album-upload-select-icon">
+                      <ImagePlus
+                        size={30}
+                        strokeWidth={1.7}
+                        aria-hidden="true"
+                      />
+                    </span>
+
+                    <strong>
+                      등록할 사진을 선택해주세요
+                    </strong>
+
+                    <span className="album-upload-select-description">
+                      JPG, PNG, WEBP · 최대 10MB
+                    </span>
+
+                    <span className="album-upload-select-label">
+                      사진 선택
+                    </span>
+                  </button>
+                )}
+              </div>
+
+              {uploadFile && (
+                <button
+                  type="button"
+                  className="album-upload-change-button"
+                  disabled={isUploading}
+                  onClick={openFilePicker}
+                >
+                  <ImagePlus
+                    size={16}
+                    strokeWidth={1.9}
+                    aria-hidden="true"
+                  />
+
+                  <span>
+                    다른 사진 선택
+                  </span>
+                </button>
+              )}
+
+              <label className="album-upload-memo-field">
+                <span>
+                  <PencilLine
+                    size={15}
+                    strokeWidth={1.9}
+                    aria-hidden="true"
+                  />
+
+                  추억 기록
+                </span>
+
+                <textarea
+                  value={uploadMemo}
+                  maxLength={
+                    MAX_MEMO_LENGTH
+                  }
+                  disabled={isUploading}
+                  placeholder="사진에 대한 추억을 기록해보세요."
+                  onChange={(event) =>
+                    setUploadMemo(
+                      event.target.value,
+                    )
+                  }
+                />
+              </label>
+
+              <div className="album-upload-memo-footer">
+                <span>
+                  메모 없이 사진만 등록해도 괜찮아요.
+                </span>
+
+                <strong>
+                  {uploadMemo.length}/
+                  {MAX_MEMO_LENGTH}
+                </strong>
+              </div>
+
+              <div className="album-upload-actions">
+                <button
+                  type="button"
+                  className="album-upload-cancel"
+                  disabled={isUploading}
+                  onClick={
+                    closeUploadModal
+                  }
+                >
+                  취소
+                </button>
+
+                <button
+                  type="submit"
+                  className="album-upload-submit"
+                  disabled={
+                    !uploadFile ||
+                    isUploading
+                  }
+                >
+                  {isUploading
+                    ? '등록 중'
+                    : '등록'}
+                </button>
+              </div>
+            </form>
+          </section>
+        </div>
+      )}
+
+      {/* 사진 상세 모달 */}
+      {selectedPhoto && (
+        <div
+          className="album-modal-backdrop"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (
+              event.target ===
+              event.currentTarget
+            ) {
+              closePhoto()
+            }
+          }}
+        >
+          <section
+            className="album-photo-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label="사진 상세 보기"
+          >
+            <header>
+              <div>
+                <p>
+                  {selectedPhoto.source ===
+                  'ALBUM'
+                    ? '앨범 사진'
+                    : '채팅 사진'}
+                </p>
+
+                <span>
+                  {formatPhotoDate(
+                    selectedPhoto.createdAt,
+                  )}
+                </span>
+              </div>
+
+              <button
+                type="button"
+                aria-label="사진 상세 닫기"
+                disabled={isDeleting}
+                onClick={closePhoto}
+              >
+                <X
+                  size={21}
+                  aria-hidden="true"
+                />
+              </button>
+            </header>
+
+            <div className="album-photo-modal-image">
+              <img
+                src={
+                  selectedPhoto.imageUrl
+                }
+                alt={
+                  selectedPhoto.memo ||
+                  '앨범 사진'
+                }
+              />
+            </div>
+
+            {selectedPhoto.memo && (
+              <p className="album-photo-memo">
+                {selectedPhoto.memo}
+              </p>
+            )}
+
+            <button
+              type="button"
+              className="album-photo-delete-button"
+              disabled={isDeleting}
+              onClick={() =>
+                openDeleteConfirm(
+                  selectedPhoto,
+                )
+              }
+            >
+              <Trash2
+                size={17}
+                strokeWidth={1.9}
+                aria-hidden="true"
+              />
+
+              <span>사진 삭제</span>
+            </button>
+          </section>
+        </div>
+      )}
+
+      {/* 사진 삭제 확인 모달 */}
+      {deleteTarget && (
+        <div
+          className="album-delete-backdrop"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (
+              event.target ===
+              event.currentTarget
+            ) {
+              closeDeleteConfirm()
+            }
+          }}
+        >
+          <section
+            className="album-delete-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="album-delete-title"
+          >
+            <span className="album-delete-icon">
+              <Trash2
+                size={24}
+                strokeWidth={1.8}
+                aria-hidden="true"
+              />
+            </span>
+
+            <h2 id="album-delete-title">
+              사진을 삭제할까요?
+            </h2>
+
+            <p>
+              {deleteTarget.source ===
+              'CHAT'
+                ? '앨범에서 사진이 삭제되며, 채팅에서는 삭제된 이미지로 표시됩니다. 삭제한 사진은 복구할 수 없습니다.'
+                : '앨범에서 사진이 삭제됩니다. 삭제한 사진은 복구할 수 없습니다.'}
+            </p>
+
+            <div className="album-delete-actions">
+              <button
+                type="button"
+                className="album-delete-cancel"
+                disabled={isDeleting}
+                onClick={
+                  closeDeleteConfirm
+                }
+              >
+                취소
+              </button>
+
+              <button
+                type="button"
+                className="album-delete-submit"
+                disabled={isDeleting}
+                onClick={
+                  handleDeletePhoto
+                }
+              >
+                {isDeleting
+                  ? '삭제 중'
+                  : '삭제'}
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
     </div>
   )
 }
