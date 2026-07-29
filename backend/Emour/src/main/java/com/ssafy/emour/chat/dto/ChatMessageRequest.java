@@ -8,16 +8,12 @@ import java.util.List;
 /**
  * 브라우저가 서버로 보내는 채팅 쪽지의 모양입니다.
  *
- * @param senderId       메시지를 보낸 사용자 번호
  * @param clientMessageId 중복 전송 방지를 위해 프론트에서 만든 UUID
  * @param messageType     TEXT 또는 IMAGE
  * @param content         텍스트 내용 또는 이미지 설명
  * @param imageUrls       미리 업로드를 마친 이미지 주소 목록
  */
 public record ChatMessageRequest(
-        @Schema(description = "메시지를 보내는 사용자 번호", example = "1")
-        Long senderId,
-
         @Schema(
                 description = "중복 전송 방지용 UUID",
                 example = "7cc9768e-344a-4a96-b1b6-dfa93668ac6c"

@@ -162,8 +162,7 @@
 <body>
 <h1>Emour 채팅 테스트</h1>
 <p class="guide">
-    이 화면을 두 탭에서 열고, 두 탭 모두 방 번호는 <strong>1</strong>로 둡니다.
-    첫 탭은 사용자 <strong>1</strong>, 둘째 탭은 사용자 <strong>2</strong>로 연결하면
+    로그인 API에서 받은 서로 다른 사용자의 Access Token을 두 탭에 각각 입력하면
     실제 WebSocket 채팅을 눈으로 확인할 수 있습니다.
     실제 앱에서는 다른 화면으로 이동해도 WebSocket 연결은 끊지 않고,
     채팅 화면을 보고 있을 때만 읽음 처리를 보내야 합니다.
@@ -176,8 +175,8 @@
             <input id="roomId" type="number" min="1" value="1">
         </label>
         <label>
-            내 사용자 번호
-            <input id="userId" type="number" min="1" value="1">
+            Access Token (Bearer 제외)
+            <input id="accessToken" type="text" placeholder="로그인으로 발급받은 Access Token">
         </label>
     </div>
     <div class="buttons">
@@ -221,7 +220,7 @@
 
 <script>
     const roomInput = document.getElementById("roomId");
-    const userInput = document.getElementById("userId");
+    const accessTokenInput = document.getElementById("accessToken");
     const messageTypeInput = document.getElementById("messageType");
     const contentInput = document.getElementById("content");
     const imageUrlsInput = document.getElementById("imageUrls");
@@ -259,7 +258,7 @@
         sendButton.disabled = !connected;
         readButton.disabled = !connected || lastMessageId === null;
         roomInput.disabled = connected;
-        userInput.disabled = connected;
+        accessTokenInput.disabled = connected;
         statusBox.classList.toggle("connected", connected);
         statusBox.lastElementChild.textContent = connected ? "연결됨" : "연결 안 됨";
     }
@@ -268,24 +267,22 @@
         return Number(roomInput.value);
     }
 
-    function getUserId() {
-        return Number(userInput.value);
-    }
-
     // 서버와 연결하고, 이 방으로 오는 메시지와 읽음 알림을 구독합니다.
     function connect() {
         const roomId = getRoomId();
-        const userId = getUserId();
+        const accessToken = accessTokenInput.value.trim();
 
-        if (!Number.isInteger(roomId) || roomId < 1 ||
-            !Number.isInteger(userId) || userId < 1) {
-            addMessage("방 번호와 사용자 번호를 올바르게 입력해 주세요.", "error");
+        if (!Number.isInteger(roomId) || roomId < 1 || !accessToken) {
+            addMessage("방 번호와 Access Token을 입력해 주세요.", "error");
             return;
         }
 
         stompClient = new StompJs.Client({
             webSocketFactory: () => new SockJS(`${window.location.origin}/ws`),
             reconnectDelay: 3000,
+            connectHeaders: {
+                Authorization: `Bearer ${accessToken}`
+            },
             debug: () => {
                 // STOMP 내부 로그는 초보자 화면이 복잡해지므로 표시하지 않습니다.
             }
@@ -306,7 +303,7 @@
             );
 
             setConnected(true);
-            addMessage(`${roomId}번 방에 ${userId}번 사용자로 연결했습니다.`);
+            addMessage(`${roomId}번 방에 로그인 회원으로 연결했습니다.`);
         };
 
         stompClient.onStompError = frame => {
@@ -346,7 +343,6 @@
             .filter(url => url.length > 0);
 
         const request = {
-            senderId: getUserId(),
             clientMessageId: crypto.randomUUID(),
             messageType: messageTypeInput.value,
             content: contentInput.value.trim() || null,
@@ -389,7 +385,6 @@
             destination: `/pub/chat/rooms/${getRoomId()}/read`,
             headers: {"content-type": "application/json"},
             body: JSON.stringify({
-                userId: getUserId(),
                 lastReadMessageId: lastMessageId
             })
         });

@@ -38,19 +38,20 @@ public class ChatMessageService {
     @Transactional
     public ChatMessageResponse sendMessage(
             Long roomId,
+            Long senderId,
             ChatMessageRequest request
     ) {
         validateRequest(request);
-        validateActiveMember(request.senderId(), roomId);
+        validateActiveMember(senderId, roomId);
 
         // 같은 UUID의 메시지가 이미 있다면 다시 저장하지 않고 기존 값을 돌려줍니다.
         return chatMessageRepository
                 .findBySenderIdAndClientMessageId(
-                        request.senderId(),
+                        senderId,
                         request.clientMessageId()
                 )
                 .map(this::toResponse)
-                .orElseGet(() -> saveNewMessage(roomId, request));
+                .orElseGet(() -> saveNewMessage(roomId, senderId, request));
     }
 
     @Transactional(readOnly = true)
@@ -157,12 +158,13 @@ public class ChatMessageService {
 
     private ChatMessageResponse saveNewMessage(
             Long roomId,
+            Long senderId,
             ChatMessageRequest request
     ) {
         String content = trimToNull(request.content());
         ChatMessage message = ChatMessage.create(
                 roomId,
-                request.senderId(),
+                senderId,
                 request.clientMessageId(),
                 request.messageType(),
                 content
@@ -184,8 +186,8 @@ public class ChatMessageService {
     }
 
     private void validateRequest(ChatMessageRequest request) {
-        if (request == null || request.senderId() == null) {
-            throw new ChatException("보낸 사람 번호는 꼭 필요합니다.");
+        if (request == null) {
+            throw new ChatException("메시지 요청은 꼭 필요합니다.");
         }
         if (request.clientMessageId() == null) {
             throw new ChatException("clientMessageId는 꼭 필요합니다.");

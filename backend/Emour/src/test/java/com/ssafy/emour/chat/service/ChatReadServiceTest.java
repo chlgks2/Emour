@@ -65,7 +65,8 @@ class ChatReadServiceTest {
 
         ChatReadResponse response = chatReadService.markAsRead(
                 1L,
-                new ChatReadRequest(10L, 100L)
+                10L,
+                new ChatReadRequest(100L)
         );
 
         assertThat(response.roomId()).isEqualTo(1L);

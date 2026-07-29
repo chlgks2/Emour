@@ -1,7 +1,9 @@
 package com.ssafy.emour.global.config;
 
 import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.info.Info;
+import io.swagger.v3.oas.models.security.SecurityScheme;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -11,6 +13,13 @@ public class OpenApiConfig {
     @Bean
     public OpenAPI emourOpenApi() {
         return new OpenAPI()
+                .components(new Components().addSecuritySchemes(
+                        "bearerAuth",
+                        new SecurityScheme()
+                                .type(SecurityScheme.Type.HTTP)
+                                .scheme("bearer")
+                                .bearerFormat("JWT")
+                ))
                 .info(new Info()
                         .title("Emour Backend API")
                         .version("v1")
@@ -30,6 +39,11 @@ public class OpenApiConfig {
                                 - 읽음 구독: `/sub/chat/rooms/{roomId}/read`
                                 - 개인 오류 구독: `/user/queue/errors`
 
+                                연결할 때 STOMP CONNECT 헤더에 로그인으로 발급받은
+                                Access Token을 다음과 같이 넣어야 합니다.
+
+                                `Authorization: Bearer {accessToken}`
+
                                 실제 앱에서는 WebSocket을 채팅 화면 안이 아니라 앱의 최상위에서
                                 한 번 연결합니다. 다른 화면으로 이동해도 연결과 메시지 구독은
                                 유지하고, 채팅 화면을 보고 있을 때만 읽음 처리를 전송합니다.
@@ -38,7 +52,6 @@ public class OpenApiConfig {
 
                                 ```json
                                 {
-                                  "senderId": 1,
                                   "clientMessageId": "7cc9768e-344a-4a96-b1b6-dfa93668ac6c",
                                   "messageType": "TEXT",
                                   "content": "안녕!",

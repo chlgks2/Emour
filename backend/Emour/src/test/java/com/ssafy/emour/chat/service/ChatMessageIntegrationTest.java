@@ -58,8 +58,8 @@ class ChatMessageIntegrationTest {
     void savesAndLoadsText() {
         ChatMessageResponse sent = chatMessageService.sendMessage(
                 1L,
+                10L,
                 new ChatMessageRequest(
-                        10L,
                         "b0db2a72-6e73-47f6-aa4e-305128b5fb0a",
                         MessageType.TEXT,
                         "안녕!",
@@ -86,8 +86,8 @@ class ChatMessageIntegrationTest {
     void savesMultipleImages() {
         ChatMessageResponse sent = chatMessageService.sendMessage(
                 1L,
+                10L,
                 new ChatMessageRequest(
-                        10L,
                         "3e0133f5-1dab-43c5-ab30-a5777542f066",
                         MessageType.IMAGE,
                         "여행 사진",
@@ -129,24 +129,24 @@ class ChatMessageIntegrationTest {
     void countsUnreadMessages() {
         ChatMessageResponse firstPartnerMessage = chatMessageService.sendMessage(
                 1L,
+                20L,
                 textRequest(
-                        20L,
                         "8a01aec5-36e7-4210-92d5-7fcb995d7be4",
                         "첫 번째 메시지"
                 )
         );
         chatMessageService.sendMessage(
                 1L,
+                10L,
                 textRequest(
-                        10L,
                         "87482530-0e74-4775-aa63-9de77a835e30",
                         "내가 보낸 메시지"
                 )
         );
         chatMessageService.sendMessage(
                 1L,
+                20L,
                 textRequest(
-                        20L,
                         "bc1e990a-8f13-47e2-a17e-6e87c24b3d62",
                         "두 번째 메시지"
                 )
@@ -154,7 +154,8 @@ class ChatMessageIntegrationTest {
 
         chatReadService.markAsRead(
                 1L,
-                new ChatReadRequest(10L, firstPartnerMessage.messageId())
+                10L,
+                new ChatReadRequest(firstPartnerMessage.messageId())
         );
 
         ChatUnreadCountResponse response =
@@ -168,16 +169,16 @@ class ChatMessageIntegrationTest {
     void searchesMessages() {
         chatMessageService.sendMessage(
                 1L,
+                10L,
                 textRequest(
-                        10L,
                         "f4c07f2e-cfa0-4410-bac9-a6bc59366941",
                         "오늘 저녁에 치킨 먹을까?"
                 )
         );
         chatMessageService.sendMessage(
                 1L,
+                20L,
                 textRequest(
-                        20L,
                         "dfbd8874-37e5-4c13-9139-16bb326f9050",
                         "나는 피자가 좋아"
                 )
@@ -201,8 +202,8 @@ class ChatMessageIntegrationTest {
     void managesBookmarks() {
         ChatMessageResponse message = chatMessageService.sendMessage(
                 1L,
+                20L,
                 textRequest(
-                        20L,
                         "c5d24ed0-032f-437d-a48a-af5c6fbb20d1",
                         "기억하고 싶은 메시지"
                 )
@@ -226,12 +227,10 @@ class ChatMessageIntegrationTest {
     }
 
     private ChatMessageRequest textRequest(
-            Long senderId,
             String clientMessageId,
             String content
     ) {
         return new ChatMessageRequest(
-                senderId,
                 clientMessageId,
                 MessageType.TEXT,
                 content,

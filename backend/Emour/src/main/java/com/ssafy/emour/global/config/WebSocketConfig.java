@@ -1,15 +1,21 @@
 package com.ssafy.emour.global.config;
 
+import com.ssafy.emour.chat.security.ChatWebSocketAuthInterceptor;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.messaging.simp.config.ChannelRegistration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
 
 @Configuration
+@RequiredArgsConstructor
 // WebSocket과 STOMP를 사용할 수 있게 켜 주는 설정입니다.
 @EnableWebSocketMessageBroker
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
+
+    private final ChatWebSocketAuthInterceptor chatWebSocketAuthInterceptor;
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
@@ -27,5 +33,11 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
         // 브라우저가 서버로 메시지를 보낼 때는 "/pub"로 시작하는 주소를 사용합니다.
         registry.setApplicationDestinationPrefixes("/pub");
+    }
+
+    @Override
+    public void configureClientInboundChannel(ChannelRegistration registration) {
+        // 연결, 메시지 전송, 방 구독 요청마다 JWT와 방 멤버 여부를 확인합니다.
+        registration.interceptors(chatWebSocketAuthInterceptor);
     }
 }

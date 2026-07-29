@@ -46,7 +46,6 @@ class ChatMessageServiceTest {
     void sendsTextMessage() {
         String clientMessageId = "7cc9768e-344a-4a96-b1b6-dfa93668ac6c";
         ChatMessageRequest request = new ChatMessageRequest(
-                10L,
                 clientMessageId,
                 MessageType.TEXT,
                 " 안녕! ",
@@ -63,7 +62,8 @@ class ChatMessageServiceTest {
         when(chatAnalysisRepository.save(any(ChatAnalysis.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        ChatMessageResponse response = chatMessageService.sendMessage(1L, request);
+        ChatMessageResponse response =
+                chatMessageService.sendMessage(1L, 10L, request);
 
         assertThat(response.roomId()).isEqualTo(1L);
         assertThat(response.senderId()).isEqualTo(10L);
@@ -79,7 +79,6 @@ class ChatMessageServiceTest {
     void savesImagesInOrder() {
         String clientMessageId = "318b3db8-d3ce-4a76-99ab-748ad7069b19";
         ChatMessageRequest request = new ChatMessageRequest(
-                10L,
                 clientMessageId,
                 MessageType.IMAGE,
                 "여행 사진",
@@ -94,7 +93,8 @@ class ChatMessageServiceTest {
         when(chatMessageRepository.save(any(ChatMessage.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        ChatMessageResponse response = chatMessageService.sendMessage(1L, request);
+        ChatMessageResponse response =
+                chatMessageService.sendMessage(1L, 10L, request);
 
         assertThat(response.images()).hasSize(2);
         assertThat(response.images().get(0).displayOrder()).isEqualTo(1);
@@ -105,14 +105,14 @@ class ChatMessageServiceTest {
     @Test
     void rejectsBlankText() {
         ChatMessageRequest request = new ChatMessageRequest(
-                10L,
                 "7cc9768e-344a-4a96-b1b6-dfa93668ac6c",
                 MessageType.TEXT,
                 "   ",
                 List.of()
         );
 
-        assertThatThrownBy(() -> chatMessageService.sendMessage(1L, request))
+        assertThatThrownBy(() ->
+                chatMessageService.sendMessage(1L, 10L, request))
                 .isInstanceOf(ChatException.class)
                 .hasMessage("텍스트 메시지 내용을 입력해 주세요.");
     }
@@ -121,7 +121,6 @@ class ChatMessageServiceTest {
     @Test
     void rejectsNonMember() {
         ChatMessageRequest request = new ChatMessageRequest(
-                10L,
                 "7cc9768e-344a-4a96-b1b6-dfa93668ac6c",
                 MessageType.TEXT,
                 "안녕",
@@ -133,7 +132,8 @@ class ChatMessageServiceTest {
                 CoupleMemberStatus.ACTIVE
         )).thenReturn(false);
 
-        assertThatThrownBy(() -> chatMessageService.sendMessage(1L, request))
+        assertThatThrownBy(() ->
+                chatMessageService.sendMessage(1L, 10L, request))
                 .isInstanceOf(ChatException.class)
                 .hasMessage("해당 채팅방에 참여 중인 사용자가 아닙니다.");
     }

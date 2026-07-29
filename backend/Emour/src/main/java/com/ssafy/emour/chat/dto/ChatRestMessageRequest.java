@@ -13,9 +13,6 @@ public record ChatRestMessageRequest(
         @Schema(description = "커플방 번호", example = "1")
         Long roomId,
 
-        @Schema(description = "메시지를 보내는 사용자 번호", example = "1")
-        Long senderId,
-
         @Schema(
                 description = "중복 전송 방지용 UUID",
                 example = "7cc9768e-344a-4a96-b1b6-dfa93668ac6c"
@@ -33,7 +30,6 @@ public record ChatRestMessageRequest(
 ) {
     public ChatMessageRequest toMessageRequest() {
         return new ChatMessageRequest(
-                senderId,
                 clientMessageId,
                 messageType,
                 content,

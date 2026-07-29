@@ -11,12 +11,14 @@ import com.ssafy.emour.chat.service.ChatBookmarkService;
 import com.ssafy.emour.chat.service.ChatMessageService;
 import com.ssafy.emour.chat.service.ChatReadService;
 import com.ssafy.emour.global.response.ErrorResponse;
+import com.ssafy.emour.global.util.SecurityUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -34,6 +36,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/chats")
 @RequiredArgsConstructor
+@SecurityRequirement(name = "bearerAuth")
 @Tag(
         name = "채팅 REST API",
         description = "채팅 메시지 REST API"
@@ -70,9 +73,6 @@ public class ChatRestController {
             @Parameter(description = "커플방 번호", example = "1")
             @RequestParam Long roomId,
 
-            @Parameter(description = "조회하는 사용자 번호", example = "1")
-            @RequestParam Long userId,
-
             @Parameter(
                     description = "이 번호보다 과거 메시지를 조회하며, 첫 조회에서는 생략",
                     example = "100"
@@ -87,7 +87,7 @@ public class ChatRestController {
     ) {
         return chatMessageService.getMessages(
                 roomId,
-                userId,
+                SecurityUtil.getCurrentUserId(),
                 beforeMessageId,
                 size
         );
@@ -106,12 +106,12 @@ public class ChatRestController {
     )
     public ChatUnreadCountResponse getUnreadCount(
             @Parameter(description = "커플방 번호", example = "1")
-            @RequestParam Long roomId,
-
-            @Parameter(description = "조회하는 사용자 번호", example = "1")
-            @RequestParam Long userId
+            @RequestParam Long roomId
     ) {
-        return chatReadService.getUnreadCount(roomId, userId);
+        return chatReadService.getUnreadCount(
+                roomId,
+                SecurityUtil.getCurrentUserId()
+        );
     }
 
     /**
@@ -124,12 +124,12 @@ public class ChatRestController {
     )
     public ChatReadResponse markAsRead(
             @Parameter(description = "마지막으로 읽은 메시지 번호", example = "100")
-            @PathVariable Long messageId,
-
-            @Parameter(description = "읽은 사용자 번호", example = "1")
-            @RequestParam Long userId
+            @PathVariable Long messageId
     ) {
-        return chatReadService.markMessageAsRead(messageId, userId);
+        return chatReadService.markMessageAsRead(
+                messageId,
+                SecurityUtil.getCurrentUserId()
+        );
     }
 
     /**
@@ -144,9 +144,6 @@ public class ChatRestController {
             @Parameter(description = "커플방 번호", example = "1")
             @RequestParam Long roomId,
 
-            @Parameter(description = "조회하는 사용자 번호", example = "1")
-            @RequestParam Long userId,
-
             @Parameter(description = "찾을 단어", example = "사랑")
             @RequestParam String keyword,
 
@@ -158,7 +155,7 @@ public class ChatRestController {
     ) {
         return chatMessageService.searchMessages(
                 roomId,
-                userId,
+                SecurityUtil.getCurrentUserId(),
                 keyword,
                 beforeMessageId,
                 size
@@ -172,12 +169,12 @@ public class ChatRestController {
     @Operation(summary = "메시지 북마크 저장")
     public ChatBookmarkResponse addBookmark(
             @Parameter(description = "저장할 메시지 번호", example = "100")
-            @PathVariable Long messageId,
-
-            @Parameter(description = "저장하는 사용자 번호", example = "1")
-            @RequestParam Long userId
+            @PathVariable Long messageId
     ) {
-        return chatBookmarkService.addBookmark(messageId, userId);
+        return chatBookmarkService.addBookmark(
+                messageId,
+                SecurityUtil.getCurrentUserId()
+        );
     }
 
     /**
@@ -188,12 +185,12 @@ public class ChatRestController {
     @Operation(summary = "메시지 북마크 취소")
     public void removeBookmark(
             @Parameter(description = "저장 취소할 메시지 번호", example = "100")
-            @PathVariable Long messageId,
-
-            @Parameter(description = "저장 취소하는 사용자 번호", example = "1")
-            @RequestParam Long userId
+            @PathVariable Long messageId
     ) {
-        chatBookmarkService.removeBookmark(messageId, userId);
+        chatBookmarkService.removeBookmark(
+                messageId,
+                SecurityUtil.getCurrentUserId()
+        );
     }
 
     /**
@@ -205,9 +202,6 @@ public class ChatRestController {
             @Parameter(description = "커플방 번호", example = "1")
             @RequestParam Long roomId,
 
-            @Parameter(description = "조회하는 사용자 번호", example = "1")
-            @RequestParam Long userId,
-
             @Parameter(description = "이 번호보다 과거 북마크를 조회")
             @RequestParam(required = false) Long beforeBookmarkId,
 
@@ -216,7 +210,7 @@ public class ChatRestController {
     ) {
         return chatBookmarkService.getBookmarks(
                 roomId,
-                userId,
+                SecurityUtil.getCurrentUserId(),
                 beforeBookmarkId,
                 size
         );
@@ -252,6 +246,7 @@ public class ChatRestController {
 
         ChatMessageResponse response = chatMessageService.sendMessage(
                 request.roomId(),
+                SecurityUtil.getCurrentUserId(),
                 request.toMessageRequest()
         );
 

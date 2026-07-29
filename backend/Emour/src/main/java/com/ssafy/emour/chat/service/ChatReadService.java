@@ -25,14 +25,17 @@ public class ChatReadService {
     private final ChatMessageService chatMessageService;
 
     @Transactional
-    public ChatReadResponse markAsRead(Long roomId, ChatReadRequest request) {
+    public ChatReadResponse markAsRead(
+            Long roomId,
+            Long userId,
+            ChatReadRequest request
+    ) {
         if (request == null
-                || request.userId() == null
                 || request.lastReadMessageId() == null) {
-            throw new ChatException("사용자 번호와 마지막 읽은 메시지 번호가 필요합니다.");
+            throw new ChatException("마지막 읽은 메시지 번호가 필요합니다.");
         }
 
-        validateActiveMember(request.userId(), roomId);
+        validateActiveMember(userId, roomId);
 
         // 다른 방 메시지를 읽었다고 표시하지 못하게 확인합니다.
         chatMessageService.findMessageInRoom(
@@ -40,10 +43,10 @@ public class ChatReadService {
                 roomId
         );
 
-        ChatReadStateId id = new ChatReadStateId(request.userId(), roomId);
+        ChatReadStateId id = new ChatReadStateId(userId, roomId);
         ChatReadState state = chatReadStateRepository.findById(id)
                 .orElseGet(() -> ChatReadState.first(
-                        request.userId(),
+                        userId,
                         roomId,
                         request.lastReadMessageId()
                 ));
@@ -77,7 +80,8 @@ public class ChatReadService {
 
         return markAsRead(
                 roomId,
-                new ChatReadRequest(userId, messageId)
+                userId,
+                new ChatReadRequest(messageId)
         );
     }
 
