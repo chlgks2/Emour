@@ -1,0 +1,13 @@
+# --- 웹 서버 ---
+fastapi
+uvicorn[standard]
+pydantic>=2.0
+
+# --- LLM 클라이언트 ---
+openai>=1.0
+python-dotenv
+
+# --- 테스트용 ---
+httpx
+pytest
+pytest-asyncio
