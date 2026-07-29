@@ -1,6 +1,8 @@
 package com.ssafy.emour.auth.controller;
 
+import com.ssafy.emour.auth.dto.request.LoginRequest;
 import com.ssafy.emour.auth.dto.request.SignUpRequest;
+import com.ssafy.emour.auth.dto.response.LoginResponse;
 import com.ssafy.emour.auth.dto.response.SignUpResponse;
 import com.ssafy.emour.auth.service.AuthService;
 import com.ssafy.emour.global.response.ApiResponse;
@@ -45,6 +47,20 @@ public class AuthController {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(ApiResponse.success("회원가입이 완료되었습니다.", response));
+    }
+
+    /**
+     * 이메일 로그인.  POST /auth/login
+     * 성공 시 Access/Refresh 토큰과 회원 정보를 반환한다.
+     */
+    @PostMapping("/login")
+    public ResponseEntity<ApiResponse<LoginResponse>> login(
+            @Valid @RequestBody LoginRequest request
+    ) {
+        LoginResponse response = authService.login(request);
+        return ResponseEntity.ok(
+                ApiResponse.success("로그인에 성공했습니다.", response)
+        );
     }
 
     /**
