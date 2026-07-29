@@ -5,6 +5,7 @@ import com.ssafy.emour.chat.dto.ChatHistoryResponse;
 import com.ssafy.emour.chat.dto.ChatMessageRequest;
 import com.ssafy.emour.chat.dto.ChatMessageResponse;
 import com.ssafy.emour.chat.dto.ChatReadRequest;
+import com.ssafy.emour.chat.dto.ChatSentImageListResponse;
 import com.ssafy.emour.chat.dto.ChatUnreadCountResponse;
 import com.ssafy.emour.chat.entity.MessageType;
 import com.ssafy.emour.chat.repository.ChatAnalysisRepository;
@@ -102,6 +103,50 @@ class ChatMessageIntegrationTest {
                 .extracting(image -> image.displayOrder())
                 .containsExactly(1, 2);
         assertThat(chatAnalysisRepository.count()).isZero();
+    }
+
+    @Test
+    void 채팅으로_보낸_사진을_최신순으로_나누어_조회한다() {
+        chatMessageService.sendMessage(
+                1L,
+                imageRequest(
+                        10L,
+                        "2b9c708d-b7cb-4c79-821c-3dc65a28fb2a",
+                        "첫 번째 사진",
+                        "https://image/first.jpg"
+                )
+        );
+        chatMessageService.sendMessage(
+                1L,
+                imageRequest(
+                        20L,
+                        "8f6774d3-06bc-442a-b979-001119737927",
+                        "두 번째 사진",
+                        "https://image/second.jpg"
+                )
+        );
+
+        ChatSentImageListResponse firstPage =
+                chatMessageService.getSentImages(1L, 10L, null, 1);
+
+        assertThat(firstPage.images()).hasSize(1);
+        assertThat(firstPage.images().get(0).imageUrl())
+                .isEqualTo("https://image/second.jpg");
+        assertThat(firstPage.images().get(0).senderId()).isEqualTo(20L);
+        assertThat(firstPage.hasNext()).isTrue();
+
+        ChatSentImageListResponse secondPage =
+                chatMessageService.getSentImages(
+                        1L,
+                        10L,
+                        firstPage.nextCursor(),
+                        1
+                );
+
+        assertThat(secondPage.images()).hasSize(1);
+        assertThat(secondPage.images().get(0).imageUrl())
+                .isEqualTo("https://image/first.jpg");
+        assertThat(secondPage.hasNext()).isFalse();
     }
 
     @Test
@@ -213,6 +258,21 @@ class ChatMessageIntegrationTest {
                 MessageType.TEXT,
                 content,
                 List.of()
+        );
+    }
+
+    private ChatMessageRequest imageRequest(
+            Long senderId,
+            String clientMessageId,
+            String content,
+            String imageUrl
+    ) {
+        return new ChatMessageRequest(
+                senderId,
+                clientMessageId,
+                MessageType.IMAGE,
+                content,
+                List.of(imageUrl)
         );
     }
 }

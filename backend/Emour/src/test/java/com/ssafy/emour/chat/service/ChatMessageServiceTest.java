@@ -7,6 +7,7 @@ import com.ssafy.emour.chat.entity.ChatMessage;
 import com.ssafy.emour.chat.entity.MessageType;
 import com.ssafy.emour.chat.exception.ChatException;
 import com.ssafy.emour.chat.repository.ChatAnalysisRepository;
+import com.ssafy.emour.chat.repository.ChatMessageImageRepository;
 import com.ssafy.emour.chat.repository.ChatMessageRepository;
 import com.ssafy.emour.couple.entity.CoupleMemberId;
 import com.ssafy.emour.couple.entity.CoupleMemberStatus;
@@ -31,6 +32,9 @@ class ChatMessageServiceTest {
 
     @Mock
     private ChatMessageRepository chatMessageRepository;
+
+    @Mock
+    private ChatMessageImageRepository chatMessageImageRepository;
 
     @Mock
     private ChatAnalysisRepository chatAnalysisRepository;

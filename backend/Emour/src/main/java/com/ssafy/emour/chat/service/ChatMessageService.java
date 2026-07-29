@@ -4,11 +4,15 @@ import com.ssafy.emour.chat.dto.ChatHistoryResponse;
 import com.ssafy.emour.chat.dto.ChatImageResponse;
 import com.ssafy.emour.chat.dto.ChatMessageRequest;
 import com.ssafy.emour.chat.dto.ChatMessageResponse;
+import com.ssafy.emour.chat.dto.ChatSentImageListResponse;
+import com.ssafy.emour.chat.dto.ChatSentImageResponse;
 import com.ssafy.emour.chat.entity.ChatAnalysis;
 import com.ssafy.emour.chat.entity.ChatMessage;
+import com.ssafy.emour.chat.entity.ChatMessageImage;
 import com.ssafy.emour.chat.entity.MessageType;
 import com.ssafy.emour.chat.exception.ChatException;
 import com.ssafy.emour.chat.repository.ChatAnalysisRepository;
+import com.ssafy.emour.chat.repository.ChatMessageImageRepository;
 import com.ssafy.emour.chat.repository.ChatMessageRepository;
 import com.ssafy.emour.couple.entity.CoupleMemberId;
 import com.ssafy.emour.couple.entity.CoupleMemberStatus;
@@ -32,6 +36,7 @@ public class ChatMessageService {
     private static final int MAX_IMAGE_COUNT = 10;
 
     private final ChatMessageRepository chatMessageRepository;
+    private final ChatMessageImageRepository chatMessageImageRepository;
     private final ChatAnalysisRepository chatAnalysisRepository;
     private final CoupleMemberRepository coupleMemberRepository;
 
@@ -93,6 +98,44 @@ public class ChatMessageService {
                 : pageMessages.get(0).getMessageId();
 
         return new ChatHistoryResponse(responses, nextCursor, hasNext);
+    }
+
+    /**
+     * 채팅방에서 주고받은 사진만 최신 사진부터 모아서 보여줍니다.
+     */
+    @Transactional(readOnly = true)
+    public ChatSentImageListResponse getSentImages(
+            Long roomId,
+            Long userId,
+            Long beforeImageId,
+            Integer requestedSize
+    ) {
+        validateActiveMember(userId, roomId);
+
+        int size = normalizePageSize(requestedSize);
+        PageRequest page = PageRequest.of(0, size + 1);
+
+        // 커서가 없으면 최신 사진부터, 있으면 해당 사진보다 오래된 사진부터 찾습니다.
+        List<ChatMessageImage> found = beforeImageId == null
+                ? chatMessageImageRepository.findRecentImages(roomId, page)
+                : chatMessageImageRepository.findImagesBefore(
+                        roomId,
+                        beforeImageId,
+                        page
+                );
+
+        boolean hasNext = found.size() > size;
+        List<ChatSentImageResponse> images = found.stream()
+                .limit(size)
+                .map(this::toSentImageResponse)
+                .toList();
+
+        // 현재 목록의 가장 오래된 사진 번호를 다음 조회의 커서로 사용합니다.
+        Long nextCursor = images.isEmpty()
+                ? null
+                : images.get(images.size() - 1).imageId();
+
+        return new ChatSentImageListResponse(images, nextCursor, hasNext);
     }
 
     /**
@@ -277,6 +320,19 @@ public class ChatMessageService {
                 message.getContent(),
                 images,
                 message.getSentAt()
+        );
+    }
+
+    private ChatSentImageResponse toSentImageResponse(
+            ChatMessageImage image
+    ) {
+        return new ChatSentImageResponse(
+                image.getImageId(),
+                image.getMessageId(),
+                image.getSenderId(),
+                image.getImageUrl(),
+                image.getDisplayOrder(),
+                image.getSentAt()
         );
     }
 
