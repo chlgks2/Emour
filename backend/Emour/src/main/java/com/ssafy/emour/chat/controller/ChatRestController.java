@@ -1,10 +1,13 @@
 package com.ssafy.emour.chat.controller;
 
+import com.ssafy.emour.chat.dto.ChatBookmarkListResponse;
+import com.ssafy.emour.chat.dto.ChatBookmarkResponse;
 import com.ssafy.emour.chat.dto.ChatHistoryResponse;
 import com.ssafy.emour.chat.dto.ChatMessageResponse;
 import com.ssafy.emour.chat.dto.ChatReadResponse;
 import com.ssafy.emour.chat.dto.ChatRestMessageRequest;
 import com.ssafy.emour.chat.dto.ChatUnreadCountResponse;
+import com.ssafy.emour.chat.service.ChatBookmarkService;
 import com.ssafy.emour.chat.service.ChatMessageService;
 import com.ssafy.emour.chat.service.ChatReadService;
 import com.ssafy.emour.global.response.ErrorResponse;
@@ -36,6 +39,7 @@ public class ChatRestController {
 
     private final ChatMessageService chatMessageService;
     private final ChatReadService chatReadService;
+    private final ChatBookmarkService chatBookmarkService;
     private final SimpMessagingTemplate messagingTemplate;
 
     /**
@@ -154,6 +158,47 @@ public class ChatRestController {
                 userId,
                 keyword,
                 beforeMessageId,
+                size
+        );
+    }
+
+    /**
+     * 나중에 다시 보고 싶은 메시지를 저장합니다.
+     */
+    @PostMapping("/{messageId}/bookmark")
+    @Operation(summary = "메시지 북마크 저장")
+    public ChatBookmarkResponse addBookmark(
+            @Parameter(description = "저장할 메시지 번호", example = "100")
+            @PathVariable Long messageId,
+
+            @Parameter(description = "저장하는 사용자 번호", example = "1")
+            @RequestParam Long userId
+    ) {
+        return chatBookmarkService.addBookmark(messageId, userId);
+    }
+
+    /**
+     * 사용자가 저장한 하이라이트 메시지를 모아서 보여줍니다.
+     */
+    @GetMapping("/bookmarks")
+    @Operation(summary = "저장한 메시지 모아보기")
+    public ChatBookmarkListResponse getBookmarks(
+            @Parameter(description = "커플방 번호", example = "1")
+            @RequestParam Long roomId,
+
+            @Parameter(description = "조회하는 사용자 번호", example = "1")
+            @RequestParam Long userId,
+
+            @Parameter(description = "이 번호보다 과거 북마크를 조회")
+            @RequestParam(required = false) Long beforeBookmarkId,
+
+            @Parameter(description = "조회 개수, 최대 100개", example = "20")
+            @RequestParam(required = false) Integer size
+    ) {
+        return chatBookmarkService.getBookmarks(
+                roomId,
+                userId,
+                beforeBookmarkId,
                 size
         );
     }
