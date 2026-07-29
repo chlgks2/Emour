@@ -126,6 +126,39 @@ public class ChatRestController {
     }
 
     /**
+     * 채팅 내용에 검색어가 포함된 메시지를 찾습니다.
+     */
+    @GetMapping("/search")
+    @Operation(
+            summary = "채팅 메시지 검색",
+            description = "같은 방의 메시지 내용에서 검색어가 포함된 메시지를 찾습니다."
+    )
+    public ChatHistoryResponse searchMessages(
+            @Parameter(description = "커플방 번호", example = "1")
+            @RequestParam Long roomId,
+
+            @Parameter(description = "조회하는 사용자 번호", example = "1")
+            @RequestParam Long userId,
+
+            @Parameter(description = "찾을 단어", example = "사랑")
+            @RequestParam String keyword,
+
+            @Parameter(description = "이 번호보다 과거 메시지를 검색")
+            @RequestParam(required = false) Long beforeMessageId,
+
+            @Parameter(description = "조회 개수, 최대 100개", example = "20")
+            @RequestParam(required = false) Integer size
+    ) {
+        return chatMessageService.searchMessages(
+                roomId,
+                userId,
+                keyword,
+                beforeMessageId,
+                size
+        );
+    }
+
+    /**
      * WebSocket과 동일한 저장 기능을 REST에서도 사용할 수 있습니다.
      */
     @PostMapping

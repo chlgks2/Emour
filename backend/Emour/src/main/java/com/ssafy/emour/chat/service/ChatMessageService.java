@@ -95,6 +95,45 @@ public class ChatMessageService {
         return new ChatHistoryResponse(responses, nextCursor, hasNext);
     }
 
+    /**
+     * 같은 방의 메시지 내용에서 검색어가 들어간 메시지를 찾습니다.
+     */
+    @Transactional(readOnly = true)
+    public ChatHistoryResponse searchMessages(
+            Long roomId,
+            Long userId,
+            String keyword,
+            Long beforeMessageId,
+            Integer requestedSize
+    ) {
+        validateActiveMember(userId, roomId);
+
+        String normalizedKeyword = trimToNull(keyword);
+        if (normalizedKeyword == null) {
+            throw new ChatException("검색어를 입력해 주세요.");
+        }
+
+        int size = normalizePageSize(requestedSize);
+        PageRequest page = PageRequest.of(0, size + 1);
+
+        List<ChatMessage> found = beforeMessageId == null
+                ? chatMessageRepository
+                .findByRoomIdAndContentContainingIgnoreCaseAndDeletedAtIsNullOrderByMessageIdDesc(
+                        roomId,
+                        normalizedKeyword,
+                        page
+                )
+                : chatMessageRepository
+                .findByRoomIdAndContentContainingIgnoreCaseAndMessageIdLessThanAndDeletedAtIsNullOrderByMessageIdDesc(
+                        roomId,
+                        normalizedKeyword,
+                        beforeMessageId,
+                        page
+                );
+
+        return toHistoryResponse(found, size);
+    }
+
     @Transactional(readOnly = true)
     public ChatMessage findMessageInRoom(Long messageId, Long roomId) {
         ChatMessage message = findMessage(messageId);
@@ -239,6 +278,29 @@ public class ChatMessageService {
                 images,
                 message.getSentAt()
         );
+    }
+
+    private ChatHistoryResponse toHistoryResponse(
+            List<ChatMessage> found,
+            int size
+    ) {
+        boolean hasNext = found.size() > size;
+        List<ChatMessage> pageMessages = new ArrayList<>(
+                found.subList(0, Math.min(found.size(), size))
+        );
+
+        // 검색 결과도 채팅 화면에서 읽기 쉽도록 오래된 순서로 돌려줍니다.
+        Collections.reverse(pageMessages);
+
+        List<ChatMessageResponse> responses = pageMessages.stream()
+                .map(this::toResponse)
+                .toList();
+
+        Long nextCursor = pageMessages.isEmpty()
+                ? null
+                : pageMessages.get(0).getMessageId();
+
+        return new ChatHistoryResponse(responses, nextCursor, hasNext);
     }
 
 }
