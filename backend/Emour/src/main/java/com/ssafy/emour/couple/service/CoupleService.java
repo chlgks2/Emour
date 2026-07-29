@@ -1,8 +1,13 @@
 package com.ssafy.emour.couple.service;
 
+import com.ssafy.emour.couple.dto.request.CoupleConnectRequest;
+import com.ssafy.emour.couple.dto.response.CoupleConnectResponse;
 import com.ssafy.emour.couple.dto.response.CoupleInvitationResponse;
 import com.ssafy.emour.couple.entity.CoupleMember;
+import com.ssafy.emour.couple.entity.CoupleMemberId;
+import com.ssafy.emour.couple.entity.CoupleMemberStatus;
 import com.ssafy.emour.couple.entity.CoupleRoom;
+import com.ssafy.emour.couple.entity.CoupleRoomStatus;
 import com.ssafy.emour.couple.repository.CoupleMemberRepository;
 import com.ssafy.emour.couple.repository.CoupleRoomRepository;
 import com.ssafy.emour.global.exception.CustomException;
@@ -13,8 +18,10 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Locale;
 
 @Service
 public class CoupleService {
@@ -69,6 +76,27 @@ public class CoupleService {
         return CoupleInvitationResponse.from(waitingRoom);
     }
 
+    @Transactional
+    public CoupleConnectResponse connect(Long userId, CoupleConnectRequest request) {
+        memberRepository.findByIdForUpdate(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        if (coupleMemberRepository.existsActiveCoupleByUserId(userId)) {
+            throw new CustomException(ErrorCode.ALREADY_COUPLED);
+        }
+
+        String invitationCode = normalizeInvitationCode(request.invitationCode());
+        CoupleRoom room = coupleRoomRepository.findByRoomCodeForUpdate(invitationCode)
+                .orElseThrow(() -> new CustomException(ErrorCode.INVITATION_CODE_NOT_FOUND));
+
+        validateInvitation(room, userId);
+
+        coupleMemberRepository.save(CoupleMember.active(userId, room.getId()));
+        room.activate(LocalDate.now());
+
+        return CoupleConnectResponse.from(room);
+    }
+
     private CoupleRoom createWaitingRoom(
             Long userId,
             String invitationCode,
@@ -89,5 +117,31 @@ public class CoupleService {
             }
         }
         throw new CustomException(ErrorCode.INVITATION_CODE_GENERATION_FAILED);
+    }
+
+    private String normalizeInvitationCode(String invitationCode) {
+        return invitationCode.trim().toUpperCase(Locale.ROOT);
+    }
+
+    private void validateInvitation(CoupleRoom room, Long userId) {
+        if (room.getStatus() != CoupleRoomStatus.WAITING) {
+            throw new CustomException(ErrorCode.INVITATION_CODE_NOT_AVAILABLE);
+        }
+        if (room.getRoomCodeExpiresAt() == null
+                || !room.getRoomCodeExpiresAt().isAfter(LocalDateTime.now())) {
+            throw new CustomException(ErrorCode.INVITATION_CODE_EXPIRED);
+        }
+        if (coupleMemberRepository.existsById(
+                new CoupleMemberId(userId, room.getId())
+        )) {
+            throw new CustomException(ErrorCode.CANNOT_USE_OWN_INVITATION);
+        }
+        long activeMemberCount = coupleMemberRepository.countByIdRoomIdAndStatus(
+                room.getId(),
+                CoupleMemberStatus.ACTIVE
+        );
+        if (activeMemberCount != 1) {
+            throw new CustomException(ErrorCode.INVITATION_CODE_NOT_AVAILABLE);
+        }
     }
 }

@@ -74,4 +74,12 @@ public class CoupleRoom {
         this.roomCode = roomCode;
         this.roomCodeExpiresAt = expiresAt;
     }
+
+    public void activate(LocalDate startedAt) {
+        if (status != CoupleRoomStatus.WAITING) {
+            throw new IllegalStateException("대기 중인 커플방만 연결할 수 있습니다.");
+        }
+        this.status = CoupleRoomStatus.ACTIVE;
+        this.startedAt = startedAt;
+    }
 }

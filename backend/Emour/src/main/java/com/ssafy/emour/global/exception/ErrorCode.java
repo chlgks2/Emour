@@ -25,6 +25,10 @@ public enum ErrorCode {
 
     // ===== 커플 연결 =====
     ALREADY_COUPLED(HttpStatus.CONFLICT, "이미 연결된 커플이 있습니다."),
+    INVITATION_CODE_NOT_FOUND(HttpStatus.NOT_FOUND, "초대 코드를 찾을 수 없습니다."),
+    INVITATION_CODE_EXPIRED(HttpStatus.GONE, "만료된 초대 코드입니다."),
+    INVITATION_CODE_NOT_AVAILABLE(HttpStatus.CONFLICT, "더 이상 사용할 수 없는 초대 코드입니다."),
+    CANNOT_USE_OWN_INVITATION(HttpStatus.BAD_REQUEST, "본인이 생성한 초대 코드는 사용할 수 없습니다."),
     INVITATION_CODE_GENERATION_FAILED(
             HttpStatus.INTERNAL_SERVER_ERROR,
             "초대 코드를 생성하지 못했습니다. 잠시 후 다시 시도해 주세요."

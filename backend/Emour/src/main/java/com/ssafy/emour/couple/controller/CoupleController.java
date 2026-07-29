@@ -1,13 +1,17 @@
 package com.ssafy.emour.couple.controller;
 
+import com.ssafy.emour.couple.dto.request.CoupleConnectRequest;
+import com.ssafy.emour.couple.dto.response.CoupleConnectResponse;
 import com.ssafy.emour.couple.dto.response.CoupleInvitationResponse;
 import com.ssafy.emour.couple.service.CoupleService;
 import com.ssafy.emour.global.response.ApiResponse;
 import com.ssafy.emour.global.util.SecurityUtil;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -26,5 +30,18 @@ public class CoupleController {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(ApiResponse.success("커플 초대 코드가 생성되었습니다.", response));
+    }
+
+    @PostMapping("/connect")
+    public ResponseEntity<ApiResponse<CoupleConnectResponse>> connect(
+            @Valid @RequestBody CoupleConnectRequest request
+    ) {
+        CoupleConnectResponse response = coupleService.connect(
+                SecurityUtil.getCurrentUserId(),
+                request
+        );
+        return ResponseEntity.ok(
+                ApiResponse.success("커플 연결이 완료되었습니다.", response)
+        );
     }
 }
