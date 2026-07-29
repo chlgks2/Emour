@@ -1,51 +1,84 @@
 function getFirstValue(...values) {
   return values.find(
-    (value) => value !== undefined && value !== null,
+    (value) =>
+      value !== undefined &&
+      value !== null,
   )
 }
 
-function checkCoupleConnection(
-  coupleRoomId,
-  coupleStatus,
+function checkRoomCodeExpired(
+  roomCodeExpiresAt,
 ) {
-  if (!coupleRoomId) {
+  if (!roomCodeExpiresAt) {
     return false
   }
 
-  const disconnectedStatuses = [
-    'DISCONNECTED',
-    'LEFT',
-    'INACTIVE',
-    'DELETED',
-  ]
+  const expirationTime =
+    new Date(roomCodeExpiresAt).getTime()
 
-  return !disconnectedStatuses.includes(
-    coupleStatus,
-  )
+  if (Number.isNaN(expirationTime)) {
+    return false
+  }
+
+  return expirationTime <= Date.now()
 }
 
 export function mapMyPageResponse({
   userResponse,
-  coupleMemberResponse = null,
+  roomResponse = null,
+  memberResponse = null,
 }) {
   const userId = getFirstValue(
     userResponse.userId,
     userResponse.user_id,
   )
 
-  const coupleRoomId = coupleMemberResponse
+  const userStatus = getFirstValue(
+    userResponse.status,
+    'ACTIVE',
+  )
+
+  const roomId = roomResponse
     ? getFirstValue(
-        coupleMemberResponse.coupleRoomId,
-        coupleMemberResponse.couple_room_id,
+        roomResponse.roomId,
+        roomResponse.room_id,
       )
     : null
 
-  const coupleStatus = coupleMemberResponse
+  const roomStatus = roomResponse
     ? getFirstValue(
-        coupleMemberResponse.status,
+        roomResponse.roomStatus,
+        roomResponse.status,
         null,
       )
     : null
+
+  const memberStatus = memberResponse
+    ? getFirstValue(
+        memberResponse.memberStatus,
+        memberResponse.status,
+        null,
+      )
+    : null
+
+  const roomCodeExpiresAt = roomResponse
+    ? getFirstValue(
+        roomResponse.roomCodeExpiresAt,
+        roomResponse.room_code_expires_at,
+        null,
+      )
+    : null
+
+  const hasRoom =
+    Boolean(roomId) &&
+    memberStatus === 'ACTIVE' &&
+    roomStatus !== 'INACTIVE'
+
+  const isCoupleConnected =
+    hasRoom && roomStatus === 'ACTIVE'
+
+  const isWaitingForPartner =
+    hasRoom && roomStatus === 'WAITING'
 
   return {
     userId,
@@ -64,54 +97,178 @@ export function mapMyPageResponse({
 
     profileImageUrl: getFirstValue(
       userResponse.profileImageUrl,
-      userResponse.profile_img_url,
+      userResponse.profile_image_url,
       '',
     ),
 
     statusMessage: getFirstValue(
       userResponse.statusMessage,
-      userResponse.status_msg,
+      userResponse.status_message,
       '',
     ),
 
-    userStatus: getFirstValue(
-      userResponse.status,
-      'ACTIVE',
-    ),
+    userStatus,
 
     createdAt: getFirstValue(
       userResponse.createdAt,
       userResponse.created_at,
+      null,
     ),
 
     updatedAt: getFirstValue(
       userResponse.updatedAt,
       userResponse.updated_at,
+      null,
     ),
 
-    coupleRoomId,
+    deletedAt: getFirstValue(
+      userResponse.deletedAt,
+      userResponse.deleted_at,
+      null,
+    ),
 
-    partnerNickname: coupleMemberResponse
+    isEmailVerified: Boolean(
+      getFirstValue(
+        userResponse.isEmailVerified,
+        userResponse.is_email_verified,
+        false,
+      ),
+    ),
+
+    roomId,
+
+    roomCode: roomResponse
       ? getFirstValue(
-          coupleMemberResponse.partnerNickname,
-          coupleMemberResponse.partner_nick,
+          roomResponse.roomCode,
+          roomResponse.room_code,
           '',
         )
       : '',
 
-    coupleStatus,
+    roomCodeExpiresAt,
 
-    matchedAt: coupleMemberResponse
+    roomStartedAt: roomResponse
       ? getFirstValue(
-          coupleMemberResponse.matchedAt,
-          coupleMemberResponse.matched_at,
+          roomResponse.startedAt,
+          roomResponse.started_at,
+          null,
         )
       : null,
 
-    isCoupleConnected:
-      checkCoupleConnection(
-        coupleRoomId,
-        coupleStatus,
+    roomStatus,
+
+    roomCreatedAt: roomResponse
+      ? getFirstValue(
+          roomResponse.createdAt,
+          roomResponse.created_at,
+          null,
+        )
+      : null,
+
+    roomUpdatedAt: roomResponse
+      ? getFirstValue(
+          roomResponse.updatedAt,
+          roomResponse.updated_at,
+          null,
+        )
+      : null,
+
+    roomEndedAt: roomResponse
+      ? getFirstValue(
+          roomResponse.endedAt,
+          roomResponse.ended_at,
+          null,
+        )
+      : null,
+
+    partnerNickname: memberResponse
+      ? getFirstValue(
+          memberResponse.partnerNickname,
+          memberResponse.partner_nickname,
+          '',
+        )
+      : '',
+
+    alarmTime: memberResponse
+      ? getFirstValue(
+          memberResponse.alarmTime,
+          memberResponse.alarm_time,
+          null,
+        )
+      : null,
+
+    memberStatus,
+
+    joinedAt: memberResponse
+      ? getFirstValue(
+          memberResponse.joinedAt,
+          memberResponse.joined_at,
+          null,
+        )
+      : null,
+
+    leftAt: memberResponse
+      ? getFirstValue(
+          memberResponse.leftAt,
+          memberResponse.left_at,
+          null,
+        )
+      : null,
+
+    hasRoom,
+    isCoupleConnected,
+    isWaitingForPartner,
+
+    isRoomCodeExpired:
+      checkRoomCodeExpired(
+        roomCodeExpiresAt,
       ),
   }
+}
+
+/*
+ * Spring 응답 구조를 화면 데이터로 변환합니다.
+ *
+ * 다음 응답 구조를 모두 지원합니다.
+ *
+ * {
+ *   user: {},
+ *   room: {},
+ *   member: {}
+ * }
+ *
+ * 또는
+ *
+ * {
+ *   data: {
+ *     user: {},
+ *     room: {},
+ *     member: {}
+ *   }
+ * }
+ */
+export function mapMyPageApiPayload(payload) {
+  const responseData =
+    payload?.data ?? payload ?? {}
+
+  return mapMyPageResponse({
+    userResponse:
+      responseData.user ??
+      responseData.appUser ??
+      responseData.app_user ??
+      responseData.profile ??
+      {},
+
+    roomResponse:
+      responseData.room ??
+      responseData.coupleRoom ??
+      responseData.couple_room ??
+      null,
+
+    memberResponse:
+      responseData.member ??
+      responseData.coupleMember ??
+      responseData.couple_member ??
+      null,
+  })
 }
