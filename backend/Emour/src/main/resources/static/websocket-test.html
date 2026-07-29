@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emour WebSocket 채팅 테스트</title>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7.3.0/bundles/stomp.umd.min.js"></script>
+    <style>
+        :root {
+            color-scheme: light;
+            font-family: Pretendard, "Noto Sans KR", sans-serif;
+            color: #2d2933;
+            background: #fff7fa;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            max-width: 920px;
+            margin: 0 auto;
+            padding: 28px 18px 60px;
+        }
+
+        h1 {
+            margin-bottom: 8px;
+            color: #d84b78;
+        }
+
+        .guide {
+            margin-top: 0;
+            line-height: 1.6;
+            color: #6c6370;
+        }
+
+        .panel {
+            margin-top: 18px;
+            padding: 20px;
+            border: 1px solid #f1d6df;
+            border-radius: 16px;
+            background: white;
+            box-shadow: 0 8px 24px rgba(216, 75, 120, 0.08);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        label {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        input, select, textarea, button {
+            border: 1px solid #decfd4;
+            border-radius: 10px;
+            padding: 11px 12px;
+            font: inherit;
+        }
+
+        textarea {
+            min-height: 86px;
+            resize: vertical;
+        }
+
+        button {
+            cursor: pointer;
+            border: 0;
+            color: white;
+            background: #d84b78;
+            font-weight: 700;
+        }
+
+        button.secondary {
+            color: #5f5360;
+            background: #f4e8ec;
+        }
+
+        button:disabled {
+            cursor: not-allowed;
+            opacity: 0.45;
+        }
+
+        .buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 9px;
+            margin-top: 14px;
+        }
+
+        .status {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            margin-top: 14px;
+            font-weight: 700;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #999;
+        }
+
+        .status.connected .status-dot {
+            background: #2ca36b;
+        }
+
+        .messages {
+            min-height: 170px;
+            max-height: 380px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .message {
+            padding: 12px 14px;
+            border-radius: 12px;
+            background: #fff2f6;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .message.system {
+            background: #f2f3f5;
+            color: #625d65;
+        }
+
+        .message.error {
+            background: #fff0ee;
+            color: #b12b20;
+        }
+
+        .message small {
+            display: block;
+            margin-bottom: 4px;
+            color: #8c7180;
+        }
+
+        .full {
+            grid-column: 1 / -1;
+        }
+
+        @media (max-width: 640px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+<h1>Emour 채팅 테스트</h1>
+<p class="guide">
+    이 화면을 두 탭에서 열고, 두 탭 모두 방 번호는 <strong>1</strong>로 둡니다.
+    첫 탭은 사용자 <strong>1</strong>, 둘째 탭은 사용자 <strong>2</strong>로 연결하면
+    실제 WebSocket 채팅을 눈으로 확인할 수 있습니다.
+    실제 앱에서는 다른 화면으로 이동해도 WebSocket 연결은 끊지 않고,
+    채팅 화면을 보고 있을 때만 읽음 처리를 보내야 합니다.
+</p>
+
+<section class="panel">
+    <div class="grid">
+        <label>
+            방 번호
+            <input id="roomId" type="number" min="1" value="1">
+        </label>
+        <label>
+            내 사용자 번호
+            <input id="userId" type="number" min="1" value="1">
+        </label>
+    </div>
+    <div class="buttons">
+        <button id="connectButton" type="button">연결하기</button>
+        <button id="disconnectButton" class="secondary" type="button" disabled>연결 끊기</button>
+    </div>
+    <div id="connectionStatus" class="status">
+        <span class="status-dot"></span>
+        <span>연결 안 됨</span>
+    </div>
+</section>
+
+<section class="panel">
+    <div class="grid">
+        <label>
+            메시지 종류
+            <select id="messageType">
+                <option value="TEXT">글</option>
+                <option value="IMAGE">이미지</option>
+            </select>
+        </label>
+        <label>
+            메시지 내용
+            <input id="content" type="text" placeholder="안녕!">
+        </label>
+        <label class="full">
+            이미지 주소 (한 줄에 하나씩, 이미지 메시지일 때만)
+            <textarea id="imageUrls" placeholder="https://example.com/image-1.jpg&#10;https://example.com/image-2.jpg"></textarea>
+        </label>
+    </div>
+    <div class="buttons">
+        <button id="sendButton" type="button" disabled>메시지 보내기</button>
+        <button id="readButton" class="secondary" type="button" disabled>마지막 메시지까지 읽음</button>
+    </div>
+</section>
+
+<section class="panel">
+    <h2>받은 내용</h2>
+    <div id="messages" class="messages"></div>
+</section>
+
+<script>
+    const roomInput = document.getElementById("roomId");
+    const userInput = document.getElementById("userId");
+    const messageTypeInput = document.getElementById("messageType");
+    const contentInput = document.getElementById("content");
+    const imageUrlsInput = document.getElementById("imageUrls");
+    const connectButton = document.getElementById("connectButton");
+    const disconnectButton = document.getElementById("disconnectButton");
+    const sendButton = document.getElementById("sendButton");
+    const readButton = document.getElementById("readButton");
+    const statusBox = document.getElementById("connectionStatus");
+    const messagesBox = document.getElementById("messages");
+
+    let stompClient = null;
+    let lastMessageId = null;
+
+    // 화면 아래에 받은 메시지나 안내 문구를 한 줄 추가합니다.
+    function addMessage(text, kind = "system", title = "") {
+        const item = document.createElement("div");
+        item.className = `message ${kind}`;
+
+        if (title) {
+            const header = document.createElement("small");
+            header.textContent = title;
+            item.appendChild(header);
+        }
+
+        const body = document.createElement("span");
+        body.textContent = text;
+        item.appendChild(body);
+        messagesBox.appendChild(item);
+        messagesBox.scrollTop = messagesBox.scrollHeight;
+    }
+
+    function setConnected(connected) {
+        connectButton.disabled = connected;
+        disconnectButton.disabled = !connected;
+        sendButton.disabled = !connected;
+        readButton.disabled = !connected || lastMessageId === null;
+        roomInput.disabled = connected;
+        userInput.disabled = connected;
+        statusBox.classList.toggle("connected", connected);
+        statusBox.lastElementChild.textContent = connected ? "연결됨" : "연결 안 됨";
+    }
+
+    function getRoomId() {
+        return Number(roomInput.value);
+    }
+
+    function getUserId() {
+        return Number(userInput.value);
+    }
+
+    // 서버와 연결하고, 이 방으로 오는 메시지와 읽음 알림을 구독합니다.
+    function connect() {
+        const roomId = getRoomId();
+        const userId = getUserId();
+
+        if (!Number.isInteger(roomId) || roomId < 1 ||
+            !Number.isInteger(userId) || userId < 1) {
+            addMessage("방 번호와 사용자 번호를 올바르게 입력해 주세요.", "error");
+            return;
+        }
+
+        stompClient = new StompJs.Client({
+            webSocketFactory: () => new SockJS(`${window.location.origin}/ws`),
+            reconnectDelay: 3000,
+            debug: () => {
+                // STOMP 내부 로그는 초보자 화면이 복잡해지므로 표시하지 않습니다.
+            }
+        });
+
+        stompClient.onConnect = () => {
+            stompClient.subscribe(
+                `/sub/chat/rooms/${roomId}/messages`,
+                frame => receiveChatMessage(JSON.parse(frame.body))
+            );
+            stompClient.subscribe(
+                `/sub/chat/rooms/${roomId}/read`,
+                frame => receiveReadNotice(JSON.parse(frame.body))
+            );
+            stompClient.subscribe(
+                "/user/queue/errors",
+                frame => addMessage(frame.body, "error", "서버 오류")
+            );
+
+            setConnected(true);
+            addMessage(`${roomId}번 방에 ${userId}번 사용자로 연결했습니다.`);
+        };
+
+        stompClient.onStompError = frame => {
+            addMessage(frame.body || frame.headers.message, "error", "STOMP 오류");
+        };
+
+        stompClient.onWebSocketError = () => {
+            addMessage("서버와 연결하지 못했습니다. 백엔드가 실행 중인지 확인해 주세요.", "error");
+        };
+
+        stompClient.onWebSocketClose = () => {
+            setConnected(false);
+        };
+
+        stompClient.activate();
+    }
+
+    function disconnect() {
+        if (stompClient) {
+            stompClient.deactivate();
+            stompClient = null;
+        }
+        setConnected(false);
+        addMessage("연결을 끊었습니다.");
+    }
+
+    // 입력한 글 또는 이미지 주소를 서버로 보냅니다.
+    function sendMessage() {
+        if (!stompClient || !stompClient.connected) {
+            addMessage("먼저 연결하기를 눌러 주세요.", "error");
+            return;
+        }
+
+        const imageUrls = imageUrlsInput.value
+            .split("\n")
+            .map(url => url.trim())
+            .filter(url => url.length > 0);
+
+        const request = {
+            senderId: getUserId(),
+            clientMessageId: crypto.randomUUID(),
+            messageType: messageTypeInput.value,
+            content: contentInput.value.trim() || null,
+            imageUrls: imageUrls
+        };
+
+        stompClient.publish({
+            destination: `/pub/chat/rooms/${getRoomId()}/messages`,
+            headers: {"content-type": "application/json"},
+            body: JSON.stringify(request)
+        });
+
+        contentInput.value = "";
+        imageUrlsInput.value = "";
+    }
+
+    function receiveChatMessage(message) {
+        lastMessageId = message.messageId;
+        readButton.disabled = false;
+
+        const imageText = (message.images || [])
+            .map(image => image.imageUrl)
+            .join("\n");
+        const body = [message.content, imageText].filter(Boolean).join("\n");
+        addMessage(
+            body || "(내용 없음)",
+            "",
+            `${message.senderId}번 사용자 · 메시지 ${message.messageId}`
+        );
+    }
+
+    // 마지막으로 받은 메시지 번호를 서버에 알려 읽음 위치를 저장합니다.
+    function markAsRead() {
+        if (!stompClient || !stompClient.connected || lastMessageId === null) {
+            addMessage("아직 읽음 처리할 메시지가 없습니다.", "error");
+            return;
+        }
+
+        stompClient.publish({
+            destination: `/pub/chat/rooms/${getRoomId()}/read`,
+            headers: {"content-type": "application/json"},
+            body: JSON.stringify({
+                userId: getUserId(),
+                lastReadMessageId: lastMessageId
+            })
+        });
+    }
+
+    function receiveReadNotice(notice) {
+        addMessage(
+            `${notice.userId}번 사용자가 ${notice.lastReadMessageId}번 메시지까지 읽었습니다.`,
+            "system",
+            "읽음 알림"
+        );
+    }
+
+    connectButton.addEventListener("click", connect);
+    disconnectButton.addEventListener("click", disconnect);
+    sendButton.addEventListener("click", sendMessage);
+    readButton.addEventListener("click", markAsRead);
+    contentInput.addEventListener("keydown", event => {
+        if (event.key === "Enter") {
+            sendMessage();
+        }
+    });
+
+    addMessage("연결하기 버튼을 누르면 여기에 채팅 내용이 나타납니다.");
+</script>
+</body>
+</html>
