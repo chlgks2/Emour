@@ -1,5 +1,6 @@
 package com.ssafy.emour.chat.service;
 
+import com.ssafy.emour.chat.dto.ChatHistoryResponse;
 import com.ssafy.emour.chat.dto.ChatImageResponse;
 import com.ssafy.emour.chat.dto.ChatMessageRequest;
 import com.ssafy.emour.chat.dto.ChatMessageResponse;
@@ -13,9 +14,12 @@ import com.ssafy.emour.couple.entity.CoupleMemberId;
 import com.ssafy.emour.couple.entity.CoupleMemberStatus;
 import com.ssafy.emour.couple.repository.CoupleMemberRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -23,6 +27,8 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class ChatMessageService {
 
+    private static final int DEFAULT_PAGE_SIZE = 50;
+    private static final int MAX_PAGE_SIZE = 100;
     private static final int MAX_IMAGE_COUNT = 10;
 
     private final ChatMessageRepository chatMessageRepository;
@@ -45,6 +51,48 @@ public class ChatMessageService {
                 )
                 .map(this::toResponse)
                 .orElseGet(() -> saveNewMessage(roomId, request));
+    }
+
+    @Transactional(readOnly = true)
+    public ChatHistoryResponse getMessages(
+            Long roomId,
+            Long userId,
+            Long beforeMessageId,
+            Integer requestedSize
+    ) {
+        validateActiveMember(userId, roomId);
+
+        int size = normalizePageSize(requestedSize);
+        PageRequest page = PageRequest.of(0, size + 1);
+
+        // 커서가 없으면 최신 메시지부터, 있으면 그 메시지보다 과거를 찾습니다.
+        List<ChatMessage> found = beforeMessageId == null
+                ? chatMessageRepository
+                .findByRoomIdAndDeletedAtIsNullOrderByMessageIdDesc(roomId, page)
+                : chatMessageRepository
+                .findByRoomIdAndMessageIdLessThanAndDeletedAtIsNullOrderByMessageIdDesc(
+                        roomId,
+                        beforeMessageId,
+                        page
+                );
+
+        boolean hasNext = found.size() > size;
+        List<ChatMessage> pageMessages = new ArrayList<>(
+                found.subList(0, Math.min(found.size(), size))
+        );
+
+        // 화면에서는 오래된 메시지부터 읽기 쉽도록 시간순으로 돌려줍니다.
+        Collections.reverse(pageMessages);
+
+        List<ChatMessageResponse> responses = pageMessages.stream()
+                .map(this::toResponse)
+                .toList();
+
+        Long nextCursor = pageMessages.isEmpty()
+                ? null
+                : pageMessages.get(0).getMessageId();
+
+        return new ChatHistoryResponse(responses, nextCursor, hasNext);
     }
 
     private ChatMessageResponse saveNewMessage(
@@ -128,6 +176,16 @@ public class ChatMessageService {
         if (!activeMember) {
             throw new ChatException("해당 채팅방에 참여 중인 사용자가 아닙니다.");
         }
+    }
+
+    private int normalizePageSize(Integer requestedSize) {
+        if (requestedSize == null) {
+            return DEFAULT_PAGE_SIZE;
+        }
+        if (requestedSize < 1 || requestedSize > MAX_PAGE_SIZE) {
+            throw new ChatException("메시지는 한 번에 1개부터 100개까지 조회할 수 있습니다.");
+        }
+        return requestedSize;
     }
 
     private List<String> safeImageUrls(List<String> imageUrls) {
