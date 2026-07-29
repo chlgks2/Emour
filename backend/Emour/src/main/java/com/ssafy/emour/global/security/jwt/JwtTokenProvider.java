@@ -60,6 +60,11 @@ public class JwtTokenProvider {
         return Long.valueOf(parseClaims(token).getSubject());
     }
 
+    /** 토큰 종류 추출 ("access" 또는 "refresh") */
+    public String getType(String token) {
+        return parseClaims(token).get("type", String.class);
+    }
+
     /** 토큰이 유효한지(서명 정상 + 만료 전) 검사 */
     public boolean validateToken(String token) {
         try {

@@ -6,6 +6,7 @@ import com.ssafy.emour.auth.dto.response.LoginResponse;
 import com.ssafy.emour.auth.dto.response.SignUpResponse;
 import com.ssafy.emour.auth.service.AuthService;
 import com.ssafy.emour.global.response.ApiResponse;
+import com.ssafy.emour.global.util.SecurityUtil;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -61,6 +62,16 @@ public class AuthController {
         return ResponseEntity.ok(
                 ApiResponse.success("로그인에 성공했습니다.", response)
         );
+    }
+
+    /**
+     * 로그아웃.  POST /auth/logout  (로그인 상태 필수)
+     * 헤더의 access 토큰으로 "누가 로그아웃하는지" 알아내 Redis 의 refresh 토큰을 삭제한다.
+     */
+    @PostMapping("/logout")
+    public ResponseEntity<ApiResponse<Void>> logout() {
+        authService.logout(SecurityUtil.getCurrentUserId());
+        return ResponseEntity.ok(ApiResponse.success("로그아웃 되었습니다."));
     }
 
     /**

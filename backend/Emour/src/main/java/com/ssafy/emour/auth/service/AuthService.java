@@ -92,4 +92,16 @@ public class AuthService {
 
         return LoginResponse.of(member, accessToken, refreshToken);
     }
+
+    /**
+     * 로그아웃.
+     * Redis 에 저장된 Refresh Token 을 삭제해 더 이상 토큰 재발급이 안 되게 한다.
+     *
+     * 참고: 이미 발급된 Access Token 은 무상태(stateless)라 만료(30분) 전까지는 유효하다.
+     *       즉시 무효화가 필요하면 별도의 "블랙리스트"(Redis)를 도입할 수 있다(추후 고려).
+     */
+    @Transactional
+    public void logout(Long userId) {
+        refreshTokenService.delete(userId);
+    }
 }
