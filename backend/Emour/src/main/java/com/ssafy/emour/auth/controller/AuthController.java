@@ -2,8 +2,10 @@ package com.ssafy.emour.auth.controller;
 
 import com.ssafy.emour.auth.dto.request.LoginRequest;
 import com.ssafy.emour.auth.dto.request.SignUpRequest;
+import com.ssafy.emour.auth.dto.request.TokenReissueRequest;
 import com.ssafy.emour.auth.dto.response.LoginResponse;
 import com.ssafy.emour.auth.dto.response.SignUpResponse;
+import com.ssafy.emour.auth.dto.response.TokenResponse;
 import com.ssafy.emour.auth.service.AuthService;
 import com.ssafy.emour.global.response.ApiResponse;
 import com.ssafy.emour.global.util.SecurityUtil;
@@ -61,6 +63,20 @@ public class AuthController {
         LoginResponse response = authService.login(request);
         return ResponseEntity.ok(
                 ApiResponse.success("로그인에 성공했습니다.", response)
+        );
+    }
+
+    /**
+     * Access Token 재발급.  POST /auth/refresh
+     * body 로 받은 refreshToken 이 유효하면 새 accessToken 을 돌려준다. (로그인 불필요)
+     */
+    @PostMapping("/refresh")
+    public ResponseEntity<ApiResponse<TokenResponse>> reissue(
+            @Valid @RequestBody TokenReissueRequest request
+    ) {
+        TokenResponse response = authService.reissue(request.refreshToken());
+        return ResponseEntity.ok(
+                ApiResponse.success("토큰이 재발급되었습니다.", response)
         );
     }
 

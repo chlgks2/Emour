@@ -4,6 +4,7 @@ import com.ssafy.emour.auth.dto.request.LoginRequest;
 import com.ssafy.emour.auth.dto.request.SignUpRequest;
 import com.ssafy.emour.auth.dto.response.LoginResponse;
 import com.ssafy.emour.auth.dto.response.SignUpResponse;
+import com.ssafy.emour.auth.dto.response.TokenResponse;
 import com.ssafy.emour.global.exception.CustomException;
 import com.ssafy.emour.global.exception.ErrorCode;
 import com.ssafy.emour.global.security.jwt.JwtTokenProvider;
@@ -103,5 +104,29 @@ public class AuthService {
     @Transactional
     public void logout(Long userId) {
         refreshTokenService.delete(userId);
+    }
+
+    /**
+     * Access Token 재발급.
+     * Refresh Token 을 검증하고, Redis 에 저장된 값과 일치할 때만 새 Access Token 을 발급한다.
+     */
+    public TokenResponse reissue(String refreshToken) {
+        // 1) refresh 토큰 자체가 유효한가 (서명/만료 + 종류가 refresh 인지)
+        if (!jwtTokenProvider.validateToken(refreshToken)
+                || !"refresh".equals(jwtTokenProvider.getType(refreshToken))) {
+            throw new CustomException(ErrorCode.INVALID_TOKEN);
+        }
+
+        Long userId = jwtTokenProvider.getUserId(refreshToken);
+
+        // 2) Redis 에 저장된 refresh 와 일치하는가 (로그아웃했거나 탈취/재사용이면 불일치 → 거부)
+        String stored = refreshTokenService.findByUserId(userId);
+        if (stored == null || !stored.equals(refreshToken)) {
+            throw new CustomException(ErrorCode.INVALID_TOKEN);
+        }
+
+        // 3) 새 Access Token 발급
+        String newAccessToken = jwtTokenProvider.createAccessToken(userId);
+        return TokenResponse.ofAccessToken(newAccessToken);
     }
 }
