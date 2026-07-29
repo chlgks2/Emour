@@ -10,7 +10,7 @@ import AlbumPage from './pages/AlbumPage/AlbumPage.jsx'
 import CalendarPage from './pages/CalendarPage/CalendarPage.jsx'
 import MyPagePage from './pages/MyPagePage/MyPagePage.jsx'
 import ProfileEditPage from './pages/ProfileEditPage/ProfileEditPage.jsx'
-
+import NotificationSettingPage from './pages/NotificationSettingPage/NotificationSettingPage.jsx'
 function App() {
   return (
     <MobileLayout>
@@ -44,6 +44,10 @@ function App() {
           path="/mypage/profile-edit"
           element={<ProfileEditPage />}
         />
+        <Route
+          path="/mypage/notification-settings"
+          element={<NotificationSettingPage />}
+        />  
 
         <Route
           path="*"

@@ -1,0 +1,625 @@
+.notification-setting-page {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-rows:
+    68px
+    minmax(0, 1fr)
+    auto;
+  overflow: hidden;
+  background: var(
+    --color-background,
+    #fbf8f7
+  );
+}
+
+/* =========================
+   헤더
+========================= */
+
+.notification-setting-header {
+  position: relative;
+  z-index: 10;
+  display: grid;
+  grid-template-columns:
+    44px 1fr 44px;
+  align-items: center;
+  padding: 0 18px;
+  border-bottom: 1px solid
+    var(--color-border);
+  background:
+    rgba(251, 248, 247, 0.96);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter:
+    blur(12px);
+}
+
+.notification-setting-header h1 {
+  margin: 0;
+  color:
+    var(--color-text-primary);
+  font-size: 19px;
+  text-align: center;
+}
+
+.notification-setting-back-button {
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color:
+    var(--color-text-primary);
+  cursor: pointer;
+}
+
+.notification-setting-back-button:hover:not(
+    :disabled
+  ) {
+  background:
+    rgba(238, 221, 214, 0.45);
+}
+
+.notification-setting-header-spacer {
+  width: 38px;
+}
+
+/* =========================
+   스크롤 영역
+========================= */
+
+.notification-setting-scroll-area {
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 16px 16px 26px;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
+.notification-setting-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* =========================
+   공통 카드
+========================= */
+
+.notification-setting-intro-card,
+.notification-setting-card,
+.notification-setting-preview-card,
+.notification-setting-info-card {
+  border: 1px solid
+    rgba(227, 198, 187, 0.72);
+  border-radius: 22px;
+  background:
+    rgba(255, 255, 255, 0.94);
+  box-shadow:
+    0 12px 28px
+    rgba(104, 74, 65, 0.06);
+}
+
+/* =========================
+   알림 활성화 카드
+========================= */
+
+.notification-setting-intro-card {
+  display: grid;
+  grid-template-columns:
+    48px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 17px;
+}
+
+.notification-setting-intro-icon {
+  width: 48px;
+  height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  background:
+    rgba(227, 198, 187, 0.4);
+  color: #b26d7a;
+}
+
+.notification-setting-intro-content {
+  min-width: 0;
+}
+
+.notification-setting-intro-content h2 {
+  margin: 0 0 5px;
+  color:
+    var(--color-text-primary);
+  font-size: 15px;
+}
+
+.notification-setting-intro-content p {
+  margin: 0;
+  color:
+    var(--color-text-secondary);
+  font-size: 10px;
+  line-height: 1.55;
+  word-break: keep-all;
+}
+
+/* =========================
+   토글
+========================= */
+
+.notification-setting-toggle {
+  position: relative;
+  width: 48px;
+  height: 28px;
+  flex-shrink: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: #d8d1ce;
+  cursor: pointer;
+  transition:
+    background 0.2s ease;
+}
+
+.notification-setting-toggle span {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow:
+    0 2px 7px
+    rgba(64, 64, 64, 0.17);
+  transition:
+    transform 0.2s ease;
+}
+
+.notification-setting-toggle-active {
+  background:
+    var(--color-success, #bed399);
+}
+
+.notification-setting-toggle-active span {
+  transform: translateX(20px);
+}
+
+/* =========================
+   설정 카드
+========================= */
+
+.notification-setting-card {
+  padding: 17px;
+}
+
+.notification-setting-section-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.notification-setting-section-title
+  > span {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background:
+    var(--color-secondary, #eeddd6);
+  color: #8d6d64;
+}
+
+.notification-setting-section-title h2 {
+  margin: 0 0 3px;
+  color:
+    var(--color-text-primary);
+  font-size: 14px;
+}
+
+.notification-setting-section-title p {
+  margin: 0;
+  color:
+    var(--color-text-secondary);
+  font-size: 9px;
+  line-height: 1.45;
+}
+
+/* =========================
+   시간 선택
+========================= */
+
+.notification-setting-time-grid {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1fr)
+    16px
+    minmax(0, 1fr);
+  align-items: end;
+  gap: 7px;
+  margin-top: 16px;
+}
+
+.notification-setting-time-field {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.notification-setting-time-field
+  > span {
+  color:
+    var(--color-text-primary);
+  font-size: 10px;
+  font-weight: 750;
+}
+
+.notification-setting-time-field
+  input {
+  width: 100%;
+  height: 45px;
+  min-width: 0;
+  padding: 0 10px;
+  border: 1px solid
+    var(--color-border);
+  border-radius: 13px;
+  outline: none;
+  background:
+    var(--color-background, #fbf8f7);
+  color:
+    var(--color-text-primary);
+  font: inherit;
+  font-size: 13px;
+}
+
+.notification-setting-time-field
+  input:focus {
+  border-color: #b98e80;
+  box-shadow:
+    0 0 0 3px
+    rgba(227, 198, 187, 0.28);
+}
+
+.notification-setting-time-divider {
+  padding-bottom: 13px;
+  color:
+    var(--color-text-secondary);
+  font-size: 13px;
+  text-align: center;
+}
+
+.notification-setting-validation-message {
+  margin: 10px 0 0;
+  padding: 9px 11px;
+  border-radius: 10px;
+  background:
+    rgba(211, 153, 153, 0.14);
+  color: #a65d69;
+  font-size: 10px;
+}
+
+/* =========================
+   알림 간격
+========================= */
+
+.notification-setting-interval-list {
+  display: grid;
+  grid-template-columns:
+    repeat(5, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 16px;
+}
+
+.notification-setting-interval-list
+  button {
+  height: 37px;
+  padding: 0;
+  border: 1px solid
+    rgba(227, 198, 187, 0.7);
+  border-radius: 11px;
+  background:
+    var(--color-background, #fbf8f7);
+  color:
+    var(--color-text-secondary);
+  font-size: 10px;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.notification-setting-interval-list
+  .notification-setting-interval-active {
+  border-color:
+    var(--color-primary, #e3c6bb);
+  background:
+    var(--color-primary, #e3c6bb);
+  color:
+    var(--color-text-primary);
+  box-shadow:
+    0 4px 10px
+    rgba(160, 112, 97, 0.12);
+}
+
+/* =========================
+   알림 미리보기
+========================= */
+
+.notification-setting-preview-card {
+  padding: 18px 17px;
+  background:
+    linear-gradient(
+      145deg,
+      rgba(238, 221, 214, 0.58),
+      rgba(255, 255, 255, 0.96)
+    );
+}
+
+.notification-setting-preview-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.notification-setting-preview-header
+  p {
+  margin: 0 0 3px;
+  color: #a98074;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+}
+
+.notification-setting-preview-header
+  h2 {
+  margin: 0;
+  color:
+    var(--color-text-primary);
+  font-size: 15px;
+}
+
+.notification-setting-preview-header
+  > span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 25px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background:
+    rgba(190, 211, 153, 0.42);
+  color: #65794a;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.notification-setting-time-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 15px;
+}
+
+.notification-setting-time-chips
+  span {
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 10px;
+  border: 1px solid
+    rgba(227, 198, 187, 0.65);
+  border-radius: 10px;
+  background:
+    rgba(255, 255, 255, 0.75);
+  color:
+    var(--color-text-primary);
+  font-size: 10px;
+  font-weight: 750;
+}
+
+.notification-setting-preview-description {
+  margin: 13px 0 0;
+  color:
+    var(--color-text-secondary);
+  font-size: 10px;
+  line-height: 1.55;
+}
+
+.notification-setting-preview-empty {
+  margin-top: 15px;
+  padding: 17px;
+  border-radius: 13px;
+  background:
+    rgba(255, 255, 255, 0.55);
+  color:
+    var(--color-text-secondary);
+  font-size: 10px;
+  text-align: center;
+}
+
+/* =========================
+   안내 카드
+========================= */
+
+.notification-setting-info-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px;
+  background:
+    rgba(246, 225, 146, 0.2);
+}
+
+.notification-setting-info-card
+  svg {
+  flex-shrink: 0;
+  color: #9a843f;
+}
+
+.notification-setting-info-card p {
+  margin: 0;
+  color: #776c4a;
+  font-size: 10px;
+  line-height: 1.6;
+  word-break: keep-all;
+}
+
+/* =========================
+   결과 메시지
+========================= */
+
+.notification-setting-result-message {
+  margin: 0;
+  padding: 11px 13px;
+  border-radius: 12px;
+  font-size: 10px;
+  text-align: center;
+}
+
+.notification-setting-result-error {
+  background:
+    rgba(211, 153, 153, 0.14);
+  color: #a65d69;
+}
+
+.notification-setting-result-success {
+  background:
+    rgba(190, 211, 153, 0.28);
+  color: #607347;
+}
+
+/* =========================
+   하단 저장 버튼
+========================= */
+
+.notification-setting-footer {
+  padding:
+    12px 16px
+    max(
+      12px,
+      env(safe-area-inset-bottom)
+    );
+  border-top: 1px solid
+    var(--color-border);
+  background:
+    rgba(251, 248, 247, 0.97);
+  box-shadow:
+    0 -8px 20px
+    rgba(64, 64, 64, 0.04);
+}
+
+.notification-setting-footer
+  button {
+  width: 100%;
+  height: 48px;
+  border: 0;
+  border-radius: 15px;
+  background:
+    var(--color-primary, #e3c6bb);
+  color:
+    var(--color-text-primary);
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+/* =========================
+   로딩
+========================= */
+
+.notification-setting-status {
+  min-height: 260px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 30px 20px;
+  border: 1px dashed
+    var(--color-border);
+  border-radius: 22px;
+  background:
+    rgba(255, 255, 255, 0.7);
+  text-align: center;
+}
+
+.notification-setting-status p {
+  margin: 13px 0 0;
+  color:
+    var(--color-text-secondary);
+  font-size: 12px;
+}
+
+.notification-setting-loading-spinner {
+  width: 29px;
+  height: 29px;
+  border: 3px solid
+    var(--color-secondary, #eeddd6);
+  border-top-color: #a76f62;
+  border-radius: 50%;
+  animation:
+    notification-setting-spinner
+    0.8s linear infinite;
+}
+
+.notification-setting-status-error {
+  border-color:
+    rgba(211, 153, 153, 0.5);
+  background:
+    rgba(211, 153, 153, 0.1);
+}
+
+@keyframes notification-setting-spinner {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* =========================
+   비활성화
+========================= */
+
+.notification-setting-page
+  button:disabled,
+.notification-setting-page
+  input:disabled {
+  cursor: not-allowed;
+  opacity: 0.52;
+}
+
+/* =========================
+   작은 화면
+========================= */
+
+@media (max-width: 360px) {
+  .notification-setting-scroll-area {
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+
+  .notification-setting-intro-card {
+    grid-template-columns:
+      44px minmax(0, 1fr) auto;
+    gap: 9px;
+    padding: 14px;
+  }
+
+  .notification-setting-intro-icon {
+    width: 44px;
+    height: 44px;
+  }
+
+  .notification-setting-interval-list {
+    grid-template-columns:
+      repeat(3, minmax(0, 1fr));
+  }
+}

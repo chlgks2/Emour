@@ -1,22 +1,62 @@
 package com.ssafy.emour.global.config;
 
+import com.ssafy.emour.global.security.jwt.JwtAuthenticationEntryPoint;
+import com.ssafy.emour.global.security.jwt.JwtAuthenticationFilter;
+import com.ssafy.emour.global.security.jwt.JwtTokenProvider;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+/**
+ * Spring Security 설정.
+ *
+ * - JWT 방식이므로 세션을 만들지 않는다(STATELESS).
+ * - /auth/** (회원가입/로그인 등)와 회원가입 관련은 인증 없이 허용.
+ * - 로그아웃과 그 외 모든 요청은 로그인(유효한 access 토큰) 필수.
+ * - 우리 JwtAuthenticationFilter 를 스프링 기본 인증 필터 앞에 끼워넣는다.
+ */
 @Configuration
+@RequiredArgsConstructor
 public class SecurityConfig {
+
+    private final JwtTokenProvider jwtTokenProvider;
+    private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        // 지금은 기본 채팅을 연습하는 단계라서 누구나 접속할 수 있게 둡니다.
-        // 나중에 JWT 로그인을 만들 때 반드시 인증된 사용자만 접속하도록 바꿔야 합니다.
-        return http
+        http
                 .csrf(AbstractHttpConfigurer::disable)
-                .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()))
-                .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
-                .build();
+                .formLogin(AbstractHttpConfigurer::disable)
+                .httpBasic(AbstractHttpConfigurer::disable)
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                // 접근 규칙 (위에서부터 순서대로 매칭 — 구체적인 것 먼저)
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/auth/logout").authenticated() // 로그아웃은 로그인 상태여야 함
+                        .requestMatchers("/auth/**").permitAll()          // 그 외 인증 API 는 누구나
+                        .anyRequest().authenticated()                     // 나머지는 전부 로그인 필수
+                )
+                // 인증 실패(토큰 없음/무효) 시 401 을 우리 형식으로 응답
+                .exceptionHandling(ex ->
+                        ex.authenticationEntryPoint(jwtAuthenticationEntryPoint))
+                // 스프링 기본 인증 필터 자리 앞에 우리 JWT 필터를 끼운다
+                .addFilterBefore(
+                        new JwtAuthenticationFilter(jwtTokenProvider),
+                        UsernamePasswordAuthenticationFilter.class
+                );
+
+        return http.build();
+    }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
     }
 }

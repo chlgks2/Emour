@@ -67,24 +67,34 @@
 }
 
 /* =========================
+   공통 카드
+========================= */
+
+.mypage-profile-card,
+.mypage-room-card,
+.mypage-connect-card,
+.mypage-menu-card {
+  border: 1px solid rgba(227, 198, 187, 0.72);
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 14px 30px rgba(104, 74, 65, 0.07);
+}
+
+/* =========================
    프로필 카드
 ========================= */
 
 .mypage-profile-card {
   display: grid;
-  grid-template-columns: 92px minmax(0, 1fr);
+  grid-template-columns: 88px minmax(0, 1fr);
   align-items: center;
-  gap: 17px;
+  gap: 16px;
   padding: 18px;
-  border: 1px solid rgba(227, 198, 187, 0.72);
   border-radius: 23px;
-  background: rgba(255, 255, 255, 0.94);
-  box-shadow: 0 14px 30px rgba(104, 74, 65, 0.07);
 }
 
 .mypage-profile-image {
-  width: 92px;
-  height: 92px;
+  width: 88px;
+  height: 88px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -144,11 +154,6 @@
   background: var(--color-primary);
 }
 
-.mypage-profile-edit-button:disabled {
-  cursor: not-allowed;
-  opacity: 0.5;
-}
-
 .mypage-profile-email {
   overflow: hidden;
   margin: 6px 0 0;
@@ -160,24 +165,309 @@
 
 .mypage-profile-message {
   margin: 9px 0 0;
-  color: #cc6f80;
+  color: #bd6b7a;
   font-size: 13px;
   font-weight: 700;
   line-height: 1.45;
   word-break: keep-all;
 }
 
-.mypage-couple-badge {
+.mypage-email-badge {
   display: inline-flex;
   align-items: center;
-  min-height: 24px;
+  min-height: 23px;
   margin-top: 9px;
   padding: 0 9px;
   border-radius: 999px;
-  background: rgba(227, 198, 187, 0.38);
-  color: #936b60;
+  background: rgba(190, 211, 153, 0.3);
+  color: #6f8251;
   font-size: 10px;
   font-weight: 700;
+}
+
+/* =========================
+   우리 방 카드
+========================= */
+
+.mypage-room-card {
+  margin-top: 15px;
+  padding: 19px 17px 17px;
+  border-radius: 23px;
+}
+
+.mypage-room-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.mypage-card-eyebrow {
+  margin: 0 0 3px;
+  color: #b18b80;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.mypage-room-header h2 {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: 18px;
+}
+
+.mypage-room-status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 25px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.mypage-room-status-active {
+  background: rgba(190, 211, 153, 0.34);
+  color: #65794a;
+}
+
+.mypage-room-status-waiting {
+  background: rgba(246, 225, 146, 0.38);
+  color: #8c783f;
+}
+
+.mypage-room-status-inactive {
+  background: rgba(211, 153, 153, 0.25);
+  color: #9a5e68;
+}
+
+.mypage-room-description {
+  margin: 8px 0 0;
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.mypage-room-information {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 15px;
+}
+
+.mypage-room-information-item {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 11px;
+  border-radius: 14px;
+  background: var(--color-background);
+  color: #9a7469;
+}
+
+.mypage-room-information-item div {
+  min-width: 0;
+}
+
+.mypage-room-information-item span {
+  display: block;
+  margin-bottom: 3px;
+  color: var(--color-text-secondary);
+  font-size: 9px;
+}
+
+.mypage-room-information-item strong {
+  display: block;
+  overflow: hidden;
+  color: var(--color-text-primary);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* =========================
+   방 코드
+========================= */
+
+.mypage-room-code-section {
+  margin-top: 10px;
+  padding: 14px;
+  border: 1px solid rgba(227, 198, 187, 0.62);
+  border-radius: 16px;
+  background: rgba(251, 248, 247, 0.86);
+}
+
+.mypage-room-code-title {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.mypage-room-code-title span {
+  color: var(--color-text-primary);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.mypage-room-code-title p {
+  margin: 4px 0 0;
+  color: var(--color-text-secondary);
+  font-size: 9px;
+  line-height: 1.45;
+}
+
+.mypage-room-code-visibility-button {
+  width: 31px;
+  height: 31px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: var(--color-secondary);
+  color: #826f69;
+  cursor: pointer;
+}
+
+.mypage-room-code-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 13px;
+}
+
+.mypage-room-code-row > strong {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  color: var(--color-text-primary);
+  font-size: 19px;
+  letter-spacing: 0.1em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mypage-room-copy-button {
+  height: 34px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 0 11px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--color-primary);
+  color: var(--color-text-primary);
+  font-size: 10px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.mypage-room-code-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 9px;
+  margin-top: 12px;
+  padding-top: 11px;
+  border-top: 1px solid var(--color-border);
+}
+
+.mypage-room-code-footer > span {
+  color: var(--color-text-secondary);
+  font-size: 9px;
+}
+
+.mypage-room-code-footer
+  .mypage-room-code-expired {
+  color: #b65f6d;
+  font-weight: 700;
+}
+
+.mypage-room-code-footer button {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 7px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #9a6e61;
+  font-size: 9px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.mypage-leave-room-button {
+  width: 100%;
+  height: 41px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  margin-top: 12px;
+  border: 1px solid rgba(211, 153, 153, 0.58);
+  border-radius: 13px;
+  background: rgba(211, 153, 153, 0.1);
+  color: #a65d69;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+/* =========================
+   연인 연결 카드
+========================= */
+
+.mypage-connect-card {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 12px;
+  margin-top: 15px;
+  padding: 17px;
+  border-radius: 23px;
+}
+
+.mypage-connect-icon {
+  width: 48px;
+  height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  background: var(--color-secondary);
+  color: #a27366;
+}
+
+.mypage-connect-card h2 {
+  margin: 2px 0 4px;
+  color: var(--color-text-primary);
+  font-size: 15px;
+}
+
+.mypage-connect-card p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.mypage-connect-card > button {
+  grid-column: 1 / -1;
+  height: 42px;
+  border: 0;
+  border-radius: 13px;
+  background: var(--color-primary);
+  color: var(--color-text-primary);
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
 }
 
 /* =========================
@@ -186,17 +476,14 @@
 
 .mypage-menu-card {
   overflow: hidden;
-  margin-top: 16px;
+  margin-top: 15px;
   padding: 0 16px;
-  border: 1px solid rgba(227, 198, 187, 0.72);
   border-radius: 23px;
-  background: rgba(255, 255, 255, 0.94);
-  box-shadow: 0 14px 30px rgba(104, 74, 65, 0.07);
 }
 
 .mypage-menu-item {
   width: 100%;
-  min-height: 69px;
+  min-height: 64px;
   display: grid;
   grid-template-columns: 38px minmax(0, 1fr) 20px;
   align-items: center;
@@ -246,11 +533,6 @@
   .mypage-menu-icon {
   background: rgba(211, 153, 153, 0.18);
   color: #c75f73;
-}
-
-.mypage-menu-item:disabled {
-  cursor: not-allowed;
-  opacity: 0.48;
 }
 
 /* =========================
@@ -378,9 +660,13 @@
   color: #ffffff;
 }
 
-.mypage-confirm-actions button:disabled {
+/* =========================
+   비활성화
+========================= */
+
+.mypage-page button:disabled {
   cursor: not-allowed;
-  opacity: 0.55;
+  opacity: 0.5;
 }
 
 /* =========================
@@ -394,17 +680,25 @@
   }
 
   .mypage-profile-card {
-    grid-template-columns: 80px minmax(0, 1fr);
-    gap: 14px;
+    grid-template-columns: 78px minmax(0, 1fr);
+    gap: 13px;
     padding: 15px;
   }
 
   .mypage-profile-image {
-    width: 80px;
-    height: 80px;
+    width: 78px;
+    height: 78px;
   }
 
   .mypage-profile-title-row h2 {
     font-size: 18px;
+  }
+
+  .mypage-room-information {
+    grid-template-columns: 1fr;
+  }
+
+  .mypage-room-code-row > strong {
+    font-size: 17px;
   }
 }

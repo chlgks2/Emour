@@ -1,0 +1,221 @@
+/* 우리 방의 연결 상대 수정 버튼 */
+
+.mypage-partner-edit-button {
+  width: 29px;
+  height: 29px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 9px;
+  background: var(--color-secondary);
+  color: #906e64;
+  cursor: pointer;
+}
+
+.mypage-partner-edit-button:hover:not(:disabled) {
+  background: var(--color-primary);
+}
+
+.mypage-partner-edit-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* 모달 배경 */
+
+.partner-nickname-backdrop {
+  position: absolute;
+  z-index: 70;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(64, 64, 64, 0.34);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+}
+
+/* 모달 */
+
+.partner-nickname-modal {
+  width: 100%;
+  padding: 20px;
+  border: 1px solid rgba(227, 198, 187, 0.84);
+  border-radius: 23px;
+  background: var(
+    --color-surface,
+    #fffdfc
+  );
+  box-shadow:
+    0 20px 50px
+    rgba(64, 64, 64, 0.22);
+}
+
+.partner-nickname-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.partner-nickname-header > div {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.partner-nickname-icon {
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  background: rgba(
+    227,
+    198,
+    187,
+    0.42
+  );
+  color: #b36d79;
+}
+
+.partner-nickname-header p {
+  margin: 0 0 3px;
+  color: #b18b80;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.partner-nickname-header h2 {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: 17px;
+}
+
+.partner-nickname-header > button {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: var(--color-secondary);
+  color: #786e6a;
+  cursor: pointer;
+}
+
+/* 입력 폼 */
+
+.partner-nickname-form {
+  margin-top: 20px;
+}
+
+.partner-nickname-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.partner-nickname-form label > span {
+  color: var(--color-text-primary);
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.partner-nickname-form input {
+  width: 100%;
+  height: 48px;
+  padding: 0 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  outline: none;
+  background: var(
+    --color-background,
+    #fbf8f7
+  );
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: 14px;
+}
+
+.partner-nickname-form input:focus {
+  border-color: #b98e80;
+  box-shadow:
+    0 0 0 3px
+    rgba(227, 198, 187, 0.28);
+}
+
+.partner-nickname-field-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 7px;
+}
+
+.partner-nickname-field-footer span,
+.partner-nickname-field-footer strong {
+  color: var(--color-text-secondary);
+  font-size: 9px;
+  font-weight: 500;
+}
+
+.partner-nickname-error {
+  margin: 10px 0 0;
+  padding: 9px 11px;
+  border-radius: 10px;
+  background: rgba(
+    211,
+    153,
+    153,
+    0.14
+  );
+  color: #a85d69;
+  font-size: 10px;
+}
+
+/* 버튼 */
+
+.partner-nickname-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+  margin-top: 18px;
+  padding-top: 15px;
+  border-top: 1px solid var(--color-border);
+}
+
+.partner-nickname-actions button {
+  height: 45px;
+  border: 0;
+  border-radius: 13px;
+  color: var(--color-text-primary);
+  font-size: 12px;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.partner-nickname-cancel {
+  background: var(--color-secondary);
+}
+
+.partner-nickname-save {
+  background: var(--color-success);
+}
+
+.partner-nickname-actions button:disabled,
+.partner-nickname-header
+  > button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
