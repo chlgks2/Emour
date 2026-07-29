@@ -100,4 +100,18 @@ public class Member {
     public void changePassword(String encodedPassword) {
         this.passwordHash = encodedPassword;
     }
+
+    /** 프로필 부분 수정 (null 로 온 필드는 변경하지 않음) */
+    public void updateProfile(String nickname, LocalDate birth, String profileImageUrl, String statusMessage) {
+        if (nickname != null) this.nickname = nickname;
+        if (birth != null) this.birth = birth;
+        if (profileImageUrl != null) this.profileImageUrl = profileImageUrl;
+        if (statusMessage != null) this.statusMessage = statusMessage;
+    }
+
+    /** 회원 탈퇴 (soft delete): 상태를 WITHDRAWN 으로, 탈퇴 시각 기록 */
+    public void withdraw() {
+        this.status = MemberStatus.WITHDRAWN;
+        this.deletedAt = LocalDateTime.now();
+    }
 }

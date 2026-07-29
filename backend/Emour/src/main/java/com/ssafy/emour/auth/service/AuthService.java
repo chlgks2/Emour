@@ -10,6 +10,7 @@ import com.ssafy.emour.global.exception.CustomException;
 import com.ssafy.emour.global.exception.ErrorCode;
 import com.ssafy.emour.global.security.jwt.JwtTokenProvider;
 import com.ssafy.emour.member.entity.Member;
+import com.ssafy.emour.member.entity.MemberStatus;
 import com.ssafy.emour.member.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -79,7 +80,12 @@ public class AuthService {
         Member member = memberRepository.findByEmail(request.email())
                 .orElseThrow(() -> new CustomException(ErrorCode.INVALID_CREDENTIALS));
 
-        // 2) 비밀번호 대조 (평문 입력 vs 저장된 해시)
+        // 2) 탈퇴한 회원은 로그인 불가
+        if (member.getStatus() == MemberStatus.WITHDRAWN) {
+            throw new CustomException(ErrorCode.INVALID_CREDENTIALS);
+        }
+
+        // 3) 비밀번호 대조 (평문 입력 vs 저장된 해시)
         //    소셜 전용 계정은 passwordHash 가 null 이므로 이메일 로그인 불가
         if (member.getPasswordHash() == null
                 || !passwordEncoder.matches(request.password(), member.getPasswordHash())) {
