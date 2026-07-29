@@ -96,9 +96,9 @@ public class ChatReadService {
 
         long unreadCount = lastReadMessageId == null
                 ? chatMessageRepository
-                .countByRoomIdAndSenderIdNotAndDeletedAtIsNull(roomId, userId)
+                .countByRoomIdAndSenderIdNot(roomId, userId)
                 : chatMessageRepository
-                .countByRoomIdAndSenderIdNotAndMessageIdGreaterThanAndDeletedAtIsNull(
+                .countByRoomIdAndSenderIdNotAndMessageIdGreaterThan(
                         roomId,
                         userId,
                         lastReadMessageId

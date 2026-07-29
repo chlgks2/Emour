@@ -59,12 +59,6 @@ public class ChatMessage {
     @Column(name = "sent_at", nullable = false)
     private LocalDateTime sentAt;
 
-    @Column(name = "edited_at")
-    private LocalDateTime editedAt;
-
-    @Column(name = "deleted_at")
-    private LocalDateTime deletedAt;
-
     @OneToMany(
             mappedBy = "message",
             cascade = CascadeType.ALL,

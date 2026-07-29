@@ -8,7 +8,6 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.Table;
 
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 
 @Entity
 @Table(name = "couple_member")
@@ -19,9 +18,6 @@ public class CoupleMember {
 
     @Column(name = "partner_nickname", length = 50)
     private String partnerNickname;
-
-    @Column(name = "alarm_time")
-    private LocalTime alarmTime;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 10)

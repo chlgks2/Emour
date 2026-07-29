@@ -68,9 +68,9 @@ public class ChatMessageService {
         // 커서가 없으면 최신 메시지부터, 있으면 그 메시지보다 과거를 찾습니다.
         List<ChatMessage> found = beforeMessageId == null
                 ? chatMessageRepository
-                .findByRoomIdAndDeletedAtIsNullOrderByMessageIdDesc(roomId, page)
+                .findByRoomIdOrderByMessageIdDesc(roomId, page)
                 : chatMessageRepository
-                .findByRoomIdAndMessageIdLessThanAndDeletedAtIsNullOrderByMessageIdDesc(
+                .findByRoomIdAndMessageIdLessThanOrderByMessageIdDesc(
                         roomId,
                         beforeMessageId,
                         page
@@ -118,13 +118,13 @@ public class ChatMessageService {
 
         List<ChatMessage> found = beforeMessageId == null
                 ? chatMessageRepository
-                .findByRoomIdAndContentContainingIgnoreCaseAndDeletedAtIsNullOrderByMessageIdDesc(
+                .findByRoomIdAndContentContainingIgnoreCaseOrderByMessageIdDesc(
                         roomId,
                         normalizedKeyword,
                         page
                 )
                 : chatMessageRepository
-                .findByRoomIdAndContentContainingIgnoreCaseAndMessageIdLessThanAndDeletedAtIsNullOrderByMessageIdDesc(
+                .findByRoomIdAndContentContainingIgnoreCaseAndMessageIdLessThanOrderByMessageIdDesc(
                         roomId,
                         normalizedKeyword,
                         beforeMessageId,
@@ -151,7 +151,7 @@ public class ChatMessageService {
         }
 
         return chatMessageRepository
-                .findByMessageIdAndDeletedAtIsNull(messageId)
+                .findByMessageId(messageId)
                 .orElseThrow(() -> new ChatException("메시지를 찾을 수 없습니다."));
     }
 

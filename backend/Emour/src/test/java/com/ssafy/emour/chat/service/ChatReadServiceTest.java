@@ -83,7 +83,7 @@ class ChatReadServiceTest {
                 new ChatReadStateId(10L, 1L)
         )).thenReturn(Optional.empty());
         when(chatMessageRepository
-                .countByRoomIdAndSenderIdNotAndDeletedAtIsNull(1L, 10L))
+                .countByRoomIdAndSenderIdNot(1L, 10L))
                 .thenReturn(3L);
 
         ChatUnreadCountResponse response =
@@ -105,7 +105,7 @@ class ChatReadServiceTest {
                 new ChatReadStateId(10L, 1L)
         )).thenReturn(Optional.of(state));
         when(chatMessageRepository
-                .countByRoomIdAndSenderIdNotAndMessageIdGreaterThanAndDeletedAtIsNull(
+                .countByRoomIdAndSenderIdNotAndMessageIdGreaterThan(
                         1L,
                         10L,
                         100L

@@ -9,11 +9,11 @@ import java.util.Objects;
 @Embeddable
 public class ChatReadStateId implements Serializable {
 
-    @Column(name = "user_id")
-    private Long userId;
-
     @Column(name = "room_id")
     private Long roomId;
+
+    @Column(name = "user_id")
+    private Long userId;
 
     protected ChatReadStateId() {
     }

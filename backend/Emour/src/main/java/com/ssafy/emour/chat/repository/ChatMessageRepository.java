@@ -14,26 +14,26 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
             String clientMessageId
     );
 
-    Optional<ChatMessage> findByMessageIdAndDeletedAtIsNull(Long messageId);
+    Optional<ChatMessage> findByMessageId(Long messageId);
 
-    List<ChatMessage> findByRoomIdAndDeletedAtIsNullOrderByMessageIdDesc(
+    List<ChatMessage> findByRoomIdOrderByMessageIdDesc(
             Long roomId,
             Pageable pageable
     );
 
-    List<ChatMessage> findByRoomIdAndMessageIdLessThanAndDeletedAtIsNullOrderByMessageIdDesc(
+    List<ChatMessage> findByRoomIdAndMessageIdLessThanOrderByMessageIdDesc(
             Long roomId,
             Long messageId,
             Pageable pageable
     );
 
-    List<ChatMessage> findByRoomIdAndContentContainingIgnoreCaseAndDeletedAtIsNullOrderByMessageIdDesc(
+    List<ChatMessage> findByRoomIdAndContentContainingIgnoreCaseOrderByMessageIdDesc(
             Long roomId,
             String keyword,
             Pageable pageable
     );
 
-    List<ChatMessage> findByRoomIdAndContentContainingIgnoreCaseAndMessageIdLessThanAndDeletedAtIsNullOrderByMessageIdDesc(
+    List<ChatMessage> findByRoomIdAndContentContainingIgnoreCaseAndMessageIdLessThanOrderByMessageIdDesc(
             Long roomId,
             String keyword,
             Long messageId,
@@ -41,13 +41,13 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
     );
 
     // 채팅을 한 번도 읽지 않은 경우 상대방이 보낸 전체 메시지를 셉니다.
-    long countByRoomIdAndSenderIdNotAndDeletedAtIsNull(
+    long countByRoomIdAndSenderIdNot(
             Long roomId,
             Long userId
     );
 
     // 마지막 읽은 메시지보다 뒤에 온 상대방 메시지만 셉니다.
-    long countByRoomIdAndSenderIdNotAndMessageIdGreaterThanAndDeletedAtIsNull(
+    long countByRoomIdAndSenderIdNotAndMessageIdGreaterThan(
             Long roomId,
             Long userId,
             Long lastReadMessageId
