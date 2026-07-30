@@ -1,4 +1,4 @@
-package com.ssafy.emour.couple.entity;
+package com.ssafy.emour.chat.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
@@ -7,7 +7,7 @@ import java.io.Serializable;
 import java.util.Objects;
 
 @Embeddable
-public class CoupleMemberId implements Serializable {
+public class ChatReadStateId implements Serializable {
 
     @Column(name = "room_id")
     private Long roomId;
@@ -15,10 +15,10 @@ public class CoupleMemberId implements Serializable {
     @Column(name = "user_id")
     private Long userId;
 
-    protected CoupleMemberId() {
+    protected ChatReadStateId() {
     }
 
-    public CoupleMemberId(Long userId, Long roomId) {
+    public ChatReadStateId(Long userId, Long roomId) {
         this.userId = userId;
         this.roomId = roomId;
     }
@@ -36,7 +36,7 @@ public class CoupleMemberId implements Serializable {
         if (this == object) {
             return true;
         }
-        if (!(object instanceof CoupleMemberId that)) {
+        if (!(object instanceof ChatReadStateId that)) {
             return false;
         }
         return Objects.equals(userId, that.userId)
