@@ -37,8 +37,9 @@ public class AlbumPhoto {
     @Column(name = "uploader_id", nullable = false)
     private Long uploaderId;
 
+    // DB 에는 전체 URL 이 아니라 저장 key("2026/07/30/abc.jpg")만 저장한다 (팀 규약).
     @Column(name = "image_url", nullable = false, length = 2048)
-    private String imageUrl;
+    private String imageKey;
 
     @Column(name = "memo", length = 500)
     private String memo;
@@ -48,10 +49,10 @@ public class AlbumPhoto {
     private LocalDateTime createdAt;
 
     @Builder
-    private AlbumPhoto(Long roomId, Long uploaderId, String imageUrl, String memo) {
+    private AlbumPhoto(Long roomId, Long uploaderId, String imageKey, String memo) {
         this.roomId = roomId;
         this.uploaderId = uploaderId;
-        this.imageUrl = imageUrl;
+        this.imageKey = imageKey;
         this.memo = memo;
     }
 

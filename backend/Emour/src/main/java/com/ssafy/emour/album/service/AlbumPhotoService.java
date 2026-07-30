@@ -7,6 +7,7 @@ import com.ssafy.emour.global.exception.CustomException;
 import com.ssafy.emour.global.exception.ErrorCode;
 import com.ssafy.emour.global.storage.FileStorage;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -26,18 +27,22 @@ public class AlbumPhotoService {
     private final AlbumPhotoRepository albumPhotoRepository;
     private final FileStorage fileStorage;
 
-    /** 사진 업로드 (파일 저장 → DB 기록) */
+    // 응답에 붙일 이미지 URL 접두어 (환경변수 APP_UPLOAD_BASE_URL 로 주입, 로컬 기본 localhost:8080)
+    @Value("${app.upload.base-url}")
+    private String baseUrl;
+
+    /** 사진 업로드 (파일 저장 → key 를 DB 에 기록) */
     @Transactional
     public AlbumPhotoResponse upload(Long userId, MultipartFile file, String memo) {
-        String imageUrl = fileStorage.store(file); // 파일 저장 후 접근 URL 획득
+        String key = fileStorage.store(file); // 파일 저장 후 key 획득
 
         AlbumPhoto photo = AlbumPhoto.builder()
                 .uploaderId(userId)
-                .imageUrl(imageUrl)
+                .imageKey(key)
                 .memo(memo)
                 .build();
 
-        return AlbumPhotoResponse.from(albumPhotoRepository.save(photo));
+        return AlbumPhotoResponse.of(albumPhotoRepository.save(photo), baseUrl);
     }
 
     /** 내 사진 전체 조회 (최신순) */
@@ -45,7 +50,7 @@ public class AlbumPhotoService {
     public List<AlbumPhotoResponse> getMyPhotos(Long userId) {
         return albumPhotoRepository.findByUploaderIdOrderByCreatedAtDesc(userId)
                 .stream()
-                .map(AlbumPhotoResponse::from)
+                .map(photo -> AlbumPhotoResponse.of(photo, baseUrl))
                 .toList();
     }
 
@@ -53,8 +58,8 @@ public class AlbumPhotoService {
     @Transactional
     public void delete(Long userId, Long photoId) {
         AlbumPhoto photo = getOwnedPhoto(userId, photoId);
-        fileStorage.delete(photo.getImageUrl()); // 실제 파일 삭제
-        albumPhotoRepository.delete(photo);       // DB 기록 삭제
+        fileStorage.delete(photo.getImageKey()); // 실제 파일 삭제 (key 로)
+        albumPhotoRepository.delete(photo);        // DB 기록 삭제
     }
 
     /** 사진 메모 작성/수정 */
@@ -62,12 +67,11 @@ public class AlbumPhotoService {
     public AlbumPhotoResponse updateMemo(Long userId, Long photoId, String memo) {
         AlbumPhoto photo = getOwnedPhoto(userId, photoId);
         photo.updateMemo(memo);
-        return AlbumPhotoResponse.from(photo);
+        return AlbumPhotoResponse.of(photo, baseUrl);
     }
 
     /**
      * 사진을 찾고, "내가 올린 사진"이 맞는지 소유권을 확인한다.
-     * 남의 사진을 지우거나 수정하지 못하게 막는 방어 로직.
      */
     private AlbumPhoto getOwnedPhoto(Long userId, Long photoId) {
         AlbumPhoto photo = albumPhotoRepository.findById(photoId)

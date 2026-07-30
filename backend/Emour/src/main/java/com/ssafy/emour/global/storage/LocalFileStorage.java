@@ -11,31 +11,30 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
 /**
  * 로컬 디스크에 파일을 저장하는 구현체.
  *
- * 저장 위치: file.upload-dir (application.yml)
- * 접근 URL : file.base-url + "/" + 저장파일명  (WebConfig 가 정적 리소스로 서빙)
+ * 저장 위치: app.upload.dir (로컬 ./uploads, EC2 /app/uploads)
+ * 반환 key : "yyyy/MM/dd/{uuid}.ext"  ← DB 에는 이 key 만 저장한다.
  */
 @Slf4j
 @Component
 public class LocalFileStorage implements FileStorage {
 
-    private final Path uploadDir;
-    private final String baseUrl;
+    private static final DateTimeFormatter DATE_PATH = DateTimeFormatter.ofPattern("yyyy/MM/dd");
 
-    public LocalFileStorage(
-            @Value("${file.upload-dir}") String uploadDir,
-            @Value("${file.base-url}") String baseUrl
-    ) {
-        this.uploadDir = Paths.get(uploadDir).toAbsolutePath().normalize();
-        this.baseUrl = baseUrl;
+    private final Path baseDir;
+
+    public LocalFileStorage(@Value("${app.upload.dir}") String uploadDir) {
+        this.baseDir = Paths.get(uploadDir).toAbsolutePath().normalize();
         try {
-            Files.createDirectories(this.uploadDir); // 폴더 없으면 생성
+            Files.createDirectories(this.baseDir);
         } catch (IOException e) {
-            throw new IllegalStateException("업로드 디렉토리 생성 실패: " + this.uploadDir, e);
+            throw new IllegalStateException("업로드 디렉토리 생성 실패: " + this.baseDir, e);
         }
     }
 
@@ -44,25 +43,27 @@ public class LocalFileStorage implements FileStorage {
         if (file == null || file.isEmpty()) {
             throw new CustomException(ErrorCode.INVALID_INPUT);
         }
-        // 중복/충돌 없는 고유 파일명 생성 (원본 확장자 유지)
-        String filename = UUID.randomUUID().toString().replace("-", "")
+        // key = 날짜폴더 + UUID 파일명 (원본 확장자 유지, 원본 파일명은 사용 안 함)
+        String key = LocalDate.now().format(DATE_PATH)
+                + "/" + UUID.randomUUID().toString().replace("-", "")
                 + extractExtension(file.getOriginalFilename());
         try {
-            file.transferTo(uploadDir.resolve(filename)); // 실제 저장
-            return baseUrl + "/" + filename;
+            Path target = baseDir.resolve(key);
+            Files.createDirectories(target.getParent()); // 날짜 폴더 생성
+            file.transferTo(target);
+            return key;
         } catch (IOException e) {
             throw new CustomException(ErrorCode.FILE_STORAGE_ERROR);
         }
     }
 
     @Override
-    public void delete(String url) {
+    public void delete(String key) {
         try {
-            String filename = url.substring(url.lastIndexOf('/') + 1);
-            Files.deleteIfExists(uploadDir.resolve(filename));
+            Files.deleteIfExists(baseDir.resolve(key));
         } catch (Exception e) {
             // 파일 삭제 실패는 치명적이지 않으므로 로깅만 하고 넘어간다
-            log.warn("파일 삭제 실패: {}", url, e);
+            log.warn("파일 삭제 실패: {}", key, e);
         }
     }
 
