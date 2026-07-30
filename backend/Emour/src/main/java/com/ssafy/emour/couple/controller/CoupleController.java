@@ -4,6 +4,7 @@ import com.ssafy.emour.couple.dto.request.CoupleConnectRequest;
 import com.ssafy.emour.couple.dto.response.CoupleConnectResponse;
 import com.ssafy.emour.couple.dto.response.CoupleDisconnectResponse;
 import com.ssafy.emour.couple.dto.response.CoupleInvitationResponse;
+import com.ssafy.emour.couple.dto.response.CoupleStatusResponse;
 import com.ssafy.emour.couple.service.CoupleService;
 import com.ssafy.emour.global.response.ApiResponse;
 import com.ssafy.emour.global.util.SecurityUtil;
@@ -12,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -44,6 +46,16 @@ public class CoupleController {
         );
         return ResponseEntity.ok(
                 ApiResponse.success("커플 연결이 완료되었습니다.", response)
+        );
+    }
+
+    @GetMapping("/status")
+    public ResponseEntity<ApiResponse<CoupleStatusResponse>> getStatus() {
+        CoupleStatusResponse response = coupleService.getStatus(
+                SecurityUtil.getCurrentUserId()
+        );
+        return ResponseEntity.ok(
+                ApiResponse.success("커플 연결 상태를 조회했습니다.", response)
         );
     }
 
