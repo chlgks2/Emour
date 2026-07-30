@@ -39,6 +39,8 @@ public class SecurityConfig {
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 // 접근 규칙 (위에서부터 순서대로 매칭 — 구체적인 것 먼저)
                 .authorizeHttpRequests(auth -> auth
+                        // 배포 서버는 로그인 없이 서버의 정상 실행 여부만 확인합니다.
+                        .requestMatchers("/actuator/health").permitAll()
                         .requestMatchers("/auth/logout").authenticated() // 로그아웃은 로그인 상태여야 함
                         .requestMatchers("/auth/**").permitAll()          // 그 외 인증 API 는 누구나
                         // WebSocket은 STOMP CONNECT 헤더의 JWT로 별도 인증한다.
