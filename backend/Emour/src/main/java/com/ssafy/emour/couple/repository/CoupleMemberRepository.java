@@ -13,10 +13,15 @@ import java.util.List;
 
 public interface CoupleMemberRepository extends JpaRepository<CoupleMember, CoupleMemberId> {
 
+    // 채팅에서는 해당 사용자가 현재 방의 활성 멤버인지 확인합니다.
+    boolean existsByIdAndStatus(CoupleMemberId id, CoupleMemberStatus status);
+
     long countByIdRoomIdAndStatus(
             Long roomId,
             CoupleMemberStatus status
     );
+
+    List<CoupleMember> findAllByIdRoomId(Long roomId);
 
     @Query("""
             select (count(cm) > 0)
@@ -41,6 +46,4 @@ public interface CoupleMemberRepository extends JpaRepository<CoupleMember, Coup
             @Param("userId") Long userId,
             Pageable pageable
     );
-
-    boolean existsByIdAndStatus(CoupleMemberId id, CoupleMemberStatus status);
 }
