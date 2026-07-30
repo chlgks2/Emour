@@ -1,0 +1,56 @@
+.nav {
+  position: sticky;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  /* 홈 인디케이터(제스처 바) 아래로 파묻히지 않도록 안전영역만큼 더 확보 */
+  height: calc(var(--bottom-nav-height) + var(--safe-bottom));
+  padding-bottom: var(--safe-bottom);
+  background: var(--color-white);
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  flex-shrink: 0;
+  z-index: 20;
+}
+
+.item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  font-size: 11px;
+  color: var(--color-text-placeholder);
+  flex: 1;
+  height: 100%;
+  min-height: var(--tap-target);
+  transition: color var(--duration-fast) var(--ease-out);
+}
+
+.icon {
+  display: flex;
+  transition: transform var(--duration-base) var(--ease-spring);
+}
+
+.item:active .icon {
+  transform: scale(0.9);
+}
+
+.active {
+  color: var(--color-primary);
+  font-weight: 700;
+}
+
+/* 현재 탭 위에 얇은 인디케이터 */
+.active::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  width: 22px;
+  height: 3px;
+  border-radius: 0 0 var(--radius-pill) var(--radius-pill);
+  background: var(--color-primary);
+}
