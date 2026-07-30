@@ -1,0 +1,13 @@
+.divider {
+  display: flex;
+  justify-content: center;
+  margin: 14px 0;
+}
+
+.divider span {
+  font-size: 11px;
+  color: var(--color-text-sub);
+  background: var(--color-sub-bg);
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+}
