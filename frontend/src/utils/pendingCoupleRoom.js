@@ -3,9 +3,11 @@ const PENDING_COUPLE_ROOM_KEY =
 
 export function savePendingCoupleRoom(
   invitation,
+  ownerUserId = null,
 ) {
   const pendingRoom = {
     roomId: invitation.roomId,
+    ownerUserId,
     roomCode: invitation.invitationCode,
     roomCodeExpiresAt:
       invitation.expiresAt,
@@ -20,9 +22,13 @@ export function savePendingCoupleRoom(
   return pendingRoom
 }
 
-export function saveCurrentCoupleRoom(room) {
+export function saveCurrentCoupleRoom(
+  room,
+  ownerUserId = null,
+) {
   const currentRoom = {
     roomId: room.roomId,
+    ownerUserId,
     roomCode:
       room.invitationCode ??
       room.roomCode ??
@@ -67,6 +73,30 @@ export function getPendingCoupleRoom() {
 
 export const getCurrentCoupleRoom =
   getPendingCoupleRoom
+
+export function hasCurrentCoupleRoom(
+  userId,
+) {
+  const room = getCurrentCoupleRoom()
+
+  if (!room?.roomId) {
+    return false
+  }
+
+  if (
+    room.ownerUserId !== undefined &&
+    room.ownerUserId !== null &&
+    userId !== undefined &&
+    userId !== null
+  ) {
+    return (
+      Number(room.ownerUserId) ===
+      Number(userId)
+    )
+  }
+
+  return true
+}
 
 export function clearPendingCoupleRoom() {
   localStorage.removeItem(

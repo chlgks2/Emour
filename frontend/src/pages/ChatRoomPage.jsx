@@ -16,6 +16,7 @@ import {
   sendMessage,
   fetchSuggestions,
 } from "../api/chatApi";
+import { connectChatSocket } from "../api/chatSocket.js";
 import { fetchBookmarkedMessageIds, toggleBookmark } from "../api/bookmarkApi";
 import { fetchReactions, setMyReaction } from "../api/reactionApi";
 import { createClientMessageId, MY_USER_ID } from "../api/mock/db";
@@ -67,6 +68,7 @@ export default function ChatRoomPage() {
   const hasMore = nextBeforeMessageId !== null;
   const justPrependedRef = useRef(false);
   const suggestTimerRef = useRef(null);
+  const chatSocketRef = useRef(null);
   // 이전 페이지 요청 중복 방지 (state 는 비동기라 ref 로 즉시 잠근다)
   const fetchingMoreRef = useRef(false);
 
@@ -128,6 +130,138 @@ export default function ChatRoomPage() {
       cancelled = true;
     };
   }, [roomId]);
+
+  // 같은 커플방의 메시지·읽음·공감 이벤트를 실시간으로 구독한다.
+  useEffect(() => {
+    if (!roomId) return undefined;
+
+    let isActive = true;
+
+    const socket = connectChatSocket({
+      roomId,
+      onMessage: (incomingMessage) => {
+        if (!isActive) return;
+
+        setMessages((previous) => {
+          const existingIndex =
+            previous.findIndex(
+              (message) =>
+                message.messageId ===
+                  incomingMessage.messageId ||
+                (message.clientMessageId &&
+                  message.clientMessageId ===
+                    incomingMessage.clientMessageId),
+            );
+
+          if (existingIndex >= 0) {
+            return previous.map(
+              (message, index) =>
+                index === existingIndex
+                  ? incomingMessage
+                  : message,
+            );
+          }
+
+          return [
+            ...previous,
+            incomingMessage,
+          ];
+        });
+
+        if (
+          Number(incomingMessage.senderId) !==
+          Number(myUserId)
+        ) {
+          chatSocketRef.current?.markAsRead(
+            incomingMessage.messageId,
+          );
+        }
+
+        requestAnimationFrame(() => {
+          if (containerRef.current) {
+            const {
+              scrollTop,
+              scrollHeight,
+              clientHeight,
+            } = containerRef.current;
+            const isNearBottom =
+              scrollHeight -
+                scrollTop -
+                clientHeight <
+              180;
+
+            if (isNearBottom) {
+              containerRef.current.scrollTop =
+                scrollHeight;
+            }
+          }
+        });
+      },
+      onReaction: (event) => {
+        if (!isActive || !event.reaction) {
+          return;
+        }
+
+        const { action, reaction } =
+          event;
+
+        setReactions((previous) => {
+          const messageReactions = [
+            ...(previous[
+              reaction.messageId
+            ] ?? []),
+          ];
+          const filtered =
+            messageReactions.filter(
+              (item) =>
+                Number(item.userId) !==
+                Number(reaction.userId),
+            );
+
+          return {
+            ...previous,
+            [reaction.messageId]:
+              action === "REMOVED"
+                ? filtered
+                : [...filtered, reaction],
+          };
+        });
+      },
+      onRead: (readState) => {
+        if (
+          !isActive ||
+          Number(readState.userId) ===
+            Number(myUserId)
+        ) {
+          return;
+        }
+
+        setPartnerLastReadMessageId(
+          readState.lastReadMessageId,
+        );
+      },
+      onError: (error) => {
+        if (isActive) {
+          console.error(
+            "실시간 채팅 연결 오류:",
+            error,
+          );
+        }
+      },
+    });
+
+    chatSocketRef.current = socket;
+
+    return () => {
+      isActive = false;
+      chatSocketRef.current = null;
+      socket?.disconnect();
+    };
+  }, [
+    containerRef,
+    myUserId,
+    roomId,
+  ]);
 
   // 최초 로드 완료 시 맨 아래(최신 메시지)로 스크롤
   useEffect(() => {
@@ -217,7 +351,12 @@ export default function ChatRoomPage() {
       // 서버 응답(messageId, 감정 분석 결과 등)으로 낙관적 메시지를 교체
       const savedMessage = await sendMessage({ roomId, content, clientMessageId });
       setMessages((prev) =>
-        prev.map((m) => (m.clientMessageId === clientMessageId ? savedMessage : m))
+        prev.map((m) =>
+          m.clientMessageId === clientMessageId ||
+          m.messageId === savedMessage.messageId
+            ? savedMessage
+            : m
+        )
       );
     } catch {
       // 전송 실패한 말풍선을 그대로 남기면 "보낸 것처럼" 보이므로 되돌리고,
@@ -266,18 +405,30 @@ export default function ChatRoomPage() {
     try {
       const updatedReactions = await setMyReaction(target.messageId, reactionType);
       setReactions((prev) => {
+        const existingReactions =
+          prev[target.messageId] ?? [];
+        const reactionsFromOthers =
+          existingReactions.filter(
+            (reaction) =>
+              Number(reaction.userId) !==
+              Number(myUserId),
+          );
+
         const next = { ...prev };
         if (updatedReactions.length > 0) {
-          next[target.messageId] = updatedReactions;
+          next[target.messageId] = [
+            ...reactionsFromOthers,
+            ...updatedReactions,
+          ];
         } else {
-          delete next[target.messageId];
+          next[target.messageId] =
+            reactionsFromOthers;
         }
         return next;
       });
     } catch {
       showToast("반응을 남기지 못했어요.", { tone: "error" });
     }
-    // TODO: 백엔드 연동 시 이 지점에서 상대방에게 실시간(WebSocket)으로도 반영되어야 함
   };
 
   const handleToggleBookmark = async () => {
