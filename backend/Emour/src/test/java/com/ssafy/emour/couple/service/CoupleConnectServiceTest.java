@@ -21,7 +21,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
@@ -38,7 +37,6 @@ class CoupleConnectServiceTest {
     private static final Long INVITEE_ID = 2L;
     private static final Long ROOM_ID = 10L;
     private static final String INVITATION_CODE = "ABCD-2345";
-
     @Mock
     private CoupleRoomRepository coupleRoomRepository;
 
@@ -87,7 +85,7 @@ class CoupleConnectServiceTest {
 
         assertThat(response.roomId()).isEqualTo(ROOM_ID);
         assertThat(response.status()).isEqualTo(CoupleRoomStatus.ACTIVE);
-        assertThat(response.connectedAt()).isEqualTo(LocalDate.now());
+        assertThat(room.getDatingStartDate()).isNull();
 
         ArgumentCaptor<CoupleMember> memberCaptor =
                 ArgumentCaptor.forClass(CoupleMember.class);

@@ -18,8 +18,6 @@ public interface CoupleMemberRepository extends JpaRepository<CoupleMember, Coup
             CoupleMemberStatus status
     );
 
-    List<CoupleMember> findAllByIdRoomId(Long roomId);
-
     @Query("""
             select (count(cm) > 0)
             from CoupleMember cm
