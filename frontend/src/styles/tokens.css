@@ -1,0 +1,30 @@
+:root {
+  /* CI 컬러 */
+  --color-primary: #e3c6bb;
+  --color-secondary: #eeddd6;
+  --color-success: #bed399;
+  --color-error: #d39999;
+  --color-warning: #f6e192;
+
+  --color-text-primary: #404040;
+  --color-text-secondary: #81736e;
+  --color-background: #fbf8f7;
+  --color-surface: #ffffff;
+  --color-border: #e8dcd7;
+
+  /* 모바일 외곽 프레임 */
+  --app-frame-width: 412px;
+
+  /* 페이지 여백 */
+  --page-padding-x: 24px;
+  --page-padding-y: 32px;
+
+  /* 모서리 */
+  --radius-small: 12px;
+  --radius-medium: 16px;
+  --radius-large: 28px;
+
+  /* 그림자 */
+  --shadow-frame: 0 0 40px rgba(64, 64, 64, 0.1);
+  --shadow-button: 0 10px 20px rgba(180, 138, 124, 0.2);
+}

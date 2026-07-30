@@ -1,0 +1,982 @@
+.album-page {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-rows:
+    78px
+    minmax(0, 1fr)
+    auto;
+  overflow: hidden;
+  background:
+    var(
+      --color-background,
+      #fbf8f7
+    );
+}
+
+/* =========================
+   헤더
+========================= */
+
+.album-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 18px;
+  border-bottom:
+    1px solid
+    rgba(227, 198, 187, 0.65);
+  background:
+    rgba(251, 248, 247, 0.97);
+}
+
+.album-header > div {
+  min-width: 0;
+}
+
+.album-header p {
+  margin: 0 0 2px;
+  color: #ad887c;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.album-header h1 {
+  margin: 0;
+  color:
+    var(
+      --color-text-primary,
+      #404040
+    );
+  font-size: 21px;
+  line-height: 1.2;
+}
+
+.album-add-button {
+  height: 39px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 13px;
+  border: 0;
+  border-radius: 12px;
+  background:
+    var(
+      --color-primary,
+      #e3c6bb
+    );
+  color:
+    var(
+      --color-text-primary,
+      #404040
+    );
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.album-file-input {
+  display: none;
+}
+
+/* =========================
+   본문
+========================= */
+
+.album-content {
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 15px 16px 28px;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
+/* =========================
+   탭
+========================= */
+
+.album-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+  padding: 5px;
+  border-radius: 16px;
+  background:
+    var(
+      --color-secondary,
+      #eeddd6
+    );
+}
+
+.album-tab {
+  height: 43px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: #7e716d;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.album-tab strong {
+  min-width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 5px;
+  border-radius: 999px;
+  background:
+    rgba(255, 255, 255, 0.55);
+  font-size: 9px;
+}
+
+.album-tab-active {
+  background: #ffffff;
+  color:
+    var(
+      --color-text-primary,
+      #404040
+    );
+  box-shadow:
+    0 4px 12px
+    rgba(90, 65, 58, 0.09);
+}
+
+/* =========================
+   앨범 목록
+========================= */
+
+.album-section {
+  margin-top: 18px;
+}
+
+.album-section-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 13px;
+}
+
+.album-section-header > div {
+  min-width: 0;
+}
+
+.album-section-header h2 {
+  margin: 0;
+  color:
+    var(
+      --color-text-primary,
+      #404040
+    );
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+.album-section-header p {
+  margin: 4px 0 0;
+  color: #847874;
+  font-size: 9px;
+  line-height: 1.5;
+}
+
+.album-section-header > span {
+  flex-shrink: 0;
+  padding: 6px 9px;
+  border-radius: 999px;
+  background:
+    rgba(227, 198, 187, 0.38);
+  color: #907066;
+  font-size: 9px;
+  font-weight: 800;
+}
+
+/* =========================
+   사진 그리드
+========================= */
+
+.album-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(
+      3,
+      minmax(0, 1fr)
+    );
+  gap: 7px;
+}
+
+.album-photo-card {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  overflow: hidden;
+  padding: 0;
+  border: 0;
+  border-radius: 13px;
+  background:
+    var(
+      --color-secondary,
+      #eeddd6
+    );
+  cursor: pointer;
+}
+
+.album-photo-card img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  transition:
+    transform 0.25s ease;
+}
+
+.album-photo-card:hover img {
+  transform: scale(1.04);
+}
+
+.album-photo-overlay {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  overflow: hidden;
+  padding: 17px 6px 6px;
+  background:
+    linear-gradient(
+      transparent,
+      rgba(45, 36, 33, 0.58)
+    );
+  color: #ffffff;
+  font-size: 8px;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* =========================
+   로딩 및 빈 화면
+========================= */
+
+.album-status {
+  min-height: 270px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 30px 20px;
+  border:
+    1px dashed
+    rgba(227, 198, 187, 0.9);
+  border-radius: 20px;
+  background:
+    rgba(255, 255, 255, 0.62);
+  color: #a1847b;
+  text-align: center;
+}
+
+.album-status h3 {
+  margin: 13px 0 0;
+  color:
+    var(
+      --color-text-primary,
+      #404040
+    );
+  font-size: 14px;
+}
+
+.album-status p {
+  margin: 7px 0 0;
+  color: #847874;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.album-status-error {
+  border-color:
+    rgba(211, 153, 153, 0.56);
+  background:
+    rgba(211, 153, 153, 0.1);
+  color: #ad6370;
+}
+
+.album-loading-spinner {
+  width: 29px;
+  height: 29px;
+  border:
+    3px solid
+    var(
+      --color-secondary,
+      #eeddd6
+    );
+  border-top-color: #a76f62;
+  border-radius: 50%;
+  animation:
+    album-spinner
+    0.8s linear infinite;
+}
+
+@keyframes album-spinner {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* =========================
+   토스트
+========================= */
+
+.album-toast {
+  position: absolute;
+  z-index: 80;
+  right: 16px;
+  bottom: 88px;
+  left: 16px;
+  padding: 12px 14px;
+  border-radius: 13px;
+  background:
+    rgba(64, 64, 64, 0.92);
+  color: #ffffff;
+  font-size: 10px;
+  line-height: 1.45;
+  text-align: center;
+  box-shadow:
+    0 10px 28px
+    rgba(64, 64, 64, 0.2);
+}
+
+/* =========================
+   사진 등록 모달
+========================= */
+
+.album-upload-backdrop {
+  position: absolute;
+  z-index: 75;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  background:
+    rgba(64, 64, 64, 0.4);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter:
+    blur(4px);
+}
+
+.album-upload-modal {
+  width: 100%;
+  max-height:
+    calc(100% - 24px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 18px;
+  border:
+    1px solid
+    rgba(227, 198, 187, 0.85);
+  border-radius: 23px;
+  background:
+    var(
+      --color-surface,
+      #fffdfc
+    );
+  box-shadow:
+    0 22px 56px
+    rgba(64, 64, 64, 0.23);
+}
+
+.album-upload-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.album-upload-header p {
+  margin: 0 0 3px;
+  color: #ad887c;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.album-upload-header h2 {
+  margin: 0;
+  color:
+    var(
+      --color-text-primary,
+      #404040
+    );
+  font-size: 18px;
+}
+
+.album-upload-header > button {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background:
+    var(
+      --color-secondary,
+      #eeddd6
+    );
+  color:
+    var(
+      --color-text-primary,
+      #404040
+    );
+  cursor: pointer;
+}
+
+.album-upload-form {
+  margin-top: 16px;
+}
+
+/* =========================
+   사진 선택 및 미리보기
+========================= */
+
+.album-upload-preview {
+  width: 100%;
+  aspect-ratio: 16 / 11;
+  overflow: hidden;
+  border:
+    1px dashed
+    rgba(185, 142, 128, 0.72);
+  border-radius: 17px;
+  background:
+    var(
+      --color-background,
+      #fbf8f7
+    );
+}
+
+.album-upload-preview-selected {
+  border-style: solid;
+  background: #eee7e4;
+}
+
+.album-upload-preview img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+}
+
+.album-upload-select-area {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 20px;
+  border: 0;
+  background: transparent;
+  color: #847874;
+  cursor: pointer;
+}
+
+.album-upload-select-area:hover:not(
+    :disabled
+  ) {
+  background:
+    rgba(238, 221, 214, 0.24);
+}
+
+.album-upload-select-icon {
+  width: 58px;
+  height: 58px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 3px;
+  border-radius: 18px;
+  background:
+    rgba(227, 198, 187, 0.4);
+  color: #a97467;
+}
+
+.album-upload-select-area strong {
+  color:
+    var(
+      --color-text-primary,
+      #404040
+    );
+  font-size: 13px;
+}
+
+.album-upload-select-description {
+  color: #847874;
+  font-size: 9px;
+}
+
+.album-upload-select-label {
+  min-width: 88px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 5px;
+  padding: 0 13px;
+  border-radius: 11px;
+  background:
+    var(
+      --color-primary,
+      #e3c6bb
+    );
+  color:
+    var(
+      --color-text-primary,
+      #404040
+    );
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.album-upload-change-button {
+  width: 100%;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 9px;
+  border:
+    1px solid
+    rgba(227, 198, 187, 0.72);
+  border-radius: 12px;
+  background:
+    var(
+      --color-background,
+      #fbf8f7
+    );
+  color: #8c6d64;
+  font-size: 10px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+/* =========================
+   메모 입력
+========================= */
+
+.album-upload-memo-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 17px;
+}
+
+.album-upload-memo-field > span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color:
+    var(
+      --color-text-primary,
+      #404040
+    );
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.album-upload-memo-field textarea {
+  width: 100%;
+  min-height: 92px;
+  resize: none;
+  padding: 12px 13px;
+  border:
+    1px solid
+    rgba(227, 198, 187, 0.72);
+  border-radius: 14px;
+  outline: none;
+  background:
+    var(
+      --color-background,
+      #fbf8f7
+    );
+  color:
+    var(
+      --color-text-primary,
+      #404040
+    );
+  font: inherit;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.album-upload-memo-field
+  textarea:focus {
+  border-color: #b98e80;
+  box-shadow:
+    0 0 0 3px
+    rgba(227, 198, 187, 0.28);
+}
+
+.album-upload-memo-field
+  textarea::placeholder {
+  color: #afa29e;
+}
+
+.album-upload-memo-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 7px;
+}
+
+.album-upload-memo-footer span,
+.album-upload-memo-footer strong {
+  color: #847874;
+  font-size: 9px;
+}
+
+.album-upload-memo-footer strong {
+  flex-shrink: 0;
+}
+
+.album-upload-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+  margin-top: 18px;
+  padding-top: 15px;
+  border-top:
+    1px solid
+    rgba(227, 198, 187, 0.65);
+}
+
+.album-upload-actions button {
+  height: 45px;
+  border: 0;
+  border-radius: 13px;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.album-upload-cancel {
+  background:
+    var(
+      --color-secondary,
+      #eeddd6
+    );
+  color:
+    var(
+      --color-text-primary,
+      #404040
+    );
+}
+
+.album-upload-submit {
+  background:
+    var(
+      --color-primary,
+      #e3c6bb
+    );
+  color:
+    var(
+      --color-text-primary,
+      #404040
+    );
+}
+
+/* =========================
+   사진 상세 모달
+========================= */
+
+.album-modal-backdrop,
+.album-delete-backdrop {
+  position: absolute;
+  z-index: 60;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background:
+    rgba(64, 64, 64, 0.4);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter:
+    blur(4px);
+}
+
+.album-photo-modal {
+  width: 100%;
+  max-height:
+    calc(100% - 24px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  border:
+    1px solid
+    rgba(227, 198, 187, 0.85);
+  border-radius: 23px;
+  background:
+    var(
+      --color-surface,
+      #fffdfc
+    );
+  box-shadow:
+    0 22px 56px
+    rgba(64, 64, 64, 0.23);
+}
+
+.album-photo-modal > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 15px 16px;
+}
+
+.album-photo-modal > header p {
+  margin: 0;
+  color:
+    var(
+      --color-text-primary,
+      #404040
+    );
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.album-photo-modal > header span {
+  display: block;
+  margin-top: 3px;
+  color: #847874;
+  font-size: 9px;
+}
+
+.album-photo-modal > header button {
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background:
+    var(
+      --color-secondary,
+      #eeddd6
+    );
+  color:
+    var(
+      --color-text-primary,
+      #404040
+    );
+  cursor: pointer;
+}
+
+.album-photo-modal-image {
+  width: 100%;
+  aspect-ratio: 1;
+  overflow: hidden;
+  background: #eee7e4;
+}
+
+.album-photo-modal-image img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+}
+
+.album-photo-memo {
+  margin: 0;
+  padding: 14px 16px 0;
+  color:
+    var(
+      --color-text-primary,
+      #404040
+    );
+  font-size: 11px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.album-photo-delete-button {
+  width: calc(100% - 32px);
+  height: 43px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  margin: 14px 16px 16px;
+  border:
+    1px solid
+    rgba(211, 153, 153, 0.6);
+  border-radius: 13px;
+  background:
+    rgba(211, 153, 153, 0.12);
+  color: #aa5e6c;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+/* =========================
+   삭제 확인 모달
+========================= */
+
+.album-delete-backdrop {
+  z-index: 85;
+}
+
+.album-delete-modal {
+  width: 100%;
+  padding: 24px 20px 20px;
+  border:
+    1px solid
+    rgba(227, 198, 187, 0.85);
+  border-radius: 23px;
+  background:
+    var(
+      --color-surface,
+      #fffdfc
+    );
+  text-align: center;
+  box-shadow:
+    0 22px 56px
+    rgba(64, 64, 64, 0.23);
+}
+
+.album-delete-icon {
+  width: 54px;
+  height: 54px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 18px;
+  background:
+    rgba(211, 153, 153, 0.2);
+  color: #af6170;
+}
+
+.album-delete-modal h2 {
+  margin: 15px 0 0;
+  color:
+    var(
+      --color-text-primary,
+      #404040
+    );
+  font-size: 18px;
+}
+
+.album-delete-modal p {
+  margin: 10px 0 20px;
+  color: #847874;
+  font-size: 11px;
+  line-height: 1.65;
+  word-break: keep-all;
+}
+
+.album-delete-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+}
+
+.album-delete-actions button {
+  height: 45px;
+  border: 0;
+  border-radius: 13px;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.album-delete-cancel {
+  background:
+    var(
+      --color-secondary,
+      #eeddd6
+    );
+  color:
+    var(
+      --color-text-primary,
+      #404040
+    );
+}
+
+.album-delete-submit {
+  background:
+    var(
+      --color-error,
+      #d39999
+    );
+  color: #ffffff;
+}
+
+/* =========================
+   비활성화
+========================= */
+
+.album-page button:disabled,
+.album-page textarea:disabled {
+  cursor: not-allowed;
+  opacity: 0.52;
+}
+
+/* =========================
+   작은 화면
+========================= */
+
+@media (max-width: 360px) {
+  .album-content {
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+
+  .album-header {
+    padding-right: 14px;
+    padding-left: 14px;
+  }
+
+  .album-add-button {
+    padding: 0 10px;
+  }
+
+  .album-grid {
+    gap: 5px;
+  }
+
+  .album-photo-card {
+    border-radius: 10px;
+  }
+
+  .album-upload-modal {
+    padding: 15px;
+  }
+
+  .album-upload-select-area {
+    padding: 14px;
+  }
+
+  .album-upload-select-icon {
+    width: 52px;
+    height: 52px;
+  }
+}
