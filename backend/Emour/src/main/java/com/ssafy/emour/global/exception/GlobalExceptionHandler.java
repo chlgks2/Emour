@@ -1,5 +1,6 @@
 package com.ssafy.emour.global.exception;
 
+import com.ssafy.emour.chat.exception.ChatException;
 import com.ssafy.emour.global.response.ApiResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -32,6 +33,14 @@ public class GlobalExceptionHandler {
         FieldError fieldError = e.getBindingResult().getFieldError();
         String message = (fieldError != null) ? fieldError.getDefaultMessage() : "잘못된 입력값입니다.";
         return ResponseEntity.badRequest().body(ApiResponse.error(message));
+    }
+
+    // 채팅방 멤버가 아니거나 채팅 입력값이 잘못된 경우 500이 아닌 400을 반환합니다.
+    @ExceptionHandler(ChatException.class)
+    public ResponseEntity<ApiResponse<Void>> handleChatException(ChatException e) {
+        return ResponseEntity
+                .badRequest()
+                .body(ApiResponse.error(e.getMessage()));
     }
 
     // 미처 예상하지 못한 나머지 모든 예외 처리 (서버 오류)

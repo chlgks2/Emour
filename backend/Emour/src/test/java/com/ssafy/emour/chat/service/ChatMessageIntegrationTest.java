@@ -16,6 +16,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -47,8 +48,15 @@ class ChatMessageIntegrationTest {
     @Autowired
     private ChatBookmarkRepository chatBookmarkRepository;
 
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
     @BeforeEach
     void setUpMember() {
+        // couple_member의 외래키가 가리키는 부모 데이터를 먼저 준비합니다.
+        insertUserIfMissing(10L, "chat-test-10@ssafy.com", "테스터10");
+        insertUserIfMissing(20L, "chat-test-20@ssafy.com", "테스터20");
+        insertRoomIfMissing();
         coupleMemberRepository.save(CoupleMember.active(10L, 1L));
         coupleMemberRepository.save(CoupleMember.active(20L, 1L));
     }
@@ -235,6 +243,32 @@ class ChatMessageIntegrationTest {
                 MessageType.TEXT,
                 content,
                 List.of()
+        );
+    }
+
+    private void insertUserIfMissing(
+            Long userId,
+            String email,
+            String nickname
+    ) {
+        jdbcTemplate.update(
+                """
+                INSERT IGNORE INTO app_user
+                    (user_id, email, nickname, status, is_email_verified)
+                VALUES (?, ?, ?, 'ACTIVE', TRUE)
+                """,
+                userId,
+                email,
+                nickname
+        );
+    }
+
+    private void insertRoomIfMissing() {
+        jdbcTemplate.update(
+                """
+                INSERT IGNORE INTO couple_room (room_id, room_code, status)
+                VALUES (1, 'CHAT_TEST_ROOM', 'ACTIVE')
+                """
         );
     }
 }
