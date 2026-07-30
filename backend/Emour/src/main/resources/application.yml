@@ -36,3 +36,13 @@ jwt:
 # ===== 커플 초대 설정 =====
 couple:
   invitation-validity-hours: ${COUPLE_INVITATION_VALIDITY_HOURS:24}
+
+# 배포 서버에 health 주소만 공개하고 DB 등의 상세정보는 숨깁니다.
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
