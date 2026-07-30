@@ -112,3 +112,4 @@ async def analyze(req, llm, hints: Optional[Dict[int, str]] = None):
 4. `.env`에 `USE_KOTE` 스위치 → 같은 평가셋으로 KOTE 유무 A/B 비교
 
 스키마·응답 형식은 그대로이므로 **백엔드는 손대지 않습니다.**
+
