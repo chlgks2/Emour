@@ -4,6 +4,7 @@ import com.ssafy.emour.couple.dto.request.CoupleConnectRequest;
 import com.ssafy.emour.couple.dto.response.CoupleConnectResponse;
 import com.ssafy.emour.couple.dto.response.CoupleDisconnectResponse;
 import com.ssafy.emour.couple.dto.response.CoupleInvitationResponse;
+import com.ssafy.emour.couple.dto.response.CoupleStatusResponse;
 import com.ssafy.emour.couple.entity.CoupleMember;
 import com.ssafy.emour.couple.entity.CoupleMemberId;
 import com.ssafy.emour.couple.entity.CoupleMemberStatus;
@@ -103,6 +104,24 @@ public class CoupleService {
         room.activate();
 
         return CoupleConnectResponse.from(room);
+    }
+
+    @Transactional(readOnly = true)
+    public CoupleStatusResponse getStatus(Long userId) {
+        if (!memberRepository.existsById(userId)) {
+            throw new CustomException(ErrorCode.USER_NOT_FOUND);
+        }
+
+        List<CoupleRoom> currentRooms = coupleRoomRepository.findCurrentRoomsByUserId(
+                userId,
+                PageRequest.of(0, 1)
+        );
+
+        if (currentRooms.isEmpty()) {
+            throw new CustomException(ErrorCode.ACTIVE_COUPLE_NOT_FOUND);
+        }
+
+        return CoupleStatusResponse.from(currentRooms.get(0));
     }
 
     @Transactional
