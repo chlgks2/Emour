@@ -124,6 +124,19 @@ public class CoupleService {
         return CoupleStatusResponse.from(currentRooms.get(0));
     }
 
+    @Transactional(readOnly = true)
+    public Long getCurrentRoomId(Long userId) {
+        List<Long> roomIds = coupleMemberRepository.findCurrentRoomIdsByUserId(
+                userId,
+                LocalDateTime.now(),
+                PageRequest.of(0, 1)
+        );
+        if (roomIds.isEmpty()) {
+            throw new CustomException(ErrorCode.ACTIVE_COUPLE_NOT_FOUND);
+        }
+        return roomIds.get(0);
+    }
+
     @Transactional
     public CoupleDisconnectResponse disconnect(Long userId) {
         memberRepository.findByIdForUpdate(userId)

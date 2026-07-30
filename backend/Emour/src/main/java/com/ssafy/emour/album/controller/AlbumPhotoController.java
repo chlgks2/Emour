@@ -5,6 +5,7 @@ import com.ssafy.emour.album.dto.response.AlbumPhotoResponse;
 import com.ssafy.emour.album.service.AlbumPhotoService;
 import com.ssafy.emour.global.response.ApiResponse;
 import com.ssafy.emour.global.util.SecurityUtil;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -29,6 +30,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/photos")
 @RequiredArgsConstructor
+@SecurityRequirement(name = "bearerAuth")
 public class AlbumPhotoController {
 
     private final AlbumPhotoService albumPhotoService;

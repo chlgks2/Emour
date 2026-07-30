@@ -4,6 +4,7 @@ import com.ssafy.emour.couple.dto.request.CoupleConnectRequest;
 import com.ssafy.emour.couple.dto.response.CoupleConnectResponse;
 import com.ssafy.emour.couple.dto.response.CoupleDisconnectResponse;
 import com.ssafy.emour.couple.dto.response.CoupleInvitationResponse;
+import com.ssafy.emour.couple.dto.response.CoupleRoomIdResponse;
 import com.ssafy.emour.couple.dto.response.CoupleStatusResponse;
 import com.ssafy.emour.couple.service.CoupleService;
 import com.ssafy.emour.global.response.ApiResponse;
@@ -27,6 +28,19 @@ import org.springframework.web.bind.annotation.RestController;
 public class CoupleController {
 
     private final CoupleService coupleService;
+
+    @GetMapping("/room-id")
+    public ResponseEntity<ApiResponse<CoupleRoomIdResponse>> getCurrentRoomId() {
+        Long roomId = coupleService.getCurrentRoomId(
+                SecurityUtil.getCurrentUserId()
+        );
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "현재 커플방을 조회했습니다.",
+                        new CoupleRoomIdResponse(roomId)
+                )
+        );
+    }
 
     @PostMapping("/invitation")
     public ResponseEntity<ApiResponse<CoupleInvitationResponse>> createInvitation() {

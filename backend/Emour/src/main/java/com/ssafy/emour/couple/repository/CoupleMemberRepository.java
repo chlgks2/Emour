@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface CoupleMemberRepository extends JpaRepository<CoupleMember, CoupleMemberId> {
@@ -32,6 +33,33 @@ public interface CoupleMemberRepository extends JpaRepository<CoupleMember, Coup
               and cr.status = com.ssafy.emour.couple.entity.CoupleRoomStatus.ACTIVE
             """)
     boolean existsActiveCoupleByUserId(@Param("userId") Long userId);
+
+    @Query("""
+            select cm.id.roomId
+            from CoupleMember cm
+            join CoupleRoom cr on cr.id = cm.id.roomId
+            where cm.id.userId = :userId
+              and cm.status = com.ssafy.emour.couple.entity.CoupleMemberStatus.ACTIVE
+              and (
+                    cr.status = com.ssafy.emour.couple.entity.CoupleRoomStatus.ACTIVE
+                    or (
+                        cr.status = com.ssafy.emour.couple.entity.CoupleRoomStatus.WAITING
+                        and cr.roomCodeExpiresAt > :currentTime
+                    )
+              )
+            order by
+              case
+                  when cr.status = com.ssafy.emour.couple.entity.CoupleRoomStatus.ACTIVE
+                  then 0
+                  else 1
+              end,
+              cr.createdAt desc
+            """)
+    List<Long> findCurrentRoomIdsByUserId(
+            @Param("userId") Long userId,
+            @Param("currentTime") LocalDateTime currentTime,
+            Pageable pageable
+    );
 
     @Query("""
             select cr
