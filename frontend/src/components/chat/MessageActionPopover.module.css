@@ -1,0 +1,64 @@
+/* 말풍선 옆에 뜨는 작은 알약형 메뉴. 배경(backdrop)을 두지 않는 논모달이다. */
+.popover {
+  position: fixed;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 5px;
+  border-radius: var(--radius-pill);
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-float);
+  animation: popIn var(--duration-fast) var(--ease-spring);
+}
+
+@keyframes popIn {
+  from {
+    opacity: 0;
+    transform: scale(0.88);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.iconBtn {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-sub);
+  transition: background-color var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out);
+}
+
+.iconBtn:hover {
+  background: var(--color-sub-bg);
+}
+
+.iconBtn:active {
+  transform: scale(0.88);
+}
+
+/* 내가 이미 남긴 반응.
+   배경색은 리액션 색상으로 인라인 지정하므로 위의 :hover 규칙보다 우선한다. */
+.iconBtnActive {
+  transform: scale(1.06);
+}
+
+.bookmarkBtn {
+  color: var(--color-primary);
+}
+
+.divider {
+  width: 1px;
+  height: 18px;
+  margin: 0 3px;
+  flex-shrink: 0;
+  background: var(--color-border);
+}
