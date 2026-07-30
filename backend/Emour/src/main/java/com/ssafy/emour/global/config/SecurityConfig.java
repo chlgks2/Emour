@@ -41,6 +41,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/logout").authenticated() // 로그아웃은 로그인 상태여야 함
                         .requestMatchers("/auth/**").permitAll()          // 그 외 인증 API 는 누구나
+                        .requestMatchers("/uploads/**").permitAll()       // 업로드된 이미지 조회는 누구나
                         .anyRequest().authenticated()                     // 나머지는 전부 로그인 필수
                 )
                 // 인증 실패(토큰 없음/무효) 시 401 을 우리 형식으로 응답

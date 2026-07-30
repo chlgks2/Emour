@@ -4,6 +4,16 @@ spring:
     name: Emour
   profiles:
     active: local   # 로컬 실행 시 application-local.yml 을 함께 적용
+  servlet:
+    multipart:
+      max-file-size: 10MB      # 파일 1개 최대 크기
+      max-request-size: 10MB   # 요청 전체 최대 크기
+
+# ===== 파일 저장 (로컬 디스크) =====
+# 나중에 S3 로 바꿀 때 이 설정 대신 S3 설정을 쓰고 FileStorage 구현만 교체하면 됨
+file:
+  upload-dir: ./uploads                     # 업로드 파일이 저장될 폴더
+  base-url: http://localhost:8080/uploads   # 외부에서 접근할 URL 접두어
 
 # ===== JWT 설정 =====
 # secret 은 실제로는 환경변수(JWT_SECRET)로 주입. 없으면 아래 기본값 사용(로컬 전용).
