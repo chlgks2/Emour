@@ -55,18 +55,17 @@ class SwaggerDocumentationTest {
                         "$.paths['/auth/login'].post.summary"
                 ).value("이메일 로그인"))
                 .andExpect(jsonPath(
-                        "$.paths['/auth/login'].post.requestBody.required"
-                ).value(true))
+                        "$.paths['/auth/login'].post.parameters[0].name"
+                ).value("email"))
                 .andExpect(jsonPath(
-                        "$.paths['/auth/login'].post.requestBody"
-                                + ".content['application/json'].schema['$ref']"
-                ).value("#/components/schemas/LoginRequest"))
+                        "$.paths['/auth/login'].post.parameters[0].in"
+                ).value("query"))
                 .andExpect(jsonPath(
-                        "$.components.schemas.LoginRequest.properties.email"
-                ).exists())
+                        "$.paths['/auth/login'].post.parameters[1].name"
+                ).value("password"))
                 .andExpect(jsonPath(
-                        "$.components.schemas.LoginRequest.properties.password"
-                ).exists());
+                        "$.paths['/auth/login'].post.parameters[1].in"
+                ).value("query"));
     }
 
     // WebSocket 채팅 테스트 화면이 정상적으로 열리는지 확인합니다.
