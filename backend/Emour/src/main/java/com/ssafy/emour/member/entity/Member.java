@@ -88,4 +88,30 @@ public class Member {
         this.passwordHash = passwordHash;
         this.nickname = nickname;
     }
+
+    // ===== 상태를 바꾸는 행위는 setter 대신 의미 있는 메서드로 표현한다 =====
+
+    /** 이메일 인증 완료 처리 */
+    public void verifyEmail() {
+        this.emailVerified = true;
+    }
+
+    /** 비밀번호 변경 (이미 BCrypt 로 암호화된 값을 받는다) */
+    public void changePassword(String encodedPassword) {
+        this.passwordHash = encodedPassword;
+    }
+
+    /** 프로필 부분 수정 (null 로 온 필드는 변경하지 않음) */
+    public void updateProfile(String nickname, LocalDate birth, String profileImageUrl, String statusMessage) {
+        if (nickname != null) this.nickname = nickname;
+        if (birth != null) this.birth = birth;
+        if (profileImageUrl != null) this.profileImageUrl = profileImageUrl;
+        if (statusMessage != null) this.statusMessage = statusMessage;
+    }
+
+    /** 회원 탈퇴 (soft delete): 상태를 WITHDRAWN 으로, 탈퇴 시각 기록 */
+    public void withdraw() {
+        this.status = MemberStatus.WITHDRAWN;
+        this.deletedAt = LocalDateTime.now();
+    }
 }

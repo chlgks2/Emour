@@ -1,6 +1,9 @@
 package com.ssafy.emour.auth.controller;
 
+import com.ssafy.emour.auth.dto.request.EmailSendRequest;
+import com.ssafy.emour.auth.dto.request.EmailVerifyRequest;
 import com.ssafy.emour.auth.dto.request.LoginRequest;
+import com.ssafy.emour.auth.dto.request.PasswordResetRequest;
 import com.ssafy.emour.auth.dto.request.SignUpRequest;
 import com.ssafy.emour.auth.dto.request.TokenReissueRequest;
 import com.ssafy.emour.auth.dto.response.LoginResponse;
@@ -14,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -64,6 +68,61 @@ public class AuthController {
         return ResponseEntity.ok(
                 ApiResponse.success("로그인에 성공했습니다.", response)
         );
+    }
+
+    /**
+     * 비밀번호 재설정 코드 발송.  POST /auth/password/email
+     */
+    @PostMapping("/password/email")
+    public ResponseEntity<ApiResponse<Void>> sendPasswordResetCode(
+            @Valid @RequestBody EmailSendRequest request
+    ) {
+        authService.sendPasswordResetCode(request.email());
+        return ResponseEntity.ok(ApiResponse.success("인증코드를 발송했습니다."));
+    }
+
+    /**
+     * 비밀번호 재설정 코드 확인.  POST /auth/password/verify
+     */
+    @PostMapping("/password/verify")
+    public ResponseEntity<ApiResponse<Void>> verifyPasswordResetCode(
+            @Valid @RequestBody EmailVerifyRequest request
+    ) {
+        authService.verifyPasswordResetCode(request.email(), request.code());
+        return ResponseEntity.ok(ApiResponse.success("인증코드가 확인되었습니다."));
+    }
+
+    /**
+     * 비밀번호 재설정.  PATCH /auth/password
+     */
+    @PatchMapping("/password")
+    public ResponseEntity<ApiResponse<Void>> resetPassword(
+            @Valid @RequestBody PasswordResetRequest request
+    ) {
+        authService.resetPassword(request.email(), request.code(), request.newPassword());
+        return ResponseEntity.ok(ApiResponse.success("비밀번호가 변경되었습니다."));
+    }
+
+    /**
+     * 이메일 인증코드 발송.  POST /auth/email/send
+     */
+    @PostMapping("/email/send")
+    public ResponseEntity<ApiResponse<Void>> sendEmailCode(
+            @Valid @RequestBody EmailSendRequest request
+    ) {
+        authService.sendSignUpVerificationCode(request.email());
+        return ResponseEntity.ok(ApiResponse.success("인증코드를 발송했습니다."));
+    }
+
+    /**
+     * 이메일 인증코드 확인.  POST /auth/email/verify
+     */
+    @PostMapping("/email/verify")
+    public ResponseEntity<ApiResponse<Void>> verifyEmailCode(
+            @Valid @RequestBody EmailVerifyRequest request
+    ) {
+        authService.verifySignUpCode(request.email(), request.code());
+        return ResponseEntity.ok(ApiResponse.success("이메일 인증이 완료되었습니다."));
     }
 
     /**

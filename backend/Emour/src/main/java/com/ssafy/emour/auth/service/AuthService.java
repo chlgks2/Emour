@@ -5,10 +5,12 @@ import com.ssafy.emour.auth.dto.request.SignUpRequest;
 import com.ssafy.emour.auth.dto.response.LoginResponse;
 import com.ssafy.emour.auth.dto.response.SignUpResponse;
 import com.ssafy.emour.auth.dto.response.TokenResponse;
+import com.ssafy.emour.global.email.EmailSender;
 import com.ssafy.emour.global.exception.CustomException;
 import com.ssafy.emour.global.exception.ErrorCode;
 import com.ssafy.emour.global.security.jwt.JwtTokenProvider;
 import com.ssafy.emour.member.entity.Member;
+import com.ssafy.emour.member.entity.MemberStatus;
 import com.ssafy.emour.member.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -22,10 +24,15 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class AuthService {
 
+    private static final String PURPOSE_SIGN_UP = "SIGN_UP";
+    private static final String PURPOSE_PASSWORD_RESET = "PASSWORD_RESET";
+
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
-    private final JwtTokenProvider jwtTokenProvider;       // 토큰 발급/검증
-    private final RefreshTokenService refreshTokenService; // Redis 에 refresh 저장
+    private final JwtTokenProvider jwtTokenProvider;             // 토큰 발급/검증
+    private final RefreshTokenService refreshTokenService;       // Redis 에 refresh 저장
+    private final VerificationCodeService verificationCodeService; // 이메일 인증코드 관리
+    private final EmailSender emailSender;                       // 이메일 발송
 
     /**
      * 이메일 회원가입.
@@ -73,7 +80,12 @@ public class AuthService {
         Member member = memberRepository.findByEmail(request.email())
                 .orElseThrow(() -> new CustomException(ErrorCode.INVALID_CREDENTIALS));
 
-        // 2) 비밀번호 대조 (평문 입력 vs 저장된 해시)
+        // 2) 탈퇴한 회원은 로그인 불가
+        if (member.getStatus() == MemberStatus.WITHDRAWN) {
+            throw new CustomException(ErrorCode.INVALID_CREDENTIALS);
+        }
+
+        // 3) 비밀번호 대조 (평문 입력 vs 저장된 해시)
         //    소셜 전용 계정은 passwordHash 가 null 이므로 이메일 로그인 불가
         if (member.getPasswordHash() == null
                 || !passwordEncoder.matches(request.password(), member.getPasswordHash())) {
@@ -128,5 +140,88 @@ public class AuthService {
         // 3) 새 Access Token 발급
         String newAccessToken = jwtTokenProvider.createAccessToken(userId);
         return TokenResponse.ofAccessToken(newAccessToken);
+    }
+
+    /**
+     * 이메일 인증코드 발송.
+     * 6자리 코드를 만들어 Redis(5분)에 저장하고 이메일로 보낸다(지금은 콘솔 출력).
+     */
+    public void sendSignUpVerificationCode(String email) {
+        String code = verificationCodeService.generateAndStore(PURPOSE_SIGN_UP, email);
+        emailSender.send(
+                email,
+                "[Emour] 이메일 인증코드",
+                "인증코드는 [" + code + "] 입니다. 5분 안에 입력해 주세요."
+        );
+    }
+
+    /**
+     * 이메일 인증코드 확인.
+     * 코드가 맞으면 해당 회원의 is_email_verified 를 true 로 바꾼다.
+     * (Member 를 조회해 verifyEmail() 만 호출하면 트랜잭션 종료 시 JPA 가 자동 UPDATE)
+     */
+    @Transactional
+    public void verifySignUpCode(String email, String code) {
+        // 1) 코드 검증
+        if (!verificationCodeService.verify(PURPOSE_SIGN_UP, email, code)) {
+            throw new CustomException(ErrorCode.INVALID_VERIFICATION_CODE);
+        }
+
+        // 2) 회원의 이메일 인증 상태를 true 로
+        Member member = memberRepository.findByEmail(email)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        member.verifyEmail();
+
+        // 3) 사용한 코드는 삭제(재사용 방지)
+        verificationCodeService.delete(PURPOSE_SIGN_UP, email);
+    }
+
+    /**
+     * 비밀번호 재설정 코드 발송.
+     * 보안: 가입되지 않은 이메일인지 알려주지 않기 위해, 회원이 있을 때만 실제로 보내고
+     *       응답은 항상 성공으로 통일한다(이메일 존재 여부 노출 방지).
+     */
+    public void sendPasswordResetCode(String email) {
+        memberRepository.findByEmail(email).ifPresent(member -> {
+            String code = verificationCodeService.generateAndStore(PURPOSE_PASSWORD_RESET, email);
+            emailSender.send(
+                    email,
+                    "[Emour] 비밀번호 재설정 인증코드",
+                    "인증코드는 [" + code + "] 입니다. 5분 안에 입력해 주세요."
+            );
+        });
+    }
+
+    /**
+     * 비밀번호 재설정 코드 확인. (프론트가 새 비밀번호 입력 화면으로 넘어갈지 판단용)
+     * 여기선 코드를 소비하지 않는다 — 실제 소비는 재설정(resetPassword)에서.
+     */
+    public void verifyPasswordResetCode(String email, String code) {
+        if (!verificationCodeService.verify(PURPOSE_PASSWORD_RESET, email, code)) {
+            throw new CustomException(ErrorCode.INVALID_VERIFICATION_CODE);
+        }
+    }
+
+    /**
+     * 비밀번호 재설정.
+     * 코드를 다시 검증한 뒤 새 비밀번호로 변경하고, 코드 삭제 + 기존 로그인(refresh) 무효화.
+     */
+    @Transactional
+    public void resetPassword(String email, String code, String newPassword) {
+        // 1) 코드 재검증
+        if (!verificationCodeService.verify(PURPOSE_PASSWORD_RESET, email, code)) {
+            throw new CustomException(ErrorCode.INVALID_VERIFICATION_CODE);
+        }
+
+        // 2) 회원 조회
+        Member member = memberRepository.findByEmail(email)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        // 3) 새 비밀번호 암호화 후 변경 (dirty checking 으로 자동 UPDATE)
+        member.changePassword(passwordEncoder.encode(newPassword));
+
+        // 4) 코드 소비 + 보안상 기존 refresh 토큰 삭제(비번 바뀌면 다시 로그인)
+        verificationCodeService.delete(PURPOSE_PASSWORD_RESET, email);
+        refreshTokenService.delete(member.getId());
     }
 }
