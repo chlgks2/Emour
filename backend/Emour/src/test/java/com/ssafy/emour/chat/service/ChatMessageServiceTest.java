@@ -81,7 +81,7 @@ class ChatMessageServiceTest {
         ChatMessageRequest request = new ChatMessageRequest(
                 clientMessageId,
                 MessageType.IMAGE,
-                "여행 사진",
+                null,
                 List.of("https://image/1.jpg", "https://image/2.jpg")
         );
 
@@ -115,6 +115,22 @@ class ChatMessageServiceTest {
                 chatMessageService.sendMessage(1L, 10L, request))
                 .isInstanceOf(ChatException.class)
                 .hasMessage("텍스트 메시지 내용을 입력해 주세요.");
+    }
+
+    // 이미지 메시지에는 글을 함께 넣을 수 없습니다.
+    @Test
+    void rejectsImageText() {
+        ChatMessageRequest request = new ChatMessageRequest(
+                "318b3db8-d3ce-4a76-99ab-748ad7069b19",
+                MessageType.IMAGE,
+                "여행 사진",
+                List.of("https://image/1.jpg")
+        );
+
+        assertThatThrownBy(() ->
+                chatMessageService.sendMessage(1L, 10L, request))
+                .isInstanceOf(ChatException.class)
+                .hasMessage("IMAGE 메시지에는 텍스트 메시지를 넣을 수 없습니다.");
     }
 
     // 채팅방 멤버가 아닌 사용자의 메시지는 거절합니다.

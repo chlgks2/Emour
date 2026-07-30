@@ -215,6 +215,9 @@ public class ChatMessageService {
         }
 
         if (request.messageType() == MessageType.IMAGE) {
+            if (request.content() != null && !request.content().isBlank()) {
+                throw new ChatException("IMAGE 메시지에는 텍스트 메시지를 넣을 수 없습니다.");
+            }
             if (imageUrls.isEmpty()) {
                 throw new ChatException("IMAGE 메시지에는 이미지가 한 장 이상 필요합니다.");
             }
