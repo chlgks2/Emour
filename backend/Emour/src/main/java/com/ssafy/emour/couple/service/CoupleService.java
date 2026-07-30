@@ -19,7 +19,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Locale;
@@ -101,7 +100,7 @@ public class CoupleService {
         validateInvitation(room, userId);
 
         coupleMemberRepository.save(CoupleMember.active(userId, room.getId()));
-        room.activate(LocalDate.now());
+        room.activate();
 
         return CoupleConnectResponse.from(room);
     }
@@ -131,13 +130,10 @@ public class CoupleService {
         member.leave(disconnectedAt);
 
         if (activeMemberCount == 2) {
-            room.deactivate(disconnectedAt);
+            room.deactivate();
             return CoupleDisconnectResponse.of(room, disconnectedAt, false);
         }
 
-        coupleMemberRepository.deleteAll(
-                coupleMemberRepository.findAllByIdRoomId(room.getId())
-        );
         coupleRoomRepository.delete(room);
         return CoupleDisconnectResponse.of(room, disconnectedAt, true);
     }
