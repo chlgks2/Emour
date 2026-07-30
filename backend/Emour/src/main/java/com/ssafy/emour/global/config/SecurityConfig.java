@@ -41,6 +41,15 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/logout").authenticated() // 로그아웃은 로그인 상태여야 함
                         .requestMatchers("/auth/**").permitAll()          // 그 외 인증 API 는 누구나
+                        // WebSocket은 STOMP CONNECT 헤더의 JWT로 별도 인증한다.
+                        .requestMatchers("/ws/**").permitAll()
+                        // API 문서와 로컬 채팅 테스트 화면은 로그인 전에도 열 수 있다.
+                        .requestMatchers(
+                                "/v3/api-docs/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html",
+                                "/websocket-test.html"
+                        ).permitAll()
                         .anyRequest().authenticated()                     // 나머지는 전부 로그인 필수
                 )
                 // 인증 실패(토큰 없음/무효) 시 401 을 우리 형식으로 응답

@@ -1,6 +1,9 @@
 package com.ssafy.emour.auth.controller;
 
+import com.ssafy.emour.auth.dto.request.EmailSendRequest;
+import com.ssafy.emour.auth.dto.request.EmailVerifyRequest;
 import com.ssafy.emour.auth.dto.request.LoginRequest;
+import com.ssafy.emour.auth.dto.request.PasswordResetRequest;
 import com.ssafy.emour.auth.dto.request.SignUpRequest;
 import com.ssafy.emour.auth.dto.request.TokenReissueRequest;
 import com.ssafy.emour.auth.dto.response.LoginResponse;
@@ -9,11 +12,19 @@ import com.ssafy.emour.auth.dto.response.TokenResponse;
 import com.ssafy.emour.auth.service.AuthService;
 import com.ssafy.emour.global.response.ApiResponse;
 import com.ssafy.emour.global.util.SecurityUtil;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -31,6 +42,8 @@ import java.util.Map;
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
+@Validated
+@Tag(name = "Authentication", description = "회원가입, 로그인 및 토큰 관리 API")
 public class AuthController {
 
     private final AuthService authService;
@@ -56,14 +69,96 @@ public class AuthController {
      * 이메일 로그인.  POST /auth/login
      * 성공 시 Access/Refresh 토큰과 회원 정보를 반환한다.
      */
+    @Operation(
+            summary = "이메일 로그인",
+            description = "이메일과 비밀번호를 입력하면 Access Token과 Refresh Token을 발급합니다."
+    )
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<LoginResponse>> login(
-            @Valid @RequestBody LoginRequest request
+            @Parameter(
+                    name = "email",
+                    description = "로그인할 회원의 이메일",
+                    required = true,
+                    in = ParameterIn.QUERY,
+                    example = "test@example.com"
+            )
+            @RequestParam
+            @NotBlank(message = "이메일은 필수입니다.")
+            @Email(message = "이메일 형식이 아닙니다.")
+            String email,
+
+            @Parameter(
+                    name = "password",
+                    description = "로그인할 회원의 비밀번호",
+                    required = true,
+                    in = ParameterIn.QUERY,
+                    example = "password123!"
+            )
+            @RequestParam
+            @NotBlank(message = "비밀번호는 필수입니다.")
+            String password
     ) {
+        // 서비스는 기존 DTO를 사용하므로 로그인 비즈니스 로직은 그대로 유지됩니다.
+        LoginRequest request = new LoginRequest(email, password);
         LoginResponse response = authService.login(request);
         return ResponseEntity.ok(
                 ApiResponse.success("로그인에 성공했습니다.", response)
         );
+    }
+
+    /**
+     * 비밀번호 재설정 코드 발송.  POST /auth/password/email
+     */
+    @PostMapping("/password/email")
+    public ResponseEntity<ApiResponse<Void>> sendPasswordResetCode(
+            @Valid @RequestBody EmailSendRequest request
+    ) {
+        authService.sendPasswordResetCode(request.email());
+        return ResponseEntity.ok(ApiResponse.success("인증코드를 발송했습니다."));
+    }
+
+    /**
+     * 비밀번호 재설정 코드 확인.  POST /auth/password/verify
+     */
+    @PostMapping("/password/verify")
+    public ResponseEntity<ApiResponse<Void>> verifyPasswordResetCode(
+            @Valid @RequestBody EmailVerifyRequest request
+    ) {
+        authService.verifyPasswordResetCode(request.email(), request.code());
+        return ResponseEntity.ok(ApiResponse.success("인증코드가 확인되었습니다."));
+    }
+
+    /**
+     * 비밀번호 재설정.  PATCH /auth/password
+     */
+    @PatchMapping("/password")
+    public ResponseEntity<ApiResponse<Void>> resetPassword(
+            @Valid @RequestBody PasswordResetRequest request
+    ) {
+        authService.resetPassword(request.email(), request.code(), request.newPassword());
+        return ResponseEntity.ok(ApiResponse.success("비밀번호가 변경되었습니다."));
+    }
+
+    /**
+     * 이메일 인증코드 발송.  POST /auth/email/send
+     */
+    @PostMapping("/email/send")
+    public ResponseEntity<ApiResponse<Void>> sendEmailCode(
+            @Valid @RequestBody EmailSendRequest request
+    ) {
+        authService.sendSignUpVerificationCode(request.email());
+        return ResponseEntity.ok(ApiResponse.success("인증코드를 발송했습니다."));
+    }
+
+    /**
+     * 이메일 인증코드 확인.  POST /auth/email/verify
+     */
+    @PostMapping("/email/verify")
+    public ResponseEntity<ApiResponse<Void>> verifyEmailCode(
+            @Valid @RequestBody EmailVerifyRequest request
+    ) {
+        authService.verifySignUpCode(request.email(), request.code());
+        return ResponseEntity.ok(ApiResponse.success("이메일 인증이 완료되었습니다."));
     }
 
     /**

@@ -41,4 +41,6 @@ public interface CoupleMemberRepository extends JpaRepository<CoupleMember, Coup
             @Param("userId") Long userId,
             Pageable pageable
     );
+
+    boolean existsByIdAndStatus(CoupleMemberId id, CoupleMemberStatus status);
 }
