@@ -8,6 +8,10 @@ import { useAuth } from "../hooks/useAuth";
 import { useToast } from "../hooks/useToast";
 import logoIcon from "../assets/only-logo.png";
 import styles from "./LoginPage.module.css";
+import {
+  hasCurrentCoupleRoom,
+  saveCurrentCoupleRoom,
+} from "../utils/pendingCoupleRoom.js";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -22,8 +26,24 @@ export default function LoginPage() {
   const [socialLoading, setSocialLoading] = useState(null);
 
   const justSignedUp = location.state?.justSignedUp;
-  // 보호된 페이지에서 튕겨온 경우 원래 가려던 곳으로 되돌려보낸다.
-  const redirectTo = location.state?.from ?? "/dashboard";
+  const getPostLoginPath = (user) => {
+    if (user?.roomId) {
+      saveCurrentCoupleRoom(
+        {
+          roomId: user.roomId,
+          roomStatus:
+            user.roomStatus ?? "ACTIVE",
+        },
+        user.userId,
+      );
+
+      return "/dashboard";
+    }
+
+    return hasCurrentCoupleRoom(user?.userId)
+      ? "/dashboard"
+      : "/couple/connect";
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -36,7 +56,9 @@ export default function LoginPage() {
     try {
       const user = await login({ email, password });
       showToast(`${user.nickname}님, 환영해요!`, { tone: "success" });
-      navigate(redirectTo, { replace: true });
+      navigate(getPostLoginPath(user), {
+        replace: true,
+      });
     } catch (err) {
       setError(err.message);
     } finally {
@@ -48,8 +70,11 @@ export default function LoginPage() {
     setSocialLoading(provider);
     setError("");
     try {
-      await loginWithSocial(provider);
-      navigate(redirectTo, { replace: true });
+      const user =
+        await loginWithSocial(provider);
+      navigate(getPostLoginPath(user), {
+        replace: true,
+      });
     } catch {
       setError("소셜 로그인에 실패했어요. 잠시 후 다시 시도해주세요.");
     } finally {
