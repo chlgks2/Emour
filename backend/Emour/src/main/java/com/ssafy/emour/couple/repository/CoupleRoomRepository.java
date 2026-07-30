@@ -38,7 +38,7 @@ public interface CoupleRoomRepository extends JpaRepository<CoupleRoom, Long> {
             where cm.id.userId = :userId
               and cm.status = com.ssafy.emour.couple.entity.CoupleMemberStatus.ACTIVE
               and cr.status = com.ssafy.emour.couple.entity.CoupleRoomStatus.INACTIVE
-            order by cr.endedAt desc
+            order by cr.updatedAt desc
             """)
     List<CoupleRoom> findRetainedInactiveRoomsByUserIdForUpdate(
             @Param("userId") Long userId,

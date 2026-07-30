@@ -41,8 +41,8 @@ public class CoupleRoom {
     @Column(name = "room_code_expires_at")
     private LocalDateTime roomCodeExpiresAt;
 
-    @Column(name = "started_at")
-    private LocalDate startedAt;
+    @Column(name = "dating_start_date")
+    private LocalDate datingStartDate;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
@@ -55,9 +55,6 @@ public class CoupleRoom {
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
-
-    @Column(name = "ended_at")
-    private LocalDateTime endedAt;
 
     public static CoupleRoom waiting(String roomCode, LocalDateTime expiresAt) {
         CoupleRoom room = new CoupleRoom();
@@ -81,19 +78,17 @@ public class CoupleRoom {
                 && roomCodeExpiresAt.isAfter(currentTime);
     }
 
-    public void activate(LocalDate startedAt) {
+    public void activate() {
         if (status != CoupleRoomStatus.WAITING) {
             throw new IllegalStateException("대기 중인 커플방만 연결할 수 있습니다.");
         }
         this.status = CoupleRoomStatus.ACTIVE;
-        this.startedAt = startedAt;
     }
 
-    public void deactivate(LocalDateTime endedAt) {
+    public void deactivate() {
         if (status != CoupleRoomStatus.ACTIVE) {
             throw new IllegalStateException("활성 상태의 커플방만 연결을 해제할 수 있습니다.");
         }
         this.status = CoupleRoomStatus.INACTIVE;
-        this.endedAt = endedAt;
     }
 }
