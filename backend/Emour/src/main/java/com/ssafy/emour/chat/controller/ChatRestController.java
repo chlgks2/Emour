@@ -4,11 +4,15 @@ import com.ssafy.emour.chat.dto.ChatBookmarkListResponse;
 import com.ssafy.emour.chat.dto.ChatBookmarkResponse;
 import com.ssafy.emour.chat.dto.ChatHistoryResponse;
 import com.ssafy.emour.chat.dto.ChatMessageResponse;
+import com.ssafy.emour.chat.dto.ChatReactionEventResponse;
+import com.ssafy.emour.chat.dto.ChatReactionRequest;
+import com.ssafy.emour.chat.dto.ChatReactionResponse;
 import com.ssafy.emour.chat.dto.ChatReadResponse;
 import com.ssafy.emour.chat.dto.ChatRestMessageRequest;
 import com.ssafy.emour.chat.dto.ChatUnreadCountResponse;
 import com.ssafy.emour.chat.service.ChatBookmarkService;
 import com.ssafy.emour.chat.service.ChatMessageService;
+import com.ssafy.emour.chat.service.ChatReactionService;
 import com.ssafy.emour.chat.service.ChatReadService;
 import com.ssafy.emour.global.response.ErrorResponse;
 import com.ssafy.emour.global.util.SecurityUtil;
@@ -46,6 +50,7 @@ public class ChatRestController {
     private final ChatMessageService chatMessageService;
     private final ChatReadService chatReadService;
     private final ChatBookmarkService chatBookmarkService;
+    private final ChatReactionService chatReactionService;
     private final SimpMessagingTemplate messagingTemplate;
 
     /**
@@ -217,6 +222,49 @@ public class ChatRestController {
     }
 
     /**
+     * 메시지에 공감을 추가하거나 기존 공감 종류를 변경합니다.
+     */
+    @PostMapping("/{messageId}/reaction")
+    @Operation(
+            summary = "메시지 공감 추가 또는 변경",
+            description = """
+                    한 사용자는 메시지 하나에 공감 하나만 남길 수 있습니다.
+                    이미 공감한 메시지에 다시 요청하면 공감 종류가 변경됩니다.
+                    """
+    )
+    public ChatReactionResponse setReaction(
+            @Parameter(description = "공감할 메시지 번호", example = "100")
+            @PathVariable Long messageId,
+
+            @RequestBody ChatReactionRequest request
+    ) {
+        ChatReactionResponse response = chatReactionService.setReaction(
+                messageId,
+                SecurityUtil.getCurrentUserId(),
+                request
+        );
+
+        publishReaction("UPSERTED", response);
+        return response;
+    }
+
+    /**
+     * 현재 사용자가 메시지에 남긴 공감을 취소합니다.
+     */
+    @DeleteMapping("/{messageId}/reaction")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "메시지 공감 취소")
+    public void removeReaction(
+            @Parameter(description = "공감을 취소할 메시지 번호", example = "100")
+            @PathVariable Long messageId
+    ) {
+        chatReactionService.removeReaction(
+                messageId,
+                SecurityUtil.getCurrentUserId()
+        ).ifPresent(response -> publishReaction("REMOVED", response));
+    }
+
+    /**
      * WebSocket과 동일한 저장 기능을 REST에서도 사용할 수 있습니다.
      */
     @PostMapping
@@ -257,5 +305,16 @@ public class ChatRestController {
         );
 
         return response;
+    }
+
+    private void publishReaction(
+            String action,
+            ChatReactionResponse reaction
+    ) {
+        // 같은 방을 구독하는 사용자에게 공감 추가·변경·취소를 즉시 알려줍니다.
+        messagingTemplate.convertAndSend(
+                "/sub/chat/rooms/" + reaction.roomId() + "/reactions",
+                new ChatReactionEventResponse(action, reaction)
+        );
     }
 }

@@ -4,6 +4,7 @@ import com.ssafy.emour.chat.dto.ChatHistoryResponse;
 import com.ssafy.emour.chat.dto.ChatImageResponse;
 import com.ssafy.emour.chat.dto.ChatMessageRequest;
 import com.ssafy.emour.chat.dto.ChatMessageResponse;
+import com.ssafy.emour.chat.dto.ChatReactionResponse;
 import com.ssafy.emour.chat.entity.ChatAnalysis;
 import com.ssafy.emour.chat.entity.ChatMessage;
 import com.ssafy.emour.chat.entity.MessageType;
@@ -270,6 +271,18 @@ public class ChatMessageService {
                 ))
                 .toList();
 
+        List<ChatReactionResponse> reactions = message.getReactions().stream()
+                .map(reaction -> new ChatReactionResponse(
+                        reaction.getReactionId(),
+                        reaction.getRoomId(),
+                        message.getMessageId(),
+                        reaction.getUserId(),
+                        reaction.getReactionType(),
+                        reaction.getCreatedAt(),
+                        reaction.getUpdatedAt()
+                ))
+                .toList();
+
         return new ChatMessageResponse(
                 message.getMessageId(),
                 message.getRoomId(),
@@ -278,6 +291,7 @@ public class ChatMessageService {
                 message.getMessageType(),
                 message.getContent(),
                 images,
+                reactions,
                 message.getSentAt()
         );
     }

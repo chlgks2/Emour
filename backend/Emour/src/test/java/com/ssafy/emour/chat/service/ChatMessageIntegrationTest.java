@@ -4,12 +4,15 @@ import com.ssafy.emour.chat.dto.ChatBookmarkListResponse;
 import com.ssafy.emour.chat.dto.ChatHistoryResponse;
 import com.ssafy.emour.chat.dto.ChatMessageRequest;
 import com.ssafy.emour.chat.dto.ChatMessageResponse;
+import com.ssafy.emour.chat.dto.ChatReactionRequest;
+import com.ssafy.emour.chat.dto.ChatReactionResponse;
 import com.ssafy.emour.chat.dto.ChatReadRequest;
 import com.ssafy.emour.chat.dto.ChatUnreadCountResponse;
 import com.ssafy.emour.chat.entity.MessageType;
 import com.ssafy.emour.chat.repository.ChatAnalysisRepository;
 import com.ssafy.emour.chat.repository.ChatBookmarkRepository;
 import com.ssafy.emour.chat.repository.ChatMessageRepository;
+import com.ssafy.emour.chat.repository.ChatReactionRepository;
 import com.ssafy.emour.couple.entity.CoupleMember;
 import com.ssafy.emour.couple.repository.CoupleMemberRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,6 +40,9 @@ class ChatMessageIntegrationTest {
     private ChatBookmarkService chatBookmarkService;
 
     @Autowired
+    private ChatReactionService chatReactionService;
+
+    @Autowired
     private CoupleMemberRepository coupleMemberRepository;
 
     @Autowired
@@ -47,6 +53,9 @@ class ChatMessageIntegrationTest {
 
     @Autowired
     private ChatBookmarkRepository chatBookmarkRepository;
+
+    @Autowired
+    private ChatReactionRepository chatReactionRepository;
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -64,6 +73,9 @@ class ChatMessageIntegrationTest {
     // 텍스트 메시지를 DB에 저장한 뒤 채팅 내역으로 다시 조회합니다.
     @Test
     void savesAndLoadsText() {
+        long messageCountBefore = chatMessageRepository.count();
+        long analysisCountBefore = chatAnalysisRepository.count();
+
         ChatMessageResponse sent = chatMessageService.sendMessage(
                 1L,
                 10L,
@@ -83,22 +95,29 @@ class ChatMessageIntegrationTest {
         );
 
         assertThat(sent.messageId()).isNotNull();
-        assertThat(chatMessageRepository.count()).isEqualTo(1);
-        assertThat(chatAnalysisRepository.count()).isEqualTo(1);
-        assertThat(history.messages()).hasSize(1);
-        assertThat(history.messages().get(0).content()).isEqualTo("안녕!");
+        assertThat(chatMessageRepository.count())
+                .isEqualTo(messageCountBefore + 1);
+        assertThat(chatAnalysisRepository.count())
+                .isEqualTo(analysisCountBefore + 1);
+        assertThat(history.messages())
+                .anySatisfy(message -> {
+                    assertThat(message.messageId()).isEqualTo(sent.messageId());
+                    assertThat(message.content()).isEqualTo("안녕!");
+                });
     }
 
     // 사진 여러 장을 메시지 하나에 묶어서 저장하고 조회합니다.
     @Test
     void savesMultipleImages() {
+        long analysisCountBefore = chatAnalysisRepository.count();
+
         ChatMessageResponse sent = chatMessageService.sendMessage(
                 1L,
                 10L,
                 new ChatMessageRequest(
                         "3e0133f5-1dab-43c5-ab30-a5777542f066",
                         MessageType.IMAGE,
-                        "여행 사진",
+                        null,
                         List.of(
                                 "https://image/first.jpg",
                                 "https://image/second.jpg"
@@ -111,7 +130,8 @@ class ChatMessageIntegrationTest {
         assertThat(sent.images())
                 .extracting(image -> image.displayOrder())
                 .containsExactly(1, 2);
-        assertThat(chatAnalysisRepository.count()).isZero();
+        assertThat(chatAnalysisRepository.count())
+                .isEqualTo(analysisCountBefore);
 
         // 다시 채팅 내역을 조회해도 사진 두 장이 메시지 하나에 함께 들어 있어야 합니다.
         ChatHistoryResponse history = chatMessageService.getMessages(
@@ -121,10 +141,11 @@ class ChatMessageIntegrationTest {
                 50
         );
 
-        assertThat(history.messages()).hasSize(1);
-        assertThat(history.messages().get(0).messageId())
-                .isEqualTo(sent.messageId());
-        assertThat(history.messages().get(0).images())
+        ChatMessageResponse savedMessage = history.messages().stream()
+                .filter(message -> message.messageId().equals(sent.messageId()))
+                .findFirst()
+                .orElseThrow();
+        assertThat(savedMessage.images())
                 .extracting(image -> image.imageUrl())
                 .containsExactly(
                         "https://image/first.jpg",
@@ -208,6 +229,8 @@ class ChatMessageIntegrationTest {
     // 메시지 북마크의 저장, 조회, 취소 과정을 확인합니다.
     @Test
     void managesBookmarks() {
+        long bookmarkCountBefore = chatBookmarkRepository.count();
+
         ChatMessageResponse message = chatMessageService.sendMessage(
                 1L,
                 20L,
@@ -231,7 +254,57 @@ class ChatMessageIntegrationTest {
                 .isEqualTo("기억하고 싶은 메시지");
 
         chatBookmarkService.removeBookmark(message.messageId(), 10L);
-        assertThat(chatBookmarkRepository.count()).isZero();
+        assertThat(chatBookmarkRepository.count())
+                .isEqualTo(bookmarkCountBefore);
+    }
+
+    // 한 사용자의 공감을 추가하고 변경한 뒤 취소하는 과정을 확인합니다.
+    @Test
+    void managesReactions() {
+        long reactionCountBefore = chatReactionRepository.count();
+
+        ChatMessageResponse message = chatMessageService.sendMessage(
+                1L,
+                20L,
+                textRequest(
+                        "600b7d53-68d6-4437-98b1-b9badf073c6a",
+                        "공감할 메시지"
+                )
+        );
+
+        ChatReactionResponse added = chatReactionService.setReaction(
+                message.messageId(),
+                10L,
+                new ChatReactionRequest("heart")
+        );
+        ChatReactionResponse changed = chatReactionService.setReaction(
+                message.messageId(),
+                10L,
+                new ChatReactionRequest("LAUGH")
+        );
+
+        assertThat(added.reactionType()).isEqualTo("HEART");
+        assertThat(changed.reactionType()).isEqualTo("LAUGH");
+        assertThat(chatReactionRepository.count())
+                .isEqualTo(reactionCountBefore + 1);
+
+        ChatHistoryResponse history = chatMessageService.getMessages(
+                1L,
+                10L,
+                null,
+                50
+        );
+        ChatMessageResponse reactedMessage = history.messages().stream()
+                .filter(found -> found.messageId().equals(message.messageId()))
+                .findFirst()
+                .orElseThrow();
+        assertThat(reactedMessage.reactions())
+                .extracting(ChatReactionResponse::reactionType)
+                .containsExactly("LAUGH");
+
+        chatReactionService.removeReaction(message.messageId(), 10L);
+        assertThat(chatReactionRepository.count())
+                .isEqualTo(reactionCountBefore);
     }
 
     private ChatMessageRequest textRequest(

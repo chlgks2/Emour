@@ -96,6 +96,25 @@ class ChatWebSocketAuthInterceptorTest {
                 .doesNotThrowAnyException();
     }
 
+    // 채팅방 멤버는 공감 변경 알림 채널도 구독할 수 있습니다.
+    @Test
+    void allowsReactionSubscription() {
+        when(coupleMemberRepository.existsByIdAndStatus(
+                new CoupleMemberId(10L, 1L),
+                CoupleMemberStatus.ACTIVE
+        )).thenReturn(true);
+
+        Message<byte[]> message = stompMessage(
+                StompCommand.SUBSCRIBE,
+                "/sub/chat/rooms/1/reactions",
+                null,
+                10L
+        );
+
+        assertThatCode(() -> interceptor.preSend(message, messageChannel))
+                .doesNotThrowAnyException();
+    }
+
     // 참여하지 않은 커플방의 메시지는 구독할 수 없습니다.
     @Test
     void rejectsNonMemberSubscription() {

@@ -35,6 +35,9 @@ public record ChatMessageResponse(
         @Schema(description = "메시지에 연결된 이미지 목록")
         List<ChatImageResponse> images,
 
+        @Schema(description = "메시지에 남겨진 공감 목록")
+        List<ChatReactionResponse> reactions,
+
         @Schema(description = "서버 저장 시각")
         LocalDateTime sentAt
 ) {

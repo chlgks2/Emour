@@ -24,7 +24,7 @@ public class ChatWebSocketAuthInterceptor implements ChannelInterceptor {
 
     private static final String BEARER_PREFIX = "Bearer ";
     private static final Pattern ROOM_DESTINATION = Pattern.compile(
-            "^/(pub|sub)/chat/rooms/(\\d+)/(?:messages|read)$"
+            "^/(pub|sub)/chat/rooms/(\\d+)/(messages|read|reactions)$"
     );
 
     private final JwtTokenProvider jwtTokenProvider;
@@ -103,11 +103,15 @@ public class ChatWebSocketAuthInterceptor implements ChannelInterceptor {
         }
 
         String prefix = matcher.group(1);
+        String channel = matcher.group(3);
         if (command == StompCommand.SEND && !"pub".equals(prefix)) {
             throw new MessageDeliveryException("메시지는 /pub 주소로만 보낼 수 있습니다.");
         }
         if (command == StompCommand.SUBSCRIBE && !"sub".equals(prefix)) {
             throw new MessageDeliveryException("채팅은 /sub 주소만 구독할 수 있습니다.");
+        }
+        if (command == StompCommand.SEND && "reactions".equals(channel)) {
+            throw new MessageDeliveryException("공감 변경은 REST API를 사용해 주세요.");
         }
 
         Long roomId = Long.valueOf(matcher.group(2));

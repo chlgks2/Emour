@@ -43,6 +43,12 @@ class SwaggerDocumentationTest {
                 ).exists())
                 .andExpect(jsonPath(
                         "$.paths['/chats/bookmarks']"
+                ).exists())
+                .andExpect(jsonPath(
+                        "$.paths['/chats/{messageId}/reaction'].post"
+                ).exists())
+                .andExpect(jsonPath(
+                        "$.paths['/chats/{messageId}/reaction'].delete"
                 ).exists());
     }
 

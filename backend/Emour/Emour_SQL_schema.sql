@@ -251,7 +251,7 @@ CREATE TABLE `chat_reaction` (
     `room_id` BIGINT NOT NULL,
     `user_id` BIGINT NOT NULL,
     `message_id` BIGINT NOT NULL,
-    `reaction_type` ENUM('HEART', 'CHECK', 'GREAT') NOT NULL,
+    `reaction_type` VARCHAR(255) NOT NULL,
     `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     `updated_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
         ON UPDATE CURRENT_TIMESTAMP(6),

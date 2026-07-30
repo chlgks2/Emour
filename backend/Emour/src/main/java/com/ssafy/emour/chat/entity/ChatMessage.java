@@ -68,6 +68,15 @@ public class ChatMessage {
     @OrderBy("displayOrder ASC")
     private List<ChatMessageImage> images = new ArrayList<>();
 
+    @OneToMany(
+            mappedBy = "message",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true,
+            fetch = FetchType.LAZY
+    )
+    @OrderBy("reactionId ASC")
+    private List<ChatReaction> reactions = new ArrayList<>();
+
     protected ChatMessage() {
     }
 
@@ -91,6 +100,14 @@ public class ChatMessage {
     public void addImage(String imageUrl, int displayOrder) {
         // 이미지가 자신이 속한 메시지를 알 수 있도록 양쪽을 연결합니다.
         images.add(ChatMessageImage.create(this, imageUrl, displayOrder));
+    }
+
+    void addReaction(ChatReaction reaction) {
+        reactions.add(reaction);
+    }
+
+    void removeReaction(ChatReaction reaction) {
+        reactions.remove(reaction);
     }
 
     public Long getMessageId() {
@@ -123,5 +140,9 @@ public class ChatMessage {
 
     public List<ChatMessageImage> getImages() {
         return Collections.unmodifiableList(images);
+    }
+
+    public List<ChatReaction> getReactions() {
+        return Collections.unmodifiableList(reactions);
     }
 }
