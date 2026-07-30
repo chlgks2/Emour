@@ -51,8 +51,9 @@ public class Member {
     @Column(name = "birth")
     private LocalDate birth;
 
+    // 프로필 이미지도 앨범과 동일하게 전체 URL 이 아닌 저장 key 를 담는다.
     @Column(name = "profile_image_url", length = 2048)
-    private String profileImageUrl;
+    private String profileImageKey;
 
     @Column(name = "status_message", length = 255)
     private String statusMessage;
@@ -101,12 +102,16 @@ public class Member {
         this.passwordHash = encodedPassword;
     }
 
-    /** 프로필 부분 수정 (null 로 온 필드는 변경하지 않음) */
-    public void updateProfile(String nickname, LocalDate birth, String profileImageUrl, String statusMessage) {
+    /** 프로필 부분 수정 (null 로 온 필드는 변경하지 않음). 이미지는 별도 업로드 API 로 처리. */
+    public void updateProfile(String nickname, LocalDate birth, String statusMessage) {
         if (nickname != null) this.nickname = nickname;
         if (birth != null) this.birth = birth;
-        if (profileImageUrl != null) this.profileImageUrl = profileImageUrl;
         if (statusMessage != null) this.statusMessage = statusMessage;
+    }
+
+    /** 프로필 이미지 key 변경 (null 이면 이미지 제거) */
+    public void updateProfileImage(String imageKey) {
+        this.profileImageKey = imageKey;
     }
 
     /** 회원 탈퇴 (soft delete): 상태를 WITHDRAWN 으로, 탈퇴 시각 기록 */

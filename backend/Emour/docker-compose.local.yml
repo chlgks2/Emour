@@ -1,0 +1,56 @@
+# =====================================================================
+# 로컬 "배포 연습"용 compose (학습 목적)
+# 팀 Dockerfile 로 앱 이미지를 빌드하고, MySQL/Redis 와 함께 통째로 실행한다.
+# → EC2 에서 도는 방식(앱도 컨테이너)을 내 PC 에서 그대로 재현.
+#
+# 실행:  docker compose -f docker-compose.local.yml up --build
+# 종료:  Ctrl+C 후  docker compose -f docker-compose.local.yml down
+#   (DB까지 초기화하려면  down -v)
+# 주의: 먼저 gradlew bootRun 을 껐다 실행하세요 (둘 다 8080 포트 사용).
+# =====================================================================
+services:
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: emour
+      MYSQL_ROOT_PASSWORD: verysecret
+    ports:
+      - "3307:3306"                    # 호스트 3307 (dev용과 충돌 방지). 앱은 내부망으로 접속
+    volumes:
+      - emour-mysql-data:/var/lib/mysql
+    healthcheck:                        # MySQL 이 "접속 준비" 될 때까지 앱을 기다리게 함
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: redis:7
+    ports:
+      - "6380:6379"
+
+  api:
+    build: .                           # 이 폴더의 Dockerfile(팀 것)로 앱 이미지 빌드
+    ports:
+      - "8080:8080"
+    environment:
+      # 컨테이너끼리는 서비스 이름(mysql, redis)이 곧 호스트명이 된다
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/emour
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: verysecret
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: "6379"
+      JWT_SECRET: LocalDockerPracticeSecretKeyChangeMe1234567890ABCDEF
+      # ↓ EC2 배포 규약과 동일한 환경변수 (사진 저장)
+      APP_UPLOAD_DIR: /app/uploads
+      APP_UPLOAD_BASE_URL: http://localhost:8080
+    volumes:
+      - ./uploads:/app/uploads          # 볼륨: 로컬 폴더 ↔ 컨테이너 (EC2의 /opt/emour/data/uploads 흉내)
+    depends_on:
+      mysql:
+        condition: service_healthy      # MySQL 준비된 뒤에 앱 시작
+      redis:
+        condition: service_started
+
+volumes:
+  emour-mysql-data:

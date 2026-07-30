@@ -15,9 +15,6 @@ public record ProfileUpdateRequest(
 
         LocalDate birth,
 
-        @Size(max = 2048, message = "이미지 URL이 너무 깁니다.")
-        String profileImageUrl,
-
         @Size(max = 255, message = "상태메시지는 255자 이하여야 합니다.")
         String statusMessage
 ) {
