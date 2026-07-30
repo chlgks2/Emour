@@ -1,0 +1,108 @@
+stages: [build, deploy]
+
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH =~ /^develop\//
+    - if: $CI_COMMIT_BRANCH == "master"
+    - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS
+      when: never
+    - if: $CI_COMMIT_BRANCH
+
+# ============ FRONTEND ============
+build:web:
+  stage: build
+  tags: [emour-ec2]
+  rules:
+    - if: ($CI_COMMIT_BRANCH =~ /^develop\// || $CI_COMMIT_BRANCH == "master")
+      changes: [frontend/**/*]
+  script:
+    - docker build --build-arg VITE_API_BASE_URL=/api --build-arg VITE_WS_BASE_URL=/ws
+        -t emour-web:$CI_PIPELINE_IID -t emour-web:latest ./frontend
+
+deploy:web:dev:
+  stage: deploy
+  tags: [emour-ec2]
+  resource_group: dev
+  rules:
+    - if: $CI_COMMIT_BRANCH =~ /^develop\//
+      changes: [frontend/**/*]
+  script:
+    - /opt/emour/scripts/deploy.sh dev web $CI_PIPELINE_IID
+  environment: { name: development, url: "http://43.203.253.56:8080" }
+
+deploy:web:prod:
+  stage: deploy
+  tags: [emour-ec2]
+  resource_group: prod
+  rules:
+    - if: $CI_COMMIT_BRANCH == "master"
+      changes: [frontend/**/*]
+  script:
+    - /opt/emour/scripts/deploy.sh prod web $CI_PIPELINE_IID
+  environment: { name: production, url: "https://ec2-43-203-253-56.ap-northeast-2.compute.amazonaws.com" }
+
+# ============ BACKEND ============
+build:api:
+  stage: build
+  tags: [emour-ec2]
+  rules:
+    - if: ($CI_COMMIT_BRANCH =~ /^develop\// || $CI_COMMIT_BRANCH == "master")
+      changes: [backend/**/*]
+  script:
+    - docker build -t emour-api:$CI_PIPELINE_IID -t emour-api:latest ./backend/Emour
+
+deploy:api:dev:
+  stage: deploy
+  tags: [emour-ec2]
+  resource_group: dev
+  rules:
+    - if: $CI_COMMIT_BRANCH =~ /^develop\//
+      changes: [backend/**/*]
+  script:
+    - /opt/emour/scripts/deploy.sh dev api $CI_PIPELINE_IID
+  environment: { name: development }
+
+deploy:api:prod:
+  stage: deploy
+  tags: [emour-ec2]
+  resource_group: prod
+  rules:
+    - if: $CI_COMMIT_BRANCH == "master"
+      changes: [backend/**/*]
+  script:
+    - /opt/emour/scripts/deploy.sh prod api $CI_PIPELINE_IID
+  environment: { name: production }
+
+# ============ AI ============
+build:ai:
+  stage: build
+  tags: [emour-ec2]
+  rules:
+    - if: ($CI_COMMIT_BRANCH =~ /^develop\// || $CI_COMMIT_BRANCH == "master")
+      changes: [AI/**/*]
+  script:
+    - docker build --cache-from emour-ai:latest
+        -t emour-ai:$CI_PIPELINE_IID -t emour-ai:latest ./AI
+
+deploy:ai:dev:
+  stage: deploy
+  tags: [emour-ec2]
+  resource_group: dev
+  rules:
+    - if: $CI_COMMIT_BRANCH =~ /^develop\//
+      changes: [AI/**/*]
+  script:
+    - /opt/emour/scripts/deploy.sh dev ai $CI_PIPELINE_IID
+  environment: { name: development }
+
+deploy:ai:prod:
+  stage: deploy
+  tags: [emour-ec2]
+  resource_group: prod
+  rules:
+    - if: $CI_COMMIT_BRANCH == "master"
+      changes: [AI/**/*]
+  script:
+    - /opt/emour/scripts/deploy.sh prod ai $CI_PIPELINE_IID
+  environment: { name: production }
