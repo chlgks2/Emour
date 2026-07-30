@@ -27,7 +27,6 @@ import {
 import {
   getMyPageProfile,
   leaveCoupleRoom,
-  logoutCurrentUser,
   regenerateRoomCode,
   updatePartnerNickname,
   withdrawCurrentUser,
@@ -36,6 +35,7 @@ import {
 import BottomNavigation from '../../components/common/BottomNavigation/BottomNavigation.jsx'
 
 import PartnerNicknameModal from '../../components/mypage/PartnerNicknameModal/PartnerNicknameModal.jsx'
+import { useAuth } from '../../hooks/useAuth.js'
 
 import './MyPagePage.css'
 
@@ -98,6 +98,7 @@ function formatDate(value) {
 
 function MyPagePage() {
   const navigate = useNavigate()
+  const { logout } = useAuth()
 
   const [profile, setProfile] =
     useState(null)
@@ -167,9 +168,7 @@ function MyPagePage() {
   }
 
   const openPasswordChange = () => {
-    window.alert(
-      '비밀번호 변경 화면은 추후 연결됩니다.',
-    )
+    navigate('/mypage/password-change')
   }
 
   const openProfileEdit = () => {
@@ -279,22 +278,21 @@ function MyPagePage() {
     try {
       setIsProcessing(true)
 
-      await logoutCurrentUser()
-
-      localStorage.removeItem(
-        'accessToken',
-      )
+      await logout()
 
       window.alert(
         '로그아웃 처리되었습니다.',
       )
     } catch (error) {
-      window.alert(
-        error.message ||
-          '로그아웃에 실패했습니다.',
+      console.error(
+        '서버 로그아웃 요청 실패:',
+        error,
       )
     } finally {
       setIsProcessing(false)
+      navigate('/login', {
+        replace: true,
+      })
     }
   }
 
@@ -354,13 +352,26 @@ function MyPagePage() {
             setProfile(updatedProfile)
           }
 
-          localStorage.removeItem(
-            'accessToken',
-          )
+          try {
+            await logout()
+          } catch (logoutError) {
+            // 탈퇴가 완료됐다면 서버 로그아웃 실패와 관계없이
+            // 로컬 인증 상태를 종료하고 로그인 화면으로 이동한다.
+            console.error(
+              '탈퇴 후 서버 로그아웃 요청 실패:',
+              logoutError,
+            )
+          }
 
           window.alert(
             '회원 탈퇴 요청이 처리되었습니다.',
           )
+
+          navigate('/login', {
+            replace: true,
+          })
+
+          return
         }
 
         setConfirmAction(null)

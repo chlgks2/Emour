@@ -20,6 +20,7 @@ import MyPagePage from './pages/MyPagePage/MyPagePage.jsx'
 import SignUpPage from './pages/SignUpPage.jsx'
 import ProfileEditPage from './pages/ProfileEditPage/ProfileEditPage.jsx'
 import NotificationSettingPage from './pages/NotificationSettingPage/NotificationSettingPage.jsx'
+import PasswordChangePage from './pages/PasswordChangePage/PasswordChangePage.jsx'
 
 import './App.css'
 
@@ -137,7 +138,11 @@ function App() {
         <Route
           path="/mypage/notification-settings"
           element={<NotificationSettingPage />}
-        />  
+        />
+        <Route
+          path="/mypage/password-change"
+          element={<PasswordChangePage />}
+        />
 
         <Route
           path="*"

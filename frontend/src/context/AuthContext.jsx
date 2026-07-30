@@ -30,8 +30,12 @@ export function AuthProvider({ children }) {
   }, []);
 
   const logout = useCallback(async () => {
-    await authApi.logout();
-    setUser(null);
+    try {
+      await authApi.logout();
+    } finally {
+      // 서버 로그아웃 요청이 실패하더라도 로컬 인증 상태는 반드시 종료한다.
+      setUser(null);
+    }
   }, []);
 
   const value = useMemo(

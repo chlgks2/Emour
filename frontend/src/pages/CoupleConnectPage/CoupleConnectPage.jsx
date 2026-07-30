@@ -11,11 +11,13 @@ import {
   saveCurrentCoupleRoom,
   savePendingCoupleRoom,
 } from '../../utils/pendingCoupleRoom.js'
+import { useAuth } from '../../hooks/useAuth.js'
 
 import './CoupleConnectPage.css'
 
 function CoupleConnectPage() {
   const navigate = useNavigate()
+  const { user } = useAuth()
   const [roomCode, setRoomCode] = useState('')
   const [isLoading, setIsLoading] =
     useState(false)
@@ -54,9 +56,12 @@ function CoupleConnectPage() {
         )
       }
 
-      savePendingCoupleRoom(invitation)
+      savePendingCoupleRoom(
+        invitation,
+        user?.userId,
+      )
 
-      navigate('/calendar', {
+      navigate('/dashboard', {
         replace: true,
       })
     } catch (error) {
@@ -100,6 +105,7 @@ function CoupleConnectPage() {
       clearPendingCoupleRoom()
       saveCurrentCoupleRoom(
         connectedRoom,
+        user?.userId,
       )
 
       setFeedback({
@@ -107,7 +113,7 @@ function CoupleConnectPage() {
         message: '커플 연결이 완료되었습니다.',
       })
 
-      navigate('/calendar', {
+      navigate('/dashboard', {
         replace: true,
       })
     } catch (error) {
