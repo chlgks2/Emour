@@ -1,0 +1,35 @@
+.page-with-navigation {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  overflow: hidden;
+  background: var(--color-background);
+}
+
+.page-with-navigation-content {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/*
+ * 기존 홈·대시보드 시안의 핑크 테마를 이 화면에만 적용합니다.
+ * 캘린더·앨범·마이페이지의 CI 토큰에는 영향을 주지 않습니다.
+ */
+.page-with-navigation-home {
+  --color-primary: #f2607a;
+  --color-primary-dark: #d8425f;
+  --color-primary-light: #ffb3bf;
+  --color-logo-heart: #ca8495;
+  --color-sub: #eeddd6;
+  --color-sub-bg: #fdf1ee;
+  --color-text: #404040;
+  --color-text-sub: #8b8b8b;
+  --color-text-placeholder: #b8b3b0;
+  --color-border: #ece5e2;
+  --color-bg: #fbf8f7;
+  --color-white: #ffffff;
+  background: #fbf8f7;
+}

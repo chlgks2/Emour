@@ -13,8 +13,8 @@ import {
 } from './httpClient.js'
 
 const USE_MOCK_API =
-  import.meta.env.VITE_USE_MOCK_API !==
-  'false'
+  import.meta.env
+    .VITE_USE_ALBUM_MOCK_API === 'true'
 
 const MOCK_DELAY = 250
 
@@ -23,22 +23,17 @@ const MOCK_DELAY = 250
  * ENDPOINTS만 수정하면 됩니다.
  */
 const ENDPOINTS = {
-  albumPhotos:
-    '/api/albums/me/photos',
+  albumPhotos: '/photos',
 
-  chatPhotos:
-    '/api/albums/me/chat-images',
-
-  uploadAlbumPhoto:
-    '/api/album-photos',
+  uploadAlbumPhoto: '/photos',
 
   deleteAlbumPhoto:
     (photoId) =>
-      `/api/album-photos/${photoId}`,
+      `/photos/${photoId}`,
 
-  deleteChatPhoto:
-    (imageId) =>
-      `/api/chat-images/${imageId}`,
+  updateAlbumPhotoMemo:
+    (photoId) =>
+      `/photos/${photoId}/memo`,
 }
 
 let mockAlbumPhotoResponse =
@@ -126,18 +121,10 @@ export async function getAlbumPhotos() {
     return createMappedMockResponse()
   }
 
-  const [
-    albumPhotoPayload,
-    chatPhotoPayload,
-  ] = await Promise.all([
-    apiRequest(
+  const albumPhotoPayload =
+    await apiRequest(
       ENDPOINTS.albumPhotos,
-    ),
-
-    apiRequest(
-      ENDPOINTS.chatPhotos,
-    ),
-  ])
+    )
 
   return mapAlbumPageResponse({
     albumPhotosResponse:
@@ -150,16 +137,7 @@ export async function getAlbumPhotos() {
         ],
       ),
 
-    chatPhotosResponse:
-      extractArray(
-        chatPhotoPayload,
-        [
-          'images',
-          'chatPhotos',
-          'chatImages',
-          'chat_images',
-        ],
-      ),
+    chatPhotosResponse: [],
   })
 }
 
@@ -215,7 +193,7 @@ export async function uploadAlbumPhoto({
   const formData = new FormData()
 
   formData.append(
-    'image',
+    'file',
     file,
   )
 
@@ -338,12 +316,34 @@ export async function deleteChatPhoto(
     return
   }
 
-  await apiRequest(
-    ENDPOINTS.deleteChatPhoto(
-      imageId,
+  throw new Error(
+    '채팅 사진 삭제 API는 아직 제공되지 않습니다.',
+  )
+}
+
+export async function updateAlbumPhotoMemo({
+  photoId,
+  memo = '',
+}) {
+  if (!photoId) {
+    throw new Error(
+      '수정할 앨범 사진 정보가 없습니다.',
+    )
+  }
+
+  const response = await apiRequest(
+    ENDPOINTS.updateAlbumPhotoMemo(
+      photoId,
     ),
     {
-      method: 'DELETE',
+      method: 'PATCH',
+      body: {
+        memo: memo.trim(),
+      },
     },
+  )
+
+  return mapAlbumPhoto(
+    response?.data ?? response,
   )
 }

@@ -1,0 +1,183 @@
+.home {
+  position: relative;
+  width: 100%;
+  max-width: var(--app-max-width);
+  height: 100%;
+  color: #fff;
+}
+
+.loadingText {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.bgPhoto {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.overlayGradient {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.1) 0%,
+    rgba(0, 0, 0, 0.8) 100%
+  );
+}
+
+.editBtn {
+  position: absolute;
+  top: calc(20px + var(--safe-top));
+  right: 12px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--tap-target);
+  min-height: var(--tap-target);
+  padding: 0 8px;
+  border-radius: var(--radius-pill);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-primary);
+  text-decoration: underline;
+}
+
+.editBtn:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.headerInfo {
+  position: absolute;
+  top: calc(24px + var(--safe-top));
+  left: 24px;
+  z-index: 2;
+}
+
+.days {
+  margin-top: 4px;
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.days span {
+  color: var(--color-primary);
+}
+
+.profiles {
+  margin-top: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.profileCircle {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.35);
+  border: 2px solid var(--color-primary);
+  overflow: hidden;
+}
+
+.profileCircle img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.heart {
+  color: var(--color-primary);
+  font-size: 22px;
+}
+
+.captionBox {
+  position: absolute;
+  z-index: 2;
+  transform: translate(-50%, -50%);
+  max-width: 82%;
+  padding: 16px 18px;
+  border-radius: 12px;
+}
+
+.captionBoxDim {
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.captionBoxSolid {
+  background: rgba(20, 20, 20, 0.8);
+}
+
+.captionBoxNone {
+  background: transparent;
+}
+
+.quoteMark {
+  display: block;
+  font-size: 20px;
+  opacity: 0.8;
+  margin-bottom: 4px;
+}
+
+.captionText {
+  font-weight: 700;
+  line-height: 1.4;
+  word-break: keep-all;
+}
+
+.captionSm .captionText {
+  font-size: 15px;
+}
+
+.captionMd .captionText {
+  font-size: 19px;
+}
+
+.captionLg .captionText {
+  font-size: 24px;
+}
+
+.viewDashboardBtn {
+  position: absolute;
+  bottom: calc(28px + var(--safe-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: var(--tap-target);
+  padding: 0 16px;
+  border-radius: var(--radius-pill);
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+}
+
+/* 아래로 내려가라는 힌트를 은은한 상하 움직임으로 표현 */
+.viewDashboardBtn svg {
+  animation: nudgeDown 1.8s var(--ease-out) infinite;
+}
+
+@keyframes nudgeDown {
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.75;
+  }
+  50% {
+    transform: translateY(4px);
+    opacity: 1;
+  }
+}
