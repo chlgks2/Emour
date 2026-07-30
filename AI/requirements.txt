@@ -2,6 +2,13 @@ fastapi==0.115.0
 uvicorn[standard]==0.32.0
 pydantic==2.9.0
 python-dotenv==1.0.1
-torch==2.5.1
-transformers==4.46.0
 openai==1.54.0
+
+# --- 테스트용 ---
+httpx
+pytest
+pytest-asyncio
+
+# --- KOTE 붙일 때 다시 추가 예정 (지금은 LLM-only + 목업이라 불필요) ---
+# torch==2.5.1
+# transformers==4.46.0

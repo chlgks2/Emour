@@ -1,0 +1,35 @@
+# ── 환경 변수 (보안: 절대 커밋 금지) ──
+.env
+.env.local
+.venv/
+venv/
+
+# ── Python 캐시 / 가상환경 ──
+__pycache__/
+.pytest_cache/
+*.py[cod]
+*.pyc
+*.pyo
+*.pyd
+venv/
+.venv/
+env/
+*.egg-info/
+
+# ── OS 생성 파일 ──
+Thumbs.db
+.DS_Store
+
+# ── IDE 설정 ──
+.vscode/
+.idea/
+
+# ── PoC 실행 산출물 (다시 생성 가능하므로 커밋 제외) ──
+# 예측/채점 결과는 스크립트로 재생성됩니다. 보고서에 넣을 확정본만
+# 따로 보관하고, 작업 중 산출물은 추적하지 않습니다.
+poc/outputs/
+
+# ── 평가셋(data/eval)은 커밋합니다 ──
+# 골드라벨은 사람이 만든 소중한 자산이라 버전 관리 대상입니다.
+# 만약 민감/대용량이라 제외하려면 아래 주석을 해제하세요.
+# data/eval/
