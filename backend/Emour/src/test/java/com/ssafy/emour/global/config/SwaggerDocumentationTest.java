@@ -83,4 +83,12 @@ class SwaggerDocumentationTest {
                         containsString("Emour WebSocket")
                 ));
     }
+
+    // 배포 서버가 로그인 없이 백엔드 실행 상태를 확인할 수 있습니다.
+    @Test
+    void opensHealthEndpoint() throws Exception {
+        mockMvc.perform(get("/actuator/health"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("UP"));
+    }
 }
