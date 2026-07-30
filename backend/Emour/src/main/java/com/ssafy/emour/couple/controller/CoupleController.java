@@ -7,6 +7,7 @@ import com.ssafy.emour.couple.dto.response.CoupleInvitationResponse;
 import com.ssafy.emour.couple.service.CoupleService;
 import com.ssafy.emour.global.response.ApiResponse;
 import com.ssafy.emour.global.util.SecurityUtil;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/couples")
 @RequiredArgsConstructor
+@SecurityRequirement(name = "bearerAuth")
 public class CoupleController {
 
     private final CoupleService coupleService;
