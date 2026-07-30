@@ -1,0 +1,83 @@
+.card {
+  margin: 14px 20px 0;
+  background: var(--color-white);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: 14px 16px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+/* 대시보드 카드 제목 공통 스타일 (다른 카드들과 색/간격을 맞춘다) */
+.title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-primary-dark);
+}
+
+.title svg {
+  flex-shrink: 0;
+}
+
+.moreBtn {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  /* 텍스트 버튼도 손가락으로 누를 수 있게 최소 높이 확보 (여백은 음수 마진으로 상쇄) */
+  min-height: 32px;
+  margin: -6px -6px -6px 0;
+  padding: 0 6px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  color: var(--color-text-sub);
+}
+
+.moreBtn:hover {
+  background: var(--color-sub-bg);
+  color: var(--color-primary-dark);
+}
+
+.stateText {
+  font-size: 12px;
+  color: var(--color-text-placeholder);
+  padding: 6px 0;
+  line-height: 1.5;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.item {
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.itemText {
+  font-size: 13px;
+  color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.itemMeta {
+  font-size: 11px;
+  color: var(--color-text-placeholder);
+  margin-top: 2px;
+}
