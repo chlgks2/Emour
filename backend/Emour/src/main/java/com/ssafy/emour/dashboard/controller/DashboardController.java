@@ -1,11 +1,13 @@
 package com.ssafy.emour.dashboard.controller;
 
 import com.ssafy.emour.dashboard.dto.DashboardCountResponse;
+import com.ssafy.emour.dashboard.dto.DashboardConversationFlowResponse;
 import com.ssafy.emour.dashboard.dto.DashboardEmotionFlowResponse;
 import com.ssafy.emour.dashboard.dto.DashboardFrequentWordsResponse;
 import com.ssafy.emour.dashboard.dto.DashboardMainEmotionResponse;
 import com.ssafy.emour.dashboard.dto.DashboardPeriod;
 import com.ssafy.emour.dashboard.service.DashboardEmotionService;
+import com.ssafy.emour.dashboard.service.DashboardConversationService;
 import com.ssafy.emour.dashboard.service.DashboardMainEmotionService;
 import com.ssafy.emour.dashboard.service.DashboardService;
 import com.ssafy.emour.dashboard.service.DashboardWordService;
@@ -34,6 +36,7 @@ public class DashboardController {
     private final DashboardEmotionService dashboardEmotionService;
     private final DashboardWordService dashboardWordService;
     private final DashboardMainEmotionService dashboardMainEmotionService;
+    private final DashboardConversationService dashboardConversationService;
 
     @GetMapping("/daily")
     @Operation(
@@ -133,6 +136,38 @@ public class DashboardController {
             LocalDate date
     ) {
         return dashboardMainEmotionService.getMainEmotions(
+                roomId,
+                SecurityUtil.getCurrentUserId(),
+                period,
+                date
+        );
+    }
+
+    @GetMapping("/conversation-flow")
+    @Operation(
+            summary = "커플 대화 흐름 조회",
+            description = """
+                    커플 전체 메시지를 기준으로 가장 활발했던 시간,
+                    발신자가 바뀐 메시지 사이의 평균 응답 시간,
+                    날짜별 메시지 개수를 조회합니다.
+                    """
+    )
+    public DashboardConversationFlowResponse getConversationFlow(
+            @Parameter(description = "커플 방 번호", example = "1")
+            @RequestParam Long roomId,
+
+            @Parameter(description = "조회 단위: DAY, MONTH, YEAR", example = "MONTH")
+            @RequestParam DashboardPeriod period,
+
+            @Parameter(
+                    description = "기준 날짜. 월/년 조회에서는 해당 월/연도만 사용합니다.",
+                    example = "2026-07-31"
+            )
+            @RequestParam
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate date
+    ) {
+        return dashboardConversationService.getConversationFlow(
                 roomId,
                 SecurityUtil.getCurrentUserId(),
                 period,

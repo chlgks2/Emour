@@ -172,6 +172,8 @@ CREATE TABLE `dashboard` (
     `average_response_seconds` DECIMAL(12, 2) NULL,
     -- 대화가 가장 활발했던 시간 (0 ~ 23)
     `busiest_hour` TINYINT UNSIGNED NULL,
+    -- 날짜별 커플 전체 메시지 개수
+    `conversation_frequency` JSON NULL,
     -- '{"JOY":3,"NEUTRAL":5} 형식'
     `emotion_summary` JSON NULL,
     -- '2시간 단위 감정 흐름 결과'

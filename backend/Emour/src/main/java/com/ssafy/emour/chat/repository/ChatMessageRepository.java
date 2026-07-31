@@ -96,4 +96,18 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
             @Param("start") LocalDateTime start,
             @Param("end") LocalDateTime end
     );
+
+    @Query("""
+            select message
+            from ChatMessage message
+            where message.roomId = :roomId
+              and message.sentAt >= :start
+              and message.sentAt < :end
+            order by message.sentAt asc, message.messageId asc
+            """)
+    List<ChatMessage> findConversationMessages(
+            @Param("roomId") Long roomId,
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end
+    );
 }

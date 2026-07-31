@@ -130,6 +130,7 @@ class DashboardSnapshotServiceTest {
                 chatBookmarkRepository,
                 chatAnalysisRepository,
                 coupleMemberRepository,
+                new ConversationFlowCalculator(),
                 clock
         );
     }
@@ -147,6 +148,9 @@ class DashboardSnapshotServiceTest {
                 0,
                 "{}",
                 "[]",
+                "[]",
+                null,
+                null,
                 "[]",
                 boundary,
                 finalized,

@@ -3,6 +3,7 @@ package com.ssafy.emour.dashboard.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ssafy.emour.chat.entity.ChatAnalysis;
+import com.ssafy.emour.chat.entity.ChatMessage;
 import com.ssafy.emour.chat.entity.EmotionPolarity;
 import com.ssafy.emour.chat.entity.EmotionType;
 import com.ssafy.emour.chat.repository.ChatAnalysisRepository;
@@ -52,8 +53,10 @@ public class DashboardSnapshotService {
     private final ChatBookmarkRepository chatBookmarkRepository;
     private final ChatAnalysisRepository chatAnalysisRepository;
     private final CoupleMemberRepository coupleMemberRepository;
+    private final ConversationFlowCalculator conversationFlowCalculator;
     private final Clock dashboardClock;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper =
+            new ObjectMapper().findAndRegisterModules();
 
     /**
      * 조회 시 정각 집계나 5분 최종 집계가 빠졌는지 확인하고 필요한 경우에만 계산합니다.
@@ -159,6 +162,18 @@ public class DashboardSnapshotService {
                                 start,
                                 snapshotUntil
                         ));
+        List<ChatMessage> conversationMessages =
+                chatMessageRepository.findConversationMessages(
+                        roomId,
+                        start,
+                        snapshotUntil
+                );
+        ConversationFlowCalculator.ConversationMetrics conversation =
+                conversationFlowCalculator.calculate(
+                        conversationMessages,
+                        date,
+                        date
+                );
 
         Dashboard dashboard = dashboardRepository
                 .findByRoomIdAndUserIdAndSummaryDate(roomId, userId, date)
@@ -172,6 +187,9 @@ public class DashboardSnapshotService {
                 toJsonEmotionCounts(emotionCounts),
                 toJson(emotionFlow),
                 toJson(frequentWords),
+                conversation.averageResponseSeconds(),
+                conversation.busiestHour(),
+                toJson(conversation.dailyFrequency()),
                 snapshotUntil,
                 finalized,
                 calculatedAt
@@ -185,6 +203,7 @@ public class DashboardSnapshotService {
             boolean shouldFinalize
     ) {
         if (dashboard == null
+                || dashboard.getConversationFrequency() == null
                 || dashboard.getAggregatedUntil() == null
                 || dashboard.getAggregatedUntil().isBefore(snapshotUntil)) {
             return true;

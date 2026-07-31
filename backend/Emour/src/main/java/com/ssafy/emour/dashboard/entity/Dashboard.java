@@ -8,6 +8,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -55,6 +56,15 @@ public class Dashboard {
 
     @Column(name = "frequent_words", columnDefinition = "json")
     private String frequentWords;
+
+    @Column(name = "average_response_seconds", precision = 12, scale = 2)
+    private BigDecimal averageResponseSeconds;
+
+    @Column(name = "busiest_hour")
+    private Integer busiestHour;
+
+    @Column(name = "conversation_frequency", columnDefinition = "json")
+    private String conversationFrequency;
 
     @Column(name = "aggregated_until")
     private LocalDateTime aggregatedUntil;
@@ -129,6 +139,9 @@ public class Dashboard {
             String emotionSummary,
             String emotionFlow,
             String frequentWords,
+            BigDecimal averageResponseSeconds,
+            Integer busiestHour,
+            String conversationFrequency,
             LocalDateTime snapshotUntil,
             boolean finalized,
             LocalDateTime calculatedAt
@@ -141,6 +154,9 @@ public class Dashboard {
         this.emotionSummary = emotionSummary;
         this.emotionFlow = emotionFlow;
         this.frequentWords = frequentWords;
+        this.averageResponseSeconds = averageResponseSeconds;
+        this.busiestHour = busiestHour;
+        this.conversationFrequency = conversationFrequency;
         this.aggregatedUntil = snapshotUntil;
         if (finalized) {
             this.finalizedUntil = snapshotUntil;
@@ -191,6 +207,18 @@ public class Dashboard {
 
     public String getFrequentWords() {
         return frequentWords;
+    }
+
+    public BigDecimal getAverageResponseSeconds() {
+        return averageResponseSeconds;
+    }
+
+    public Integer getBusiestHour() {
+        return busiestHour;
+    }
+
+    public String getConversationFrequency() {
+        return conversationFrequency;
     }
 
     public LocalDateTime getAggregatedUntil() {
