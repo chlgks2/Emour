@@ -81,6 +81,24 @@ export async function getUnreadChatCount(
   )
 }
 
+export function normalizeChatMessage(
+  message,
+) {
+  if (!message) {
+    return message
+  }
+
+  return {
+    ...message,
+    emotionType:
+      message.emotionType ??
+      message.emotion ??
+      null,
+    analysisStatus:
+      message.analysisStatus ?? null,
+  }
+}
+
 export async function getPartnerReadStatus(
   roomId,
 ) {
@@ -238,7 +256,9 @@ export async function fetchMessages({
   })
 
   return {
-    messages: response?.messages ?? [],
+    messages: (
+      response?.messages ?? []
+    ).map(normalizeChatMessage),
     nextBeforeMessageId:
       response?.nextCursor ?? null,
   }
@@ -255,11 +275,13 @@ export async function sendMessage({
     )
   }
 
-  return sendChatMessage({
+  const message = await sendChatMessage({
     roomId,
     content,
     clientMessageId,
   })
+
+  return normalizeChatMessage(message)
 }
 
 export async function fetchSuggestions() {
