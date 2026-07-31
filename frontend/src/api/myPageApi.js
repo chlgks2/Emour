@@ -372,7 +372,7 @@ export async function leaveCoupleRoom() {
   await disconnectCouple()
   clearPendingCoupleRoom()
 
-  return getMyPageProfile()
+  return null
 }
 
 export async function logoutCurrentUser() {

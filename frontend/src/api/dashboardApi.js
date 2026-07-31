@@ -314,6 +314,55 @@ export async function fetchDashboard() {
   // (daily.messageCount 는 나 혼자 보낸 개수라 이 카드 기준과 맞지 않는다)
   const coupleMessageCount = pick(conversationFlow?.totalMessageCount, messages.length);
 
+  const [
+    dailyCountsResult,
+    conversationFlowResult,
+    frequentWordsResult,
+    mainEmotionsResult,
+    emotionFlowResult,
+  ] = dashboardResults;
+
+  const dailyCounts =
+    getSettledValue(
+      dailyCountsResult ?? {
+        status: "rejected",
+      },
+    );
+
+  const conversationFlow =
+    getSettledValue(
+      conversationFlowResult ?? {
+        status: "rejected",
+      },
+    );
+
+  const frequentWords =
+    getSettledValue(
+      frequentWordsResult ?? {
+        status: "rejected",
+      },
+    );
+
+  const mainEmotions =
+    getSettledValue(
+      mainEmotionsResult ?? {
+        status: "rejected",
+      },
+    );
+
+  const emotionFlow =
+    getSettledValue(
+      emotionFlowResult ?? {
+        status: "rejected",
+      },
+    );
+
+  const mappedEmotionSummary =
+    mapEmotionSummary(mainEmotions);
+
+  const mappedEmotionFlow =
+    mapEmotionFlow(emotionFlow);
+
   return {
     room: currentRoom,
     daysTogether: calcDaysTogether(datingStartDate),

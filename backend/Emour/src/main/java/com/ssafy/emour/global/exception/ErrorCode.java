@@ -41,6 +41,18 @@ public enum ErrorCode {
             HttpStatus.INTERNAL_SERVER_ERROR,
             "초대 코드를 생성하지 못했습니다. 잠시 후 다시 시도해 주세요."
     ),
+    // ===== MOOD =====
+    MOOD_NOTIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "MOOD 알림 설정을 찾을 수 없습니다."),
+    MOOD_REGISTRATION_NOT_ALLOWED(
+            HttpStatus.BAD_REQUEST,
+            "현재는 MOOD를 등록할 수 있는 알림 시간대가 아닙니다."
+    ),
+    MOOD_ALREADY_REGISTERED(HttpStatus.CONFLICT, "현재 알림 시간대의 MOOD가 이미 등록되었습니다."),
+    MOOD_NOT_FOUND(HttpStatus.NOT_FOUND, "MOOD 기록을 찾을 수 없습니다."),
+    MOOD_UPDATE_NOT_ALLOWED(
+            HttpStatus.BAD_REQUEST,
+            "현재 알림 시간대의 MOOD만 수정할 수 있습니다."
+    ),
     ;
 
     private final HttpStatus status;
