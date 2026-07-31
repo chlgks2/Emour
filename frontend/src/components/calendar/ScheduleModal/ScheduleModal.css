@@ -104,6 +104,16 @@
   gap: 12px;
 }
 
+.schedule-anniversary-guide {
+  margin: -3px 0 0;
+  padding: 11px 13px;
+  border-radius: 12px;
+  background: rgba(211, 153, 153, 0.14);
+  color: #8d6666;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
 .schedule-modal-actions {
   display: flex;
   gap: 9px;
