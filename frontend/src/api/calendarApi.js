@@ -8,6 +8,7 @@ import {
   buildCalendarMonthData,
   mapDiaryResponse,
   mapScheduleResponse,
+  ANNIVERSARY_REPEAT_TYPE,
   SCHEDULE_TYPE,
 } from '../mappers/calendarMapper.js'
 
@@ -22,6 +23,9 @@ let mockDiaries = [
   ...MOCK_DIARY_RESPONSES,
 ]
 
+let mockRelationshipStartDate =
+  '2026-04-12'
+
 function wait(milliseconds = MOCK_DELAY) {
   return new Promise((resolve) => {
     setTimeout(resolve, milliseconds)
@@ -30,6 +34,136 @@ function wait(milliseconds = MOCK_DELAY) {
 
 function createMonthPrefix(year, month) {
   return `${year}-${String(month).padStart(2, '0')}`
+}
+
+function createDateKey(date) {
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, '0'),
+    String(date.getDate()).padStart(2, '0'),
+  ].join('-')
+}
+
+function createLocalDate(dateKey) {
+  const [year, month, day] =
+    dateKey.split('-').map(Number)
+
+  return new Date(year, month - 1, day)
+}
+
+function createAnniversaryOccurrences(
+  anniversary,
+  year,
+  month,
+) {
+  const startDate = createLocalDate(
+    anniversary.start_date ??
+      anniversary.date,
+  )
+
+  const monthStart =
+    new Date(year, month - 1, 1)
+  const monthEnd =
+    new Date(year, month, 0)
+
+  const occurrenceDate = new Date(
+    year,
+    startDate.getMonth(),
+    startDate.getDate(),
+  )
+
+  if (
+    occurrenceDate < monthStart ||
+    occurrenceDate > monthEnd ||
+    occurrenceDate < startDate
+  ) {
+    return []
+  }
+
+  return [{
+    ...anniversary,
+    occurrence_date:
+      createDateKey(occurrenceDate),
+    occurrence_number: null,
+    repeat_type:
+      ANNIVERSARY_REPEAT_TYPE.YEARLY,
+    yearly_recurring: true,
+  }]
+}
+
+function createRelationshipMilestones(
+  year,
+  month,
+) {
+  if (!mockRelationshipStartDate) {
+    return []
+  }
+
+  const startDate = createLocalDate(
+    mockRelationshipStartDate,
+  )
+  const monthStart =
+    new Date(year, month - 1, 1)
+  const monthEnd =
+    new Date(year, month, 0)
+  const millisecondsPerDay =
+    24 * 60 * 60 * 1000
+  const elapsedDays = Math.max(
+    1,
+    Math.floor(
+      (monthStart.getTime() -
+        startDate.getTime()) /
+        millisecondsPerDay,
+    ) + 1,
+  )
+  let milestone = Math.max(
+    100,
+    Math.ceil(elapsedDays / 100) * 100,
+  )
+  const occurrences = []
+
+  while (true) {
+    const occurrenceDate = new Date(
+      startDate,
+    )
+
+    occurrenceDate.setDate(
+      occurrenceDate.getDate() +
+        milestone -
+        1,
+    )
+
+    if (occurrenceDate > monthEnd) {
+      break
+    }
+
+    if (occurrenceDate >= monthStart) {
+      occurrences.push({
+        schedule_id:
+          `RELATIONSHIP-${milestone}`,
+        user_id: MOCK_CURRENT_USER_ID,
+        couple_room_id: 1,
+        name: `우리의 ${milestone}일`,
+        date: mockRelationshipStartDate,
+        start_date:
+          mockRelationshipStartDate,
+        occurrence_date:
+          createDateKey(occurrenceDate),
+        occurrence_number: milestone,
+        time: '',
+        type:
+          SCHEDULE_TYPE.ANNIVERSARY,
+        repeat_type:
+          ANNIVERSARY_REPEAT_TYPE.EVERY_100_DAYS,
+        yearly_recurring: false,
+        automatic_anniversary: true,
+      })
+    }
+
+    milestone += 100
+  }
+
+  return occurrences
 }
 
 export async function getMonthlyCalendar(
@@ -53,13 +187,40 @@ export async function getMonthlyCalendar(
         ),
     )
 
-  const scheduleResponses =
+  const roomSchedules =
     mockSchedules.filter(
       (schedule) =>
         schedule.couple_room_id ===
-          coupleRoomId &&
-        schedule.date.startsWith(monthPrefix),
+        coupleRoomId,
     )
+
+  const scheduleResponses = [
+    ...roomSchedules.filter(
+      (schedule) =>
+        schedule.type ===
+          SCHEDULE_TYPE.SCHEDULE &&
+        schedule.date.startsWith(
+          monthPrefix,
+        ),
+    ),
+    ...roomSchedules
+      .filter(
+        (schedule) =>
+          schedule.type ===
+          SCHEDULE_TYPE.ANNIVERSARY,
+      )
+      .flatMap((anniversary) =>
+        createAnniversaryOccurrences(
+          anniversary,
+          year,
+          month,
+        ),
+      ),
+    ...createRelationshipMilestones(
+      year,
+      month,
+    ),
+  ]
 
   const diaryResponses = mockDiaries.filter(
     (diary) =>
@@ -74,6 +235,49 @@ export async function getMonthlyCalendar(
     diaryResponses,
     currentUserId: MOCK_CURRENT_USER_ID,
   })
+}
+
+export async function getAnniversaries(
+  coupleRoomId,
+) {
+  await wait()
+
+  return mockSchedules
+    .filter(
+      (schedule) =>
+        schedule.couple_room_id ===
+          coupleRoomId &&
+        schedule.type ===
+          SCHEDULE_TYPE.ANNIVERSARY,
+    )
+    .map(mapScheduleResponse)
+    .sort((first, second) =>
+      first.startDate.localeCompare(
+        second.startDate,
+      ),
+    )
+}
+
+export async function getRelationshipStartDate() {
+  await wait()
+
+  return mockRelationshipStartDate
+}
+
+export async function updateRelationshipStartDate(
+  startDate,
+) {
+  await wait()
+
+  if (!startDate) {
+    throw new Error(
+      '연애 시작일을 선택해주세요.',
+    )
+  }
+
+  mockRelationshipStartDate = startDate
+
+  return mockRelationshipStartDate
 }
 
 export async function createSchedule({
@@ -93,8 +297,16 @@ export async function createSchedule({
     couple_room_id: coupleRoomId,
     name: name.trim(),
     date,
+    start_date: date,
     time,
     type,
+    repeat_type:
+      type === SCHEDULE_TYPE.ANNIVERSARY
+        ? ANNIVERSARY_REPEAT_TYPE.YEARLY
+        : ANNIVERSARY_REPEAT_TYPE.NONE,
+    yearly_recurring:
+      type ===
+      SCHEDULE_TYPE.ANNIVERSARY,
     created_at: now,
     updated_at: now,
   }
@@ -132,8 +344,17 @@ export async function updateSchedule(
         ...schedule,
         name: name.trim(),
         date,
+        start_date: date,
         time,
         type,
+        repeat_type:
+          type ===
+          SCHEDULE_TYPE.ANNIVERSARY
+            ? ANNIVERSARY_REPEAT_TYPE.YEARLY
+            : ANNIVERSARY_REPEAT_TYPE.NONE,
+        yearly_recurring:
+          type ===
+          SCHEDULE_TYPE.ANNIVERSARY,
         updated_at: new Date().toISOString(),
       }
 

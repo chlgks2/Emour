@@ -3,6 +3,12 @@ export const SCHEDULE_TYPE = {
   ANNIVERSARY: 'ANNIVERSARY',
 }
 
+export const ANNIVERSARY_REPEAT_TYPE = {
+  NONE: 'NONE',
+  YEARLY: 'YEARLY',
+  EVERY_100_DAYS: 'EVERY_100_DAYS',
+}
+
 function getFirstValue(...values) {
   return values.find(
     (value) => value !== undefined && value !== null,
@@ -70,6 +76,24 @@ export function mapMoodResponse(response) {
 }
 
 export function mapScheduleResponse(response) {
+  const date = extractDate(
+    getFirstValue(
+      response.occurrenceDate,
+      response.occurrence_date,
+      response.date,
+      response.scheduleDate,
+      response.schedule_date,
+    ),
+  )
+
+  const yearlyRecurring = Boolean(
+    getFirstValue(
+      response.yearlyRecurring,
+      response.yearly_recurring,
+      false,
+    ),
+  )
+
   return {
     scheduleId: getFirstValue(
       response.scheduleId,
@@ -92,8 +116,12 @@ export function mapScheduleResponse(response) {
       '',
     ),
 
-    date: extractDate(
+    date,
+
+    startDate: extractDate(
       getFirstValue(
+        response.startDate,
+        response.start_date,
         response.date,
         response.scheduleDate,
         response.schedule_date,
@@ -112,6 +140,30 @@ export function mapScheduleResponse(response) {
       response.scheduleType,
       response.schedule_type,
       SCHEDULE_TYPE.SCHEDULE,
+    ),
+
+    repeatType: getFirstValue(
+      response.repeatType,
+      response.repeat_type,
+      yearlyRecurring
+        ? ANNIVERSARY_REPEAT_TYPE.YEARLY
+        : ANNIVERSARY_REPEAT_TYPE.NONE,
+    ),
+
+    yearlyRecurring,
+
+    occurrenceNumber: getFirstValue(
+      response.occurrenceNumber,
+      response.occurrence_number,
+      null,
+    ),
+
+    isAutomaticAnniversary: Boolean(
+      getFirstValue(
+        response.isAutomaticAnniversary,
+        response.automatic_anniversary,
+        false,
+      ),
     ),
 
     createdAt: getFirstValue(

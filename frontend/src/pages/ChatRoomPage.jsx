@@ -111,7 +111,7 @@ export default function ChatRoomPage() {
             fetchMessages({ roomId, beforeMessageId: null }),
             fetchBookmarkedMessageIds(roomId),
             fetchReactions(roomId),
-            fetchPartnerReadState(),
+            fetchPartnerReadState(roomId),
           ]);
         if (cancelled) return;
         setPartner(partnerInfo);

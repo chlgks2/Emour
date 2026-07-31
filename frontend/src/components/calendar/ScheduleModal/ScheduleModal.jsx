@@ -11,6 +11,7 @@ function ScheduleModal({
   mode,
   selectedDate,
   schedule,
+  entryType,
   isProcessing,
   onClose,
   onSave,
@@ -18,10 +19,14 @@ function ScheduleModal({
 }) {
   const [formData, setFormData] = useState(() => ({
     name: schedule?.name ?? '',
-    date: schedule?.date ?? selectedDate,
+    date:
+      schedule?.startDate ??
+      schedule?.date ??
+      selectedDate,
     time: schedule?.time ?? '',
     type:
       schedule?.type ??
+      entryType ??
       SCHEDULE_TYPE.SCHEDULE,
   }))
 
@@ -77,13 +82,22 @@ function ScheduleModal({
         <header className="schedule-modal-header">
           <div>
             <p>
-              일정과 기념일을 관리해보세요
+              {formData.type ===
+              SCHEDULE_TYPE.ANNIVERSARY
+                ? '반복되는 소중한 날을 기록해보세요'
+                : '선택한 날짜의 일정을 관리해보세요'}
             </p>
 
             <h2 id="schedule-modal-title">
               {mode === 'edit'
-                ? '기록 수정'
-                : '기록 추가'}
+                ? formData.type ===
+                  SCHEDULE_TYPE.ANNIVERSARY
+                  ? '기념일 수정'
+                  : '일정 수정'
+                : formData.type ===
+                    SCHEDULE_TYPE.ANNIVERSARY
+                  ? '기념일 추가'
+                  : '일정 추가'}
             </h2>
           </div>
 
@@ -107,31 +121,6 @@ function ScheduleModal({
           onSubmit={handleSubmit}
         >
           <label>
-            구분
-
-            <select
-              name="type"
-              value={formData.type}
-              disabled={isProcessing}
-              onChange={handleChange}
-            >
-              <option
-                value={SCHEDULE_TYPE.SCHEDULE}
-              >
-                일반 일정
-              </option>
-
-              <option
-                value={
-                  SCHEDULE_TYPE.ANNIVERSARY
-                }
-              >
-                기념일
-              </option>
-            </select>
-          </label>
-
-          <label>
             이름
 
             <input
@@ -149,9 +138,19 @@ function ScheduleModal({
             />
           </label>
 
-          <div className="schedule-modal-row">
+          <div
+            className={
+              formData.type ===
+              SCHEDULE_TYPE.ANNIVERSARY
+                ? ''
+                : 'schedule-modal-row'
+            }
+          >
             <label>
-              날짜
+              {formData.type ===
+              SCHEDULE_TYPE.ANNIVERSARY
+                ? '기준일'
+                : '날짜'}
 
               <input
                 name="date"
@@ -162,18 +161,28 @@ function ScheduleModal({
               />
             </label>
 
-            <label>
-              시간
+            {formData.type ===
+              SCHEDULE_TYPE.SCHEDULE && (
+              <label>
+                시간
 
-              <input
-                name="time"
-                type="time"
-                value={formData.time}
-                disabled={isProcessing}
-                onChange={handleChange}
-              />
-            </label>
+                <input
+                  name="time"
+                  type="time"
+                  value={formData.time}
+                  disabled={isProcessing}
+                  onChange={handleChange}
+                />
+              </label>
+            )}
           </div>
+
+          {formData.type ===
+            SCHEDULE_TYPE.ANNIVERSARY && (
+            <p className="schedule-anniversary-guide">
+              등록한 월과 날짜에 매년 자동으로 표시됩니다.
+            </p>
+          )}
 
           <div className="schedule-modal-actions">
             {mode === 'edit' && (

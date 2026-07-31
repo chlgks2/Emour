@@ -164,7 +164,13 @@ export async function apiRequest(
         : '') ||
       '요청을 처리하지 못했습니다.'
 
-    throw new Error(errorMessage)
+    const requestError =
+      new Error(errorMessage)
+
+    requestError.status = response.status
+    requestError.response = responseData
+
+    throw requestError
   }
 
   return responseData

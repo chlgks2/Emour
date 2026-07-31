@@ -7,11 +7,11 @@ import { MOOD_TYPE } from "../constants/enums";
  * 배열 순서 = 슬라이더 왼쪽(안 좋음) → 오른쪽(좋음)
  */
 export const MOOD_TYPES = [
-  { moodType: MOOD_TYPE.VERY_SAD, level: 1, label: "매우 안 좋음", color: "#5B6EE8" },
-  { moodType: MOOD_TYPE.SAD, level: 2, label: "안 좋음", color: "#68b5f8" },
-  { moodType: MOOD_TYPE.NEUTRAL, level: 3, label: "보통", color: "#8ed3a7" },
-  { moodType: MOOD_TYPE.HAPPY, level: 4, label: "좋음", color: "#ffd153" },
-  { moodType: MOOD_TYPE.VERY_HAPPY, level: 5, label: "매우 좋음", color: "#ffad49" },
+  { moodType: MOOD_TYPE.VERY_SAD, level: 1, label: "매우 안 좋음", color: "#8FAFD0" },
+  { moodType: MOOD_TYPE.SAD, level: 2, label: "안 좋음", color: "#BDD3E6" },
+  { moodType: MOOD_TYPE.NEUTRAL, level: 3, label: "보통", color: "#F3E7C5" },
+  { moodType: MOOD_TYPE.HAPPY, level: 4, label: "좋음", color: "#F0BDBD" },
+  { moodType: MOOD_TYPE.VERY_HAPPY, level: 5, label: "매우 좋음", color: "#E49494" },
 ];
 
 export function getMoodMeta(moodType) {
