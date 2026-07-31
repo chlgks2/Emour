@@ -37,3 +37,6 @@ out/
 
 ### 민감정보(validation) ###
 .env
+
+### Local uploads ###
+uploads/

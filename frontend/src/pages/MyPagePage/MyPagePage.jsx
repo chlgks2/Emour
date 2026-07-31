@@ -31,6 +31,9 @@ import {
   updatePartnerNickname,
   withdrawCurrentUser,
 } from '../../api/myPageApi.js'
+import {
+  getCoupleStatus,
+} from '../../api/coupleApi.js'
 
 import BottomNavigation from '../../components/common/BottomNavigation/BottomNavigation.jsx'
 
@@ -74,6 +77,8 @@ const ROOM_STATUS_INFORMATION = {
       '현재 사용할 수 없는 방입니다.',
   },
 }
+
+const COUPLE_STATUS_POLL_INTERVAL = 2000
 
 function formatDate(value) {
   if (!value) {
@@ -160,6 +165,99 @@ function MyPagePage() {
       isCancelled = true
     }
   }, [])
+
+  useEffect(() => {
+    if (
+      !profile?.hasRoom ||
+      profile.roomStatus !== 'WAITING'
+    ) {
+      return undefined
+    }
+
+    let isCancelled = false
+    let isChecking = false
+
+    const refreshIfConnected =
+      async () => {
+        if (isChecking || isCancelled) {
+          return
+        }
+
+        isChecking = true
+
+        try {
+          const coupleStatus =
+            await getCoupleStatus()
+
+          if (
+            isCancelled ||
+            coupleStatus?.status !==
+              'ACTIVE'
+          ) {
+            return
+          }
+
+          const updatedProfile =
+            await getMyPageProfile()
+
+          if (isCancelled) {
+            return
+          }
+
+          setProfile(updatedProfile)
+          setErrorMessage('')
+        } catch {
+          // 대기 상태 확인은 백그라운드 작업이므로
+          // 일시적인 실패가 마이페이지 전체를 가리지 않게 합니다.
+        } finally {
+          isChecking = false
+        }
+      }
+
+    const intervalId =
+      window.setInterval(
+        refreshIfConnected,
+        COUPLE_STATUS_POLL_INTERVAL,
+      )
+
+    const handlePageFocus = () => {
+      refreshIfConnected()
+    }
+
+    const handleVisibilityChange = () => {
+      if (
+        document.visibilityState ===
+        'visible'
+      ) {
+        refreshIfConnected()
+      }
+    }
+
+    window.addEventListener(
+      'focus',
+      handlePageFocus,
+    )
+    document.addEventListener(
+      'visibilitychange',
+      handleVisibilityChange,
+    )
+
+    return () => {
+      isCancelled = true
+      window.clearInterval(intervalId)
+      window.removeEventListener(
+        'focus',
+        handlePageFocus,
+      )
+      document.removeEventListener(
+        'visibilitychange',
+        handleVisibilityChange,
+      )
+    }
+  }, [
+    profile?.hasRoom,
+    profile?.roomStatus,
+  ])
 
   const openNotificationSettings = () => {
   navigate(
@@ -400,22 +498,7 @@ function MyPagePage() {
   return (
     <div className="mypage-page">
       <header className="mypage-header">
-        <div className="mypage-header-spacer" />
-
         <h1>마이페이지</h1>
-
-        <button
-          type="button"
-          className="mypage-notification-button"
-          aria-label="알림 설정"
-          onClick={openNotificationSettings}
-        >
-          <Bell
-            size={22}
-            strokeWidth={1.9}
-            aria-hidden="true"
-          />
-        </button>
       </header>
 
       <main className="mypage-scroll-area">

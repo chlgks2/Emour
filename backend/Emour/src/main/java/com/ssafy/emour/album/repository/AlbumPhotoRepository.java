@@ -10,6 +10,6 @@ import java.util.List;
  */
 public interface AlbumPhotoRepository extends JpaRepository<AlbumPhoto, Long> {
 
-    // 내가 올린 사진을 최신순으로 조회
-    List<AlbumPhoto> findByUploaderIdOrderByCreatedAtDesc(Long uploaderId);
+    // 같은 커플방의 사진을 최신순으로 조회
+    List<AlbumPhoto> findByRoomIdOrderByCreatedAtDesc(Long roomId);
 }

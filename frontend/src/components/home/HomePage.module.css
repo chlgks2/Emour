@@ -24,13 +24,19 @@
   object-fit: cover;
 }
 
+/*
+ * 배경 사진은 무엇이 올지 알 수 없다. 하늘처럼 밝은 사진에서도
+ * 상단의 D+일수·수정 버튼이 읽히도록 위쪽에도 옅은 스크림을 깐다.
+ */
 .overlayGradient {
   position: absolute;
   inset: 0;
   background: linear-gradient(
     to bottom,
-    rgba(255, 255, 255, 0.1) 0%,
-    rgba(0, 0, 0, 0.8) 100%
+    rgba(40, 33, 31, 0.46) 0%,
+    rgba(40, 33, 31, 0.12) 22%,
+    rgba(0, 0, 0, 0.12) 46%,
+    rgba(0, 0, 0, 0.82) 100%
   );
 }
 
@@ -48,8 +54,8 @@
   border-radius: var(--radius-pill);
   font-size: 14px;
   font-weight: 600;
-  color: var(--color-primary);
-  text-decoration: underline;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
 }
 
 .editBtn:hover {
@@ -64,13 +70,52 @@
 }
 
 .days {
-  margin-top: 4px;
+  margin: 4px 0 0;
   font-size: 24px;
   font-weight: 800;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.4);
 }
 
 .days span {
-  color: var(--color-primary);
+  color: var(--color-primary-soft);
+}
+
+.daysRow {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.dateEditButton {
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 4px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+}
+
+.registerDateButton {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 14px;
+  border: 1px solid rgba(255, 255, 255, 0.48);
+  border-radius: var(--radius-pill);
+  background: rgba(20, 20, 20, 0.3);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  backdrop-filter: blur(8px);
+}
+
+.dateEditButton:hover,
+.registerDateButton:hover {
+  background: rgba(255, 255, 255, 0.25);
 }
 
 .profiles {
