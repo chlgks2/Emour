@@ -55,16 +55,19 @@
 }
 
 .bubblePartner {
-  background: var(--color-white);
-  color: var(--color-text);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
   border-bottom-left-radius: 4px;
   box-shadow: var(--shadow-card);
 }
 
+/* 내 말풍선은 --color-action 을 쓴다. 로고 하트색(#CA8495)에
+   흰 글씨를 얹으면 대비가 2.7:1 밖에 되지 않아 본문이 읽히지 않는다. */
 .bubbleMine {
-  background: var(--color-primary);
-  color: var(--color-white);
+  background: var(--color-action);
+  color: var(--color-text-on-primary);
   border-bottom-right-radius: 4px;
+  box-shadow: 0 4px 12px rgba(184, 92, 115, 0.2);
 }
 
 /* 북마크된 메시지 우상단에 걸리는 리본 아이콘 */
@@ -122,7 +125,7 @@
 
 .readTag {
   font-size: 10px;
-  color: var(--color-primary);
+  color: var(--color-text-accent);
   font-weight: 700;
 }
 

@@ -61,7 +61,7 @@
 .reasonText {
   font-size: 12px;
   line-height: 1.4;
-  color: var(--color-text, #333);
+  color: var(--color-text-primary);
   word-break: break-word;
 }
 

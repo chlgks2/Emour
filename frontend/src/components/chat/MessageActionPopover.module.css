@@ -25,6 +25,8 @@
 }
 
 .iconBtn {
+  /* 브라우저 기본 버튼 padding 이 남으면 안쪽 아이콘이 눌린다 */
+  padding: 0;
   width: 34px;
   height: 34px;
   flex-shrink: 0;

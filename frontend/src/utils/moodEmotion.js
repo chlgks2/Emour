@@ -1,17 +1,25 @@
 import { MOOD_TYPE } from "../constants/enums";
 
+// 기록이 없는 날의 색 (CI 배경 계열의 중립 톤)
+export const EMPTY_MOOD_COLOR = "#ECE5E3";
+
 /**
  * mood.mood_type ENUM('VERY_HAPPY','HAPPY','NEUTRAL','SAD','VERY_SAD') 과 1:1 대응.
  * - moodType: 서버와 주고받는 값 (이것이 진짜 데이터)
  * - level: 감정 등록 모달의 5단계 슬라이더를 그리기 위한 화면 전용 순서값 (서버로 보내지 않음)
  * 배열 순서 = 슬라이더 왼쪽(안 좋음) → 오른쪽(좋음)
  */
+/*
+ * 색상은 CI 가이드의 "감정 요소" 5색을 그대로 쓴다.
+ * 팔레트 색 수와 무드 단계 수가 같아 1:1로 대응시켰고,
+ * 왼쪽(차갑고 가라앉음) → 오른쪽(따뜻하고 밝음) 순으로 배열했다.
+ */
 export const MOOD_TYPES = [
-  { moodType: MOOD_TYPE.VERY_SAD, level: 1, label: "매우 안 좋음", color: "#8FAFD0" },
-  { moodType: MOOD_TYPE.SAD, level: 2, label: "안 좋음", color: "#BDD3E6" },
-  { moodType: MOOD_TYPE.NEUTRAL, level: 3, label: "보통", color: "#F3E7C5" },
-  { moodType: MOOD_TYPE.HAPPY, level: 4, label: "좋음", color: "#F0BDBD" },
-  { moodType: MOOD_TYPE.VERY_HAPPY, level: 5, label: "매우 좋음", color: "#E49494" },
+  { moodType: MOOD_TYPE.VERY_SAD, level: 1, label: "매우 안 좋음", color: "#B1A6D6" },
+  { moodType: MOOD_TYPE.SAD, level: 2, label: "안 좋음", color: "#9ECCE6" },
+  { moodType: MOOD_TYPE.NEUTRAL, level: 3, label: "보통", color: "#BED399" },
+  { moodType: MOOD_TYPE.HAPPY, level: 4, label: "좋음", color: "#F6E192" },
+  { moodType: MOOD_TYPE.VERY_HAPPY, level: 5, label: "매우 좋음", color: "#F7C291" },
 ];
 
 export function getMoodMeta(moodType) {
@@ -24,7 +32,7 @@ export function getMoodMetaByLevel(level) {
 }
 
 export function getMoodColor(moodType) {
-  return getMoodMeta(moodType)?.color ?? "#E5E5EA";
+  return getMoodMeta(moodType)?.color ?? EMPTY_MOOD_COLOR;
 }
 
 export function getMoodLabel(moodType) {
@@ -37,7 +45,7 @@ export function buildDayGradient(myMood, partnerMood) {
   const myColor = myMood ? getMoodColor(myMood.moodType) : null;
   const partnerColor = partnerMood ? getMoodColor(partnerMood.moodType) : null;
 
-  if (!myColor && !partnerColor) return "#F1F1F5";
+  if (!myColor && !partnerColor) return EMPTY_MOOD_COLOR;
 
   const topLeft = myColor ?? "#FFFFFF";
   const bottomRight = partnerColor ?? "#FFFFFF";
