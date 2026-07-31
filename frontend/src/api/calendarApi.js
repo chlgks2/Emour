@@ -14,6 +14,8 @@ import {
 
 const MOCK_DELAY = 250
 const MOCK_CURRENT_USER_ID = 1
+const RELATIONSHIP_START_DATE_KEY =
+  'emour_relationship_start_date'
 
 let mockSchedules = [
   ...MOCK_SCHEDULE_RESPONSES,
@@ -24,7 +26,9 @@ let mockDiaries = [
 ]
 
 let mockRelationshipStartDate =
-  '2026-04-12'
+  localStorage.getItem(
+    RELATIONSHIP_START_DATE_KEY,
+  ) ?? ''
 
 function wait(milliseconds = MOCK_DELAY) {
   return new Promise((resolve) => {
@@ -276,6 +280,10 @@ export async function updateRelationshipStartDate(
   }
 
   mockRelationshipStartDate = startDate
+  localStorage.setItem(
+    RELATIONSHIP_START_DATE_KEY,
+    startDate,
+  )
 
   return mockRelationshipStartDate
 }

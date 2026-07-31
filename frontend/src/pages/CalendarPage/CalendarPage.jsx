@@ -9,7 +9,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Heart,
-  Menu,
   Pencil,
 } from 'lucide-react'
 
@@ -18,9 +17,7 @@ import {
   deleteSchedule,
   getAnniversaries,
   getMonthlyCalendar,
-  getRelationshipStartDate,
   saveDiary,
-  updateRelationshipStartDate,
   updateSchedule,
 } from '../../api/calendarApi.js'
 
@@ -257,7 +254,6 @@ function CalendarPage() {
     isOpen: false,
     isLoading: false,
     anniversaries: [],
-    relationshipStartDate: '',
   })
 
   const currentYear =
@@ -395,67 +391,19 @@ function CalendarPage() {
     }
 
   const loadAnniversaries = async () => {
-    const [
-      anniversaries,
-      relationshipStartDate,
-    ] = await Promise.all([
-      getAnniversaries(
+    const anniversaries =
+      await getAnniversaries(
         TEMP_COUPLE_ROOM_ID,
-      ),
-      getRelationshipStartDate(),
-    ])
+      )
 
     setAnniversaryManager(
       (previous) => ({
         ...previous,
         isLoading: false,
         anniversaries,
-        relationshipStartDate,
       }),
     )
   }
-
-  const handleRelationshipStartDateSave =
-    async (startDate) => {
-      if (isProcessing) {
-        return
-      }
-
-      try {
-        setIsProcessing(true)
-
-        const savedStartDate =
-          await updateRelationshipStartDate(
-            startDate,
-          )
-
-        const refreshedCalendar =
-          await getMonthlyCalendar(
-            TEMP_COUPLE_ROOM_ID,
-            currentYear,
-            currentMonthNumber,
-          )
-
-        setCalendarData(
-          refreshedCalendar,
-        )
-
-        setAnniversaryManager(
-          (previous) => ({
-            ...previous,
-            relationshipStartDate:
-              savedStartDate,
-          }),
-        )
-      } catch (error) {
-        window.alert(
-          error.message ||
-            '연애 시작일을 저장하지 못했습니다.',
-        )
-      } finally {
-        setIsProcessing(false)
-      }
-    }
 
   const openAnniversaryManager =
     async () => {
@@ -847,24 +795,7 @@ function CalendarPage() {
   return (
     <div className="calendar-page">
       <header className="calendar-header">
-        <button
-          type="button"
-          className="calendar-menu-button"
-          aria-label="메뉴 열기"
-          onClick={() => {
-            console.log('메뉴 열기')
-          }}
-        >
-          <Menu
-            size={22}
-            strokeWidth={2}
-            aria-hidden="true"
-          />
-        </button>
-
         <h1>캘린더</h1>
-
-        <div className="calendar-header-spacer" />
       </header>
 
       <div className="calendar-scroll-area">
@@ -1344,10 +1275,6 @@ function CalendarPage() {
 
       {anniversaryManager.isOpen && (
         <AnniversaryManager
-          key={
-            anniversaryManager.relationshipStartDate ||
-            'relationship-start-empty'
-          }
           anniversaries={
             anniversaryManager.anniversaries
           }
@@ -1355,9 +1282,6 @@ function CalendarPage() {
             anniversaryManager.isLoading
           }
           isProcessing={isProcessing}
-          relationshipStartDate={
-            anniversaryManager.relationshipStartDate
-          }
           onClose={
             closeAnniversaryManager
           }
@@ -1366,9 +1290,6 @@ function CalendarPage() {
           }
           onEdit={
             openEditScheduleModal
-          }
-          onSaveRelationshipStartDate={
-            handleRelationshipStartDateSave
           }
         />
       )}
