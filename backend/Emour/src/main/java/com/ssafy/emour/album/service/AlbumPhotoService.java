@@ -3,6 +3,7 @@ package com.ssafy.emour.album.service;
 import com.ssafy.emour.album.dto.response.AlbumPhotoResponse;
 import com.ssafy.emour.album.entity.AlbumPhoto;
 import com.ssafy.emour.album.repository.AlbumPhotoRepository;
+import com.ssafy.emour.couple.repository.CoupleMemberRepository;
 import com.ssafy.emour.global.exception.CustomException;
 import com.ssafy.emour.global.exception.ErrorCode;
 import com.ssafy.emour.global.storage.FileStorage;
@@ -17,26 +18,29 @@ import java.util.List;
 /**
  * 앨범 사진 비즈니스 로직.
  *
- * 지금은 "업로더(로그인한 회원)" 기준으로 동작한다.
- * (커플룸 기능이 생기면 방 기준 조회/권한으로 확장 예정)
+ * 앨범은 "커플룸(방)" 단위로 공유된다. 로그인한 회원의 활성 커플룸을 찾아
+ * 그 방에 사진을 올리고, 그 방의 사진(두 사람 것)을 함께 조회한다.
+ * 커플 연결이 없으면 앨범을 쓸 수 없다.
  */
 @Service
 @RequiredArgsConstructor
 public class AlbumPhotoService {
 
     private final AlbumPhotoRepository albumPhotoRepository;
+    private final CoupleMemberRepository coupleMemberRepository; // 내 활성 커플룸 조회용
     private final FileStorage fileStorage;
 
-    // 응답에 붙일 이미지 URL 접두어 (환경변수 APP_UPLOAD_BASE_URL 로 주입, 로컬 기본 localhost:8080)
     @Value("${app.upload.base-url}")
     private String baseUrl;
 
-    /** 사진 업로드 (파일 저장 → key 를 DB 에 기록) */
+    /** 사진 업로드 (내 커플룸에 저장) */
     @Transactional
     public AlbumPhotoResponse upload(Long userId, MultipartFile file, String memo) {
-        String key = fileStorage.store(file); // 파일 저장 후 key 획득
+        Long roomId = getActiveRoomId(userId);
+        String key = fileStorage.store(file);
 
         AlbumPhoto photo = AlbumPhoto.builder()
+                .roomId(roomId)
                 .uploaderId(userId)
                 .imageKey(key)
                 .memo(memo)
@@ -45,10 +49,11 @@ public class AlbumPhotoService {
         return AlbumPhotoResponse.of(albumPhotoRepository.save(photo), baseUrl);
     }
 
-    /** 내 사진 전체 조회 (최신순) */
+    /** 내 커플룸의 사진 전체 조회 (두 사람 것, 최신순) */
     @Transactional(readOnly = true)
     public List<AlbumPhotoResponse> getMyPhotos(Long userId) {
-        return albumPhotoRepository.findByUploaderIdOrderByCreatedAtDesc(userId)
+        Long roomId = getActiveRoomId(userId);
+        return albumPhotoRepository.findByRoomIdOrderByCreatedAtDesc(roomId)
                 .stream()
                 .map(photo -> AlbumPhotoResponse.of(photo, baseUrl))
                 .toList();
@@ -57,26 +62,35 @@ public class AlbumPhotoService {
     /** 사진 삭제 (파일 + DB) */
     @Transactional
     public void delete(Long userId, Long photoId) {
-        AlbumPhoto photo = getOwnedPhoto(userId, photoId);
-        fileStorage.delete(photo.getImageKey()); // 실제 파일 삭제 (key 로)
-        albumPhotoRepository.delete(photo);        // DB 기록 삭제
+        AlbumPhoto photo = getAccessiblePhoto(userId, photoId);
+        fileStorage.delete(photo.getImageKey());
+        albumPhotoRepository.delete(photo);
     }
 
     /** 사진 메모 작성/수정 */
     @Transactional
     public AlbumPhotoResponse updateMemo(Long userId, Long photoId, String memo) {
-        AlbumPhoto photo = getOwnedPhoto(userId, photoId);
+        AlbumPhoto photo = getAccessiblePhoto(userId, photoId);
         photo.updateMemo(memo);
         return AlbumPhotoResponse.of(photo, baseUrl);
     }
 
+    /** 로그인한 회원의 현재 활성 커플룸 id (없으면 예외) */
+    private Long getActiveRoomId(Long userId) {
+        return coupleMemberRepository.findActiveRoomIdByUserId(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.ACTIVE_COUPLE_NOT_FOUND));
+    }
+
     /**
-     * 사진을 찾고, "내가 올린 사진"이 맞는지 소유권을 확인한다.
+     * 사진이 "내 커플룸"의 사진인지 확인한다.
+     * 같은 방이면 두 사람 모두 조회/삭제/메모가 가능하다(공유 앨범).
      */
-    private AlbumPhoto getOwnedPhoto(Long userId, Long photoId) {
+    private AlbumPhoto getAccessiblePhoto(Long userId, Long photoId) {
         AlbumPhoto photo = albumPhotoRepository.findById(photoId)
                 .orElseThrow(() -> new CustomException(ErrorCode.PHOTO_NOT_FOUND));
-        if (!photo.getUploaderId().equals(userId)) {
+
+        Long roomId = getActiveRoomId(userId);
+        if (photo.getRoomId() == null || !photo.getRoomId().equals(roomId)) {
             throw new CustomException(ErrorCode.ACCESS_DENIED);
         }
         return photo;

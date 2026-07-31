@@ -10,8 +10,20 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface CoupleMemberRepository extends JpaRepository<CoupleMember, CoupleMemberId> {
+
+    // 로그인한 회원의 현재 활성 커플룸 id (앨범/무드 등 다른 도메인에서 방 기준 조회용, 읽기전용)
+    @Query("""
+            select cm.id.roomId
+            from CoupleMember cm
+            join CoupleRoom cr on cr.id = cm.id.roomId
+            where cm.id.userId = :userId
+              and cm.status = com.ssafy.emour.couple.entity.CoupleMemberStatus.ACTIVE
+              and cr.status = com.ssafy.emour.couple.entity.CoupleRoomStatus.ACTIVE
+            """)
+    Optional<Long> findActiveRoomIdByUserId(@Param("userId") Long userId);
 
     long countByIdRoomIdAndStatus(
             Long roomId,
