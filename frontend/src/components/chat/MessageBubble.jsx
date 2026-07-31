@@ -15,6 +15,8 @@ import styles from "./MessageBubble.module.css";
  * @param {boolean} [isReadByPartner] - chat_read_state.last_read_message_id 로 파생된 읽음 여부
  * @param {(message: object, anchorRect: DOMRect|null) => void} [onLongPressMessage]
  *   꾹 눌렀을 때 액션 메뉴를 열기 위한 콜백. 메뉴를 말풍선 옆에 붙이기 위해 말풍선 좌표도 넘긴다.
+ * @param {(message: object) => void} [onDoubleTapMessage]
+ *   더블클릭/더블탭 시 하트를 바로 남기기 위한 콜백. (내 메시지에는 붙이지 않는다)
  */
 export default function MessageBubble({
   message,
@@ -23,6 +25,7 @@ export default function MessageBubble({
   reactions = [],
   isReadByPartner,
   onLongPressMessage,
+  onDoubleTapMessage,
 }) {
   const isMine = message.senderId === myUserId;
   const emotionStyle = message.emotionType ? getEmotionStyle(message.emotionType) : null;
@@ -35,8 +38,22 @@ export default function MessageBubble({
 
   const longPressHandlers = useLongPress(openActionMenu);
 
+  // 내 메시지에는 반응할 수 없으므로 더블탭도 붙이지 않는다.
+  const handleDoubleClick = isMine ? undefined : () => onDoubleTapMessage?.(message);
+
   return (
-    <div className={[styles.row, isMine ? styles.rowMine : styles.rowPartner].join(" ")}>
+    <div
+      className={[
+        styles.row,
+        isMine ? styles.rowMine : styles.rowPartner,
+        // 리본은 말풍선 위로, 리액션 뱃지는 아래로 튀어나온다.
+        // 붙은 쪽만 여백을 넓혀서 옆 메시지와 겹치거나 누를 곳이 좁아지지 않게 한다.
+        isBookmarked ? styles.rowBookmarked : "",
+        reactions.length > 0 ? styles.rowReacted : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
+    >
       <div className={styles.column}>
         {emotionStyle && (
           <span className={styles.emotionTag} style={{ color: emotionStyle.color }}>
@@ -46,14 +63,10 @@ export default function MessageBubble({
         )}
 
         <div className={styles.bubbleWrap}>
+          {/* 색은 CSS(.bookmarkRibbon)에서 준다. fill/color prop 은 SVG presentation
+              attribute 로 들어가 var() 가 해석되지 않는다. */}
           {isBookmarked && (
-            <Bookmark
-              size={20}
-              className={styles.bookmarkRibbon}
-              fill="var(--color-primary)"
-              color="var(--color-primary)"
-              aria-label="북마크됨"
-            />
+            <Bookmark size={20} className={styles.bookmarkRibbon} aria-label="북마크됨" />
           )}
 
           {/*
@@ -72,6 +85,7 @@ export default function MessageBubble({
                 openActionMenu();
               }
             }}
+            onDoubleClick={handleDoubleClick}
             {...longPressHandlers}
           >
             {message.content}
