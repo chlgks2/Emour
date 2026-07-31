@@ -1,5 +1,6 @@
 import {
   getChatMessages,
+  removeChatReaction,
   setChatReaction,
 } from './chatApi.js'
 
@@ -41,4 +42,13 @@ export async function setMyReaction(
   })
 
   return reaction ? [reaction] : []
+}
+
+/** 내가 남긴 반응 취소. DELETE /chats/{messageId}/reaction */
+export async function clearMyReaction(
+  messageId,
+) {
+  await removeChatReaction(messageId)
+
+  return []
 }
