@@ -127,13 +127,14 @@ CREATE TABLE `mood` (
     `mood_id` BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     `room_id` BIGINT NOT NULL,
     `user_id` BIGINT NOT NULL,
-    `mood_date` DATE NOT NULL,
-    `mood_type` ENUM('VERY_HAPPY', 'HAPPY', 'NEUTRAL', 'SAD', 'VERY_SAD') NOT NULL,
+    `mood_datetime` DATETIME(6) NOT NULL,
+    `mood_type` ENUM('VERY_HAPPY', 'HAPPY', 'NEUTRAL', 'SAD', 'VERY_SAD')
+        NOT NULL DEFAULT 'NEUTRAL',
     `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     `updated_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
         ON UPDATE CURRENT_TIMESTAMP(6),
 
-    UNIQUE (`room_id`, `user_id`, `mood_date`),
+    UNIQUE (`room_id`, `user_id`, `mood_datetime`),
     FOREIGN KEY (`room_id`, `user_id`) REFERENCES `couple_member` (`room_id`, `user_id`)
         ON DELETE CASCADE
 );
