@@ -1,4 +1,5 @@
 import { Component } from "react";
+import { HeartCrack } from "lucide-react";
 import styles from "./ErrorBoundary.module.css";
 
 /**
@@ -30,9 +31,7 @@ export default class ErrorBoundary extends Component {
 
     return (
       <div className={styles.wrap} role="alert">
-        <span className={styles.icon} aria-hidden="true">
-          🥲
-        </span>
+        <HeartCrack className={styles.icon} size={40} aria-hidden="true" />
         <h1 className={styles.title}>화면을 표시하지 못했어요</h1>
         <p className={styles.description}>
           일시적인 문제일 수 있어요. 새로고침해도 계속된다면 잠시 후 다시 시도해주세요.
