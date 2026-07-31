@@ -98,7 +98,7 @@ export const MOCK_MY_PAGE_USER_RESPONSE = {
   birth: '2000-05-12',
   profile_image_url:
     createMockProfileImage(),
-  status_message: '오늘도 잘 부탁해 ♡',
+  status_message: '오늘도 잘 부탁해',
   status: 'ACTIVE',
   created_at:
     '2026-01-10T10:00:00',

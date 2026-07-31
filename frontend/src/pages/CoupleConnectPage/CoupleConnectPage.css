@@ -58,9 +58,6 @@
 
 .couple-heart-icon {
   color: var(--color-surface);
-  font-size: 26px;
-  line-height: 1;
-  transform: translateY(1px);
 }
 
 /* 제목 영역 */
