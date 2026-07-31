@@ -3,6 +3,7 @@ import { apiRequest } from './httpClient.js'
 const CHAT_ENDPOINTS = {
   messages: '/chats',
   unreadCount: '/chats/unread-count',
+  readStatus: '/chats/read-status',
   search: '/chats/search',
   bookmarks: '/chats/bookmarks',
   read: (messageId) =>
@@ -77,6 +78,24 @@ export async function getUnreadChatCount(
 
   return apiRequest(
     `${CHAT_ENDPOINTS.unreadCount}?${query}`,
+  )
+}
+
+export async function getPartnerReadStatus(
+  roomId,
+) {
+  if (!roomId) {
+    return {
+      roomId: null,
+      partnerLastReadMessageId: null,
+      partnerReadAt: null,
+    }
+  }
+
+  const query = createQuery({ roomId })
+
+  return apiRequest(
+    `${CHAT_ENDPOINTS.readStatus}?${query}`,
   )
 }
 
@@ -185,9 +204,18 @@ export async function fetchChatPartner() {
   }
 }
 
-export async function fetchPartnerReadState() {
+export async function fetchPartnerReadState(
+  roomId,
+) {
+  const readStatus =
+    await getPartnerReadStatus(roomId)
+
   return {
-    lastReadMessageId: null,
+    lastReadMessageId:
+      readStatus?.partnerLastReadMessageId ??
+      null,
+    readAt:
+      readStatus?.partnerReadAt ?? null,
   }
 }
 

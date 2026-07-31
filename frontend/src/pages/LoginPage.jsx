@@ -9,9 +9,13 @@ import { useToast } from "../hooks/useToast";
 import logoIcon from "../assets/only-logo.png";
 import styles from "./LoginPage.module.css";
 import {
-  hasCurrentCoupleRoom,
+  clearPendingCoupleRoom,
+  getCurrentCoupleRoom,
   saveCurrentCoupleRoom,
 } from "../utils/pendingCoupleRoom.js";
+import {
+  getMyCoupleRoom,
+} from "../api/coupleApi.js";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -26,13 +30,18 @@ export default function LoginPage() {
   const [socialLoading, setSocialLoading] = useState(null);
 
   const justSignedUp = location.state?.justSignedUp;
-  const getPostLoginPath = (user) => {
-    if (user?.roomId) {
+  const getPostLoginPath = async (user) => {
+    const serverRoom =
+      await getMyCoupleRoom();
+
+    if (serverRoom?.roomId) {
+      const storedRoom =
+        getCurrentCoupleRoom();
+
       saveCurrentCoupleRoom(
         {
-          roomId: user.roomId,
-          roomStatus:
-            user.roomStatus ?? "ACTIVE",
+          ...storedRoom,
+          ...serverRoom,
         },
         user.userId,
       );
@@ -40,9 +49,9 @@ export default function LoginPage() {
       return "/dashboard";
     }
 
-    return hasCurrentCoupleRoom(user?.userId)
-      ? "/dashboard"
-      : "/couple/connect";
+    clearPendingCoupleRoom();
+
+    return "/couple/connect";
   };
 
   const handleSubmit = async (e) => {
@@ -56,7 +65,9 @@ export default function LoginPage() {
     try {
       const user = await login({ email, password });
       showToast(`${user.nickname}님, 환영해요!`, { tone: "success" });
-      navigate(getPostLoginPath(user), {
+      const postLoginPath =
+        await getPostLoginPath(user);
+      navigate(postLoginPath, {
         replace: true,
       });
     } catch (err) {
@@ -72,7 +83,9 @@ export default function LoginPage() {
     try {
       const user =
         await loginWithSocial(provider);
-      navigate(getPostLoginPath(user), {
+      const postLoginPath =
+        await getPostLoginPath(user);
+      navigate(postLoginPath, {
         replace: true,
       });
     } catch {
