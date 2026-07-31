@@ -56,6 +56,12 @@ public class Dashboard {
     @Column(name = "frequent_words", columnDefinition = "json")
     private String frequentWords;
 
+    @Column(name = "aggregated_until")
+    private LocalDateTime aggregatedUntil;
+
+    @Column(name = "finalized_until")
+    private LocalDateTime finalizedUntil;
+
     @Column(name = "calculated_at", nullable = false)
     private LocalDateTime calculatedAt;
 
@@ -115,6 +121,34 @@ public class Dashboard {
         this.updatedAt = this.calculatedAt;
     }
 
+    public void applyHourlySnapshot(
+            int messageCount,
+            int imageCount,
+            int reactionCount,
+            int bookmarkCount,
+            String emotionSummary,
+            String emotionFlow,
+            String frequentWords,
+            LocalDateTime snapshotUntil,
+            boolean finalized,
+            LocalDateTime calculatedAt
+    ) {
+        // 모든 대시보드 항목을 먼저 바꾼 다음 마지막에 집계 경계를 기록합니다.
+        this.messageCount = messageCount;
+        this.imageCount = imageCount;
+        this.reactionCount = reactionCount;
+        this.bookmarkCount = bookmarkCount;
+        this.emotionSummary = emotionSummary;
+        this.emotionFlow = emotionFlow;
+        this.frequentWords = frequentWords;
+        this.aggregatedUntil = snapshotUntil;
+        if (finalized) {
+            this.finalizedUntil = snapshotUntil;
+        }
+        this.calculatedAt = calculatedAt;
+        this.updatedAt = calculatedAt;
+    }
+
     public Long getDashboardId() {
         return dashboardId;
     }
@@ -157,6 +191,14 @@ public class Dashboard {
 
     public String getFrequentWords() {
         return frequentWords;
+    }
+
+    public LocalDateTime getAggregatedUntil() {
+        return aggregatedUntil;
+    }
+
+    public LocalDateTime getFinalizedUntil() {
+        return finalizedUntil;
     }
 
     public LocalDateTime getCalculatedAt() {

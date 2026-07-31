@@ -7,19 +7,18 @@ import com.ssafy.emour.couple.repository.CoupleMemberRepository;
 import com.ssafy.emour.dashboard.dto.DashboardMainEmotionResponse;
 import com.ssafy.emour.dashboard.dto.DashboardPeriod;
 import com.ssafy.emour.dashboard.entity.Dashboard;
-import com.ssafy.emour.dashboard.repository.DashboardRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
-import java.util.List;
-import java.util.Optional;
+import java.time.ZoneId;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -29,49 +28,46 @@ class DashboardMainEmotionServiceTest {
     private ChatAnalysisRepository chatAnalysisRepository;
 
     @Mock
-    private DashboardRepository dashboardRepository;
+    private CoupleMemberRepository coupleMemberRepository;
 
     @Mock
-    private CoupleMemberRepository coupleMemberRepository;
+    private DashboardSnapshotService dashboardSnapshotService;
 
     private DashboardMainEmotionService dashboardMainEmotionService;
 
     @BeforeEach
     void setUp() {
+        Clock clock = Clock.fixed(
+                Instant.parse("2026-07-31T03:30:00Z"),
+                ZoneId.of("Asia/Seoul")
+        );
         dashboardMainEmotionService = new DashboardMainEmotionService(
                 chatAnalysisRepository,
-                dashboardRepository,
-                coupleMemberRepository
+                coupleMemberRepository,
+                dashboardSnapshotService,
+                clock
         );
     }
 
-    // 감정별 개수를 계산하고 가장 많이 나타난 감정을 찾습니다.
+    // 저장된 감정별 개수에서 가장 많이 나타난 감정을 찾습니다.
     @Test
-    void calculatesMainEmotion() {
-        LocalDate date = LocalDate.now();
+    void returnsMainEmotion() {
+        LocalDate date = LocalDate.of(2026, 7, 31);
+        Dashboard dashboard = Dashboard.create(1L, 10L, date);
+        dashboard.updateEmotionSummary("""
+                {
+                  "JOY": 2,
+                  "SADNESS": 1,
+                  "NEUTRAL": 1
+                }
+                """);
 
         when(coupleMemberRepository.existsByIdAndStatus(
                 new CoupleMemberId(10L, 1L),
                 CoupleMemberStatus.ACTIVE
         )).thenReturn(true);
-        when(chatAnalysisRepository.findCompletedEmotionTypes(
-                1L,
-                10L,
-                date.atStartOfDay(),
-                date.plusDays(1).atStartOfDay()
-        )).thenReturn(List.of(
-                "JOY",
-                "기쁨",
-                "SADNESS",
-                "NEUTRAL"
-        ));
-        when(dashboardRepository.findByRoomIdAndUserIdAndSummaryDate(
-                1L,
-                10L,
-                date
-        )).thenReturn(Optional.empty());
-        when(dashboardRepository.save(any(Dashboard.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
+        when(dashboardSnapshotService.ensureSnapshot(1L, 10L, date))
+                .thenReturn(dashboard);
 
         DashboardMainEmotionResponse response =
                 dashboardMainEmotionService.getMainEmotions(

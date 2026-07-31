@@ -1,6 +1,7 @@
 package com.ssafy.emour.dashboard.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ssafy.emour.chat.entity.EmotionType;
 import com.ssafy.emour.chat.repository.ChatAnalysisRepository;
@@ -11,18 +12,17 @@ import com.ssafy.emour.dashboard.dto.DashboardMainEmotionResponse;
 import com.ssafy.emour.dashboard.dto.DashboardPeriod;
 import com.ssafy.emour.dashboard.dto.EmotionSummaryItem;
 import com.ssafy.emour.dashboard.entity.Dashboard;
-import com.ssafy.emour.dashboard.repository.DashboardRepository;
 import com.ssafy.emour.global.exception.CustomException;
 import com.ssafy.emour.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.EnumMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -31,8 +31,9 @@ import java.util.Map;
 public class DashboardMainEmotionService {
 
     private final ChatAnalysisRepository chatAnalysisRepository;
-    private final DashboardRepository dashboardRepository;
     private final CoupleMemberRepository coupleMemberRepository;
+    private final DashboardSnapshotService dashboardSnapshotService;
+    private final Clock dashboardClock;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Transactional
@@ -45,6 +46,21 @@ public class DashboardMainEmotionService {
         validateRequest(roomId, userId, period, date);
         DateRange range = createRange(period, date);
 
+        if (period == DashboardPeriod.DAY) {
+            Dashboard dashboard = dashboardSnapshotService
+                    .ensureSnapshot(roomId, userId, date);
+            Map<EmotionType, Integer> counts =
+                    readEmotionCounts(dashboard.getEmotionSummary());
+            return createResponse(
+                    roomId,
+                    userId,
+                    period,
+                    range,
+                    counts,
+                    dashboard.getCalculatedAt()
+            );
+        }
+
         List<String> storedEmotions =
                 chatAnalysisRepository.findCompletedEmotionTypes(
                         roomId,
@@ -52,33 +68,33 @@ public class DashboardMainEmotionService {
                         range.startDate().atStartOfDay(),
                         range.endExclusive().atStartOfDay()
                 );
-        Map<EmotionType, Integer> counts = createCounts(storedEmotions);
-        int totalCount = storedEmotions.size();
+        return createResponse(
+                roomId,
+                userId,
+                period,
+                range,
+                createCounts(storedEmotions),
+                LocalDateTime.now(dashboardClock)
+        );
+    }
+
+    private DashboardMainEmotionResponse createResponse(
+            Long roomId,
+            Long userId,
+            DashboardPeriod period,
+            DateRange range,
+            Map<EmotionType, Integer> counts,
+            LocalDateTime calculatedAt
+    ) {
+        int totalCount = counts.values().stream()
+                .mapToInt(Integer::intValue)
+                .sum();
         List<EmotionSummaryItem> summaries =
                 createSummaries(counts);
         EmotionSummaryItem dominantEmotion = summaries.stream()
                 .filter(summary -> summary.count() > 0)
                 .findFirst()
                 .orElse(null);
-
-        LocalDateTime calculatedAt = LocalDateTime.now();
-        if (period == DashboardPeriod.DAY) {
-            Dashboard dashboard = dashboardRepository
-                    .findByRoomIdAndUserIdAndSummaryDate(
-                            roomId,
-                            userId,
-                            range.startDate()
-                    )
-                    .orElseGet(() -> Dashboard.create(
-                            roomId,
-                            userId,
-                            range.startDate()
-                    ));
-            dashboard.updateEmotionSummary(toJson(counts));
-            calculatedAt = dashboardRepository
-                    .save(dashboard)
-                    .getCalculatedAt();
-        }
 
         return new DashboardMainEmotionResponse(
                 roomId,
@@ -96,14 +112,18 @@ public class DashboardMainEmotionService {
     private Map<EmotionType, Integer> createCounts(
             List<String> storedEmotions
     ) {
+        Map<EmotionType, Integer> counts = emptyCounts();
+        storedEmotions.stream()
+                .map(EmotionType::fromStoredValue)
+                .forEach(type -> counts.merge(type, 1, Integer::sum));
+        return counts;
+    }
+
+    private Map<EmotionType, Integer> emptyCounts() {
         Map<EmotionType, Integer> counts =
                 new EnumMap<>(EmotionType.class);
         Arrays.stream(EmotionType.values())
                 .forEach(type -> counts.put(type, 0));
-
-        storedEmotions.stream()
-                .map(EmotionType::fromStoredValue)
-                .forEach(type -> counts.merge(type, 1, Integer::sum));
         return counts;
     }
 
@@ -124,6 +144,25 @@ public class DashboardMainEmotionService {
                 .toList();
     }
 
+    private Map<EmotionType, Integer> readEmotionCounts(String json) {
+        try {
+            Map<String, Integer> stored = objectMapper.readValue(
+                    json,
+                    new TypeReference<Map<String, Integer>>() {
+                    }
+            );
+            Map<EmotionType, Integer> counts = emptyCounts();
+            stored.forEach((type, count) ->
+                    counts.put(
+                            EmotionType.fromStoredValue(type),
+                            count
+                    ));
+            return counts;
+        } catch (JsonProcessingException exception) {
+            throw new CustomException(ErrorCode.INTERNAL_ERROR);
+        }
+    }
+
     private DateRange createRange(
             DashboardPeriod period,
             LocalDate date
@@ -141,17 +180,6 @@ public class DashboardMainEmotionService {
         };
     }
 
-    private String toJson(Map<EmotionType, Integer> counts) {
-        Map<String, Integer> jsonCounts = new LinkedHashMap<>();
-        counts.forEach((type, count) ->
-                jsonCounts.put(type.name(), count));
-        try {
-            return objectMapper.writeValueAsString(jsonCounts);
-        } catch (JsonProcessingException exception) {
-            throw new CustomException(ErrorCode.INTERNAL_ERROR);
-        }
-    }
-
     private void validateRequest(
             Long roomId,
             Long userId,
@@ -164,7 +192,7 @@ public class DashboardMainEmotionService {
         }
 
         DateRange range = createRange(period, date);
-        if (range.startDate().isAfter(LocalDate.now())) {
+        if (range.startDate().isAfter(LocalDate.now(dashboardClock))) {
             throw new CustomException(ErrorCode.INVALID_INPUT);
         }
 

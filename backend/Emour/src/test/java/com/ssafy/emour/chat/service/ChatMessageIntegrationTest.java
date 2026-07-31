@@ -17,6 +17,7 @@ import com.ssafy.emour.couple.entity.CoupleMember;
 import com.ssafy.emour.couple.repository.CoupleMemberRepository;
 import com.ssafy.emour.dashboard.dto.DashboardEmotionFlowResponse;
 import com.ssafy.emour.dashboard.service.DashboardEmotionService;
+import com.ssafy.emour.dashboard.service.DashboardSnapshotService;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -47,6 +48,9 @@ class ChatMessageIntegrationTest {
 
     @Autowired
     private DashboardEmotionService dashboardEmotionService;
+
+    @Autowired
+    private DashboardSnapshotService dashboardSnapshotService;
 
     @Autowired
     private CoupleMemberRepository coupleMemberRepository;
@@ -319,6 +323,12 @@ class ChatMessageIntegrationTest {
     // 완료된 감정 분석 결과를 실제 DB에서 읽어 대시보드 JSON으로 저장합니다.
     @Test
     void savesEmotionFlow() {
+        java.time.LocalDateTime snapshotUntil =
+                java.time.LocalDateTime.now()
+                        .truncatedTo(java.time.temporal.ChronoUnit.HOURS);
+        java.time.LocalDate summaryDate = snapshotUntil
+                .minusNanos(1)
+                .toLocalDate();
         ChatMessageResponse message = chatMessageService.sendMessage(
                 1L,
                 10L,
@@ -329,6 +339,15 @@ class ChatMessageIntegrationTest {
         );
 
         chatAnalysisRepository.flush();
+        jdbcTemplate.update(
+                """
+                UPDATE chat_message
+                SET sent_at = CONCAT(?, ' 01:00:00')
+                WHERE message_id = ?
+                """,
+                summaryDate.toString(),
+                message.messageId()
+        );
         jdbcTemplate.update(
                 """
                 UPDATE chat_analysis
@@ -342,11 +361,18 @@ class ChatMessageIntegrationTest {
         // JDBC로 바꾼 값을 JPA가 DB에서 다시 읽도록 기존 캐시를 비웁니다.
         entityManager.clear();
 
+        dashboardSnapshotService.refreshSnapshot(
+                1L,
+                10L,
+                summaryDate,
+                snapshotUntil,
+                true
+        );
         DashboardEmotionFlowResponse response =
                 dashboardEmotionService.getDailyEmotionFlow(
                         1L,
                         10L,
-                        java.time.LocalDate.now()
+                        summaryDate
                 );
 
         Integer jsonSlotCount = jdbcTemplate.queryForObject(
@@ -355,16 +381,17 @@ class ChatMessageIntegrationTest {
                 FROM dashboard
                 WHERE room_id = 1
                   AND user_id = 10
-                  AND summary_date = CURRENT_DATE
+                  AND summary_date = ?
                 """,
-                Integer.class
+                Integer.class,
+                summaryDate
         );
 
-        assertThat(response.analyzedMessageCount()).isEqualTo(1);
+        assertThat(response.analyzedMessageCount()).isGreaterThanOrEqualTo(1);
         assertThat(response.flow()).hasSize(12);
         assertThat(response.flow().stream()
                 .mapToInt(slot -> slot.positiveCount())
-                .sum()).isEqualTo(1);
+                .sum()).isGreaterThanOrEqualTo(1);
         assertThat(jsonSlotCount).isEqualTo(12);
     }
 

@@ -178,6 +178,10 @@ CREATE TABLE `dashboard` (
     `emotion_flow` JSON NULL,
     -- '[{"word":"사랑","count":5}] 형식'
     `frequent_words` JSON NULL,
+    -- 이 시각 직전까지 1차 집계가 완료됨
+    `aggregated_until` DATETIME(6) NULL,
+    -- 이 시각 직전까지 5분 후 최종 집계가 완료됨
+    `finalized_until` DATETIME(6) NULL,
     `calculated_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     `updated_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
         ON UPDATE CURRENT_TIMESTAMP(6),
