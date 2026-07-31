@@ -6,9 +6,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
+import java.time.Duration;
 import java.util.Map;
 
 @Component
@@ -20,7 +22,7 @@ public class AiAnalysisClient {
     public AiAnalysisClient(
             @Value("${ai.service.url}") String aiServiceUrl
     ) {
-        this(RestClient.builder(), aiServiceUrl);
+        this(createLocalBuilder(), aiServiceUrl);
     }
 
     AiAnalysisClient(
@@ -48,5 +50,14 @@ public class AiAnalysisClient {
             throw new IllegalStateException("AI 감정 분석 응답이 비어 있습니다.");
         }
         return response;
+    }
+
+    private static RestClient.Builder createLocalBuilder() {
+        SimpleClientHttpRequestFactory requestFactory =
+                new SimpleClientHttpRequestFactory();
+        requestFactory.setConnectTimeout(Duration.ofSeconds(5));
+        requestFactory.setReadTimeout(Duration.ofSeconds(30));
+        return RestClient.builder()
+                .requestFactory(requestFactory);
     }
 }

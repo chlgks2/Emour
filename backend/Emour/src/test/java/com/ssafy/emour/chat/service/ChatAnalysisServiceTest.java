@@ -8,9 +8,7 @@ import com.ssafy.emour.chat.entity.ChatAnalysis;
 import com.ssafy.emour.chat.entity.ChatMessage;
 import com.ssafy.emour.chat.entity.EmotionType;
 import com.ssafy.emour.chat.repository.ChatAnalysisRepository;
-import com.ssafy.emour.couple.entity.CoupleMemberId;
-import com.ssafy.emour.couple.entity.CoupleMemberStatus;
-import com.ssafy.emour.couple.repository.CoupleMemberRepository;
+import com.ssafy.emour.chat.repository.PendingAnalysisRoomSummary;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -19,26 +17,37 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Pageable;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class ChatAnalysisServiceTest {
 
-    @Mock
-    private ChatAnalysisRepository chatAnalysisRepository;
+    private static final ZoneId SEOUL = ZoneId.of("Asia/Seoul");
+    private static final LocalDateTime NOW = LocalDateTime.of(
+            2026,
+            7,
+            31,
+            10,
+            0,
+            20
+    );
 
     @Mock
-    private CoupleMemberRepository coupleMemberRepository;
+    private ChatAnalysisRepository chatAnalysisRepository;
 
     @Mock
     private AiAnalysisClient aiAnalysisClient;
@@ -47,23 +56,21 @@ class ChatAnalysisServiceTest {
 
     @BeforeEach
     void setUp() {
+        Clock clock = Clock.fixed(
+                NOW.atZone(SEOUL).toInstant(),
+                SEOUL
+        );
         chatAnalysisService = new ChatAnalysisService(
                 chatAnalysisRepository,
-                coupleMemberRepository,
-                aiAnalysisClient
+                aiAnalysisClient,
+                clock
         );
     }
 
-    // 같은 방의 과거 문맥과 미분석 메시지를 분리하여 AI에 보내고 결과를 저장합니다.
+    // 두 사람이 메시지를 보낸 뒤 10초간 새 메시지가 없으면 분석합니다.
     @Test
-    void analyzesPendingMessages() {
-        LocalDateTime base = LocalDateTime.of(
-                2026,
-                7,
-                31,
-                10,
-                0
-        );
+    void analyzesAfterIdle() {
+        LocalDateTime base = NOW.minusSeconds(20);
         ChatAnalysis oldContext = analysis(
                 90L,
                 1L,
@@ -93,19 +100,24 @@ class ChatAnalysisServiceTest {
                 1L,
                 20L,
                 "공강이야",
-                base.plusMinutes(1),
+                base.plusSeconds(1),
                 false
         );
+        PendingAnalysisRoomSummary summary = roomSummary(
+                1L,
+                2,
+                2,
+                base.plusSeconds(1)
+        );
 
-        when(coupleMemberRepository.existsByIdAndStatus(
-                new CoupleMemberId(21L, 1L),
-                CoupleMemberStatus.ACTIVE
-        )).thenReturn(true);
+        when(chatAnalysisRepository.findPendingRoomSummaries(
+                any(Pageable.class)
+        )).thenReturn(List.of(summary));
         when(chatAnalysisRepository.findPendingTargets(
                 eq(1L),
                 any(Pageable.class)
         )).thenReturn(List.of(firstTarget, secondTarget));
-        // Repository는 최신순으로 가져오므로 서비스가 오름차순으로 뒤집습니다.
+        // Repository는 최신순으로 반환하므로 서비스가 시간 오름차순으로 뒤집습니다.
         when(chatAnalysisRepository.findRecentContext(
                 eq(1L),
                 eq(base),
@@ -118,11 +130,12 @@ class ChatAnalysisServiceTest {
                         "102", new AiEmotionResult("NEUTRAL")
                 ));
 
+        Optional<ChatAnalysisBatchResponse> optionalResponse =
+                chatAnalysisService.analyzeReadyBatch();
+
+        assertThat(optionalResponse).isPresent();
         ChatAnalysisBatchResponse response =
-                chatAnalysisService.analyzePendingMessages(
-                        1L,
-                        21L
-                );
+                optionalResponse.orElseThrow();
 
         ArgumentCaptor<AiAnalyzeRequest> requestCaptor =
                 ArgumentCaptor.forClass(AiAnalyzeRequest.class);
@@ -143,6 +156,88 @@ class ChatAnalysisServiceTest {
                 .isEqualTo(AnalysisStatus.COMPLETED);
         assertThat(firstTarget.getEmotionType()).isEqualTo("JOY");
         assertThat(firstTarget.getAnalyzedAt()).isNotNull();
+    }
+
+    // 메시지가 10개 쌓이면 한 사람만 보냈어도 바로 분석합니다.
+    @Test
+    void analyzesAtTenMessages() {
+        ChatAnalysis target = analysis(
+                101L,
+                1L,
+                21L,
+                "열 번째 메시지",
+                NOW,
+                false
+        );
+        PendingAnalysisRoomSummary summary = roomSummary(
+                1L,
+                10,
+                1,
+                NOW
+        );
+
+        when(chatAnalysisRepository.findPendingRoomSummaries(
+                any(Pageable.class)
+        )).thenReturn(List.of(summary));
+        when(chatAnalysisRepository.findPendingTargets(
+                eq(1L),
+                any(Pageable.class)
+        )).thenReturn(List.of(target));
+        when(chatAnalysisRepository.findRecentContext(
+                eq(1L),
+                eq(NOW),
+                eq(101L),
+                any(Pageable.class)
+        )).thenReturn(List.of());
+        when(aiAnalysisClient.analyze(any(AiAnalyzeRequest.class)))
+                .thenReturn(Map.of(
+                        "101", new AiEmotionResult("JOY")
+                ));
+
+        assertThat(chatAnalysisService.analyzeReadyBatch()).isPresent();
+        verify(aiAnalysisClient).analyze(any(AiAnalyzeRequest.class));
+    }
+
+    // 10개 미만이고 마지막 메시지 후 10초가 지나지 않았으면 기다립니다.
+    @Test
+    void waitsBeforeIdle() {
+        PendingAnalysisRoomSummary summary = roomSummary(
+                1L,
+                2,
+                2,
+                NOW.minusSeconds(9)
+        );
+        when(chatAnalysisRepository.findPendingRoomSummaries(
+                any(Pageable.class)
+        )).thenReturn(List.of(summary));
+
+        assertThat(chatAnalysisService.analyzeReadyBatch()).isEmpty();
+        verify(
+                chatAnalysisRepository,
+                never()
+        ).findPendingTargets(any(), any(Pageable.class));
+        verify(
+                aiAnalysisClient,
+                never()
+        ).analyze(any(AiAnalyzeRequest.class));
+    }
+
+    private PendingAnalysisRoomSummary roomSummary(
+            Long roomId,
+            long pendingCount,
+            long senderCount,
+            LocalDateTime lastSentAt
+    ) {
+        PendingAnalysisRoomSummary summary =
+                mock(PendingAnalysisRoomSummary.class);
+        lenient().when(summary.getRoomId()).thenReturn(roomId);
+        lenient().when(summary.getPendingCount())
+                .thenReturn(pendingCount);
+        lenient().when(summary.getSenderCount())
+                .thenReturn(senderCount);
+        lenient().when(summary.getLastSentAt())
+                .thenReturn(lastSentAt);
+        return summary;
     }
 
     private ChatAnalysis analysis(

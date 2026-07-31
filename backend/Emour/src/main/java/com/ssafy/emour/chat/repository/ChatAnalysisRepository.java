@@ -1,6 +1,5 @@
 package com.ssafy.emour.chat.repository;
 
-import com.ssafy.emour.chat.entity.AnalysisStatus;
 import com.ssafy.emour.chat.entity.ChatAnalysis;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Pageable;
@@ -11,18 +10,29 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 public interface ChatAnalysisRepository extends JpaRepository<ChatAnalysis, Long> {
 
+    Optional<ChatAnalysis> findByMessageMessageId(Long messageId);
+
+    List<ChatAnalysis> findByMessageMessageIdIn(
+            List<Long> messageIds
+    );
+
     @Query("""
-            select analysis
+            select message.roomId as roomId,
+                   count(analysis) as pendingCount,
+                   count(distinct message.senderId) as senderCount,
+                   max(message.sentAt) as lastSentAt
             from ChatAnalysis analysis
-            join fetch analysis.message message
-            where analysis.analysisStatus = :status
-            order by message.sentAt asc, message.messageId asc
+            join analysis.message message
+            where analysis.analysisStatus =
+                com.ssafy.emour.chat.entity.AnalysisStatus.PENDING
+            group by message.roomId
+            order by min(message.sentAt) asc
             """)
-    List<ChatAnalysis> findOldestByStatus(
-            @Param("status") AnalysisStatus status,
+    List<PendingAnalysisRoomSummary> findPendingRoomSummaries(
             Pageable pageable
     );
 

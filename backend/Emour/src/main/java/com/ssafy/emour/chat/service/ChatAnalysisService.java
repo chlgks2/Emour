@@ -5,25 +5,24 @@ import com.ssafy.emour.chat.dto.AiContextMessage;
 import com.ssafy.emour.chat.dto.AiEmotionResult;
 import com.ssafy.emour.chat.dto.AiTargetMessage;
 import com.ssafy.emour.chat.dto.ChatAnalysisBatchResponse;
-import com.ssafy.emour.chat.entity.AnalysisStatus;
 import com.ssafy.emour.chat.entity.ChatAnalysis;
 import com.ssafy.emour.chat.entity.ChatMessage;
 import com.ssafy.emour.chat.entity.EmotionType;
-import com.ssafy.emour.chat.exception.ChatException;
 import com.ssafy.emour.chat.repository.ChatAnalysisRepository;
-import com.ssafy.emour.couple.entity.CoupleMemberId;
-import com.ssafy.emour.couple.entity.CoupleMemberStatus;
-import com.ssafy.emour.couple.repository.CoupleMemberRepository;
+import com.ssafy.emour.chat.repository.PendingAnalysisRoomSummary;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 @Service
@@ -32,39 +31,35 @@ public class ChatAnalysisService {
 
     private static final int MAX_CONTEXT_COUNT = 10;
     private static final int MAX_TARGET_COUNT = 10;
+    private static final int MAX_ROOM_SCAN_COUNT = 100;
+    private static final int IDLE_SECONDS = 10;
 
     private final ChatAnalysisRepository chatAnalysisRepository;
-    private final CoupleMemberRepository coupleMemberRepository;
     private final AiAnalysisClient aiAnalysisClient;
+    private final Clock dashboardClock;
 
     /**
-     * Swagger에서 특정 방의 미분석 메시지를 즉시 분석할 때 사용합니다.
+     * 분석할 준비가 된 방 하나를 골라 최대 10개의 메시지를 분석합니다.
+     *
+     * <p>대기 메시지가 10개이면 바로 분석합니다. 10개 미만이면 두 사용자가
+     * 모두 메시지를 보냈고 마지막 메시지 이후 10초가 지났을 때 분석합니다.</p>
      */
     @Transactional
-    public ChatAnalysisBatchResponse analyzePendingMessages(
-            Long roomId,
-            Long userId
-    ) {
-        validateActiveMember(roomId, userId);
-        return analyzeRoom(roomId);
-    }
+    public Optional<ChatAnalysisBatchResponse> analyzeReadyBatch() {
+        LocalDateTime idleThreshold = LocalDateTime
+                .now(dashboardClock)
+                .minusSeconds(IDLE_SECONDS);
 
-    /**
-     * 스케줄러가 가장 오래 기다린 메시지가 있는 방 하나를 분석합니다.
-     */
-    @Transactional
-    public int analyzeNextBatch() {
-        List<ChatAnalysis> oldest = chatAnalysisRepository
-                .findOldestByStatus(
-                        AnalysisStatus.PENDING,
-                        PageRequest.of(0, 1)
-                );
-        if (oldest.isEmpty()) {
-            return 0;
-        }
-
-        Long roomId = oldest.get(0).getMessage().getRoomId();
-        return analyzeRoom(roomId).analyzedCount();
+        return chatAnalysisRepository.findPendingRoomSummaries(
+                        PageRequest.of(0, MAX_ROOM_SCAN_COUNT)
+                ).stream()
+                .filter(summary -> isReady(
+                        summary,
+                        idleThreshold
+                ))
+                .findFirst()
+                .map(summary -> analyzeRoom(summary.getRoomId()))
+                .filter(response -> response.analyzedCount() > 0);
     }
 
     private ChatAnalysisBatchResponse analyzeRoom(Long roomId) {
@@ -89,7 +84,7 @@ public class ChatAnalysisService {
                         firstTarget.getMessageId(),
                         PageRequest.of(0, MAX_CONTEXT_COUNT)
                 );
-        // DB에서는 최신 순으로 가져오고, AI에는 옛 메시지부터 보냅니다.
+        // DB에서는 최신순으로 조회하고, AI에는 시간 오름차순으로 보냅니다.
         context = new ArrayList<>(context);
         Collections.reverse(context);
 
@@ -118,7 +113,7 @@ public class ChatAnalysisService {
                 );
             }
 
-            // AI의 한글 감정도 백엔드의 영문 Enum 값으로 통일해 저장합니다.
+            // AI의 한글/영문 감정값을 DB의 영문 Enum 값으로 통일해 저장합니다.
             EmotionType emotionType = EmotionType.fromStoredValue(
                     result.emotion()
             );
@@ -186,18 +181,17 @@ public class ChatAnalysisService {
         return speakers;
     }
 
-    private void validateActiveMember(Long roomId, Long userId) {
-        if (roomId == null || userId == null) {
-            throw new ChatException("사용자 번호와 방 번호가 필요합니다.");
+    private boolean isReady(
+            PendingAnalysisRoomSummary summary,
+            LocalDateTime idleThreshold
+    ) {
+        if (summary.getPendingCount() >= MAX_TARGET_COUNT) {
+            return true;
         }
-        boolean activeMember = coupleMemberRepository.existsByIdAndStatus(
-                new CoupleMemberId(userId, roomId),
-                CoupleMemberStatus.ACTIVE
-        );
-        if (!activeMember) {
-            throw new ChatException(
-                    "해당 채팅방에 참여 중인 사용자가 아닙니다."
-            );
-        }
+
+        return summary.getSenderCount() >= 2
+                && summary.getLastSentAt() != null
+                && !summary.getLastSentAt().isAfter(idleThreshold);
     }
+
 }

@@ -1,6 +1,7 @@
 package com.ssafy.emour.chat.dto;
 
 import com.ssafy.emour.chat.entity.MessageType;
+import com.ssafy.emour.chat.entity.AnalysisStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.LocalDateTime;
@@ -37,6 +38,18 @@ public record ChatMessageResponse(
 
         @Schema(description = "메시지에 남겨진 공감 목록")
         List<ChatReactionResponse> reactions,
+
+        @Schema(
+                description = "감정 분석 상태. 이미지 메시지는 값이 없습니다.",
+                example = "COMPLETED"
+        )
+        AnalysisStatus analysisStatus,
+
+        @Schema(
+                description = "DB에 저장된 감정 분석 결과",
+                example = "JOY"
+        )
+        String emotion,
 
         @Schema(description = "서버 저장 시각")
         LocalDateTime sentAt
