@@ -85,8 +85,6 @@ export default function HomeEditPage({ initial, onCancel, onSave }) {
         caption,
         captionPosition: position,
         captionStyle: style,
-        // 이 화면에는 호칭 편집 UI가 없어서, 저장 시 기존 값이 지워지지 않도록 그대로 전달한다.
-        relationshipName: initial?.relationshipName,
       });
     } finally {
       setSaving(false);

@@ -10,27 +10,60 @@
  *    나머지 코드는 목업 라벨을 기준으로 추정한 값이다. AI/백엔드에서 쓰는 실제 코드 목록을
  *    받는 즉시 이 표만 고치면 화면 전체에 반영된다.
  */
+import { Frown, Heart, HeartPulse, Leaf, Meh, Smile, Sun } from "lucide-react";
 
 // 한글 감정 라벨 -> 색/아이콘
+// Icon 은 lucide 라인 아이콘 컴포넌트다. (OS 기본 이모지는 윈도우/맥/안드로이드에서
+// 제각각 렌더링돼 톤이 깨지므로 쓰지 않는다)
 export const EMOTION_STYLE = {
-  행복: { color: "var(--emotion-happy)", icon: "😊" },
-  설렘: { color: "var(--emotion-love)", icon: "🥰" },
-  애정: { color: "var(--emotion-love)", icon: "💕" },
-  편안함: { color: "var(--emotion-calm)", icon: "🙂" },
-  따뜻함: { color: "var(--emotion-warm)", icon: "☺️" },
-  서운함: { color: "var(--emotion-sad)", icon: "😔" },
-  중립: { color: "var(--emotion-neutral)", icon: "😐" },
+  행복: { color: "var(--emotion-happy)", Icon: Smile },
+  설렘: { color: "var(--emotion-love)", Icon: HeartPulse },
+  애정: { color: "var(--emotion-love)", Icon: Heart },
+  편안함: { color: "var(--emotion-calm)", Icon: Leaf },
+  따뜻함: { color: "var(--emotion-warm)", Icon: Sun },
+  서운함: { color: "var(--emotion-sad)", Icon: Frown },
+  중립: { color: "var(--emotion-neutral)", Icon: Meh },
 };
 
 // dashboard JSON 키(대문자 코드) -> 한글 라벨
 export const EMOTION_CODE_LABEL = {
   JOY: "행복",
+  EXCITEMENT: "설렘",
+  COMFORT: "편안함",
+  WORRY: "걱정",
+  SURPRISE: "놀람",
+  EMBARRASSMENT: "당황",
+  CURIOSITY: "궁금함",
+  ANGER: "화남",
+  CONFUSION: "혼란",
+  DISTRESS: "괴로움",
+  GRATITUDE: "감사",
+  APOLOGY: "사과",
+  HURT: "상처",
   LOVE: "설렘",
   AFFECTION: "애정",
   CALM: "편안함",
   WARMTH: "따뜻함",
   SADNESS: "서운함",
   NEUTRAL: "중립",
+};
+
+const EMOTION_CODE_COLOR = {
+  JOY: "var(--emotion-happy)",
+  EXCITEMENT: "var(--emotion-love)",
+  COMFORT: "var(--emotion-calm)",
+  WORRY: "var(--emotion-neutral)",
+  SURPRISE: "var(--emotion-warm)",
+  NEUTRAL: "var(--emotion-neutral)",
+  EMBARRASSMENT: "var(--emotion-warm)",
+  CURIOSITY: "var(--emotion-calm)",
+  SADNESS: "var(--emotion-sad)",
+  ANGER: "var(--emotion-sad)",
+  CONFUSION: "var(--emotion-neutral)",
+  DISTRESS: "var(--emotion-sad)",
+  GRATITUDE: "var(--emotion-happy)",
+  APOLOGY: "var(--emotion-neutral)",
+  HURT: "var(--emotion-sad)",
 };
 
 // 대문자 코드로 오든 한글 라벨로 오든 동일하게 한글 라벨로 정규화
@@ -40,8 +73,15 @@ export function toEmotionLabel(emotion) {
 }
 
 export function getEmotionStyle(emotion) {
+  const emotionCode =
+    String(emotion ?? "").toUpperCase();
   const label = toEmotionLabel(emotion);
-  return EMOTION_STYLE[label] || { color: "var(--color-text-placeholder)", icon: "🙂" };
+  return EMOTION_STYLE[label] || {
+    color:
+      EMOTION_CODE_COLOR[emotionCode] ??
+      "var(--color-text-placeholder)",
+    Icon: Meh,
+  };
 }
 
 /**
@@ -63,7 +103,7 @@ export function buildEmotionReport(emotionSummary) {
       label,
       count,
       ratio: Math.round((count / total) * 100),
-      color: getEmotionStyle(label).color,
+      color: getEmotionStyle(emotionCode).color,
     };
   });
 

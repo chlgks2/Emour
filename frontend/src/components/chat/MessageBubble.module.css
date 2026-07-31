@@ -26,6 +26,9 @@
 }
 
 .emotionTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
   font-size: 10px;
   font-weight: 700;
   margin-bottom: 3px;
