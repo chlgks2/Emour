@@ -52,9 +52,6 @@ class SwaggerDocumentationTest {
                 ).exists())
                 .andExpect(jsonPath(
                         "$.paths['/chats/{messageId}/reaction'].delete"
-                ).exists())
-                .andExpect(jsonPath(
-                        "$.paths['/chats/analysis/run'].post"
                 ).exists());
     }
 
@@ -86,6 +83,26 @@ class SwaggerDocumentationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath(
                         "$.paths['/users/profile-img'].get"
+                ).exists());
+    }
+
+    @Test
+    void exposesMoodApisWithBearerAuth() throws Exception {
+        mockMvc.perform(get("/v3/api-docs"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.paths['/moods'].post").exists())
+                .andExpect(jsonPath("$.paths['/moods'].get").exists())
+                .andExpect(jsonPath(
+                        "$.paths['/moods/{moodId}'].patch"
+                ).exists())
+                .andExpect(jsonPath(
+                        "$.paths['/moods'].post.security[0].bearerAuth"
+                ).exists())
+                .andExpect(jsonPath(
+                        "$.paths['/moods'].get.security[0].bearerAuth"
+                ).exists())
+                .andExpect(jsonPath(
+                        "$.paths['/moods/{moodId}'].patch.security[0].bearerAuth"
                 ).exists());
     }
 

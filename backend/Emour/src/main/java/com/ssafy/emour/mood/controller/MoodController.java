@@ -8,6 +8,7 @@ import com.ssafy.emour.mood.dto.response.MoodCreateResponse;
 import com.ssafy.emour.mood.dto.response.MoodResponse;
 import com.ssafy.emour.mood.dto.response.MoodUpdateResponse;
 import com.ssafy.emour.mood.service.MoodService;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -25,6 +26,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/moods")
 @RequiredArgsConstructor
+@SecurityRequirement(name = "bearerAuth")
 public class MoodController {
 
     private final MoodService moodService;

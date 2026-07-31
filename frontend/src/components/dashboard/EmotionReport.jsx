@@ -3,8 +3,9 @@ import { buildEmotionReport } from "../../utils/emotions";
 import styles from "./EmotionReport.module.css";
 
 /**
- * @param {Record<string, number>} emotionSummary
- *   dashboard.emotion_summary JSON. 예: { "JOY": 3, "NEUTRAL": 5 }
+ * @param {Array|Record<string, number>} emotionSummary
+ *   GET /dashboards/main-emotions 의 emotions 배열 [{ emotionType, label, count }]
+ *   또는 레거시 JSON 맵 { "JOY": 3, "NEUTRAL": 5 }.
  *   개수(count)로 내려오므로 비율/색상은 buildEmotionReport 에서 계산한다.
  */
 export default function EmotionReport({ emotionSummary }) {

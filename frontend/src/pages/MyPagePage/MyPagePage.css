@@ -20,7 +20,7 @@
   justify-content: center;
   padding: 0 16px;
   border-bottom: 1px solid var(--color-divider);
-  background: rgba(250, 248, 247, 0.86);
+  background: color-mix(in srgb, var(--color-background) 86%, transparent);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
 }
@@ -50,14 +50,15 @@
    공통 카드
 ========================= */
 
+/* 카드 표준(tokens.css 8-1)을 따른다. 윤곽선 없이 그림자로만 면을 띄우고
+   라디우스는 대시보드/채팅과 같은 --card-radius 를 쓴다. */
 .mypage-profile-card,
 .mypage-room-card,
 .mypage-connect-card,
 .mypage-menu-card {
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-xl);
-  background: var(--color-surface);
-  box-shadow: var(--shadow-card);
+  border-radius: var(--card-radius);
+  background: var(--card-surface);
+  box-shadow: var(--card-shadow);
 }
 
 /* =========================
@@ -125,8 +126,9 @@
   padding: 6px 11px;
   border: 0;
   border-radius: var(--radius-pill);
-  background: var(--color-surface-tint);
-  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
   font-size: var(--font-micro);
   font-weight: 700;
   cursor: pointer;
@@ -315,10 +317,13 @@
   padding: 0;
   border: 0;
   border-radius: var(--radius-xs);
-  background: var(--color-surface-tint);
-  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
   cursor: pointer;
-  transition: background-color var(--duration-fast) var(--ease-out);
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out);
 }
 
 .mypage-room-code-visibility-button:hover:not(:disabled) {
@@ -359,7 +364,9 @@
   font-size: var(--font-micro);
   font-weight: 700;
   cursor: pointer;
-  transition: background-color var(--duration-fast) var(--ease-out);
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out);
 }
 
 .mypage-room-copy-button:hover:not(:disabled) {
@@ -399,7 +406,9 @@
   font-size: 10px;
   font-weight: 700;
   cursor: pointer;
-  transition: background-color var(--duration-fast) var(--ease-out);
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out);
 }
 
 .mypage-room-code-footer button:hover:not(:disabled) {
@@ -421,7 +430,9 @@
   font-size: var(--font-caption);
   font-weight: 700;
   cursor: pointer;
-  transition: background-color var(--duration-fast) var(--ease-out);
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out);
 }
 
 .mypage-leave-room-button:hover:not(:disabled) {
@@ -475,7 +486,9 @@
   font-size: var(--font-label);
   font-weight: 700;
   cursor: pointer;
-  transition: background-color var(--duration-fast) var(--ease-out);
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out);
 }
 
 .mypage-connect-card > button:hover:not(:disabled) {
@@ -506,7 +519,9 @@
   color: var(--color-text-primary);
   text-align: left;
   cursor: pointer;
-  transition: background-color var(--duration-fast) var(--ease-out);
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out);
 }
 
 .mypage-menu-item:last-child {
@@ -524,8 +539,9 @@
   align-items: center;
   justify-content: center;
   border-radius: var(--radius-sm);
-  background: var(--color-surface-tint);
-  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
 }
 
 .mypage-menu-label {
@@ -558,7 +574,7 @@
   justify-content: center;
   padding: 30px 20px;
   border: 1px dashed var(--color-border-strong);
-  border-radius: var(--radius-xl);
+  border-radius: var(--card-radius);
   background: var(--color-surface);
   text-align: center;
 }
@@ -632,8 +648,7 @@
 .mypage-confirm-modal {
   width: 100%;
   padding: 26px 22px 22px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-xl);
+  border-radius: var(--card-radius);
   background: var(--color-surface);
   box-shadow: var(--shadow-float);
   text-align: center;
@@ -679,16 +694,20 @@
   font-size: var(--font-label);
   font-weight: 700;
   cursor: pointer;
-  transition: background-color var(--duration-fast) var(--ease-out);
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out);
 }
 
 .mypage-confirm-cancel {
-  background: var(--color-surface-tint);
-  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
 }
 
 .mypage-confirm-cancel:hover:not(:disabled) {
-  background: var(--color-surface-sunken);
+  background: var(--color-surface-tint);
+  border-color: var(--color-primary-soft);
 }
 
 .mypage-confirm-submit {
@@ -741,4 +760,9 @@
   .mypage-room-code-row > strong {
     font-size: var(--font-heading);
   }
+}
+
+/* 공용 Button(primary)과 동일한 눌림 피드백 — 앱 전체에서 버튼 반응이 같게 */
+.mypage-confirm-submit:not(:disabled):active {
+  transform: scale(0.98);
 }
