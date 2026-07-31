@@ -28,9 +28,9 @@ class AiAnalysisClientTest {
                 .build();
         AiAnalysisClient client = new AiAnalysisClient(
                 builder,
-                "http://localhost:8000"
+                "http://ai-test.invalid"
         );
-        server.expect(requestTo("http://localhost:8000/analyze"))
+        server.expect(requestTo("http://ai-test.invalid/analyze"))
                 .andExpect(content().json("""
                         {
                           "context": [

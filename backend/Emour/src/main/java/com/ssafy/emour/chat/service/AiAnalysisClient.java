@@ -22,7 +22,7 @@ public class AiAnalysisClient {
     public AiAnalysisClient(
             @Value("${ai.service.url}") String aiServiceUrl
     ) {
-        this(createLocalBuilder(), aiServiceUrl);
+        this(createBuilder(), aiServiceUrl);
     }
 
     AiAnalysisClient(
@@ -52,7 +52,7 @@ public class AiAnalysisClient {
         return response;
     }
 
-    private static RestClient.Builder createLocalBuilder() {
+    private static RestClient.Builder createBuilder() {
         SimpleClientHttpRequestFactory requestFactory =
                 new SimpleClientHttpRequestFactory();
         requestFactory.setConnectTimeout(Duration.ofSeconds(5));
