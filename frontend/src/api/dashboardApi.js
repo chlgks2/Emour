@@ -109,6 +109,22 @@ export async function getEmotionFlow(roomId, date) {
   return unwrap(response);
 }
 
+/**
+ * emotion-flow 응답을 화면용 배열로 정규화한다.
+ * (develop/v1 의 "대시보드 API 연동" 작업에서 들어온 매퍼 — 머지 중 유실된 것을 복구)
+ */
+function mapEmotionFlow(response) {
+  if (!Array.isArray(response?.flow)) return [];
+
+  return response.flow.map((slot) => ({
+    startHour: slot.startHour,
+    endHour: slot.endHour,
+    positiveCount: Number(slot.positiveCount) || 0,
+    negativeCount: Number(slot.negativeCount) || 0,
+    neutralCount: Number(slot.neutralCount) || 0,
+  }));
+}
+
 /* ------------------------------------------------------------------
    오늘 대화로부터 직접 계산하는 폴백
    ------------------------------------------------------------------
@@ -270,6 +286,7 @@ export async function fetchDashboard() {
     counts,
     mainEmotions,
     conversationFlow,
+    emotionFlow,
     albumData,
     datingStartDate,
     todaySchedules,
@@ -279,6 +296,7 @@ export async function fetchDashboard() {
     roomId ? safe(getDailyCounts(roomId, todayKey)) : null,
     roomId ? safe(getMainEmotions(roomId, todayKey, "DAY")) : null,
     roomId ? safe(getConversationFlow(roomId, todayKey, "DAY")) : null,
+    roomId ? safe(getEmotionFlow(roomId, todayKey)) : null,
     safe(getAlbumPhotos(), { albumPhotos: [] }),
     safe(getRelationshipStartDate(), ""),
     safe(getTodaySchedules(todayKey), []),
@@ -314,55 +332,6 @@ export async function fetchDashboard() {
   // (daily.messageCount 는 나 혼자 보낸 개수라 이 카드 기준과 맞지 않는다)
   const coupleMessageCount = pick(conversationFlow?.totalMessageCount, messages.length);
 
-  const [
-    dailyCountsResult,
-    conversationFlowResult,
-    frequentWordsResult,
-    mainEmotionsResult,
-    emotionFlowResult,
-  ] = dashboardResults;
-
-  const dailyCounts =
-    getSettledValue(
-      dailyCountsResult ?? {
-        status: "rejected",
-      },
-    );
-
-  const conversationFlow =
-    getSettledValue(
-      conversationFlowResult ?? {
-        status: "rejected",
-      },
-    );
-
-  const frequentWords =
-    getSettledValue(
-      frequentWordsResult ?? {
-        status: "rejected",
-      },
-    );
-
-  const mainEmotions =
-    getSettledValue(
-      mainEmotionsResult ?? {
-        status: "rejected",
-      },
-    );
-
-  const emotionFlow =
-    getSettledValue(
-      emotionFlowResult ?? {
-        status: "rejected",
-      },
-    );
-
-  const mappedEmotionSummary =
-    mapEmotionSummary(mainEmotions);
-
-  const mappedEmotionFlow =
-    mapEmotionFlow(emotionFlow);
-
   return {
     room: currentRoom,
     daysTogether: calcDaysTogether(datingStartDate),
@@ -384,6 +353,10 @@ export async function fetchDashboard() {
       emotionSummary: mainEmotions?.emotions ?? [],
       dominantEmotion: mainEmotions?.dominantEmotion ?? null,
       analyzedMessageCount: mainEmotions?.analyzedMessageCount ?? 0,
+      // 2시간 단위 감정 흐름 12구간 (아직 화면에 붙이지 않았지만 응답은 내려준다)
+      emotionFlow: mapEmotionFlow(emotionFlow),
+      // 날짜별 커플 메시지 수
+      dailyFrequency: conversationFlow?.dailyFrequency ?? [],
       // 두 사람이 쓴 말을 합쳐서 센다. (서버 frequent-words 는 내 메시지만 대상이라 쓰지 않는다)
       frequentWords: calcFrequentWords(messages, null),
     },
