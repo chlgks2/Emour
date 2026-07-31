@@ -1,161 +1,92 @@
+/*
+ * 커플 연결 화면.
+ * 로그인/회원가입과 같은 "인증 흐름"의 마지막 단계이므로 톤앤매너도 그쪽에 맞춘다.
+ *  - 카드로 감싸지 않고 배경 위에 바로 올린다 (LoginPage/SignUpPage 와 동일)
+ *  - 버튼은 공용 Button, 입력창은 공용 TextField 컴포넌트를 쓴다
+ *  - 색/라디우스/그림자는 전부 토큰만 사용
+ */
+
 .couple-connect-page {
-  position: relative;
-  width: 100%;
-  height: 100%;
+  flex: 1;
+  min-height: 0;
   display: flex;
-  align-items: flex-start;
-  padding: var(--page-padding-y) var(--page-padding-x);
-  overflow-x: hidden;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px var(--page-padding-x) calc(40px + var(--safe-bottom));
   overflow-y: auto;
   overscroll-behavior: contain;
-  scrollbar-width: thin;
-  background:
-    radial-gradient(
-      circle at 12% 10%,
-      var(--color-primary-faint),
-      transparent 34%
-    ),
-    radial-gradient(
-      circle at 92% 90%,
-      rgba(226, 190, 198, 0.42),
-      transparent 36%
-    ),
-    var(--color-background);
+  background: var(--color-background);
 }
 
 .couple-connect-content {
-  position: relative;
-  z-index: 1;
   width: 100%;
   margin: auto 0;
-  padding: 38px 24px 26px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-xl);
-  background: var(--color-surface);
-  box-shadow: var(--shadow-raised);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 28px;
 }
 
-/* 상단 원형 하트 아이콘 */
+.couple-connect-content > * {
+  flex-shrink: 0;
+}
+
+/* 상단 원형 하트 — 안쪽 그림자 없이 단색 + 옅은 링으로 정리 */
 .couple-heart-symbol {
-  width: 82px;
-  height: 82px;
-  margin: 0 auto 28px;
+  width: 64px;
+  height: 64px;
   display: flex;
   align-items: center;
   justify-content: center;
+  margin-bottom: 22px;
   border-radius: 50%;
-  background:
-    radial-gradient(
-      circle at 34% 26%,
-      rgba(255, 255, 255, 0.55),
-      transparent 44%
-    ),
-    var(--color-primary);
-  box-shadow:
-    inset 0 -6px 14px rgba(150, 84, 100, 0.18),
-    var(--shadow-primary);
-}
-
-.couple-heart-icon {
-  color: var(--color-surface);
-}
-
-/* 제목 영역 */
-.couple-connect-heading {
-  text-align: center;
+  background: var(--color-primary);
+  color: var(--color-text-on-primary);
+  box-shadow: 0 0 0 8px var(--color-primary-faint);
 }
 
 .couple-connect-eyebrow {
-  margin: 0 0 9px;
-  color: var(--color-primary);
+  margin: 0 0 10px;
+  color: var(--color-primary-strong);
   font-size: var(--font-micro);
   font-weight: 800;
   letter-spacing: 0.14em;
 }
 
-.couple-connect-heading h1 {
+.couple-connect-title {
   margin: 0;
   color: var(--color-text-primary);
   font-size: var(--font-display);
   font-weight: 800;
   line-height: 1.35;
   letter-spacing: var(--tracking-tight);
+  text-align: center;
 }
 
 .couple-connect-description {
-  margin: 14px 0 28px;
+  margin: 12px 0 26px;
   color: var(--color-text-secondary);
-  font-size: var(--font-body);
+  font-size: var(--font-label);
   line-height: var(--leading-relaxed);
   text-align: center;
 }
 
-/* 공통 버튼 */
-.create-room-button,
-.join-room-button {
+.couple-connect-cta {
   width: 100%;
-  height: 52px;
-  border: 0;
-  border-radius: var(--radius-pill);
-  color: var(--color-text-on-primary);
-  cursor: pointer;
-  font-size: var(--font-body);
-  font-weight: 700;
-  transition:
-    transform var(--duration-fast) var(--ease-out),
-    background-color var(--duration-fast) var(--ease-out),
-    box-shadow var(--duration-fast) var(--ease-out);
 }
 
-.create-room-button:hover:not(:disabled),
-.join-room-button:not(:disabled):hover {
-  transform: translateY(-1px);
-}
-
-.create-room-button:active:not(:disabled),
-.join-room-button:not(:disabled):active {
-  transform: translateY(0);
-}
-
-/* 방 생성 버튼 */
-.create-room-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  background: var(--color-action);
-  box-shadow: var(--shadow-primary);
-}
-
-.create-room-button:hover:not(:disabled) {
-  background: var(--color-action-hover);
-}
-
-.create-room-icon {
-  width: 22px;
-  height: 22px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.24);
-  font-size: 17px;
-  line-height: 1;
-}
-
-/* 또는 구분선 */
+/* 또는 구분선 — LoginPage 의 .orDivider 와 같은 형태 */
 .connect-divider {
+  width: 100%;
   display: flex;
   align-items: center;
-  gap: 13px;
-  margin: 26px 0;
+  gap: 12px;
+  margin: 24px 0 20px;
   color: var(--color-text-tertiary);
   font-size: var(--font-caption);
 }
 
-.connect-divider::before,
-.connect-divider::after {
-  content: "";
+.connect-divider span {
   flex: 1;
   height: 1px;
   background: var(--color-divider);
@@ -163,102 +94,47 @@
 
 /* 방 코드 입력 영역 */
 .room-code-form {
-  padding: 20px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  background: var(--color-background);
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
-.room-code-heading {
-  margin-bottom: 17px;
-}
-
-.room-code-heading h2 {
-  margin: 0 0 5px;
+.room-code-title {
+  margin: 0;
   color: var(--color-text-primary);
   font-size: var(--font-heading);
   font-weight: 800;
+  text-align: center;
 }
 
-.room-code-heading p {
-  margin: 0;
+.room-code-description {
+  margin: 0 0 4px;
   color: var(--color-text-secondary);
-  font-size: var(--font-caption);
-  line-height: var(--leading-normal);
-}
-
-.room-code-form label {
-  display: block;
-  margin-bottom: 8px;
-  color: var(--color-text-secondary);
-  font-size: var(--font-label);
-  font-weight: 600;
-}
-
-.room-code-input-wrapper {
-  position: relative;
-  margin-bottom: 12px;
-}
-
-.room-code-input-wrapper input {
-  width: 100%;
-  height: 52px;
-  padding: 0 18px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-pill);
-  outline: none;
-  background: var(--color-surface);
-  color: var(--color-text-primary);
-  font-size: var(--font-body);
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  transition:
-    border-color var(--duration-fast) var(--ease-out),
-    box-shadow var(--duration-fast) var(--ease-out);
-}
-
-.room-code-input-wrapper input:focus {
-  border-color: var(--color-primary);
-  box-shadow: var(--focus-ring);
-}
-
-.room-code-input-wrapper input::placeholder {
-  color: var(--color-text-placeholder);
-  font-size: var(--font-body);
-  font-weight: 500;
-  letter-spacing: 0;
-}
-
-/* 연결 버튼 */
-.join-room-button {
-  background: var(--color-action);
-  box-shadow: var(--shadow-primary);
-}
-
-.join-room-button:not(:disabled):hover {
-  background: var(--color-action-hover);
-}
-
-.join-room-button:disabled {
-  cursor: not-allowed;
-  background: var(--color-surface-sunken);
-  color: var(--color-text-placeholder);
-  box-shadow: none;
-}
-
-/* 처리 결과 메시지 */
-.connect-feedback {
-  margin: 0 0 16px;
-  padding: 12px 14px;
-  border-radius: var(--radius-sm);
   font-size: var(--font-caption);
   line-height: var(--leading-normal);
   text-align: center;
 }
 
+.room-code-submit {
+  margin-top: 4px;
+}
+
+/* 처리 결과 메시지 */
+.connect-feedback {
+  width: 100%;
+  margin: 0 0 16px;
+  padding: 11px 14px;
+  border-radius: var(--radius-md);
+  font-size: var(--font-label);
+  font-weight: 600;
+  line-height: var(--leading-normal);
+  text-align: center;
+}
+
 .connect-feedback-info {
-  background: var(--color-warning-bg);
-  color: var(--color-warning);
+  background: var(--color-info-bg);
+  color: var(--color-info);
 }
 
 .connect-feedback-success {
@@ -271,37 +147,14 @@
   color: var(--color-danger);
 }
 
-/* 세로 길이가 짧은 화면 */
-@media (max-height: 760px) {
-  .couple-connect-page {
-    align-items: flex-start;
-  }
-
-  .couple-heart-symbol {
-    margin-bottom: 20px;
-  }
-}
-
 /* 작은 모바일 화면 */
 @media (max-width: 360px) {
   .couple-connect-page {
-    padding: 20px 16px;
+    padding-left: 16px;
+    padding-right: 16px;
   }
 
-  .couple-connect-content {
-    padding: 32px 20px 24px;
-  }
-
-  .couple-connect-heading h1 {
+  .couple-connect-title {
     font-size: 23px;
   }
-
-  .room-code-form {
-    padding: 18px;
-  }
-}
-
-.create-room-button:disabled,
-.join-room-button:disabled {
-  cursor: not-allowed;
 }

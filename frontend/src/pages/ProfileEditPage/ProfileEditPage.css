@@ -20,7 +20,7 @@
   align-items: center;
   padding: 0 16px;
   border-bottom: 1px solid var(--color-divider);
-  background: rgba(250, 248, 247, 0.86);
+  background: color-mix(in srgb, var(--color-background) 86%, transparent);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
 }
@@ -81,10 +81,9 @@
   flex-direction: column;
   gap: 18px;
   padding: 24px 18px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-xl);
+  border-radius: var(--card-radius);
   background: var(--color-surface);
-  box-shadow: var(--shadow-card);
+  box-shadow: var(--card-shadow);
 }
 
 /* =========================
@@ -242,28 +241,39 @@
   padding-top: 6px;
 }
 
+/* 공용 Button 컴포넌트의 md 규격(52px pill)과 동일. 취소=outline / 저장=primary */
 .profile-edit-actions button {
-  height: 50px;
+  height: 52px;
   border: 0;
   border-radius: var(--radius-pill);
-  font-size: var(--font-label);
+  font-size: var(--font-body);
   font-weight: 700;
   cursor: pointer;
-  transition: background-color var(--duration-fast) var(--ease-out);
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out);
+}
+
+.profile-edit-actions button:not(:disabled):active {
+  transform: scale(0.98);
 }
 
 .profile-edit-cancel-button {
-  background: var(--color-surface-tint);
-  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
 }
 
 .profile-edit-cancel-button:hover:not(:disabled) {
-  background: var(--color-surface-sunken);
+  background: var(--color-surface-tint);
+  border-color: var(--color-primary-soft);
 }
 
 .profile-edit-save-button {
   background: var(--color-action);
   color: var(--color-text-on-primary);
+  box-shadow: var(--shadow-primary);
 }
 
 .profile-edit-save-button:hover:not(:disabled) {
@@ -282,7 +292,7 @@
   justify-content: center;
   padding: 30px 20px;
   border: 1px dashed var(--color-border-strong);
-  border-radius: var(--radius-xl);
+  border-radius: var(--card-radius);
   background: var(--color-surface);
   text-align: center;
 }
