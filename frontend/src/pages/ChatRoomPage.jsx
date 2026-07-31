@@ -448,6 +448,8 @@ export default function ChatRoomPage() {
   const handleLongPressMessage = (message, anchorRect) => {
     // 아직 서버에 저장되지 않은(messageId 없는) 메시지는 리액션/북마크를 걸 수 없다.
     if (message.messageId === null) return;
+    // 내 메시지에는 반응도 북마크도 하지 않는다.
+    if (Number(message.senderId) === Number(myUserId)) return;
     setActionTarget({ message, anchorRect });
   };
 
@@ -519,6 +521,8 @@ export default function ChatRoomPage() {
   const handleToggleBookmark = async () => {
     const target = actionTarget?.message;
     if (!target) return;
+    // 내 메시지는 북마크하지 않는다. (메뉴가 열리지 않지만 방어적으로 한 번 더)
+    if (Number(target.senderId) === Number(myUserId)) return;
     closeActionMenu();
     const isCurrentlyBookmarked = bookmarkedMessageIds.has(target.messageId);
     try {
@@ -646,8 +650,6 @@ export default function ChatRoomPage() {
             reactions[actionTarget.message.messageId]?.find((r) => r.userId === myUserId)
               ?.reactionType ?? null
           }
-          // 내 메시지에는 반응할 수 없다. 북마크만 남긴다.
-          canReact={Number(actionTarget.message.senderId) !== Number(myUserId)}
           onClose={closeActionMenu}
           onSelectReaction={handleSelectReaction}
           onToggleBookmark={handleToggleBookmark}

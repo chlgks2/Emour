@@ -60,13 +60,22 @@
   border-radius: var(--radius-md);
   word-break: break-word;
   text-align: left;
+}
+
+/* 상대 말풍선만 롱프레스/더블탭 대상이다 */
+.bubbleInteractive {
   /* 롱프레스 시 텍스트가 선택/드래그되지 않도록 방지 */
   -webkit-touch-callout: none;
   user-select: none;
   transition: transform var(--duration-fast) var(--ease-out);
 }
 
-.bubble:active {
+/*
+ * 눌림 피드백은 실제로 눌러서 뭔가 일어나는 말풍선(상대 메시지)에만 준다.
+ * 내 메시지는 반응·북마크 대상이 아니라 눌러도 아무 일이 없으므로,
+ * 줄어드는 반응만 남으면 "눌리는데 반응이 없다"는 오해를 준다.
+ */
+.bubbleInteractive:active {
   transform: scale(0.98);
 }
 

@@ -13,7 +13,6 @@ import styles from "./MessageActionPopover.module.css";
  * @param {DOMRect|null} anchorRect - 기준이 되는 말풍선의 화면 좌표
  * @param {boolean} isBookmarked
  * @param {string|null} myReactionType - 내가 이미 달아둔 chat_reaction.reaction_type (없으면 null)
- * @param {boolean} canReact - 반응 가능 여부. 내 메시지에는 반응할 수 없어 리액션 줄을 숨긴다.
  * @param {() => void} onClose
  * @param {(reactionType: string) => void} onSelectReaction
  * @param {() => void} onToggleBookmark
@@ -25,7 +24,6 @@ export default function MessageActionPopover({
   anchorRect,
   isBookmarked,
   myReactionType,
-  canReact = true,
   onClose,
   onSelectReaction,
   onToggleBookmark,
@@ -114,27 +112,25 @@ export default function MessageActionPopover({
         visibility: position ? "visible" : "hidden",
       }}
     >
-      {/* 내 메시지에는 반응할 수 없으므로 리액션 줄 자체를 감춘다. (북마크만 남는다) */}
-      {canReact &&
-        REACTION_OPTIONS.map(({ reactionType, label, Icon, color }) => {
-          const active = myReactionType === reactionType;
-          return (
-            <button
-              key={reactionType}
-              type="button"
-              className={[styles.iconBtn, active ? styles.iconBtnActive : ""].join(" ")}
-              style={active ? { background: color } : undefined}
-              onClick={() => onSelectReaction(reactionType)}
-              aria-label={active ? `${label} 취소` : label}
-              aria-pressed={active}
-              title={active ? `${label} 취소` : label}
-            >
-              <Icon size={18} color={active ? "#fff" : color} />
-            </button>
-          );
-        })}
+      {REACTION_OPTIONS.map(({ reactionType, label, Icon, color }) => {
+        const active = myReactionType === reactionType;
+        return (
+          <button
+            key={reactionType}
+            type="button"
+            className={[styles.iconBtn, active ? styles.iconBtnActive : ""].join(" ")}
+            style={active ? { background: color } : undefined}
+            onClick={() => onSelectReaction(reactionType)}
+            aria-label={active ? `${label} 취소` : label}
+            aria-pressed={active}
+            title={active ? `${label} 취소` : label}
+          >
+            <Icon size={18} color={active ? "#fff" : color} />
+          </button>
+        );
+      })}
 
-      {canReact && <span className={styles.divider} aria-hidden="true" />}
+      <span className={styles.divider} aria-hidden="true" />
 
       <button
         type="button"
