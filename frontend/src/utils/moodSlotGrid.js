@@ -47,7 +47,7 @@ export function buildSlotMinutes(window = DEFAULT_MOOD_WINDOW) {
  * @param {Array} partnerSlots  상대 기록
  * @param {object} window       알림 설정 { startTime, endTime, intervalHours }
  * @param {number|null} nowMinutes 오늘이면 현재 시각(분). 미래 슬롯을 잠그는 데 쓴다. 과거 날짜면 null
- * @returns {Array<{minutesOfDay, mine, partner, isFuture}>} 이른 시간 -> 늦은 시간
+ * @returns {Array<{minutesOfDay, mine, partner, isFuture, isEditable}>} 이른 시간 -> 늦은 시간
  */
 export function buildDaySlotGrid({
   mySlots = [],
@@ -57,6 +57,21 @@ export function buildDaySlotGrid({
 }) {
   const byMine = new Map(mySlots.map((s) => [s.minutesOfDay, s]));
   const byPartner = new Map(partnerSlots.map((s) => [s.minutesOfDay, s]));
+  const rawEnd =
+    toMinutes(window?.endTime) ??
+    toMinutes(DEFAULT_MOOD_WINDOW.endTime);
+  const rawStart =
+    toMinutes(window?.startTime) ??
+    toMinutes(DEFAULT_MOOD_WINDOW.startTime);
+  const intervalHours =
+    Number(window?.intervalHours) ||
+    DEFAULT_MOOD_WINDOW.intervalHours;
+  const intervalMinutes =
+    Math.max(1, intervalHours) * 60;
+  const windowEnd =
+    rawEnd > rawStart
+      ? rawEnd
+      : 24 * 60;
 
   // 설정에서 나온 슬롯 + 실제 기록에만 있는 시각(설정을 바꾸기 전 기록 등)을 합집합으로
   const minutes = new Set(buildSlotMinutes(window));
@@ -65,11 +80,25 @@ export function buildDaySlotGrid({
 
   return [...minutes]
     .sort((a, b) => a - b)
-    .map((minutesOfDay) => ({
-      minutesOfDay,
-      mine: byMine.get(minutesOfDay) ?? null,
-      partner: byPartner.get(minutesOfDay) ?? null,
-      // 아직 오지 않은 시간대는 기록할 수 없다.
-      isFuture: nowMinutes !== null && minutesOfDay > nowMinutes,
-    }));
+    .map((minutesOfDay) => {
+      const slotEnd = Math.min(
+        minutesOfDay + intervalMinutes,
+        windowEnd,
+      );
+
+      return {
+        minutesOfDay,
+        mine: byMine.get(minutesOfDay) ?? null,
+        partner: byPartner.get(minutesOfDay) ?? null,
+        // 아직 오지 않은 시간대는 기록할 수 없다.
+        isFuture:
+          nowMinutes !== null &&
+          minutesOfDay > nowMinutes,
+        // 백엔드와 동일하게 현재 진행 중인 알림 슬롯만 등록·수정할 수 있다.
+        isEditable:
+          nowMinutes !== null &&
+          nowMinutes >= minutesOfDay &&
+          nowMinutes < slotEnd,
+      };
+    });
 }
