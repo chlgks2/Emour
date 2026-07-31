@@ -60,6 +60,17 @@ public class ScheduleService {
         return ScheduleResponse.from(schedule);
     }
 
+    @Transactional
+    public void delete(Long userId, Long scheduleId) {
+        CoupleRoom room = getActiveRoom(userId);
+        CoupleSchedule schedule = getEditableSchedule(
+                userId,
+                room.getId(),
+                scheduleId
+        );
+        scheduleRepository.delete(schedule);
+    }
+
     private CoupleRoom getActiveRoom(Long userId) {
         if (!memberRepository.existsById(userId)) {
             throw new CustomException(ErrorCode.USER_NOT_FOUND);

@@ -169,4 +169,51 @@ class ScheduleServiceTest {
 
         assertThat(partnerSchedule.getName()).isEqualTo("상대방 일정");
     }
+
+    @Test
+    void 자신이_만든_일정을_삭제한다() {
+        Long userId = 1L;
+        Long roomId = 10L;
+        Long scheduleId = 100L;
+        CoupleRoom room = mock(CoupleRoom.class);
+        CoupleSchedule schedule = CoupleSchedule.createSchedule(
+                roomId, userId, "데이트",
+                LocalDate.of(2026, 8, 5), LocalTime.of(19, 0)
+        );
+        given(memberRepository.existsById(userId)).willReturn(true);
+        given(coupleRoomRepository.findActiveRoomByUserId(userId))
+                .willReturn(Optional.of(room));
+        given(room.getId()).willReturn(roomId);
+        given(scheduleRepository.findById(scheduleId))
+                .willReturn(Optional.of(schedule));
+
+        scheduleService.delete(userId, scheduleId);
+
+        verify(scheduleRepository).delete(schedule);
+    }
+
+    @Test
+    void 상대방이_만든_일정은_삭제할_수_없다() {
+        Long userId = 1L;
+        Long roomId = 10L;
+        Long scheduleId = 100L;
+        CoupleRoom room = mock(CoupleRoom.class);
+        CoupleSchedule partnerSchedule = CoupleSchedule.createSchedule(
+                roomId, 2L, "상대방 일정",
+                LocalDate.of(2026, 8, 5), LocalTime.of(19, 0)
+        );
+        given(memberRepository.existsById(userId)).willReturn(true);
+        given(coupleRoomRepository.findActiveRoomByUserId(userId))
+                .willReturn(Optional.of(room));
+        given(room.getId()).willReturn(roomId);
+        given(scheduleRepository.findById(scheduleId))
+                .willReturn(Optional.of(partnerSchedule));
+
+        assertThatThrownBy(() -> scheduleService.delete(userId, scheduleId))
+                .isInstanceOf(CustomException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.ACCESS_DENIED);
+
+        verify(scheduleRepository, never()).delete(any());
+    }
 }
