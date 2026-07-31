@@ -38,8 +38,26 @@ export default function MessageBubble({
 
   const longPressHandlers = useLongPress(openActionMenu);
 
-  // 내 메시지에는 반응할 수 없으므로 더블탭도 붙이지 않는다.
-  const handleDoubleClick = isMine ? undefined : () => onDoubleTapMessage?.(message);
+  /*
+   * 내 메시지에는 반응도 북마크도 할 수 없다.
+   * 그래서 말풍선을 아예 버튼으로 만들지 않는다. 롱프레스·더블탭·키보드 진입을
+   * 모두 막아야 "눌리는데 아무 일도 안 일어나는" 상태가 생기지 않는다.
+   */
+  const interactionProps = isMine
+    ? {}
+    : {
+        role: "button",
+        tabIndex: 0,
+        "aria-label": `상대방 메시지: ${message.content}. 반응 및 북마크 메뉴 열기`,
+        onKeyDown: (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            openActionMenu();
+          }
+        },
+        onDoubleClick: () => onDoubleTapMessage?.(message),
+        ...longPressHandlers,
+      };
 
   return (
     <div
@@ -72,21 +90,19 @@ export default function MessageBubble({
           {/*
             롱프레스는 마우스/터치 전용이라 키보드 사용자는 리액션·북마크에 접근할 수 없었다.
             role="button" + Enter/Space 로 같은 액션 메뉴를 열 수 있게 한다.
+            (내 메시지는 interactionProps 가 비어 있어 그냥 텍스트로 남는다)
           */}
           <div
             ref={bubbleRef}
-            className={[styles.bubble, isMine ? styles.bubbleMine : styles.bubblePartner].join(" ")}
-            role="button"
-            tabIndex={0}
-            aria-label={`${isMine ? "내" : "상대방"} 메시지: ${message.content}. 반응 및 북마크 메뉴 열기`}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                openActionMenu();
-              }
-            }}
-            onDoubleClick={handleDoubleClick}
-            {...longPressHandlers}
+            className={[
+              styles.bubble,
+              isMine ? styles.bubbleMine : styles.bubblePartner,
+              // 눌림 피드백·선택 방지는 실제로 눌리는 말풍선에만 건다
+              isMine ? "" : styles.bubbleInteractive,
+            ]
+              .filter(Boolean)
+              .join(" ")}
+            {...interactionProps}
           >
             {message.content}
           </div>
