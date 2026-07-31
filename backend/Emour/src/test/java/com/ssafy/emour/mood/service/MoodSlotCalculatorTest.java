@@ -32,16 +32,6 @@ class MoodSlotCalculatorTest {
         )).isEmpty();
     }
 
-    @Test
-    void 다음_알림_시각에_종료된_시간대를_계산한다() {
-        MoodNotification notification = notification();
-
-        assertThat(calculator.slotEndingAt(
-                notification,
-                LocalDateTime.of(2026, 7, 31, 15, 0)
-        )).contains(LocalDateTime.of(2026, 7, 31, 12, 0));
-    }
-
     private MoodNotification notification() {
         return MoodNotification.create(
                 10L,

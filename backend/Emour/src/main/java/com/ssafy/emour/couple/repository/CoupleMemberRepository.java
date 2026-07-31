@@ -24,11 +24,6 @@ public interface CoupleMemberRepository extends JpaRepository<CoupleMember, Coup
 
     List<CoupleMember> findAllByIdRoomId(Long roomId);
 
-    List<CoupleMember> findAllByIdRoomIdAndStatus(
-            Long roomId,
-            CoupleMemberStatus status
-    );
-
     List<CoupleMember> findAllByStatus(CoupleMemberStatus status);
 
     @Query("""

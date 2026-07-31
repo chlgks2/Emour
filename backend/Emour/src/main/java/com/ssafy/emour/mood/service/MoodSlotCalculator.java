@@ -39,32 +39,6 @@ public class MoodSlotCalculator {
         return Optional.empty();
     }
 
-    public Optional<LocalDateTime> slotEndingAt(
-            MoodNotification notification,
-            LocalDateTime currentTime
-    ) {
-        LocalDateTime boundary = currentTime.truncatedTo(ChronoUnit.MINUTES);
-        long intervalMinutes = notification.getIntervalHours() * 60L;
-
-        for (LocalDate baseDate : candidateDates(boundary.toLocalDate())) {
-            MoodWindow window = window(notification, baseDate);
-            LocalDateTime slotStart = window.start();
-
-            while (slotStart.isBefore(window.end())) {
-                LocalDateTime slotEnd = slotStart.plusMinutes(intervalMinutes);
-                if (slotEnd.isAfter(window.end())) {
-                    slotEnd = window.end();
-                }
-                if (slotEnd.equals(boundary)) {
-                    return Optional.of(slotStart);
-                }
-                slotStart = slotEnd;
-            }
-        }
-
-        return Optional.empty();
-    }
-
     private MoodWindow window(
             MoodNotification notification,
             LocalDate baseDate

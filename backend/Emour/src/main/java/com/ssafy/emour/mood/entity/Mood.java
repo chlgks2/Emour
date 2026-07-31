@@ -61,21 +61,6 @@ public class Mood {
         return mood;
     }
 
-    public static Mood createDefault(
-            Long roomId,
-            Long userId,
-            LocalDateTime moodDatetime,
-            LocalDateTime createdAt
-    ) {
-        return create(
-                roomId,
-                userId,
-                moodDatetime,
-                MoodType.NEUTRAL,
-                createdAt
-        );
-    }
-
     public void updateMoodType(
             MoodType moodType,
             LocalDateTime updatedAt
