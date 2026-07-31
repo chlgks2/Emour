@@ -1,6 +1,9 @@
 import { ChartColumn, MessageSquare, Image, Bookmark, Clock, Timer } from "lucide-react";
 import styles from "./DashboardStats.module.css";
 
+// 카드가 길어지지 않도록 상위 5개만 노출한다.
+const FREQUENT_WORD_DISPLAY_COUNT = 5;
+
 /**
  * 오늘의 대화 기록 카드. **커플 합산** 기준이다.
  *   메시지 / 사진 / 가장 활발했던 시간 / 평균 답장 시간 / 자주 쓴 말 : 두 사람 합산
@@ -78,7 +81,7 @@ export default function DashboardStats({ dashboard }) {
         <div className={styles.wordSection}>
           <p className={styles.wordTitle}>자주 쓴 말</p>
           <ul className={styles.wordRow}>
-            {frequentWords.slice(0, 5).map(({ word, count }) => (
+            {frequentWords.slice(0, FREQUENT_WORD_DISPLAY_COUNT).map(({ word, count }) => (
               <li key={word} className={styles.wordChip}>
                 {word}
                 <span className={styles.wordCount}>{count}</span>
