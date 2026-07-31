@@ -8,6 +8,7 @@ import com.ssafy.emour.member.repository.MemberRepository;
 import com.ssafy.emour.mood.dto.request.MoodCreateRequest;
 import com.ssafy.emour.mood.dto.request.MoodUpdateRequest;
 import com.ssafy.emour.mood.dto.response.MoodCreateResponse;
+import com.ssafy.emour.mood.dto.response.MoodResponse;
 import com.ssafy.emour.mood.dto.response.MoodUpdateResponse;
 import com.ssafy.emour.mood.entity.Mood;
 import com.ssafy.emour.mood.entity.MoodNotification;
@@ -18,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -117,5 +119,23 @@ public class MoodService {
 
         mood.updateMoodType(request.moodType(), currentTime);
         return MoodUpdateResponse.from(mood);
+    }
+
+    @Transactional(readOnly = true)
+    public List<MoodResponse> getAll(Long userId) {
+        if (!memberRepository.existsById(userId)) {
+            throw new CustomException(ErrorCode.USER_NOT_FOUND);
+        }
+
+        CoupleRoom room = coupleRoomRepository.findActiveRoomByUserId(userId)
+                .orElseThrow(() -> new CustomException(
+                        ErrorCode.ACTIVE_COUPLE_NOT_FOUND
+                ));
+
+        return moodRepository
+                .findAllByRoomIdOrderByMoodDatetimeDescUserIdAsc(room.getId())
+                .stream()
+                .map(MoodResponse::from)
+                .toList();
     }
 }

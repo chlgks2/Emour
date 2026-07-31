@@ -22,6 +22,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -304,5 +305,66 @@ class MoodServiceTest {
                 .isEqualTo(ErrorCode.MOOD_UPDATE_NOT_ALLOWED);
 
         assertThat(mood.getMoodType()).isEqualTo(MoodType.NEUTRAL);
+    }
+
+    @Test
+    void 본인과_상대방의_기분_기록을_모두_조회한다() {
+        Long userId = 1L;
+        Long partnerId = 2L;
+        Long roomId = 10L;
+        CoupleRoom room = mock(CoupleRoom.class);
+        Mood myMood = Mood.create(
+                roomId,
+                userId,
+                LocalDateTime.of(2026, 7, 31, 12, 0),
+                MoodType.HAPPY,
+                LocalDateTime.of(2026, 7, 31, 12, 10)
+        );
+        Mood partnerMood = Mood.create(
+                roomId,
+                partnerId,
+                LocalDateTime.of(2026, 7, 31, 9, 0),
+                MoodType.SAD,
+                LocalDateTime.of(2026, 7, 31, 9, 5)
+        );
+
+        given(memberRepository.existsById(userId)).willReturn(true);
+        given(coupleRoomRepository.findActiveRoomByUserId(userId))
+                .willReturn(Optional.of(room));
+        given(room.getId()).willReturn(roomId);
+        given(moodRepository.findAllByRoomIdOrderByMoodDatetimeDescUserIdAsc(
+                roomId
+        )).willReturn(List.of(myMood, partnerMood));
+
+        var responses = moodService.getAll(userId);
+
+        assertThat(responses).hasSize(2);
+        assertThat(responses)
+                .extracting(response -> response.userId())
+                .containsExactly(userId, partnerId);
+        assertThat(responses)
+                .extracting(response -> response.moodType())
+                .containsExactly(MoodType.HAPPY, MoodType.SAD);
+        assertThat(responses)
+                .extracting(response -> response.roomId())
+                .containsOnly(roomId);
+    }
+
+    @Test
+    void 활성_커플방이_없으면_기분을_조회할_수_없다() {
+        Long userId = 1L;
+        given(memberRepository.existsById(userId)).willReturn(true);
+        given(coupleRoomRepository.findActiveRoomByUserId(userId))
+                .willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> moodService.getAll(userId))
+                .isInstanceOf(CustomException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.ACTIVE_COUPLE_NOT_FOUND);
+
+        verify(
+                moodRepository,
+                never()
+        ).findAllByRoomIdOrderByMoodDatetimeDescUserIdAsc(any());
     }
 }
