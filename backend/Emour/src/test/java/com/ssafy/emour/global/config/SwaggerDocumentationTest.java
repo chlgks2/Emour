@@ -62,6 +62,9 @@ class SwaggerDocumentationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath(
                         "$.paths['/dashboards/daily'].get"
+                ).exists())
+                .andExpect(jsonPath(
+                        "$.paths['/dashboards/emotion-flow'].get"
                 ).exists());
     }
 

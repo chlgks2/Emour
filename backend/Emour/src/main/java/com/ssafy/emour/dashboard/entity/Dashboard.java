@@ -47,6 +47,9 @@ public class Dashboard {
     @Column(name = "bookmark_count", nullable = false)
     private int bookmarkCount;
 
+    @Column(name = "emotion_flow", columnDefinition = "json")
+    private String emotionFlow;
+
     @Column(name = "calculated_at", nullable = false)
     private LocalDateTime calculatedAt;
 
@@ -85,6 +88,13 @@ public class Dashboard {
         this.updatedAt = this.calculatedAt;
     }
 
+    public void updateEmotionFlow(String emotionFlow) {
+        // 프런트가 바로 사용할 수 있는 2시간 단위 배열을 JSON으로 보관합니다.
+        this.emotionFlow = emotionFlow;
+        this.calculatedAt = LocalDateTime.now();
+        this.updatedAt = this.calculatedAt;
+    }
+
     public Long getDashboardId() {
         return dashboardId;
     }
@@ -115,6 +125,10 @@ public class Dashboard {
 
     public int getBookmarkCount() {
         return bookmarkCount;
+    }
+
+    public String getEmotionFlow() {
+        return emotionFlow;
     }
 
     public LocalDateTime getCalculatedAt() {

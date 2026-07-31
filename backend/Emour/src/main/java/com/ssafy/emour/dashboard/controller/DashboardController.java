@@ -1,6 +1,8 @@
 package com.ssafy.emour.dashboard.controller;
 
 import com.ssafy.emour.dashboard.dto.DashboardCountResponse;
+import com.ssafy.emour.dashboard.dto.DashboardEmotionFlowResponse;
+import com.ssafy.emour.dashboard.service.DashboardEmotionService;
 import com.ssafy.emour.dashboard.service.DashboardService;
 import com.ssafy.emour.global.util.SecurityUtil;
 import io.swagger.v3.oas.annotations.Operation;
@@ -24,6 +26,7 @@ import java.time.LocalDate;
 public class DashboardController {
 
     private final DashboardService dashboardService;
+    private final DashboardEmotionService dashboardEmotionService;
 
     @GetMapping("/daily")
     @Operation(
@@ -40,6 +43,30 @@ public class DashboardController {
             LocalDate date
     ) {
         return dashboardService.getDailyCounts(
+                roomId,
+                SecurityUtil.getCurrentUserId(),
+                date
+        );
+    }
+
+    @GetMapping("/emotion-flow")
+    @Operation(
+            summary = "날짜별 감정 흐름 조회",
+            description = """
+                    분석이 완료된 내 메시지의 감정을 2시간 단위로 집계합니다.
+                    긍정, 부정, 중립 개수를 0시부터 총 12개 구간으로 반환합니다.
+                    """
+    )
+    public DashboardEmotionFlowResponse getDailyEmotionFlow(
+            @Parameter(description = "커플 방 번호", example = "1")
+            @RequestParam Long roomId,
+
+            @Parameter(description = "조회 날짜", example = "2026-07-31")
+            @RequestParam
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate date
+    ) {
+        return dashboardEmotionService.getDailyEmotionFlow(
                 roomId,
                 SecurityUtil.getCurrentUserId(),
                 date

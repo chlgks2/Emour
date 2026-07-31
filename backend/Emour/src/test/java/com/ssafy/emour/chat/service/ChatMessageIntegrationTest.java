@@ -15,6 +15,9 @@ import com.ssafy.emour.chat.repository.ChatMessageRepository;
 import com.ssafy.emour.chat.repository.ChatReactionRepository;
 import com.ssafy.emour.couple.entity.CoupleMember;
 import com.ssafy.emour.couple.repository.CoupleMemberRepository;
+import com.ssafy.emour.dashboard.dto.DashboardEmotionFlowResponse;
+import com.ssafy.emour.dashboard.service.DashboardEmotionService;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,6 +46,9 @@ class ChatMessageIntegrationTest {
     private ChatReactionService chatReactionService;
 
     @Autowired
+    private DashboardEmotionService dashboardEmotionService;
+
+    @Autowired
     private CoupleMemberRepository coupleMemberRepository;
 
     @Autowired
@@ -59,6 +65,9 @@ class ChatMessageIntegrationTest {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    private EntityManager entityManager;
 
     @BeforeEach
     void setUpMember() {
@@ -305,6 +314,58 @@ class ChatMessageIntegrationTest {
         chatReactionService.removeReaction(message.messageId(), 10L);
         assertThat(chatReactionRepository.count())
                 .isEqualTo(reactionCountBefore);
+    }
+
+    // 완료된 감정 분석 결과를 실제 DB에서 읽어 대시보드 JSON으로 저장합니다.
+    @Test
+    void savesEmotionFlow() {
+        ChatMessageResponse message = chatMessageService.sendMessage(
+                1L,
+                10L,
+                textRequest(
+                        "30a7bf98-a1ef-4a65-a3bc-c5cf8d23af8e",
+                        "오늘 정말 기분이 좋아"
+                )
+        );
+
+        chatAnalysisRepository.flush();
+        jdbcTemplate.update(
+                """
+                UPDATE chat_analysis
+                SET emotion_type = 'JOY',
+                    analysis_status = 'COMPLETED',
+                    analyzed_at = CURRENT_TIMESTAMP(6)
+                WHERE message_id = ?
+                """,
+                message.messageId()
+        );
+        // JDBC로 바꾼 값을 JPA가 DB에서 다시 읽도록 기존 캐시를 비웁니다.
+        entityManager.clear();
+
+        DashboardEmotionFlowResponse response =
+                dashboardEmotionService.getDailyEmotionFlow(
+                        1L,
+                        10L,
+                        java.time.LocalDate.now()
+                );
+
+        Integer jsonSlotCount = jdbcTemplate.queryForObject(
+                """
+                SELECT JSON_LENGTH(emotion_flow)
+                FROM dashboard
+                WHERE room_id = 1
+                  AND user_id = 10
+                  AND summary_date = CURRENT_DATE
+                """,
+                Integer.class
+        );
+
+        assertThat(response.analyzedMessageCount()).isEqualTo(1);
+        assertThat(response.flow()).hasSize(12);
+        assertThat(response.flow().stream()
+                .mapToInt(slot -> slot.positiveCount())
+                .sum()).isEqualTo(1);
+        assertThat(jsonSlotCount).isEqualTo(12);
     }
 
     private ChatMessageRequest textRequest(
