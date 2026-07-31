@@ -749,6 +749,7 @@ function CalendarPage() {
         await deleteSchedule(
           scheduleModal.schedule
             .scheduleId,
+          scheduleModal.schedule.type,
         )
 
         if (
