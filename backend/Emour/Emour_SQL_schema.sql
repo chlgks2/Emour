@@ -162,23 +162,29 @@ CREATE TABLE `dashboard` (
     `room_id` BIGINT NOT NULL,
     `user_id` BIGINT NOT NULL,
     `summary_date` DATE NOT NULL,
-    -- 하루 동안 주고받은 전체 메시지 개수
+    -- 하루 동안 이 사용자가 보낸 메시지 개수
     `message_count` INT NOT NULL DEFAULT 0,
-    -- 하루 동안 채팅으로 주고받은 이미지 개수
+    -- 하루 동안 이 사용자가 보낸 이미지 개수
     `image_count` INT NOT NULL DEFAULT 0,
-    -- 하루 동안 메시지에 남긴 공감 및 반응 개수
+    -- 하루 동안 이 사용자가 메시지에 남긴 공감 및 반응 개수
     `reaction_count` INT NOT NULL DEFAULT 0,
-    -- 하루 동안 저장한 북마크 메시지 개수
+    -- 하루 동안 이 사용자가 저장한 북마크 메시지 개수
     `bookmark_count` INT NOT NULL DEFAULT 0,
     `average_response_seconds` DECIMAL(12, 2) NULL,
     -- 대화가 가장 활발했던 시간 (0 ~ 23)
     `busiest_hour` TINYINT UNSIGNED NULL,
+    -- 날짜별 커플 전체 메시지 개수
+    `conversation_frequency` JSON NULL,
     -- '{"JOY":3,"NEUTRAL":5} 형식'
     `emotion_summary` JSON NULL,
     -- '2시간 단위 감정 흐름 결과'
     `emotion_flow` JSON NULL,
     -- '[{"word":"사랑","count":5}] 형식'
     `frequent_words` JSON NULL,
+    -- 이 시각 직전까지 1차 집계가 완료됨
+    `aggregated_until` DATETIME(6) NULL,
+    -- 이 시각 직전까지 5분 후 최종 집계가 완료됨
+    `finalized_until` DATETIME(6) NULL,
     `calculated_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     `updated_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
         ON UPDATE CURRENT_TIMESTAMP(6),
@@ -268,7 +274,27 @@ CREATE TABLE `chat_analysis` (
     `message_id` BIGINT NOT NULL UNIQUE,
     -- 영어 감정으로 전달될 것
     `emotion_type`
-        ENUM('JOY', 'SADNESS', 'ANGER', 'ANXIETY', 'SURPRISE', 'CURIOSITY', 'NEUTRAL', 'ANNOYANCE', 'EXCITEMENT', 'BOREDOM')
+        ENUM(
+            -- 긍정 감정
+            'JOY',
+            'EXCITEMENT',
+            'COMFORT',
+            -- 중립 감정
+            'WORRY',
+            'SURPRISE',
+            'NEUTRAL',
+            'EMBARRASSMENT',
+            'CURIOSITY',
+            -- 부정 감정
+            'SADNESS',
+            'ANGER',
+            'CONFUSION',
+            'DISTRESS',
+            -- 관계 신호
+            'GRATITUDE',
+            'APOLOGY',
+            'HURT'
+            )
         NULL,
     `analysis_status` ENUM('PENDING', 'PROCESSING', 'COMPLETED', 'FAILED')
         NOT NULL DEFAULT 'PENDING',

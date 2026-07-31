@@ -556,7 +556,7 @@ export default function ChatRoomPage() {
           </div>
         )}
         {!hasMore && !initialLoading && !loadFailed && messages.length > 0 && (
-          <p className={styles.chatStartText}>대화의 시작이에요 💬</p>
+          <p className={styles.chatStartText}>대화의 시작이에요</p>
         )}
 
         {messages.map((message, idx) => {

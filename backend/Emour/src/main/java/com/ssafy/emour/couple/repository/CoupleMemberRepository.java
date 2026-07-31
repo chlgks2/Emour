@@ -29,6 +29,8 @@ public interface CoupleMemberRepository extends JpaRepository<CoupleMember, Coup
             CoupleMemberStatus status
     );
 
+    List<CoupleMember> findAllByStatus(CoupleMemberStatus status);
+
     @Query("""
             select (count(cm) > 0)
             from CoupleMember cm

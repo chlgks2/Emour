@@ -195,6 +195,15 @@ public class CoupleService {
     private CoupleRoom findRoomToLeave(Long userId) {
         return coupleRoomRepository.findActiveRoomByUserIdForUpdate(userId)
                 .orElseGet(() -> {
+                    List<CoupleRoom> waitingRooms =
+                            coupleRoomRepository.findWaitingRoomsByUserIdForUpdate(
+                                    userId,
+                                    PageRequest.of(0, 1)
+                            );
+                    if (!waitingRooms.isEmpty()) {
+                        return waitingRooms.get(0);
+                    }
+
                     List<CoupleRoom> inactiveRooms =
                             coupleRoomRepository.findRetainedInactiveRoomsByUserIdForUpdate(
                                     userId,

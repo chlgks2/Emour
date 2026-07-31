@@ -128,6 +128,42 @@ class CoupleDisconnectServiceTest {
     }
 
     @Test
+    void 대기_중인_초대방에서_나가면_방을_즉시_삭제한다() {
+        CoupleRoom room = waitingRoom();
+        CoupleMember requester = CoupleMember.active(USER_ID, ROOM_ID);
+
+        givenLockedMember();
+        given(coupleRoomRepository.findActiveRoomByUserIdForUpdate(USER_ID))
+                .willReturn(Optional.empty());
+        given(coupleRoomRepository.findWaitingRoomsByUserIdForUpdate(
+                org.mockito.ArgumentMatchers.eq(USER_ID),
+                any(org.springframework.data.domain.Pageable.class)
+        )).willReturn(List.of(room));
+        given(coupleMemberRepository.findById(
+                new CoupleMemberId(USER_ID, ROOM_ID)
+        )).willReturn(Optional.of(requester));
+        given(coupleMemberRepository.countByIdRoomIdAndStatus(
+                ROOM_ID,
+                CoupleMemberStatus.ACTIVE
+        )).willReturn(1L);
+
+        CoupleDisconnectResponse response = coupleService.disconnect(USER_ID);
+
+        assertThat(response.roomId()).isEqualTo(ROOM_ID);
+        assertThat(response.status()).isEqualTo(CoupleRoomStatus.WAITING);
+        assertThat(response.roomDeleted()).isTrue();
+        assertThat(requester.getStatus()).isEqualTo(CoupleMemberStatus.LEFT);
+        verify(coupleRoomRepository).delete(room);
+        verify(
+                coupleRoomRepository,
+                never()
+        ).findRetainedInactiveRoomsByUserIdForUpdate(
+                org.mockito.ArgumentMatchers.eq(USER_ID),
+                any(org.springframework.data.domain.Pageable.class)
+        );
+    }
+
+    @Test
     void 활성_커플이_없으면_연결을_해제할_수_없다() {
         givenLockedMember();
         given(coupleRoomRepository.findActiveRoomByUserIdForUpdate(USER_ID))
@@ -162,12 +198,17 @@ class CoupleDisconnectServiceTest {
     }
 
     private CoupleRoom activeRoom() {
+        CoupleRoom room = waitingRoom();
+        room.activate();
+        return room;
+    }
+
+    private CoupleRoom waitingRoom() {
         CoupleRoom room = CoupleRoom.waiting(
                 "ABCD-2345",
                 LocalDateTime.now().plusHours(1)
         );
         ReflectionTestUtils.setField(room, "id", ROOM_ID);
-        room.activate();
         return room;
     }
 

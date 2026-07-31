@@ -70,6 +70,21 @@ public interface CoupleRoomRepository extends JpaRepository<CoupleRoom, Long> {
             join CoupleRoom cr on cr.id = cm.id.roomId
             where cm.id.userId = :userId
               and cm.status = com.ssafy.emour.couple.entity.CoupleMemberStatus.ACTIVE
+              and cr.status = com.ssafy.emour.couple.entity.CoupleRoomStatus.WAITING
+            order by cr.createdAt desc
+            """)
+    List<CoupleRoom> findWaitingRoomsByUserIdForUpdate(
+            @Param("userId") Long userId,
+            Pageable pageable
+    );
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+            select cr
+            from CoupleMember cm
+            join CoupleRoom cr on cr.id = cm.id.roomId
+            where cm.id.userId = :userId
+              and cm.status = com.ssafy.emour.couple.entity.CoupleMemberStatus.ACTIVE
               and cr.status = com.ssafy.emour.couple.entity.CoupleRoomStatus.INACTIVE
             order by cr.updatedAt desc
             """)

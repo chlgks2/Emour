@@ -241,7 +241,7 @@ export const mockPartnerReadState = {
 export const mockChatPartner = {
   userId: PARTNER_USER_ID,
   nickname: "윤지",
-  statusMessage: "오늘도 사랑해💕",
+  statusMessage: "오늘도 사랑해",
   profileImageUrl: null,
 };
 
