@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -23,6 +24,7 @@ import {
 } from '../../api/albumApi.js'
 
 import BottomNavigation from '../../components/common/BottomNavigation/BottomNavigation.jsx'
+import { useLiveSync } from '../../hooks/useLiveSync.js'
 
 import './AlbumPage.css'
 
@@ -137,14 +139,11 @@ function AlbumPage() {
   /*
    * 앨범 사진과 채팅 사진을 조회합니다.
    */
-  useEffect(() => {
-    let isCancelled = false
-
-    getAlbumPhotos()
-      .then((response) => {
-        if (isCancelled) {
-          return
-        }
+  const loadPhotos = useCallback(
+    async () => {
+      try {
+        const response =
+          await getAlbumPhotos()
 
         setPhotosBySource({
           ALBUM:
@@ -152,27 +151,24 @@ function AlbumPage() {
           CHAT:
             response.chatPhotos ?? [],
         })
-
         setErrorMessage('')
-        setIsLoading(false)
-      })
-      .catch((error) => {
-        if (isCancelled) {
-          return
-        }
-
+      } catch (error) {
         setErrorMessage(
           error.message ||
             '사진을 불러오지 못했습니다.',
         )
-
+      } finally {
         setIsLoading(false)
-      })
+      }
+    },
+    [],
+  )
 
-    return () => {
-      isCancelled = true
-    }
-  }, [])
+  useEffect(() => {
+    Promise.resolve().then(loadPhotos)
+  }, [loadPhotos])
+
+  useLiveSync(loadPhotos)
 
   /*
    * URL.createObjectURL로 만든
