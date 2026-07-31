@@ -50,4 +50,12 @@ public class ChatAnalysis {
         analysis.createdAt = LocalDateTime.now();
         return analysis;
     }
+
+    public ChatMessage getMessage() {
+        return message;
+    }
+
+    public String getEmotionType() {
+        return emotionType;
+    }
 }
