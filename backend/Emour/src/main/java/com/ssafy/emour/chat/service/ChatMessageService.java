@@ -21,8 +21,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Map;
 import java.util.List;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -78,23 +81,7 @@ public class ChatMessageService {
                         page
                 );
 
-        boolean hasNext = found.size() > size;
-        List<ChatMessage> pageMessages = new ArrayList<>(
-                found.subList(0, Math.min(found.size(), size))
-        );
-
-        // 화면에서는 오래된 메시지부터 읽기 쉽도록 시간순으로 돌려줍니다.
-        Collections.reverse(pageMessages);
-
-        List<ChatMessageResponse> responses = pageMessages.stream()
-                .map(this::toResponse)
-                .toList();
-
-        Long nextCursor = pageMessages.isEmpty()
-                ? null
-                : pageMessages.get(0).getMessageId();
-
-        return new ChatHistoryResponse(responses, nextCursor, hasNext);
+        return toHistoryResponse(found, size);
     }
 
     /**
@@ -266,6 +253,16 @@ public class ChatMessageService {
     }
 
     public ChatMessageResponse toResponse(ChatMessage message) {
+        ChatAnalysis analysis = chatAnalysisRepository
+                .findByMessageMessageId(message.getMessageId())
+                .orElse(null);
+        return toResponse(message, analysis);
+    }
+
+    private ChatMessageResponse toResponse(
+            ChatMessage message,
+            ChatAnalysis analysis
+    ) {
         List<ChatImageResponse> images = message.getImages().stream()
                 .map(image -> new ChatImageResponse(
                         image.getImageId(),
@@ -295,6 +292,12 @@ public class ChatMessageService {
                 message.getContent(),
                 images,
                 reactions,
+                analysis == null
+                        ? null
+                        : analysis.getAnalysisStatus(),
+                analysis == null
+                        ? null
+                        : analysis.getEmotionType(),
                 message.getSentAt()
         );
     }
@@ -311,8 +314,25 @@ public class ChatMessageService {
         // 검색 결과도 채팅 화면에서 읽기 쉽도록 오래된 순서로 돌려줍니다.
         Collections.reverse(pageMessages);
 
+        List<Long> messageIds = pageMessages.stream()
+                .map(ChatMessage::getMessageId)
+                .toList();
+        Map<Long, ChatAnalysis> analysesByMessageId =
+                chatAnalysisRepository
+                        .findByMessageMessageIdIn(messageIds)
+                        .stream()
+                        .collect(Collectors.toMap(
+                                analysis -> analysis
+                                        .getMessage()
+                                        .getMessageId(),
+                                Function.identity()
+                        ));
+
         List<ChatMessageResponse> responses = pageMessages.stream()
-                .map(this::toResponse)
+                .map(message -> toResponse(
+                        message,
+                        analysesByMessageId.get(message.getMessageId())
+                ))
                 .toList();
 
         Long nextCursor = pageMessages.isEmpty()

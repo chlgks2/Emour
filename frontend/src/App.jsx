@@ -6,6 +6,7 @@ import {
 
 import MobileLayout from './layouts/MobileLayout/MobileLayout.jsx'
 import BottomNavigation from './components/common/BottomNavigation/BottomNavigation.jsx'
+import MoodNotificationPrompt from './components/mood/MoodNotificationPrompt.jsx'
 import { AuthProvider } from './context/AuthContext.jsx'
 import { ToastProvider } from './context/ToastProvider.jsx'
 
@@ -142,6 +143,7 @@ function App() {
           }
         />
           </Routes>
+          <MoodNotificationPrompt />
         </MobileLayout>
       </ToastProvider>
     </AuthProvider>

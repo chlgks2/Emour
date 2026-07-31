@@ -140,16 +140,56 @@ export function getLatestSlot(slots) {
 }
 
 /**
+ * 하루 동안 가장 많이 입력된 무드를 대표값으로 선택한다.
+ * 입력 횟수가 같으면 더 최근에 입력한 무드를 사용한다.
+ */
+export function getRepresentativeSlot(slots) {
+  if (!Array.isArray(slots) || slots.length === 0) return null;
+
+  const moodCounts = new Map();
+
+  slots.forEach((slot) => {
+    if (!slot?.moodType) return;
+
+    const summary = moodCounts.get(slot.moodType) ?? {
+      count: 0,
+      latestSlot: null,
+    };
+
+    moodCounts.set(slot.moodType, {
+      count: summary.count + 1,
+      latestSlot: slot,
+    });
+  });
+
+  return [...moodCounts.values()].reduce((representative, candidate) => {
+    if (!representative) return candidate;
+
+    if (candidate.count !== representative.count) {
+      return candidate.count > representative.count
+        ? candidate
+        : representative;
+    }
+
+    return candidate.latestSlot.minutesOfDay >=
+      representative.latestSlot.minutesOfDay
+      ? candidate
+      : representative;
+  }, null)?.latestSlot ?? null;
+}
+
+/**
  * 날짜 묶음에 대표값(그날의 색을 정할 기준)을 얹는다.
- * 캘린더 셀/스트립은 하루를 한 칸으로 그리므로 최신 슬롯을 그날의 대표로 쓴다.
+ * 캘린더 셀/스트립은 하루를 한 칸으로 그리므로 최빈 무드를 대표로 쓴다.
+ * 최빈값이 둘 이상이면 가장 최근에 입력한 무드를 선택한다.
  */
 function withDaySummary(byDate) {
   const result = {};
   Object.entries(byDate).forEach(([dateKey, day]) => {
     result[dateKey] = {
       ...day,
-      myMood: getLatestSlot(day.mySlots),
-      partnerMood: getLatestSlot(day.partnerSlots),
+      myMood: getRepresentativeSlot(day.mySlots),
+      partnerMood: getRepresentativeSlot(day.partnerSlots),
     };
   });
   return result;

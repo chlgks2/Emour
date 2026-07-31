@@ -169,7 +169,10 @@ function MyPagePage() {
   useEffect(() => {
     if (
       !profile?.hasRoom ||
-      profile.roomStatus !== 'WAITING'
+      ![
+        'ACTIVE',
+        'WAITING',
+      ].includes(profile.roomStatus)
     ) {
       return undefined
     }
@@ -177,7 +180,7 @@ function MyPagePage() {
     let isCancelled = false
     let isChecking = false
 
-    const refreshIfConnected =
+    const refreshRoomState =
       async () => {
         if (isChecking || isCancelled) {
           return
@@ -191,8 +194,8 @@ function MyPagePage() {
 
           if (
             isCancelled ||
-            coupleStatus?.status !==
-              'ACTIVE'
+            coupleStatus?.status ===
+              profile.roomStatus
           ) {
             return
           }
@@ -206,7 +209,34 @@ function MyPagePage() {
 
           setProfile(updatedProfile)
           setErrorMessage('')
-        } catch {
+        } catch (error) {
+          /*
+           * ACTIVE 방에서 상대방이 나가면 기존 방은 조회되지 않습니다.
+           * 이 경우 getMyPageProfile이 남은 사용자의 새 대기 방과
+           * 초대 코드를 발급해 WAITING 상태로 복구합니다.
+           */
+          if (
+            isCancelled ||
+            profile.roomStatus !==
+              'ACTIVE' ||
+            error?.status !== 404
+          ) {
+            return
+          }
+
+          try {
+            const updatedProfile =
+              await getMyPageProfile()
+
+            if (isCancelled) {
+              return
+            }
+
+            setProfile(updatedProfile)
+            setErrorMessage('')
+          } catch {
+            // 자동 복구 실패는 다음 폴링 또는 화면 재진입 때 다시 시도합니다.
+          }
           // 대기 상태 확인은 백그라운드 작업이므로
           // 일시적인 실패가 마이페이지 전체를 가리지 않게 합니다.
         } finally {
@@ -216,12 +246,12 @@ function MyPagePage() {
 
     const intervalId =
       window.setInterval(
-        refreshIfConnected,
+        refreshRoomState,
         COUPLE_STATUS_POLL_INTERVAL,
       )
 
     const handlePageFocus = () => {
-      refreshIfConnected()
+      refreshRoomState()
     }
 
     const handleVisibilityChange = () => {
@@ -229,7 +259,7 @@ function MyPagePage() {
         document.visibilityState ===
         'visible'
       ) {
-        refreshIfConnected()
+        refreshRoomState()
       }
     }
 
@@ -690,7 +720,9 @@ function MyPagePage() {
                     </div>
                   </div>
 
-                  <div className="mypage-room-code-section">
+                  {!profile.isCoupleConnected &&
+                    profile.roomCode && (
+                    <div className="mypage-room-code-section">
                     <div className="mypage-room-code-title">
                       <div>
                         <span>방 코드</span>
@@ -792,7 +824,8 @@ function MyPagePage() {
                         <span>코드 재발급</span>
                       </button>
                     </div>
-                  </div>
+                    </div>
+                  )}
 
                   <button
                     type="button"
