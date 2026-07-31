@@ -24,21 +24,9 @@ import PasswordChangePage from './pages/PasswordChangePage/PasswordChangePage.js
 
 import './App.css'
 
-function PageWithNavigation({
-  children,
-  variant = '',
-}) {
-  const className = [
-    'page-with-navigation',
-    variant
-      ? `page-with-navigation-${variant}`
-      : '',
-  ]
-    .filter(Boolean)
-    .join(' ')
-
+function PageWithNavigation({ children }) {
   return (
-    <div className={className}>
+    <div className="page-with-navigation">
       <div className="page-with-navigation-content">
         {children}
       </div>
@@ -77,7 +65,7 @@ function App() {
         <Route
           path="/dashboard"
           element={
-            <PageWithNavigation variant="home">
+            <PageWithNavigation>
               <HomeDashboardScreen />
             </PageWithNavigation>
           }
