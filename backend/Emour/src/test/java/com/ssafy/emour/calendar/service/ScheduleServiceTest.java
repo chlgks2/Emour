@@ -18,6 +18,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -215,5 +216,58 @@ class ScheduleServiceTest {
                 .isEqualTo(ErrorCode.ACCESS_DENIED);
 
         verify(scheduleRepository, never()).delete(any());
+    }
+
+    @Test
+    void 커플의_해당_월_일정을_함께_조회한다() {
+        Long userId = 1L;
+        Long partnerId = 2L;
+        Long roomId = 10L;
+        CoupleRoom room = mock(CoupleRoom.class);
+        CoupleSchedule mySchedule = CoupleSchedule.createSchedule(
+                roomId, userId, "내 일정",
+                LocalDate.of(2026, 8, 5), LocalTime.of(19, 0)
+        );
+        CoupleSchedule partnerSchedule = CoupleSchedule.createSchedule(
+                roomId, partnerId, "상대방 일정",
+                LocalDate.of(2026, 8, 12), LocalTime.of(20, 0)
+        );
+        given(memberRepository.existsById(userId)).willReturn(true);
+        given(coupleRoomRepository.findActiveRoomByUserId(userId))
+                .willReturn(Optional.of(room));
+        given(room.getId()).willReturn(roomId);
+        given(scheduleRepository
+                .findAllByRoomIdAndScheduleTypeAndScheduleDateBetweenOrderByScheduleDateAscScheduleTimeAsc(
+                        roomId,
+                        ScheduleType.SCHEDULE,
+                        LocalDate.of(2026, 8, 1),
+                        LocalDate.of(2026, 8, 31)
+                ))
+                .willReturn(List.of(mySchedule, partnerSchedule));
+
+        var responses = scheduleService.getMonthly(userId, 2026, 8);
+
+        assertThat(responses).hasSize(2);
+        assertThat(responses)
+                .extracting(response -> response.creatorId())
+                .containsExactly(userId, partnerId);
+        assertThat(responses)
+                .extracting(response -> response.name())
+                .containsExactly("내 일정", "상대방 일정");
+    }
+
+    @Test
+    void 유효하지_않은_월은_조회할_수_없다() {
+        Long userId = 1L;
+        Long roomId = 10L;
+        CoupleRoom room = mock(CoupleRoom.class);
+        given(memberRepository.existsById(userId)).willReturn(true);
+        given(coupleRoomRepository.findActiveRoomByUserId(userId))
+                .willReturn(Optional.of(room));
+
+        assertThatThrownBy(() -> scheduleService.getMonthly(userId, 2026, 13))
+                .isInstanceOf(CustomException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.INVALID_INPUT);
     }
 }

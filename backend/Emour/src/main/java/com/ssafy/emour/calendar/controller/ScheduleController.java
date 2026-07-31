@@ -15,6 +15,10 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+
+import java.util.List;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -65,6 +69,21 @@ public class ScheduleController {
         );
         return ResponseEntity.ok(
                 ApiResponse.success("일정을 삭제했습니다.", null)
+        );
+    }
+
+    @GetMapping
+    public ResponseEntity<ApiResponse<List<ScheduleResponse>>> getMonthly(
+            @RequestParam int year,
+            @RequestParam int month
+    ) {
+        List<ScheduleResponse> response = scheduleService.getMonthly(
+                SecurityUtil.getCurrentUserId(),
+                year,
+                month
+        );
+        return ResponseEntity.ok(
+                ApiResponse.success("일정 목록을 조회했습니다.", response)
         );
     }
 }

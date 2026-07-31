@@ -15,6 +15,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.DateTimeException;
+import java.time.YearMonth;
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class ScheduleService {
@@ -69,6 +73,32 @@ public class ScheduleService {
                 scheduleId
         );
         scheduleRepository.delete(schedule);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ScheduleResponse> getMonthly(
+            Long userId,
+            int year,
+            int month
+    ) {
+        CoupleRoom room = getActiveRoom(userId);
+        YearMonth yearMonth;
+        try {
+            yearMonth = YearMonth.of(year, month);
+        } catch (DateTimeException exception) {
+            throw new CustomException(ErrorCode.INVALID_INPUT);
+        }
+
+        return scheduleRepository
+                .findAllByRoomIdAndScheduleTypeAndScheduleDateBetweenOrderByScheduleDateAscScheduleTimeAsc(
+                        room.getId(),
+                        ScheduleType.SCHEDULE,
+                        yearMonth.atDay(1),
+                        yearMonth.atEndOfMonth()
+                )
+                .stream()
+                .map(ScheduleResponse::from)
+                .toList();
     }
 
     private CoupleRoom getActiveRoom(Long userId) {
