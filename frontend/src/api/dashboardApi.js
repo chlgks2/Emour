@@ -15,10 +15,168 @@ import {
 import {
   getCurrentCoupleRoom,
 } from "../utils/pendingCoupleRoom.js";
+import {
+  apiRequest,
+} from "./httpClient.js";
 
 const delay = (ms = 400) => new Promise((resolve) => setTimeout(resolve, ms));
 const RECENT_PHOTO_LIMIT = 5;
 const CONVERSATION_PAGE_SIZE = 100;
+
+function unwrapResponse(response) {
+  return response?.data ?? response ?? null;
+}
+
+function createDashboardQuery({
+  roomId,
+  date,
+  period,
+  limit,
+}) {
+  const query = new URLSearchParams({
+    roomId: String(roomId),
+    date,
+  });
+
+  if (period) {
+    query.set("period", period);
+  }
+
+  if (limit) {
+    query.set("limit", String(limit));
+  }
+
+  return query.toString();
+}
+
+async function getDailyDashboardCounts(
+  roomId,
+  date,
+) {
+  const query = createDashboardQuery({
+    roomId,
+    date,
+  });
+
+  return unwrapResponse(
+    await apiRequest(
+      `/dashboards/daily?${query}`,
+    ),
+  );
+}
+
+async function getDailyFrequentWords(
+  roomId,
+  date,
+) {
+  const query = createDashboardQuery({
+    roomId,
+    date,
+    limit: 5,
+  });
+
+  return unwrapResponse(
+    await apiRequest(
+      `/dashboards/frequent-words?${query}`,
+    ),
+  );
+}
+
+async function getDailyMainEmotions(
+  roomId,
+  date,
+) {
+  const query = createDashboardQuery({
+    roomId,
+    date,
+    period: "DAY",
+  });
+
+  return unwrapResponse(
+    await apiRequest(
+      `/dashboards/main-emotions?${query}`,
+    ),
+  );
+}
+
+async function getDailyEmotionFlow(
+  roomId,
+  date,
+) {
+  const query = createDashboardQuery({
+    roomId,
+    date,
+  });
+
+  return unwrapResponse(
+    await apiRequest(
+      `/dashboards/emotion-flow?${query}`,
+    ),
+  );
+}
+
+async function getDailyConversationFlow(
+  roomId,
+  date,
+) {
+  const query = createDashboardQuery({
+    roomId,
+    date,
+    period: "DAY",
+  });
+
+  return unwrapResponse(
+    await apiRequest(
+      `/dashboards/conversation-flow?${query}`,
+    ),
+  );
+}
+
+function getSettledValue(result) {
+  return result.status === "fulfilled"
+    ? result.value
+    : null;
+}
+
+function mapEmotionSummary(response) {
+  const emotions = response?.emotions;
+
+  if (!Array.isArray(emotions)) {
+    return null;
+  }
+
+  return emotions.reduce(
+    (summary, emotion) => {
+      if (
+        emotion?.emotionType &&
+        Number(emotion.count) > 0
+      ) {
+        summary[emotion.emotionType] =
+          Number(emotion.count);
+      }
+
+      return summary;
+    },
+    {},
+  );
+}
+
+function mapEmotionFlow(response) {
+  if (!Array.isArray(response?.flow)) {
+    return null;
+  }
+
+  return response.flow.map((slot) => ({
+    startHour: slot.startHour,
+    endHour: slot.endHour,
+    positiveCount:
+      Number(slot.positiveCount) || 0,
+    negativeCount:
+      Number(slot.negativeCount) || 0,
+    neutralCount:
+      Number(slot.neutralCount) || 0,
+  }));
+}
 
 function formatLocalDateKey(date = new Date()) {
   return [
@@ -249,6 +407,7 @@ export async function fetchDashboard() {
     albumData,
     conversationStats,
     datingStartDate,
+    dashboardResults,
   ] = await Promise.all([
     delay(),
     getAlbumPhotos(),
@@ -257,6 +416,30 @@ export async function fetchDashboard() {
       todayKey,
     ),
     getRelationshipStartDate(),
+    roomId
+      ? Promise.allSettled([
+          getDailyDashboardCounts(
+            roomId,
+            todayKey,
+          ),
+          getDailyConversationFlow(
+            roomId,
+            todayKey,
+          ),
+          getDailyFrequentWords(
+            roomId,
+            todayKey,
+          ),
+          getDailyMainEmotions(
+            roomId,
+            todayKey,
+          ),
+          getDailyEmotionFlow(
+            roomId,
+            todayKey,
+          ),
+        ])
+      : Promise.resolve([]),
   ]);
 
   const todayAlbumPhotoCount =
@@ -264,6 +447,55 @@ export async function fetchDashboard() {
       albumData.albumPhotos,
       todayKey,
     );
+
+  const [
+    dailyCountsResult,
+    conversationFlowResult,
+    frequentWordsResult,
+    mainEmotionsResult,
+    emotionFlowResult,
+  ] = dashboardResults;
+
+  const dailyCounts =
+    getSettledValue(
+      dailyCountsResult ?? {
+        status: "rejected",
+      },
+    );
+
+  const conversationFlow =
+    getSettledValue(
+      conversationFlowResult ?? {
+        status: "rejected",
+      },
+    );
+
+  const frequentWords =
+    getSettledValue(
+      frequentWordsResult ?? {
+        status: "rejected",
+      },
+    );
+
+  const mainEmotions =
+    getSettledValue(
+      mainEmotionsResult ?? {
+        status: "rejected",
+      },
+    );
+
+  const emotionFlow =
+    getSettledValue(
+      emotionFlowResult ?? {
+        status: "rejected",
+      },
+    );
+
+  const mappedEmotionSummary =
+    mapEmotionSummary(mainEmotions);
+
+  const mappedEmotionFlow =
+    mapEmotionFlow(emotionFlow);
 
   return {
     room: currentRoom ?? mockCoupleRoom,
@@ -274,9 +506,34 @@ export async function fetchDashboard() {
       ...mockDashboard,
       summaryDate: todayKey,
       ...conversationStats,
+      messageCount:
+        conversationFlow
+          ?.totalMessageCount ??
+        conversationStats.messageCount,
       imageCount:
         conversationStats.imageCount +
         todayAlbumPhotoCount,
+      reactionCount:
+        dailyCounts?.reactionCount ??
+        mockDashboard.reactionCount,
+      busiestHour:
+        conversationFlow?.busiestHour ??
+        null,
+      averageResponseSeconds:
+        conversationFlow
+          ?.averageResponseSeconds ??
+        null,
+      dailyFrequency:
+        conversationFlow
+          ?.dailyFrequency ??
+        [],
+      frequentWords:
+        frequentWords?.words ??
+        [],
+      emotionSummary:
+        mappedEmotionSummary ?? {},
+      emotionFlow:
+        mappedEmotionFlow ?? [],
     },
     todaySchedules: mockTodaySchedules,
     recentPhotos: albumData.albumPhotos.slice(
