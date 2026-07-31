@@ -18,12 +18,12 @@ import {
 } from "../api/chatApi";
 import { connectChatSocket } from "../api/chatSocket.js";
 import { fetchBookmarkedMessageIds, toggleBookmark } from "../api/bookmarkApi";
-import { fetchReactions, setMyReaction } from "../api/reactionApi";
+import { clearMyReaction, fetchReactions, setMyReaction } from "../api/reactionApi";
 import { createClientMessageId, MY_USER_ID } from "../api/mock/db";
 import { getCurrentCoupleRoom } from "../utils/pendingCoupleRoom.js";
 import { useAuth } from "../hooks/useAuth";
 import { useToast } from "../hooks/useToast";
-import { ANALYSIS_STATUS, MESSAGE_TYPE } from "../constants/enums";
+import { ANALYSIS_STATUS, MESSAGE_TYPE, REACTION_TYPE } from "../constants/enums";
 import { HOME_SECTION } from "../constants/navigation";
 import { isSameDay } from "../utils/emotions";
 import ChatSkeleton from "../components/chat/ChatSkeleton";
@@ -453,12 +453,28 @@ export default function ChatRoomPage() {
 
   const closeActionMenu = () => setActionTarget(null);
 
-  const handleSelectReaction = async (reactionType) => {
-    const target = actionTarget?.message;
-    if (!target) return;
-    closeActionMenu();
+  /**
+   * 반응 남기기 / 취소.
+   * 이미 같은 반응을 눌러둔 상태에서 다시 누르면 취소한다.
+   */
+  const applyReaction = async (target, reactionType) => {
+    if (!target || target.messageId === null) return;
+
+    // 내 메시지에는 반응할 수 없다.
+    if (Number(target.senderId) === Number(myUserId)) return;
+
+    const myCurrentType =
+      reactions[target.messageId]?.find(
+        (reaction) => Number(reaction.userId) === Number(myUserId),
+      )?.reactionType ?? null;
+
+    const isSameReaction = myCurrentType === reactionType;
+
     try {
-      const updatedReactions = await setMyReaction(target.messageId, reactionType);
+      const updatedReactions = isSameReaction
+        ? await clearMyReaction(target.messageId)
+        : await setMyReaction(target.messageId, reactionType);
+
       setReactions((prev) => {
         const existingReactions =
           prev[target.messageId] ?? [];
@@ -482,8 +498,22 @@ export default function ChatRoomPage() {
         return next;
       });
     } catch {
-      showToast("반응을 남기지 못했어요.", { tone: "error" });
+      showToast(
+        isSameReaction ? "반응을 취소하지 못했어요." : "반응을 남기지 못했어요.",
+        { tone: "error" },
+      );
     }
+  };
+
+  const handleSelectReaction = (reactionType) => {
+    const target = actionTarget?.message;
+    closeActionMenu();
+    applyReaction(target, reactionType);
+  };
+
+  // 상대 말풍선을 더블클릭/더블탭하면 하트를 바로 남긴다. (이미 하트면 취소)
+  const handleDoubleTapMessage = (message) => {
+    applyReaction(message, REACTION_TYPE.HEART);
   };
 
   const handleToggleBookmark = async () => {
@@ -576,6 +606,7 @@ export default function ChatRoomPage() {
                 reactions={reactions[message.messageId] ?? []}
                 isReadByPartner={isReadByPartner}
                 onLongPressMessage={handleLongPressMessage}
+                onDoubleTapMessage={handleDoubleTapMessage}
               />
             </div>
           );
@@ -615,6 +646,8 @@ export default function ChatRoomPage() {
             reactions[actionTarget.message.messageId]?.find((r) => r.userId === myUserId)
               ?.reactionType ?? null
           }
+          // 내 메시지에는 반응할 수 없다. 북마크만 남긴다.
+          canReact={Number(actionTarget.message.senderId) !== Number(myUserId)}
           onClose={closeActionMenu}
           onSelectReaction={handleSelectReaction}
           onToggleBookmark={handleToggleBookmark}
