@@ -48,6 +48,43 @@
   padding-left: 2px;
 }
 
+.analysisTag,
+.analysisFailed {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 3px;
+  padding: 0 2px;
+  color: var(--color-text-placeholder);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.analysisFailed {
+  color: var(--color-error);
+}
+
+.analysisSpinner {
+  width: 9px;
+  height: 9px;
+  border: 1.5px solid
+    color-mix(
+      in srgb,
+      var(--color-primary) 35%,
+      transparent
+    );
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: analysis-spin 0.8s linear
+    infinite;
+}
+
+@keyframes analysis-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 /* 북마크 리본 / 리액션 뱃지를 말풍선 기준으로 절대배치하기 위한 래퍼 */
 .bubbleWrap {
   position: relative;

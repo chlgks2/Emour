@@ -3,6 +3,7 @@ import { Bookmark } from "lucide-react";
 import { getEmotionStyle, toEmotionLabel, formatTime } from "../../utils/emotions";
 import { useLongPress } from "../../hooks/useLongPress";
 import { REACTION_MAP } from "../../constants/reactions";
+import { ANALYSIS_STATUS, MESSAGE_TYPE } from "../../constants/enums";
 import styles from "./MessageBubble.module.css";
 
 /**
@@ -29,6 +30,15 @@ export default function MessageBubble({
 }) {
   const isMine = message.senderId === myUserId;
   const emotionStyle = message.emotionType ? getEmotionStyle(message.emotionType) : null;
+  const isTextMessage =
+    message.messageType === MESSAGE_TYPE.TEXT;
+  const isAnalyzing =
+    isTextMessage &&
+    (message.analysisStatus === ANALYSIS_STATUS.PENDING ||
+      message.analysisStatus === ANALYSIS_STATUS.PROCESSING);
+  const hasAnalysisFailed =
+    isTextMessage &&
+    message.analysisStatus === ANALYSIS_STATUS.FAILED;
 
   const bubbleRef = useRef(null);
 
@@ -77,6 +87,17 @@ export default function MessageBubble({
           <span className={styles.emotionTag} style={{ color: emotionStyle.color }}>
             <emotionStyle.Icon size={11} aria-hidden="true" />
             {toEmotionLabel(message.emotionType)}
+          </span>
+        )}
+        {!emotionStyle && isAnalyzing && (
+          <span className={styles.analysisTag}>
+            <span className={styles.analysisSpinner} aria-hidden="true" />
+            AI 감정 분석 중
+          </span>
+        )}
+        {hasAnalysisFailed && (
+          <span className={styles.analysisFailed}>
+            감정 분석 실패
           </span>
         )}
 

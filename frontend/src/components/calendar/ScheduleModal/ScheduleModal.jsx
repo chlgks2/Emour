@@ -45,6 +45,11 @@ function ScheduleModal({
     if (
       !formData.name.trim() ||
       !formData.date ||
+      (
+        formData.type ===
+          SCHEDULE_TYPE.SCHEDULE &&
+        !formData.time
+      ) ||
       isProcessing
     ) {
       return
@@ -217,7 +222,12 @@ function ScheduleModal({
               disabled={
                 isProcessing ||
                 !formData.name.trim() ||
-                !formData.date
+                !formData.date ||
+                (
+                  formData.type ===
+                    SCHEDULE_TYPE.SCHEDULE &&
+                  !formData.time
+                )
               }
             >
               {isProcessing

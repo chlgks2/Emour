@@ -13,6 +13,7 @@ import {
   fetchChatPartner,
   fetchMessages,
   fetchPartnerReadState,
+  normalizeChatMessage,
   sendMessage,
   fetchSuggestions,
 } from "../api/chatApi";
@@ -181,38 +182,52 @@ export default function ChatRoomPage() {
       onMessage: (incomingMessage) => {
         if (!isActive) return;
 
+        const normalizedMessage =
+          normalizeChatMessage(
+            incomingMessage,
+          );
+
         setMessages((previous) => {
           const existingIndex =
             previous.findIndex(
               (message) =>
                 message.messageId ===
-                  incomingMessage.messageId ||
+                  normalizedMessage.messageId ||
                 (message.clientMessageId &&
                   message.clientMessageId ===
-                    incomingMessage.clientMessageId),
+                    normalizedMessage.clientMessageId),
             );
 
           if (existingIndex >= 0) {
             return previous.map(
               (message, index) =>
                 index === existingIndex
-                  ? incomingMessage
+                  ? {
+                      ...message,
+                      ...normalizedMessage,
+                      analysisStatus:
+                        normalizedMessage.analysisStatus ??
+                        message.analysisStatus,
+                      emotionType:
+                        normalizedMessage.emotionType ??
+                        message.emotionType,
+                    }
                   : message,
             );
           }
 
           return [
             ...previous,
-            incomingMessage,
+            normalizedMessage,
           ];
         });
 
         if (
-          Number(incomingMessage.senderId) !==
+          Number(normalizedMessage.senderId) !==
           Number(myUserId)
         ) {
           latestPartnerMessageIdRef.current =
-            incomingMessage.messageId;
+            normalizedMessage.messageId;
           markLatestPartnerMessageAsRead();
         }
 
@@ -307,6 +322,100 @@ export default function ChatRoomPage() {
     myUserId,
     roomId,
   ]);
+
+  const hasPendingAnalysis =
+    messages.some(
+      (message) =>
+        message.messageType ===
+          MESSAGE_TYPE.TEXT &&
+        (message.analysisStatus ===
+          ANALYSIS_STATUS.PENDING ||
+          message.analysisStatus ===
+            ANALYSIS_STATUS.PROCESSING),
+    );
+
+  // AI 분석은 서버 스케줄러에서 비동기로 끝나므로
+  // 대기 중인 메시지가 있을 때 최신 결과를 갱신한다.
+  useEffect(() => {
+    if (
+      !roomId ||
+      !hasPendingAnalysis
+    ) {
+      return undefined;
+    }
+
+    let cancelled = false;
+    let isRefreshing = false;
+
+    const refreshAnalysisResults =
+      async () => {
+        if (isRefreshing) return;
+
+        isRefreshing = true;
+
+        try {
+          const { messages: latest } =
+            await fetchMessages({
+              roomId,
+              beforeMessageId: null,
+              size: 50,
+            });
+
+          if (cancelled) return;
+
+          const latestById = new Map(
+            latest
+              .filter(
+                (message) =>
+                  message.messageId !==
+                  null,
+              )
+              .map((message) => [
+                message.messageId,
+                message,
+              ]),
+          );
+
+          setMessages((previous) =>
+            previous.map((message) => {
+              const updated =
+                latestById.get(
+                  message.messageId,
+                );
+
+              return updated
+                ? {
+                    ...message,
+                    ...updated,
+                    analysisStatus:
+                      updated.analysisStatus ??
+                      message.analysisStatus,
+                    emotionType:
+                      updated.emotionType ??
+                      message.emotionType,
+                  }
+                : message;
+            }),
+          );
+        } catch {
+          // 채팅 화면을 유지하고 다음 주기에 재시도한다.
+        } finally {
+          isRefreshing = false;
+        }
+      };
+
+    const timerId = window.setInterval(
+      refreshAnalysisResults,
+      3000,
+    );
+
+    refreshAnalysisResults();
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(timerId);
+    };
+  }, [hasPendingAnalysis, roomId]);
 
   // 최초 로드 완료 시 기존 상대방 메시지를 읽음 처리하고 맨 아래로 스크롤
   useEffect(() => {
@@ -409,7 +518,16 @@ export default function ChatRoomPage() {
         prev.map((m) =>
           m.clientMessageId === clientMessageId ||
           m.messageId === savedMessage.messageId
-            ? savedMessage
+            ? {
+                ...m,
+                ...savedMessage,
+                analysisStatus:
+                  savedMessage.analysisStatus ??
+                  m.analysisStatus,
+                emotionType:
+                  savedMessage.emotionType ??
+                  m.emotionType,
+              }
             : m
         )
       );
