@@ -23,14 +23,16 @@ public class DiaryService {
     private final DiaryRepository diaryRepository;
     private final MemberRepository memberRepository;
     private final CoupleRoomRepository coupleRoomRepository;
+    private final DiaryDateProvider diaryDateProvider;
 
     @Transactional
     public DiaryResponse create(Long userId, DiaryCreateRequest request) {
         CoupleRoom room = getActiveRoom(userId);
+        var diaryDate = diaryDateProvider.today();
         if (diaryRepository.existsByRoomIdAndUserIdAndDiaryDate(
                 room.getId(),
                 userId,
-                request.date()
+                diaryDate
         )) {
             throw new CustomException(ErrorCode.DIARY_ALREADY_EXISTS);
         }
@@ -38,7 +40,7 @@ public class DiaryService {
         Diary diary = Diary.create(
                 room.getId(),
                 userId,
-                request.date(),
+                diaryDate,
                 request.content().trim()
         );
         return DiaryResponse.from(diaryRepository.save(diary));

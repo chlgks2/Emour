@@ -36,6 +36,8 @@ class DiaryServiceTest {
     private MemberRepository memberRepository;
     @Mock
     private CoupleRoomRepository coupleRoomRepository;
+    @Mock
+    private DiaryDateProvider diaryDateProvider;
 
     private DiaryService diaryService;
 
@@ -44,7 +46,8 @@ class DiaryServiceTest {
         diaryService = new DiaryService(
                 diaryRepository,
                 memberRepository,
-                coupleRoomRepository
+                coupleRoomRepository,
+                diaryDateProvider
         );
     }
 
@@ -58,12 +61,13 @@ class DiaryServiceTest {
         given(coupleRoomRepository.findActiveRoomByUserId(userId))
                 .willReturn(Optional.of(room));
         given(room.getId()).willReturn(roomId);
+        given(diaryDateProvider.today()).willReturn(date);
         given(diaryRepository.save(any(Diary.class)))
                 .willAnswer(invocation -> invocation.getArgument(0));
 
         var response = diaryService.create(
                 userId,
-                new DiaryCreateRequest(date, "  행복한 하루였다.  ")
+                new DiaryCreateRequest("  행복한 하루였다.  ")
         );
 
         assertThat(response.coupleRoomId()).isEqualTo(roomId);
@@ -82,13 +86,14 @@ class DiaryServiceTest {
         given(coupleRoomRepository.findActiveRoomByUserId(userId))
                 .willReturn(Optional.of(room));
         given(room.getId()).willReturn(roomId);
+        given(diaryDateProvider.today()).willReturn(date);
         given(diaryRepository.existsByRoomIdAndUserIdAndDiaryDate(
                 roomId, userId, date
         )).willReturn(true);
 
         assertThatThrownBy(() -> diaryService.create(
                 userId,
-                new DiaryCreateRequest(date, "두 번째 기록")
+                new DiaryCreateRequest("두 번째 기록")
         ))
                 .isInstanceOf(CustomException.class)
                 .extracting("errorCode")
