@@ -10,7 +10,6 @@ import com.ssafy.emour.global.exception.CustomException;
 import com.ssafy.emour.global.exception.ErrorCode;
 import com.ssafy.emour.global.storage.FileStorage;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,10 +31,6 @@ public class AlbumPhotoService {
     private final FileStorage fileStorage;
     private final CoupleRoomRepository coupleRoomRepository;
 
-    // 응답에 붙일 이미지 URL 접두어 (환경변수 APP_UPLOAD_BASE_URL 로 주입, 로컬 기본 localhost:8080)
-    @Value("${app.upload.base-url}")
-    private String baseUrl;
-
     /** 사진 업로드 (파일 저장 → key 를 DB 에 기록) */
     @Transactional
     public AlbumPhotoResponse upload(Long userId, MultipartFile file, String memo) {
@@ -49,7 +44,7 @@ public class AlbumPhotoService {
                 .memo(memo)
                 .build();
 
-        return AlbumPhotoResponse.of(albumPhotoRepository.save(photo), baseUrl);
+        return AlbumPhotoResponse.of(albumPhotoRepository.save(photo));
     }
 
     /** 현재 커플방의 사진 전체 조회 (최신순) */
@@ -58,7 +53,7 @@ public class AlbumPhotoService {
         Long roomId = getActiveRoomId(userId);
         return albumPhotoRepository.findByRoomIdOrderByCreatedAtDesc(roomId)
                 .stream()
-                .map(photo -> AlbumPhotoResponse.of(photo, baseUrl))
+                .map(AlbumPhotoResponse::of)
                 .toList();
     }
 
@@ -75,7 +70,7 @@ public class AlbumPhotoService {
     public AlbumPhotoResponse updateMemo(Long userId, Long photoId, String memo) {
         AlbumPhoto photo = getOwnedPhoto(userId, photoId);
         photo.updateMemo(memo);
-        return AlbumPhotoResponse.of(photo, baseUrl);
+        return AlbumPhotoResponse.of(photo);
     }
 
     /**
