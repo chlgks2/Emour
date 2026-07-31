@@ -1,6 +1,7 @@
 package com.ssafy.emour.calendar.service;
 
 import com.ssafy.emour.calendar.dto.request.DiaryCreateRequest;
+import com.ssafy.emour.calendar.dto.request.DiaryUpdateRequest;
 import com.ssafy.emour.calendar.dto.response.DiaryResponse;
 import com.ssafy.emour.calendar.entity.Diary;
 import com.ssafy.emour.calendar.repository.DiaryRepository;
@@ -41,6 +42,18 @@ public class DiaryService {
         return DiaryResponse.from(diaryRepository.save(diary));
     }
 
+    @Transactional
+    public DiaryResponse update(
+            Long userId,
+            Long diaryId,
+            DiaryUpdateRequest request
+    ) {
+        CoupleRoom room = getActiveRoom(userId);
+        Diary diary = getMyDiary(userId, room.getId(), diaryId);
+        diary.updateContent(request.content().trim());
+        return DiaryResponse.from(diary);
+    }
+
     private CoupleRoom getActiveRoom(Long userId) {
         if (!memberRepository.existsById(userId)) {
             throw new CustomException(ErrorCode.USER_NOT_FOUND);
@@ -49,5 +62,17 @@ public class DiaryService {
                 .orElseThrow(() -> new CustomException(
                         ErrorCode.ACTIVE_COUPLE_NOT_FOUND
                 ));
+    }
+
+    private Diary getMyDiary(Long userId, Long roomId, Long diaryId) {
+        Diary diary = diaryRepository.findById(diaryId)
+                .orElseThrow(() -> new CustomException(
+                        ErrorCode.DIARY_NOT_FOUND
+                ));
+        if (!diary.getRoomId().equals(roomId)
+                || !diary.getUserId().equals(userId)) {
+            throw new CustomException(ErrorCode.ACCESS_DENIED);
+        }
+        return diary;
     }
 }

@@ -59,4 +59,8 @@ public class Diary {
         diary.content = content;
         return diary;
     }
+
+    public void updateContent(String content) {
+        this.content = content;
+    }
 }
