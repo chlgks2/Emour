@@ -121,7 +121,7 @@ export function connectChatSocket({
         !client.connected ||
         !lastReadMessageId
       ) {
-        return
+        return false
       }
 
       client.publish({
@@ -135,6 +135,8 @@ export function connectChatSocket({
           lastReadMessageId,
         }),
       })
+
+      return true
     },
   }
 }

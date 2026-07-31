@@ -69,8 +69,34 @@ export default function ChatRoomPage() {
   const justPrependedRef = useRef(false);
   const suggestTimerRef = useRef(null);
   const chatSocketRef = useRef(null);
+  const latestPartnerMessageIdRef = useRef(null);
+  const reportedReadMessageIdRef = useRef(null);
   // 이전 페이지 요청 중복 방지 (state 는 비동기라 ref 로 즉시 잠근다)
   const fetchingMoreRef = useRef(false);
+
+  const markLatestPartnerMessageAsRead =
+    useCallback(() => {
+      const latestMessageId =
+        latestPartnerMessageIdRef.current;
+
+      if (
+        !latestMessageId ||
+        latestMessageId ===
+          reportedReadMessageIdRef.current
+      ) {
+        return;
+      }
+
+      const wasPublished =
+        chatSocketRef.current?.markAsRead(
+          latestMessageId,
+        );
+
+      if (wasPublished) {
+        reportedReadMessageIdRef.current =
+          latestMessageId;
+      }
+    }, []);
 
   const loadMore = useCallback(async () => {
     if (!hasMore || fetchingMoreRef.current) return;
@@ -111,9 +137,22 @@ export default function ChatRoomPage() {
             fetchMessages({ roomId, beforeMessageId: null }),
             fetchBookmarkedMessageIds(roomId),
             fetchReactions(roomId),
-            fetchPartnerReadState(),
+            fetchPartnerReadState(roomId),
           ]);
         if (cancelled) return;
+        const latestPartnerMessage =
+          [...page.messages]
+            .reverse()
+            .find(
+              (message) =>
+                message.messageId !== null &&
+                Number(message.senderId) !==
+                  Number(myUserId),
+            );
+
+        latestPartnerMessageIdRef.current =
+          latestPartnerMessage?.messageId ??
+          null;
         setPartner(partnerInfo);
         setMessages(page.messages);
         setNextBeforeMessageId(page.nextBeforeMessageId);
@@ -129,7 +168,7 @@ export default function ChatRoomPage() {
     return () => {
       cancelled = true;
     };
-  }, [roomId]);
+  }, [myUserId, roomId]);
 
   // 같은 커플방의 메시지·읽음·공감 이벤트를 실시간으로 구독한다.
   useEffect(() => {
@@ -172,9 +211,9 @@ export default function ChatRoomPage() {
           Number(incomingMessage.senderId) !==
           Number(myUserId)
         ) {
-          chatSocketRef.current?.markAsRead(
-            incomingMessage.messageId,
-          );
+          latestPartnerMessageIdRef.current =
+            incomingMessage.messageId;
+          markLatestPartnerMessageAsRead();
         }
 
         requestAnimationFrame(() => {
@@ -240,6 +279,11 @@ export default function ChatRoomPage() {
           readState.lastReadMessageId,
         );
       },
+      onConnect: () => {
+        if (isActive) {
+          markLatestPartnerMessageAsRead();
+        }
+      },
       onError: (error) => {
         if (isActive) {
           console.error(
@@ -259,17 +303,28 @@ export default function ChatRoomPage() {
     };
   }, [
     containerRef,
+    markLatestPartnerMessageAsRead,
     myUserId,
     roomId,
   ]);
 
-  // 최초 로드 완료 시 맨 아래(최신 메시지)로 스크롤
+  // 최초 로드 완료 시 기존 상대방 메시지를 읽음 처리하고 맨 아래로 스크롤
   useEffect(() => {
-    if (!initialLoading && containerRef.current) {
-      containerRef.current.scrollTop = containerRef.current.scrollHeight;
+    if (initialLoading) {
+      return;
+    }
+
+    markLatestPartnerMessageAsRead();
+
+    if (containerRef.current) {
+      containerRef.current.scrollTop =
+        containerRef.current.scrollHeight;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialLoading]);
+  }, [
+    initialLoading,
+    markLatestPartnerMessageAsRead,
+  ]);
 
   // 과거 메시지를 앞쪽에 붙인 직후엔 스크롤이 위로 튀지 않도록 위치를 보정
   useLayoutEffect(() => {

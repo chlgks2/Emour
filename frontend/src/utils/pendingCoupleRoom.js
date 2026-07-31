@@ -26,16 +26,40 @@ export function saveCurrentCoupleRoom(
   room,
   ownerUserId = null,
 ) {
+  const storedRoom =
+    getPendingCoupleRoom()
+
+  const isSameRoom =
+    storedRoom?.roomId &&
+    Number(storedRoom.roomId) ===
+      Number(room.roomId)
+
+  const hasSameOwner =
+    storedRoom?.ownerUserId === null ||
+    storedRoom?.ownerUserId ===
+      undefined ||
+    ownerUserId === null ||
+    ownerUserId === undefined ||
+    Number(storedRoom.ownerUserId) ===
+      Number(ownerUserId)
+
+  const previousRoom =
+    isSameRoom && hasSameOwner
+      ? storedRoom
+      : null
+
   const currentRoom = {
     roomId: room.roomId,
     ownerUserId,
     roomCode:
       room.invitationCode ??
       room.roomCode ??
+      previousRoom?.roomCode ??
       null,
     roomCodeExpiresAt:
       room.expiresAt ??
       room.roomCodeExpiresAt ??
+      previousRoom?.roomCodeExpiresAt ??
       null,
     roomStatus:
       room.status ??

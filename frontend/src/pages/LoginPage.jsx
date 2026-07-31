@@ -6,12 +6,16 @@ import Button from "../components/common/Button";
 import SocialLoginButtons from "../components/auth/SocialLoginButtons";
 import { useAuth } from "../hooks/useAuth";
 import { useToast } from "../hooks/useToast";
-import logoIcon from "../assets/only-logo.png";
+import logoWordmark from "../assets/logo-wordmark.svg";
 import styles from "./LoginPage.module.css";
 import {
-  hasCurrentCoupleRoom,
+  clearPendingCoupleRoom,
+  getCurrentCoupleRoom,
   saveCurrentCoupleRoom,
 } from "../utils/pendingCoupleRoom.js";
+import {
+  getMyCoupleRoom,
+} from "../api/coupleApi.js";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -26,13 +30,18 @@ export default function LoginPage() {
   const [socialLoading, setSocialLoading] = useState(null);
 
   const justSignedUp = location.state?.justSignedUp;
-  const getPostLoginPath = (user) => {
-    if (user?.roomId) {
+  const getPostLoginPath = async (user) => {
+    const serverRoom =
+      await getMyCoupleRoom();
+
+    if (serverRoom?.roomId) {
+      const storedRoom =
+        getCurrentCoupleRoom();
+
       saveCurrentCoupleRoom(
         {
-          roomId: user.roomId,
-          roomStatus:
-            user.roomStatus ?? "ACTIVE",
+          ...storedRoom,
+          ...serverRoom,
         },
         user.userId,
       );
@@ -40,9 +49,9 @@ export default function LoginPage() {
       return "/dashboard";
     }
 
-    return hasCurrentCoupleRoom(user?.userId)
-      ? "/dashboard"
-      : "/couple/connect";
+    clearPendingCoupleRoom();
+
+    return "/couple/connect";
   };
 
   const handleSubmit = async (e) => {
@@ -56,7 +65,9 @@ export default function LoginPage() {
     try {
       const user = await login({ email, password });
       showToast(`${user.nickname}님, 환영해요!`, { tone: "success" });
-      navigate(getPostLoginPath(user), {
+      const postLoginPath =
+        await getPostLoginPath(user);
+      navigate(postLoginPath, {
         replace: true,
       });
     } catch (err) {
@@ -72,7 +83,9 @@ export default function LoginPage() {
     try {
       const user =
         await loginWithSocial(provider);
-      navigate(getPostLoginPath(user), {
+      const postLoginPath =
+        await getPostLoginPath(user);
+      navigate(postLoginPath, {
         replace: true,
       });
     } catch {
@@ -86,9 +99,9 @@ export default function LoginPage() {
     <div className="app-shell">
       <AuthHeader fallbackTo="/login" />
       <form className={styles.content} onSubmit={handleSubmit} noValidate>
-        <img src={logoIcon} alt="Emour" className={styles.heartIcon} />
-        <h1 className={styles.title}>환영합니다!</h1>
-        <p className={styles.subtitle}>이메일과 비밀번호로 로그인해주세요.</p>
+        <img src={logoWordmark} alt="Emour" className={styles.logo} />
+        <h1 className={styles.title}>다시 만나서 반가워요</h1>
+        <p className={styles.subtitle}>오늘 두 사람의 감정을 이어가 볼까요?</p>
 
         {justSignedUp && (
           <p className={styles.noticeBanner} role="status">

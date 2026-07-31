@@ -5,22 +5,24 @@ import {
 } from 'react'
 
 import {
+  CalendarPlus,
   ChevronLeft,
   ChevronRight,
-  Menu,
+  Heart,
   Pencil,
-  Plus,
 } from 'lucide-react'
 
 import {
   createSchedule,
   deleteSchedule,
+  getAnniversaries,
   getMonthlyCalendar,
   saveDiary,
   updateSchedule,
 } from '../../api/calendarApi.js'
 
 import ScheduleModal from '../../components/calendar/ScheduleModal/ScheduleModal.jsx'
+import AnniversaryManager from '../../components/calendar/AnniversaryManager/AnniversaryManager.jsx'
 import BottomNavigation from '../../components/common/BottomNavigation/BottomNavigation.jsx'
 
 import {
@@ -197,6 +199,19 @@ function sortSchedules(schedules) {
   )
 }
 
+function formatAnniversaryRepeat(
+  anniversary,
+) {
+  if (
+    anniversary.isAutomaticAnniversary &&
+    anniversary.occurrenceNumber
+  ) {
+    return `${anniversary.occurrenceNumber}일`
+  }
+
+  return ''
+}
+
 function CalendarPage() {
   const [currentMonth, setCurrentMonth] =
     useState(new Date(2026, 6, 1))
@@ -226,9 +241,20 @@ function CalendarPage() {
     useState({
       isOpen: false,
       mode: 'create',
+      entryType:
+        SCHEDULE_TYPE.SCHEDULE,
       sourceDate: '',
       schedule: null,
     })
+
+  const [
+    anniversaryManager,
+    setAnniversaryManager,
+  ] = useState({
+    isOpen: false,
+    isLoading: false,
+    anniversaries: [],
+  })
 
   const currentYear =
     currentMonth.getFullYear()
@@ -345,10 +371,80 @@ function CalendarPage() {
     setScheduleModal({
       isOpen: true,
       mode: 'create',
+      entryType:
+        SCHEDULE_TYPE.SCHEDULE,
       sourceDate: selectedDate,
       schedule: null,
     })
   }
+
+  const openCreateAnniversaryModal =
+    () => {
+      setScheduleModal({
+        isOpen: true,
+        mode: 'create',
+        entryType:
+          SCHEDULE_TYPE.ANNIVERSARY,
+        sourceDate: selectedDate,
+        schedule: null,
+      })
+    }
+
+  const loadAnniversaries = async () => {
+    const anniversaries =
+      await getAnniversaries(
+        TEMP_COUPLE_ROOM_ID,
+      )
+
+    setAnniversaryManager(
+      (previous) => ({
+        ...previous,
+        isLoading: false,
+        anniversaries,
+      }),
+    )
+  }
+
+  const openAnniversaryManager =
+    async () => {
+      setAnniversaryManager(
+        (previous) => ({
+          ...previous,
+          isOpen: true,
+          isLoading: true,
+        }),
+      )
+
+      try {
+        await loadAnniversaries()
+      } catch (error) {
+        setAnniversaryManager(
+          (previous) => ({
+            ...previous,
+            isLoading: false,
+          }),
+        )
+
+        window.alert(
+          error.message ||
+            '기념일 목록을 불러오지 못했습니다.',
+        )
+      }
+    }
+
+  const closeAnniversaryManager =
+    () => {
+      if (isProcessing) {
+        return
+      }
+
+      setAnniversaryManager(
+        (previous) => ({
+          ...previous,
+          isOpen: false,
+        }),
+      )
+    }
 
   const openEditScheduleModal = (
     schedule,
@@ -356,6 +452,7 @@ function CalendarPage() {
     setScheduleModal({
       isOpen: true,
       mode: 'edit',
+      entryType: schedule.type,
       sourceDate: selectedDate,
       schedule,
     })
@@ -369,6 +466,8 @@ function CalendarPage() {
     setScheduleModal({
       isOpen: false,
       mode: 'create',
+      entryType:
+        SCHEDULE_TYPE.SCHEDULE,
       sourceDate: '',
       schedule: null,
     })
@@ -487,7 +586,27 @@ function CalendarPage() {
         targetMonth ===
           currentMonthNumber
 
-      if (isSameMonth) {
+      if (
+        savedSchedule.type ===
+        SCHEDULE_TYPE.ANNIVERSARY
+      ) {
+        const refreshedCalendar =
+          await getMonthlyCalendar(
+            TEMP_COUPLE_ROOM_ID,
+            currentYear,
+            currentMonthNumber,
+          )
+
+        setCalendarData(
+          refreshedCalendar,
+        )
+
+        if (
+          anniversaryManager.isOpen
+        ) {
+          await loadAnniversaries()
+        }
+      } else if (isSameMonth) {
         updateCalendarSchedule(
           savedSchedule,
         )
@@ -509,6 +628,8 @@ function CalendarPage() {
       setScheduleModal({
         isOpen: false,
         mode: 'create',
+        entryType:
+          SCHEDULE_TYPE.SCHEDULE,
         sourceDate: '',
         schedule: null,
       })
@@ -548,6 +669,30 @@ function CalendarPage() {
             .scheduleId,
         )
 
+        if (
+          scheduleModal.schedule.type ===
+          SCHEDULE_TYPE.ANNIVERSARY
+        ) {
+          const refreshedCalendar =
+            await getMonthlyCalendar(
+              TEMP_COUPLE_ROOM_ID,
+              currentYear,
+              currentMonthNumber,
+            )
+
+          setCalendarData(
+            refreshedCalendar,
+          )
+        }
+
+        if (
+          scheduleModal.schedule.type ===
+            SCHEDULE_TYPE.ANNIVERSARY &&
+          anniversaryManager.isOpen
+        ) {
+          await loadAnniversaries()
+        }
+
         setCalendarData(
           (previousCalendarData) => {
             const sourceDay =
@@ -584,6 +729,8 @@ function CalendarPage() {
         setScheduleModal({
           isOpen: false,
           mode: 'create',
+          entryType:
+            SCHEDULE_TYPE.SCHEDULE,
           sourceDate: '',
           schedule: null,
         })
@@ -648,24 +795,7 @@ function CalendarPage() {
   return (
     <div className="calendar-page">
       <header className="calendar-header">
-        <button
-          type="button"
-          className="calendar-menu-button"
-          aria-label="메뉴 열기"
-          onClick={() => {
-            console.log('메뉴 열기')
-          }}
-        >
-          <Menu
-            size={22}
-            strokeWidth={2}
-            aria-hidden="true"
-          />
-        </button>
-
         <h1>캘린더</h1>
-
-        <div className="calendar-header-spacer" />
       </header>
 
       <div className="calendar-scroll-area">
@@ -825,6 +955,59 @@ function CalendarPage() {
           </div>
         </section>
 
+        <section
+          className="calendar-create-actions"
+          aria-label="캘린더 기록 추가"
+        >
+          <button
+            type="button"
+            className="calendar-create-schedule"
+            disabled={
+              isLoading || isProcessing
+            }
+            onClick={
+              openCreateScheduleModal
+            }
+          >
+            <CalendarPlus
+              size={19}
+              strokeWidth={2}
+              aria-hidden="true"
+            />
+
+            <span>
+              <strong>일정 추가</strong>
+              <small>
+                선택한 날짜에 등록
+              </small>
+            </span>
+          </button>
+
+          <button
+            type="button"
+            className="calendar-create-anniversary"
+            disabled={
+              isLoading || isProcessing
+            }
+            onClick={
+              openAnniversaryManager
+            }
+          >
+            <Heart
+              size={19}
+              strokeWidth={2}
+              aria-hidden="true"
+            />
+
+            <span>
+              <strong>기념일 관리</strong>
+              <small>
+                추가·수정과 반복 설정
+              </small>
+            </span>
+          </button>
+        </section>
+
         <section className="selected-day-card">
           <div className="selected-day-header">
             <div>
@@ -840,24 +1023,6 @@ function CalendarPage() {
               </h2>
             </div>
 
-            <button
-              type="button"
-              className="add-schedule-button"
-              disabled={
-                isLoading || isProcessing
-              }
-              onClick={
-                openCreateScheduleModal
-              }
-            >
-              <Plus
-                size={16}
-                strokeWidth={2.2}
-                aria-hidden="true"
-              />
-
-              <span>추가</span>
-            </button>
           </div>
 
           <div className="mood-summary">
@@ -982,17 +1147,34 @@ function CalendarPage() {
                       }
                       type="button"
                       className="anniversary-list-item"
-                      onClick={() =>
+                      onClick={() => {
+                        if (
+                          anniversary.isAutomaticAnniversary
+                        ) {
+                          openAnniversaryManager()
+                          return
+                        }
+
                         openEditScheduleModal(
                           anniversary,
                         )
-                      }
+                      }}
                     >
                       <span className="anniversary-dot" />
 
                       <strong>
                         {anniversary.name}
                       </strong>
+
+                      {formatAnniversaryRepeat(
+                        anniversary,
+                      ) && (
+                        <small>
+                          {formatAnniversaryRepeat(
+                            anniversary,
+                          )}
+                        </small>
+                      )}
 
                       <ChevronRight
                         size={17}
@@ -1091,9 +1273,33 @@ function CalendarPage() {
 
       <BottomNavigation />
 
+      {anniversaryManager.isOpen && (
+        <AnniversaryManager
+          anniversaries={
+            anniversaryManager.anniversaries
+          }
+          isLoading={
+            anniversaryManager.isLoading
+          }
+          isProcessing={isProcessing}
+          onClose={
+            closeAnniversaryManager
+          }
+          onCreate={
+            openCreateAnniversaryModal
+          }
+          onEdit={
+            openEditScheduleModal
+          }
+        />
+      )}
+
       {scheduleModal.isOpen && (
         <ScheduleModal
           mode={scheduleModal.mode}
+          entryType={
+            scheduleModal.entryType
+          }
           selectedDate={selectedDate}
           schedule={scheduleModal.schedule}
           isProcessing={isProcessing}

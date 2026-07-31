@@ -45,7 +45,7 @@
   min-width: 84px;
   padding: 0 16px;
   border-radius: var(--radius-pill);
-  background: var(--color-primary);
+  background: var(--color-action);
   color: #fff;
   font-size: 14px;
   font-weight: 700;
@@ -157,7 +157,7 @@
 }
 
 .controls {
-  background: #111;
+  background: #2b2523;
   padding: 14px 16px calc(20px + var(--safe-bottom));
   display: flex;
   flex-direction: column;
@@ -173,10 +173,10 @@
   height: 52px;
   border-radius: 10px;
   padding: 10px 12px;
-  background: #1e1e1e;
+  background: #3a3230;
   color: #fff;
   font-size: 14px;
-  border: 1px solid #333;
+  border: 1px solid #4a4240;
 }
 
 .controlRow {
@@ -188,27 +188,27 @@
 .controlLabel {
   width: 44px;
   font-size: 12px;
-  color: #999;
+  color: #a89b96;
 }
 
 .pill {
   min-height: 34px;
   padding: 0 14px;
   border-radius: var(--radius-pill);
-  background: #232323;
-  color: #ccc;
+  background: #3a3230;
+  color: #d6cbc7;
   font-size: 12px;
   transition: background-color var(--duration-fast) var(--ease-out),
     color var(--duration-fast) var(--ease-out);
 }
 
 .pill:hover {
-  background: #2e2e2e;
+  background: #4a4240;
   color: #fff;
 }
 
 .pillActive,
 .pillActive:hover {
-  background: var(--color-primary);
+  background: var(--color-action);
   color: #fff;
 }

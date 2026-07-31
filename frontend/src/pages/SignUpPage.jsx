@@ -5,7 +5,7 @@ import TextField from "../components/common/TextField";
 import Button from "../components/common/Button";
 import { checkEmailDuplicate, signUp } from "../api/authApi";
 import { useToast } from "../hooks/useToast";
-import logoIcon from "../assets/logo-icon.png";
+import logoMark from "../assets/logo-mark.svg";
 import styles from "./SignUpPage.module.css";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -102,7 +102,7 @@ export default function SignUpPage() {
     <div className="app-shell">
       <AuthHeader fallbackTo="/login" />
       <form className={styles.content} onSubmit={handleSubmit} noValidate>
-        <img src={logoIcon} alt="Emour" className={styles.heartIcon} />
+        <img src={logoMark} alt="Emour" className={styles.heartIcon} />
         <h1 className={styles.title}>커플을 위한 특별한 시작</h1>
         <p className={styles.subtitle}>회원정보를 입력해주세요.</p>
 

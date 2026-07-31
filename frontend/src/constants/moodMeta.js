@@ -1,82 +1,26 @@
-export const EMPTY_MOOD_COLOR = '#F2EFED'
+import {
+  EMPTY_MOOD_COLOR as EMPTY_COLOR,
+  MOOD_TYPES,
+} from '../utils/moodEmotion.js'
 
-export const MOOD_META = {
-  JOY: {
-    label: '기쁨',
-    category: 'positive',
-    color: '#F4C7A1',
-  },
-  FLUTTER: {
-    label: '설렘',
-    category: 'positive',
-    color: '#E7B8C8',
-  },
-  COMFORT: {
-    label: '편안',
-    category: 'positive',
-    color: '#BED399',
-  },
+/*
+ * 기록이 없는 날의 색. 원본은 utils/moodEmotion.js 한 곳에만 두고
+ * 여기서는 다시 내보내기만 해서 두 값이 어긋나지 않게 한다.
+ */
+export const EMPTY_MOOD_COLOR = EMPTY_COLOR
 
-  WORRY: {
-    label: '걱정',
-    category: 'neutral',
-    color: '#D9C9A9',
-  },
-  SURPRISE: {
-    label: '놀람',
-    category: 'neutral',
-    color: '#F6E192',
-  },
-  ORDINARY: {
-    label: '평범',
-    category: 'neutral',
-    color: '#E4E0DD',
-  },
-  SHY: {
-    label: '부끄러움',
-    category: 'neutral',
-    color: '#E3C6BB',
-  },
-  CURIOUS: {
-    label: '궁금',
-    category: 'neutral',
-    color: '#C2D8D5',
-  },
-
-  SADNESS: {
-    label: '슬픔',
-    category: 'negative',
-    color: '#B7C8E0',
-  },
-  ANGER: {
-    label: '화남',
-    category: 'negative',
-    color: '#D39999',
-  },
-  FLUSTERED: {
-    label: '당황',
-    category: 'negative',
-    color: '#C9B0C7',
-  },
-  EXHAUSTED: {
-    label: '힘듦',
-    category: 'negative',
-    color: '#AEB9C7',
-  },
-
-  GRATITUDE: {
-    label: '고마움',
-    category: 'relationship',
-    color: '#D7D49B',
-  },
-  APOLOGY: {
-    label: '미안함',
-    category: 'relationship',
-    color: '#C8B7D8',
-  },
-  HURT: {
-    label: '서운함',
-    category: 'relationship',
-    color: '#BFA7AF',
-  },
-}
+/*
+ * 캘린더와 무드 입력 화면이 같은 5단계 설정을 사용합니다.
+ * DB mood.mood_type ENUM과 1:1로 대응합니다.
+ */
+export const MOOD_META =
+  Object.fromEntries(
+    MOOD_TYPES.map((mood) => [
+      mood.moodType,
+      {
+        label: mood.label,
+        level: mood.level,
+        color: mood.color,
+      },
+    ]),
+  )

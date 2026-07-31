@@ -9,6 +9,7 @@ import {
 } from '../mappers/albumMapper.js'
 
 import {
+  apiBlobRequest,
   apiRequest,
 } from './httpClient.js'
 
@@ -114,6 +115,86 @@ function createMappedMockResponse() {
   })
 }
 
+async function resolveProtectedImageUrl(
+  imageUrl,
+) {
+  if (
+    !imageUrl ||
+    imageUrl.startsWith('blob:') ||
+    imageUrl.startsWith('data:')
+  ) {
+    return imageUrl
+  }
+
+  let requestUrl = imageUrl
+
+  try {
+    const parsedUrl = new URL(
+      imageUrl,
+      window.location.origin,
+    )
+
+    /*
+     * 로컬 백엔드는 이미지 주소를
+     * http://localhost:8080/uploads/... 형태로 반환합니다.
+     * 같은 출처의 Vite 프록시를 통하도록 상대 경로로 바꿉니다.
+     */
+    if (
+      parsedUrl.pathname.startsWith(
+        '/uploads/',
+      )
+    ) {
+      requestUrl =
+        `${parsedUrl.pathname}${parsedUrl.search}`
+    }
+  } catch {
+    requestUrl = imageUrl
+  }
+
+  try {
+    const imageBlob =
+      await apiBlobRequest(requestUrl)
+
+    return URL.createObjectURL(
+      imageBlob,
+    )
+  } catch {
+    return imageUrl
+  }
+}
+
+async function attachProtectedImageUrl(
+  photo,
+) {
+  if (!photo?.imageUrl) {
+    return photo
+  }
+
+  return {
+    ...photo,
+    imageUrl:
+      await resolveProtectedImageUrl(
+        photo.imageUrl,
+      ),
+  }
+}
+
+async function attachProtectedImageUrls(
+  response,
+) {
+  const albumPhotos =
+    await Promise.all(
+      (response.albumPhotos ?? []).map(
+        attachProtectedImageUrl,
+      ),
+    )
+
+  return {
+    ...response,
+    albumPhotos,
+  }
+}
+
 export async function getAlbumPhotos() {
   if (USE_MOCK_API) {
     await wait()
@@ -126,7 +207,8 @@ export async function getAlbumPhotos() {
       ENDPOINTS.albumPhotos,
     )
 
-  return mapAlbumPageResponse({
+  const mappedResponse =
+    mapAlbumPageResponse({
     albumPhotosResponse:
       extractArray(
         albumPhotoPayload,
@@ -139,6 +221,10 @@ export async function getAlbumPhotos() {
 
     chatPhotosResponse: [],
   })
+
+  return attachProtectedImageUrls(
+    mappedResponse,
+  )
 }
 
 export async function uploadAlbumPhoto({
@@ -215,8 +301,10 @@ export async function uploadAlbumPhoto({
     response?.photo ??
     response
 
-  return mapAlbumPhoto(
-    responseData,
+  return attachProtectedImageUrl(
+    mapAlbumPhoto(
+      responseData,
+    ),
   )
 }
 

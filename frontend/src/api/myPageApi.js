@@ -11,6 +11,7 @@ import {
 import {
   createCoupleInvitation,
   disconnectCouple,
+  getMyCoupleRoom,
 } from './coupleApi.js'
 
 import {
@@ -26,6 +27,7 @@ import {
 import {
   clearPendingCoupleRoom,
   getPendingCoupleRoom,
+  saveCurrentCoupleRoom,
   savePendingCoupleRoom,
 } from '../utils/pendingCoupleRoom.js'
 
@@ -144,18 +146,37 @@ export async function getMyPageProfile() {
     return createMappedMockResponse()
   }
 
-  const userResponse =
-    await getMyProfile()
+  const [
+    userResponse,
+    serverRoom,
+  ] = await Promise.all([
+    getMyProfile(),
+    getMyCoupleRoom(),
+  ])
 
-  const pendingRoom =
+  const storedRoom =
     getPendingCoupleRoom()
+
+  if (!serverRoom) {
+    clearPendingCoupleRoom()
+  }
+
+  const currentRoom = serverRoom
+    ? saveCurrentCoupleRoom(
+        {
+          ...storedRoom,
+          ...serverRoom,
+        },
+        userResponse.userId,
+      )
+    : null
 
   return mapMyPageResponse({
     userResponse,
-    roomResponse: pendingRoom,
-    memberResponse: pendingRoom
+    roomResponse: currentRoom,
+    memberResponse: currentRoom
       ? {
-          roomId: pendingRoom.roomId,
+          roomId: currentRoom.roomId,
           userId: userResponse.userId,
           status: 'ACTIVE',
         }

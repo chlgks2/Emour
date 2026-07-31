@@ -45,6 +45,9 @@ public class SecurityConfig {
                         .requestMatchers("/auth/**").permitAll()          // 그 외 인증 API 는 누구나
                         // WebSocket은 STOMP CONNECT 헤더의 JWT로 별도 인증한다.
                         .requestMatchers("/ws/**").permitAll()
+                        // img 태그는 Authorization 헤더를 보낼 수 없으므로
+                        // UUID 기반 업로드 이미지 조회 경로는 공개한다.
+                        .requestMatchers("/uploads/**").permitAll()
                         // API 문서와 로컬 채팅 테스트 화면은 로그인 전에도 열 수 있다.
                         .requestMatchers(
                                 "/v3/api-docs/**",

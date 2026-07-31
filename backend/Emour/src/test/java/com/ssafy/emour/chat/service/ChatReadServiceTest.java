@@ -2,6 +2,7 @@ package com.ssafy.emour.chat.service;
 
 import com.ssafy.emour.chat.dto.ChatReadRequest;
 import com.ssafy.emour.chat.dto.ChatReadResponse;
+import com.ssafy.emour.chat.dto.ChatReadStatusResponse;
 import com.ssafy.emour.chat.dto.ChatUnreadCountResponse;
 import com.ssafy.emour.chat.entity.ChatMessage;
 import com.ssafy.emour.chat.entity.ChatReadState;
@@ -121,5 +122,42 @@ class ChatReadServiceTest {
 
         assertThat(response.lastReadMessageId()).isEqualTo(100L);
         assertThat(response.unreadCount()).isEqualTo(2L);
+    }
+
+    // 상대방이 마지막으로 읽은 메시지 위치를 조회합니다.
+    @Test
+    void getsPartnerReadStatus() {
+        when(coupleMemberRepository.existsByIdAndStatus(
+                new CoupleMemberId(10L, 1L),
+                CoupleMemberStatus.ACTIVE
+        )).thenReturn(true);
+
+        ChatReadState partnerState = ChatReadState.first(20L, 1L, 100L);
+        when(chatReadStateRepository.findPartnerReadState(1L, 10L))
+                .thenReturn(Optional.of(partnerState));
+
+        ChatReadStatusResponse response =
+                chatReadService.getPartnerReadStatus(1L, 10L);
+
+        assertThat(response.roomId()).isEqualTo(1L);
+        assertThat(response.partnerLastReadMessageId()).isEqualTo(100L);
+        assertThat(response.partnerReadAt()).isNotNull();
+    }
+
+    // 상대방이 아직 읽음 처리하지 않았다면 읽은 메시지 번호가 없습니다.
+    @Test
+    void returnsEmptyReadStatus() {
+        when(coupleMemberRepository.existsByIdAndStatus(
+                new CoupleMemberId(10L, 1L),
+                CoupleMemberStatus.ACTIVE
+        )).thenReturn(true);
+        when(chatReadStateRepository.findPartnerReadState(1L, 10L))
+                .thenReturn(Optional.empty());
+
+        ChatReadStatusResponse response =
+                chatReadService.getPartnerReadStatus(1L, 10L);
+
+        assertThat(response.partnerLastReadMessageId()).isNull();
+        assertThat(response.partnerReadAt()).isNull();
     }
 }
