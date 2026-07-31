@@ -55,6 +55,28 @@ class SwaggerDocumentationTest {
                 ).exists());
     }
 
+    // 대시보드 개수 조회 API가 Swagger 문서에 표시되는지 확인합니다.
+    @Test
+    void exposesDashboardApi() throws Exception {
+        mockMvc.perform(get("/v3/api-docs"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath(
+                        "$.paths['/dashboards/daily'].get"
+                ).exists())
+                .andExpect(jsonPath(
+                        "$.paths['/dashboards/emotion-flow'].get"
+                ).exists())
+                .andExpect(jsonPath(
+                        "$.paths['/dashboards/frequent-words'].get"
+                ).exists())
+                .andExpect(jsonPath(
+                        "$.paths['/dashboards/main-emotions'].get"
+                ).exists())
+                .andExpect(jsonPath(
+                        "$.paths['/dashboards/conversation-flow'].get"
+                ).exists());
+    }
+
     // 로그인 화면에서 이메일과 비밀번호를 입력할 수 있는지 확인합니다.
     @Test
     void exposesLoginInputSchema() throws Exception {
