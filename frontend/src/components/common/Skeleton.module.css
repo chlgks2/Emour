@@ -6,7 +6,7 @@
   background: linear-gradient(
     100deg,
     var(--color-border) 20%,
-    #f6f1ef 40%,
+    var(--color-surface-tint) 40%,
     var(--color-border) 60%
   );
   background-size: 220% 100%;

@@ -6,16 +6,17 @@
 }
 
 .label {
-  font-size: 13px;
+  font-size: var(--font-label);
   font-weight: 600;
-  color: var(--color-text-sub);
+  color: var(--color-text-secondary);
+  padding-left: 4px;
 }
 
 .inputRow {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: var(--color-white);
+  background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-pill);
   padding: 0 18px;
@@ -31,11 +32,12 @@
 }
 
 .inputRowError {
-  border-color: var(--color-cancel);
+  border-color: var(--color-danger);
 }
 
 .inputRowError:focus-within {
-  box-shadow: 0 0 0 3px rgba(211, 153, 153, 0.35);
+  border-color: var(--color-danger);
+  box-shadow: var(--focus-ring-danger);
 }
 
 .input {
@@ -44,8 +46,8 @@
   height: 100%;
   border: none;
   background: transparent;
-  font-size: 15px;
-  color: var(--color-text);
+  font-size: var(--font-body);
+  color: var(--color-text-primary);
 }
 
 .input:invalid {
@@ -64,6 +66,8 @@
 }
 
 .iconBtn {
+  /* 브라우저 기본 버튼 padding 이 남으면 안쪽 아이콘이 눌린다 */
+  padding: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -76,8 +80,8 @@
 }
 
 .iconBtn:hover {
-  background: var(--color-sub-bg);
-  color: var(--color-primary-dark);
+  background: var(--color-primary-faint);
+  color: var(--color-text-accent);
 }
 
 .rightSlot {
@@ -85,22 +89,22 @@
 }
 
 .errorText {
-  font-size: 12px;
-  color: var(--color-cancel);
-  padding-left: 6px;
+  font-size: var(--font-caption);
+  color: var(--color-danger);
+  padding-left: 10px;
   line-height: 1.4;
 }
 
 .successText {
-  font-size: 12px;
-  color: #6fa04d;
-  padding-left: 6px;
+  font-size: var(--font-caption);
+  color: var(--color-success);
+  padding-left: 10px;
   line-height: 1.4;
 }
 
 .hintText {
-  font-size: 12px;
-  color: var(--color-text-placeholder);
-  padding-left: 6px;
+  font-size: var(--font-caption);
+  color: var(--color-text-tertiary);
+  padding-left: 10px;
   line-height: 1.4;
 }

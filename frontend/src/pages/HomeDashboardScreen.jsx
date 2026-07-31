@@ -1,4 +1,4 @@
-﻿import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ChevronUp } from "lucide-react";
 import HomePage from "../components/home/HomePage";
@@ -29,8 +29,24 @@ export default function HomeDashboardScreen() {
     setRelationshipDateSaving,
   ] = useState(false);
 
+  const containerRef = useRef(null);
   const homeSectionRef = useRef(null);
   const dashboardSectionRef = useRef(null);
+
+  /**
+   * 스냅 컨테이너 "하나만" 스크롤한다.
+   *
+   * section.scrollIntoView() 를 쓰면 브라우저가 스크롤 가능한 조상을 전부 함께 굴리기
+   * 때문에, 폰 목업(.mobile-layout) 처럼 overflow: hidden 인 바깥 요소까지 밀려 올라간다.
+   * 컨테이너의 scrollTop 을 직접 지정하면 그런 전파가 일어나지 않는다.
+   */
+  const scrollToSection = useCallback((sectionRef, behavior) => {
+    const container = containerRef.current;
+    const section = sectionRef.current;
+    if (!container || !section) return;
+
+    container.scrollTo({ top: section.offsetTop, behavior });
+  }, []);
 
   // 다른 화면이 navigate state 로 시작 섹션을 지정했는지 (constants/navigation.js 참고)
   const requestedSection = location.state?.section ?? null;
@@ -56,18 +72,18 @@ export default function HomeDashboardScreen() {
    */
   useLayoutEffect(() => {
     if (requestedSection !== HOME_SECTION.DASHBOARD) return;
-    dashboardSectionRef.current?.scrollIntoView({ behavior: "instant", block: "start" });
+    scrollToSection(dashboardSectionRef, "instant");
     // 한 번 쓰고 비운다. 남겨두면 이 화면 안에서 홈으로 올라간 뒤 리렌더될 때
     // 다시 대시보드로 끌려 내려간다.
     navigate(location.pathname, { replace: true, state: null });
-  }, [requestedSection, location.pathname, navigate]);
+  }, [requestedSection, location.pathname, navigate, scrollToSection]);
 
   const goToDashboard = () => {
-    dashboardSectionRef.current?.scrollIntoView({ behavior: "smooth" });
+    scrollToSection(dashboardSectionRef, "smooth");
   };
 
   const goToHome = () => {
-    homeSectionRef.current?.scrollIntoView({ behavior: "smooth" });
+    scrollToSection(homeSectionRef, "smooth");
   };
 
   /**
@@ -118,7 +134,7 @@ export default function HomeDashboardScreen() {
 
   return (
     // data-scroll-container: 모달이 열리면 global.css 가 이 컨테이너의 스크롤을 잠근다
-    <div className={styles.snapContainer} data-scroll-container>
+    <div ref={containerRef} className={styles.snapContainer} data-scroll-container>
       <section ref={homeSectionRef} className={styles.snapSection} aria-label="홈">
         <HomePage
           home={home}
