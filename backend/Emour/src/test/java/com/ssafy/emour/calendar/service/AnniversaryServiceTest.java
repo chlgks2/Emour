@@ -24,6 +24,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class AnniversaryServiceTest {
@@ -135,5 +136,27 @@ class AnniversaryServiceTest {
                 .isInstanceOf(CustomException.class)
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.ANNIVERSARY_TYPE_MISMATCH);
+    }
+
+    @Test
+    void 자신이_만든_기념일을_삭제한다() {
+        Long userId = 1L;
+        Long roomId = 10L;
+        Long anniversaryId = 100L;
+        CoupleRoom room = mock(CoupleRoom.class);
+        CoupleSchedule anniversary = CoupleSchedule.createAnniversary(
+                roomId, userId, "첫 데이트 기념일",
+                LocalDate.of(2025, 8, 15)
+        );
+        given(memberRepository.existsById(userId)).willReturn(true);
+        given(coupleRoomRepository.findActiveRoomByUserId(userId))
+                .willReturn(Optional.of(room));
+        given(room.getId()).willReturn(roomId);
+        given(scheduleRepository.findById(anniversaryId))
+                .willReturn(Optional.of(anniversary));
+
+        anniversaryService.delete(userId, anniversaryId);
+
+        verify(scheduleRepository).delete(anniversary);
     }
 }

@@ -57,6 +57,17 @@ public class AnniversaryService {
         return ScheduleResponse.from(anniversary);
     }
 
+    @Transactional
+    public void delete(Long userId, Long anniversaryId) {
+        CoupleRoom room = getActiveRoom(userId);
+        CoupleSchedule anniversary = getEditableAnniversary(
+                userId,
+                room.getId(),
+                anniversaryId
+        );
+        scheduleRepository.delete(anniversary);
+    }
+
     private CoupleRoom getActiveRoom(Long userId) {
         if (!memberRepository.existsById(userId)) {
             throw new CustomException(ErrorCode.USER_NOT_FOUND);
