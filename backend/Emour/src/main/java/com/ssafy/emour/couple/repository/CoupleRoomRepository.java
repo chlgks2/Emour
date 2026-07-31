@@ -8,8 +8,8 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.util.Optional;
 import java.util.List;
+import java.util.Optional;
 
 public interface CoupleRoomRepository extends JpaRepository<CoupleRoom, Long> {
 
@@ -41,6 +41,16 @@ public interface CoupleRoomRepository extends JpaRepository<CoupleRoom, Long> {
             @Param("userId") Long userId,
             Pageable pageable
     );
+
+    @Query("""
+            select cr
+            from CoupleMember cm
+            join CoupleRoom cr on cr.id = cm.id.roomId
+            where cm.id.userId = :userId
+              and cm.status = com.ssafy.emour.couple.entity.CoupleMemberStatus.ACTIVE
+              and cr.status = com.ssafy.emour.couple.entity.CoupleRoomStatus.ACTIVE
+            """)
+    Optional<CoupleRoom> findActiveRoomByUserId(@Param("userId") Long userId);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("""
