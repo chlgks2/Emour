@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
  */
 public record AlbumPhotoResponse(
         Long photoId,
+        Long roomId,
         Long uploaderId,
         String imageUrl,
         String memo,
@@ -20,6 +21,7 @@ public record AlbumPhotoResponse(
         String imageUrl = baseUrl + "/uploads/" + photo.getImageKey();
         return new AlbumPhotoResponse(
                 photo.getId(),
+                photo.getRoomId(),
                 photo.getUploaderId(),
                 imageUrl,
                 photo.getMemo(),
