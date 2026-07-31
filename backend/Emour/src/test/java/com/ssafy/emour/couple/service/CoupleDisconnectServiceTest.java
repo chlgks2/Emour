@@ -19,7 +19,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -87,7 +86,6 @@ class CoupleDisconnectServiceTest {
         assertThat(response.disconnectedAt()).isNotNull();
         assertThat(response.roomDeleted()).isFalse();
         assertThat(room.getStatus()).isEqualTo(CoupleRoomStatus.INACTIVE);
-        assertThat(room.getEndedAt()).isEqualTo(response.disconnectedAt());
         assertThat(requester.getStatus()).isEqualTo(CoupleMemberStatus.LEFT);
         assertThat(requester.getLeftAt()).isEqualTo(response.disconnectedAt());
         assertThat(partner.getStatus()).isEqualTo(CoupleMemberStatus.ACTIVE);
@@ -100,7 +98,7 @@ class CoupleDisconnectServiceTest {
     void 마지막_사용자가_나가면_멤버와_커플방을_완전히_삭제한다() {
         CoupleRoom room = activeRoom();
         LocalDateTime firstLeaveTime = LocalDateTime.now().minusMinutes(1);
-        room.deactivate(firstLeaveTime);
+        room.deactivate();
 
         CoupleMember firstLeaver = CoupleMember.active(USER_ID, ROOM_ID);
         firstLeaver.leave(firstLeaveTime);
@@ -120,16 +118,12 @@ class CoupleDisconnectServiceTest {
                 ROOM_ID,
                 CoupleMemberStatus.ACTIVE
         )).willReturn(1L);
-        given(coupleMemberRepository.findAllByIdRoomId(ROOM_ID))
-                .willReturn(List.of(firstLeaver, lastMember));
-
         CoupleDisconnectResponse response = coupleService.disconnect(PARTNER_ID);
 
         assertThat(response.roomId()).isEqualTo(ROOM_ID);
         assertThat(response.status()).isEqualTo(CoupleRoomStatus.INACTIVE);
         assertThat(response.roomDeleted()).isTrue();
         assertThat(lastMember.getStatus()).isEqualTo(CoupleMemberStatus.LEFT);
-        verify(coupleMemberRepository).deleteAll(List.of(firstLeaver, lastMember));
         verify(coupleRoomRepository).delete(room);
     }
 
@@ -165,7 +159,6 @@ class CoupleDisconnectServiceTest {
                 ErrorCode.ACTIVE_COUPLE_NOT_FOUND
         );
         assertThat(room.getStatus()).isEqualTo(CoupleRoomStatus.ACTIVE);
-        assertThat(room.getEndedAt()).isNull();
     }
 
     private CoupleRoom activeRoom() {
@@ -174,7 +167,7 @@ class CoupleDisconnectServiceTest {
                 LocalDateTime.now().plusHours(1)
         );
         ReflectionTestUtils.setField(room, "id", ROOM_ID);
-        room.activate(LocalDate.now());
+        room.activate();
         return room;
     }
 

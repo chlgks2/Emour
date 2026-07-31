@@ -6,6 +6,15 @@ function getAccessToken() {
   return localStorage.getItem('accessToken')
 }
 
+function getRefreshToken() {
+  return localStorage.getItem('refreshToken')
+}
+
+function clearTokens() {
+  localStorage.removeItem('accessToken')
+  localStorage.removeItem('refreshToken')
+}
+
 async function parseResponse(response) {
   if (response.status === 204) {
     return null
@@ -21,19 +30,71 @@ async function parseResponse(response) {
   return response.text()
 }
 
+async function refreshAccessToken() {
+  const refreshToken = getRefreshToken()
+
+  if (!refreshToken) {
+    return null
+  }
+
+  const response = await fetch(
+    `${API_BASE_URL}/auth/refresh`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        refreshToken,
+      }),
+    },
+  )
+
+  const responseData =
+    await parseResponse(response)
+
+  if (!response.ok) {
+    clearTokens()
+    return null
+  }
+
+  const tokenData = responseData?.data
+
+  if (!tokenData?.accessToken) {
+    clearTokens()
+    return null
+  }
+
+  localStorage.setItem(
+    'accessToken',
+    tokenData.accessToken,
+  )
+
+  if (tokenData.refreshToken) {
+    localStorage.setItem(
+      'refreshToken',
+      tokenData.refreshToken,
+    )
+  }
+
+  return tokenData.accessToken
+}
+
 export async function apiRequest(
   path,
   {
     method = 'GET',
     headers: customHeaders,
     body,
+    skipAuth = false,
+    retryOnUnauthorized = true,
     ...options
   } = {},
 ) {
   const headers = new Headers(customHeaders)
   const accessToken = getAccessToken()
 
-  if (accessToken) {
+  if (accessToken && !skipAuth) {
     headers.set(
       'Authorization',
       `Bearer ${accessToken}`,
@@ -74,6 +135,26 @@ export async function apiRequest(
   const responseData =
     await parseResponse(response)
 
+  if (
+    response.status === 401 &&
+    !skipAuth &&
+    retryOnUnauthorized
+  ) {
+    const refreshedAccessToken =
+      await refreshAccessToken()
+
+    if (refreshedAccessToken) {
+      return apiRequest(path, {
+        method,
+        headers: customHeaders,
+        body,
+        skipAuth,
+        retryOnUnauthorized: false,
+        ...options,
+      })
+    }
+  }
+
   if (!response.ok) {
     const errorMessage =
       responseData?.message ||
@@ -83,7 +164,13 @@ export async function apiRequest(
         : '') ||
       '요청을 처리하지 못했습니다.'
 
-    throw new Error(errorMessage)
+    const requestError =
+      new Error(errorMessage)
+
+    requestError.status = response.status
+    requestError.response = responseData
+
+    throw requestError
   }
 
   return responseData

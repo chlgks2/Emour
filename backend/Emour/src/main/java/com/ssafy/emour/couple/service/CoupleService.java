@@ -4,6 +4,7 @@ import com.ssafy.emour.couple.dto.request.CoupleConnectRequest;
 import com.ssafy.emour.couple.dto.response.CoupleConnectResponse;
 import com.ssafy.emour.couple.dto.response.CoupleDisconnectResponse;
 import com.ssafy.emour.couple.dto.response.CoupleInvitationResponse;
+import com.ssafy.emour.couple.dto.response.CoupleStatusResponse;
 import com.ssafy.emour.couple.entity.CoupleMember;
 import com.ssafy.emour.couple.entity.CoupleMemberId;
 import com.ssafy.emour.couple.entity.CoupleMemberStatus;
@@ -19,7 +20,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Locale;
@@ -101,9 +101,40 @@ public class CoupleService {
         validateInvitation(room, userId);
 
         coupleMemberRepository.save(CoupleMember.active(userId, room.getId()));
-        room.activate(LocalDate.now());
+        room.activate();
 
         return CoupleConnectResponse.from(room);
+    }
+
+    @Transactional(readOnly = true)
+    public CoupleStatusResponse getStatus(Long userId) {
+        if (!memberRepository.existsById(userId)) {
+            throw new CustomException(ErrorCode.USER_NOT_FOUND);
+        }
+
+        List<CoupleRoom> currentRooms = coupleRoomRepository.findCurrentRoomsByUserId(
+                userId,
+                PageRequest.of(0, 1)
+        );
+
+        if (currentRooms.isEmpty()) {
+            throw new CustomException(ErrorCode.ACTIVE_COUPLE_NOT_FOUND);
+        }
+
+        return CoupleStatusResponse.from(currentRooms.get(0));
+    }
+
+    @Transactional(readOnly = true)
+    public Long getCurrentRoomId(Long userId) {
+        List<Long> roomIds = coupleMemberRepository.findCurrentRoomIdsByUserId(
+                userId,
+                LocalDateTime.now(),
+                PageRequest.of(0, 1)
+        );
+        if (roomIds.isEmpty()) {
+            throw new CustomException(ErrorCode.ACTIVE_COUPLE_NOT_FOUND);
+        }
+        return roomIds.get(0);
     }
 
     @Transactional
@@ -131,13 +162,10 @@ public class CoupleService {
         member.leave(disconnectedAt);
 
         if (activeMemberCount == 2) {
-            room.deactivate(disconnectedAt);
+            room.deactivate();
             return CoupleDisconnectResponse.of(room, disconnectedAt, false);
         }
 
-        coupleMemberRepository.deleteAll(
-                coupleMemberRepository.findAllByIdRoomId(room.getId())
-        );
         coupleRoomRepository.delete(room);
         return CoupleDisconnectResponse.of(room, disconnectedAt, true);
     }

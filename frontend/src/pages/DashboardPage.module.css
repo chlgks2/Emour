@@ -1,0 +1,30 @@
+.centered {
+  align-items: center;
+  justify-content: center;
+}
+
+.scrollArea {
+  flex: 1;
+  overflow-y: auto;
+  /* 하단 네비 + 홈 인디케이터 높이만큼 여유를 둬서 마지막 카드가 가리지 않게 */
+  padding-bottom: calc(var(--bottom-nav-height) + var(--safe-bottom) + 26px);
+  min-height: 0;
+  /* 스크롤이 끝에 닿았을 때 부모(스냅 컨테이너)로 전파되지 않도록 */
+  overscroll-behavior: contain;
+}
+
+.gridRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin: 14px 20px 0;
+  align-items: start;
+}
+
+@media (max-width: 420px) {
+  .gridRow {
+    gap: 10px;
+    margin-right: 16px;
+    margin-left: 16px;
+  }
+}

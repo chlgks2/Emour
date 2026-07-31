@@ -99,6 +99,78 @@
   box-shadow: 0 14px 30px rgba(104, 74, 65, 0.07);
 }
 
+/* =========================
+   일정·기념일 추가
+========================= */
+
+.calendar-create-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+  margin-top: 12px;
+}
+
+.calendar-create-actions button {
+  min-width: 0;
+  min-height: 64px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 12px;
+  border: 1px solid rgba(227, 198, 187, 0.72);
+  border-radius: 17px;
+  color: var(--color-text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+
+.calendar-create-actions button > svg {
+  flex-shrink: 0;
+}
+
+.calendar-create-actions button > span {
+  min-width: 0;
+}
+
+.calendar-create-actions strong,
+.calendar-create-actions small {
+  display: block;
+}
+
+.calendar-create-actions strong {
+  font-size: 12px;
+}
+
+.calendar-create-actions small {
+  margin-top: 4px;
+  overflow: hidden;
+  color: var(--color-text-secondary);
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.calendar-create-schedule {
+  background: rgba(246, 225, 146, 0.22);
+}
+
+.calendar-create-schedule > svg {
+  color: #b27b31;
+}
+
+.calendar-create-anniversary {
+  background: rgba(211, 153, 153, 0.16);
+}
+
+.calendar-create-anniversary > svg {
+  color: #bd6674;
+}
+
+.calendar-create-actions button:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  filter: brightness(0.98);
+}
+
 .calendar-month-navigation {
   display: grid;
   grid-template-columns: 42px 1fr 42px;
@@ -505,6 +577,16 @@
   font-size: 13px;
 }
 
+.anniversary-list-item small {
+  flex-shrink: 0;
+  padding: 4px 7px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.62);
+  color: #9b6c72;
+  font-size: 9px;
+  font-weight: 750;
+}
+
 .anniversary-list-item > svg {
   flex-shrink: 0;
   color: #a88c8c;
@@ -593,6 +675,7 @@
 
 .calendar-month-navigation button:disabled,
 .calendar-day-cell:disabled,
+.calendar-create-actions button:disabled,
 .add-schedule-button:disabled,
 .diary-edit-button:disabled,
 .diary-cancel-button:disabled,

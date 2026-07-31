@@ -5,13 +5,31 @@ import {
 } from '../data/myPageMockData.js'
 
 import {
-  mapMyPageApiPayload,
   mapMyPageResponse,
 } from '../mappers/myPageMapper.js'
 
 import {
-  apiRequest,
-} from './httpClient.js'
+  createCoupleInvitation,
+  disconnectCouple,
+  getMyCoupleRoom,
+} from './coupleApi.js'
+
+import {
+  logout,
+} from './authApi.js'
+
+import {
+  getMyProfile,
+  updateMyProfile,
+  withdrawMyAccount,
+} from './memberApi.js'
+
+import {
+  clearPendingCoupleRoom,
+  getPendingCoupleRoom,
+  saveCurrentCoupleRoom,
+  savePendingCoupleRoom,
+} from '../utils/pendingCoupleRoom.js'
 
 /*
  * 기본값은 Mock API입니다.
@@ -21,36 +39,10 @@ import {
  * 실제 Spring API를 호출합니다.
  */
 const USE_MOCK_API =
-  import.meta.env.VITE_USE_MOCK_API !==
-  'false'
+  import.meta.env
+    .VITE_USE_MYPAGE_MOCK_API === 'true'
 
 const MOCK_DELAY = 250
-
-/*
- * 백엔드의 실제 주소가 달라지면
- * 이 부분만 수정하면 됩니다.
- */
-const ENDPOINTS = {
-  myPage: '/api/users/me/mypage',
-
-  profile:
-    '/api/users/me/profile',
-
-  partnerNickname:
-    '/api/couple-members/me/partner-nickname',
-
-  regenerateRoomCode:
-    '/api/couple-rooms/me/room-code',
-
-  leaveRoom:
-    '/api/couple-rooms/me/members/me',
-
-  logout:
-    '/api/auth/logout',
-
-  withdraw:
-    '/api/users/me',
-}
 
 let mockUserResponse = {
   ...MOCK_MY_PAGE_USER_RESPONSE,
@@ -91,11 +83,21 @@ function readFileAsDataUrl(file) {
 }
 
 function createMappedMockResponse() {
+  const pendingRoom =
+    getPendingCoupleRoom()
+
   return mapMyPageResponse({
     userResponse: mockUserResponse,
-    roomResponse: mockRoomResponse,
-    memberResponse:
-      mockMemberResponse,
+    roomResponse:
+      pendingRoom ?? mockRoomResponse,
+    memberResponse: pendingRoom
+      ? {
+          roomId: pendingRoom.roomId,
+          userId:
+            mockUserResponse.user_id,
+          status: 'ACTIVE',
+        }
+      : mockMemberResponse,
   })
 }
 
@@ -144,11 +146,42 @@ export async function getMyPageProfile() {
     return createMappedMockResponse()
   }
 
-  const response = await apiRequest(
-    ENDPOINTS.myPage,
-  )
+  const [
+    userResponse,
+    serverRoom,
+  ] = await Promise.all([
+    getMyProfile(),
+    getMyCoupleRoom(),
+  ])
 
-  return mapMyPageApiPayload(response)
+  const storedRoom =
+    getPendingCoupleRoom()
+
+  if (!serverRoom) {
+    clearPendingCoupleRoom()
+  }
+
+  const currentRoom = serverRoom
+    ? saveCurrentCoupleRoom(
+        {
+          ...storedRoom,
+          ...serverRoom,
+        },
+        userResponse.userId,
+      )
+    : null
+
+  return mapMyPageResponse({
+    userResponse,
+    roomResponse: currentRoom,
+    memberResponse: currentRoom
+      ? {
+          roomId: currentRoom.roomId,
+          userId: userResponse.userId,
+          status: 'ACTIVE',
+        }
+      : null,
+  })
 }
 
 export async function updateMyPageProfile({
@@ -195,32 +228,17 @@ export async function updateMyPageProfile({
     return createMappedMockResponse()
   }
 
-  const formData = new FormData()
-
-  formData.append(
-    'nickname',
-    trimmedNickname,
-  )
-
-  formData.append(
-    'statusMessage',
-    trimmedStatusMessage,
-  )
-
   if (profileImageFile) {
-    formData.append(
-      'profileImage',
-      profileImageFile,
+    throw new Error(
+      '프로필 이미지 업로드 API는 아직 제공되지 않습니다.',
     )
   }
 
-  await apiRequest(
-    ENDPOINTS.profile,
-    {
-      method: 'PATCH',
-      body: formData,
-    },
-  )
+  await updateMyProfile({
+    nickname: trimmedNickname,
+    statusMessage:
+      trimmedStatusMessage,
+  })
 
   return getMyPageProfile()
 }
@@ -269,23 +287,9 @@ export async function updatePartnerNickname({
     return createMappedMockResponse()
   }
 
-  await apiRequest(
-    ENDPOINTS.partnerNickname,
-    {
-      method: 'PATCH',
-      body: {
-        partnerNickname:
-          trimmedPartnerNickname,
-      },
-    },
+  throw new Error(
+    '연인 애칭 수정 API는 아직 제공되지 않습니다.',
   )
-
-  /*
-   * 수정 API가 응답 본문을 보내지 않아도
-   * 마이페이지를 다시 조회하므로
-   * 화면 데이터가 최신 상태로 유지됩니다.
-   */
-  return getMyPageProfile()
 }
 
 export async function regenerateRoomCode() {
@@ -325,12 +329,10 @@ export async function regenerateRoomCode() {
     return createMappedMockResponse()
   }
 
-  await apiRequest(
-    ENDPOINTS.regenerateRoomCode,
-    {
-      method: 'POST',
-    },
-  )
+  const invitation =
+    await createCoupleInvitation()
+
+  savePendingCoupleRoom(invitation)
 
   return getMyPageProfile()
 }
@@ -367,12 +369,8 @@ export async function leaveCoupleRoom() {
     return createMappedMockResponse()
   }
 
-  await apiRequest(
-    ENDPOINTS.leaveRoom,
-    {
-      method: 'DELETE',
-    },
-  )
+  await disconnectCouple()
+  clearPendingCoupleRoom()
 
   return getMyPageProfile()
 }
@@ -383,12 +381,7 @@ export async function logoutCurrentUser() {
     return
   }
 
-  await apiRequest(
-    ENDPOINTS.logout,
-    {
-      method: 'POST',
-    },
-  )
+  await logout()
 }
 
 export async function withdrawCurrentUser() {
@@ -425,12 +418,8 @@ export async function withdrawCurrentUser() {
     return createMappedMockResponse()
   }
 
-  await apiRequest(
-    ENDPOINTS.withdraw,
-    {
-      method: 'DELETE',
-    },
-  )
+  await withdrawMyAccount()
+  clearPendingCoupleRoom()
 
   return null
 }

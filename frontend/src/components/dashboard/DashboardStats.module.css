@@ -1,0 +1,130 @@
+.card {
+  margin: 14px 20px 0;
+  background: var(--color-white);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  box-shadow: var(--shadow-card);
+}
+
+.title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-primary-dark);
+  margin-bottom: 14px;
+}
+
+.title svg {
+  flex-shrink: 0;
+}
+
+/* 3개 카운트: 좁은 화면에서도 줄바꿈 없이 균등 분배 */
+.countRow {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.countItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 10px 2px;
+  border-radius: var(--radius-md);
+  background: var(--color-sub-bg);
+}
+
+.countIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-primary);
+}
+
+.countValue {
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.countLabel {
+  font-size: 10px;
+  color: var(--color-text-sub);
+}
+
+.highlightList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border);
+}
+
+.highlightItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-text-sub);
+  font-size: 12px;
+}
+
+.highlightLabel {
+  flex: 1;
+}
+
+.highlightValue {
+  font-weight: 700;
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.wordSection {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border);
+}
+
+.wordTitle {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-text-sub);
+  margin-bottom: 8px;
+}
+
+.wordRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.wordChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--color-sub-bg);
+  color: var(--color-primary-dark);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.wordCount {
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--color-white);
+  background: var(--color-primary);
+  border-radius: var(--radius-pill);
+  min-width: 16px;
+  height: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  font-variant-numeric: tabular-nums;
+}

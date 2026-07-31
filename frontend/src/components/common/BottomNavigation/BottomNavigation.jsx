@@ -13,13 +13,13 @@ const NAVIGATION_ITEMS = [
   {
     id: 'home',
     label: '홈',
-    path: null,
+    path: '/dashboard',
     icon: House,
   },
   {
     id: 'chat',
     label: '채팅',
-    path: null,
+    path: '/chat',
     icon: MessageCircle,
   },
   {

@@ -1,8 +1,26 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+
+import {
+  connectCouple,
+  createCoupleInvitation,
+} from '../../api/coupleApi.js'
+
+import {
+  clearPendingCoupleRoom,
+  saveCurrentCoupleRoom,
+  savePendingCoupleRoom,
+} from '../../utils/pendingCoupleRoom.js'
+import { useAuth } from '../../hooks/useAuth.js'
+
 import './CoupleConnectPage.css'
 
 function CoupleConnectPage() {
+  const navigate = useNavigate()
+  const { user } = useAuth()
   const [roomCode, setRoomCode] = useState('')
+  const [isLoading, setIsLoading] =
+    useState(false)
   const [feedback, setFeedback] = useState({
     type: '',
     message: '',
@@ -17,26 +35,53 @@ function CoupleConnectPage() {
     })
   }
 
-  const handleCreateRoom = () => {
-    /*
-      추후 Spring 방 생성 API를 연결합니다.
+  const handleCreateRoom = async () => {
+    if (isLoading) {
+      return
+    }
 
-      예시:
-      POST /api/couple-rooms
-    */
+    try {
+      setIsLoading(true)
+      setFeedback({
+        type: 'info',
+        message: '초대 코드를 생성하고 있습니다.',
+      })
 
-    setFeedback({
-      type: 'info',
-      message: '백엔드 연결 후 방 생성 기능이 실행됩니다.',
-    })
+      const invitation =
+        await createCoupleInvitation()
+
+      if (!invitation?.invitationCode) {
+        throw new Error(
+          '초대 코드가 응답에 포함되지 않았습니다.',
+        )
+      }
+
+      savePendingCoupleRoom(
+        invitation,
+        user?.userId,
+      )
+
+      navigate('/dashboard', {
+        replace: true,
+      })
+    } catch (error) {
+      setFeedback({
+        type: 'error',
+        message:
+          error.message ||
+          '초대 코드를 생성하지 못했습니다.',
+      })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
-  const handleJoinRoom = (event) => {
+  const handleJoinRoom = async (event) => {
     event.preventDefault()
 
     const trimmedRoomCode = roomCode.trim()
 
-    if (!trimmedRoomCode) {
+    if (!trimmedRoomCode || isLoading) {
       setFeedback({
         type: 'error',
         message: '방 코드를 입력해주세요.',
@@ -45,22 +90,42 @@ function CoupleConnectPage() {
       return
     }
 
-    /*
-      추후 Spring 방 참여 API를 연결합니다.
+    try {
+      setIsLoading(true)
+      setFeedback({
+        type: 'info',
+        message: '커플 연결을 확인하고 있습니다.',
+      })
 
-      예시:
-      POST /api/couple-rooms/join
+      const connectedRoom =
+        await connectCouple(
+          trimmedRoomCode,
+        )
 
-      요청 데이터:
-      {
-        roomCode: trimmedRoomCode
-      }
-    */
+      clearPendingCoupleRoom()
+      saveCurrentCoupleRoom(
+        connectedRoom,
+        user?.userId,
+      )
 
-    setFeedback({
-      type: 'success',
-      message: `${trimmedRoomCode} 방 코드를 확인했습니다.`,
-    })
+      setFeedback({
+        type: 'success',
+        message: '커플 연결이 완료되었습니다.',
+      })
+
+      navigate('/dashboard', {
+        replace: true,
+      })
+    } catch (error) {
+      setFeedback({
+        type: 'error',
+        message:
+          error.message ||
+          '커플 연결에 실패했습니다.',
+      })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -91,10 +156,21 @@ function CoupleConnectPage() {
           </p>
         </div>
 
+        {feedback.message && (
+          <p
+            className={`connect-feedback connect-feedback-${feedback.type}`}
+            role="status"
+            aria-live="polite"
+          >
+            {feedback.message}
+          </p>
+        )}
+
         <button
           type="button"
           className="create-room-button"
           onClick={handleCreateRoom}
+          disabled={isLoading}
         >
           <span
             className="create-room-icon"
@@ -103,7 +179,9 @@ function CoupleConnectPage() {
             ＋
           </span>
 
-          방 생성하기
+          {isLoading
+            ? '처리 중...'
+            : '방 생성하기'}
         </button>
 
         <div
@@ -135,8 +213,9 @@ function CoupleConnectPage() {
               name="roomCode"
               type="text"
               value={roomCode}
-              placeholder="방 코드를 입력해주세요"
+              placeholder="XXXX-XXXX"
               autoComplete="off"
+              disabled={isLoading}
               onChange={handleRoomCodeChange}
             />
           </div>
@@ -144,21 +223,17 @@ function CoupleConnectPage() {
           <button
             type="submit"
             className="join-room-button"
-            disabled={!roomCode.trim()}
+            disabled={
+              !roomCode.trim() ||
+              isLoading
+            }
           >
-            연결하기
+            {isLoading
+              ? '처리 중...'
+              : '연결하기'}
           </button>
         </form>
 
-        {feedback.message && (
-          <p
-            className={`connect-feedback connect-feedback-${feedback.type}`}
-            role="status"
-            aria-live="polite"
-          >
-            {feedback.message}
-          </p>
-        )}
       </section>
     </main>
   )

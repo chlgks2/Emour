@@ -2,10 +2,13 @@ services:
   mysql:
     image: 'mysql:latest'
     environment:
-      - 'MYSQL_DATABASE=mydatabase'
-      - 'MYSQL_PASSWORD=secret'
-      - 'MYSQL_ROOT_PASSWORD=verysecret'
-      - 'MYSQL_USER=myuser'
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_USER: ${MYSQL_USER}
+    volumes:
+      # MySQL 데이터가 처음 만들어질 때 프로젝트 스키마를 자동 적용합니다.
+      - './Emour_SQL_schema.sql:/docker-entrypoint-initdb.d/01-emour-schema.sql:ro'
     ports:
       - '3306'
   redis:

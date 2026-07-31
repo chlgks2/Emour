@@ -39,9 +39,19 @@ public class SecurityConfig {
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 // 접근 규칙 (위에서부터 순서대로 매칭 — 구체적인 것 먼저)
                 .authorizeHttpRequests(auth -> auth
+                        // 배포 서버는 로그인 없이 서버의 정상 실행 여부만 확인합니다.
+                        .requestMatchers("/actuator/health").permitAll()
                         .requestMatchers("/auth/logout").authenticated() // 로그아웃은 로그인 상태여야 함
                         .requestMatchers("/auth/**").permitAll()          // 그 외 인증 API 는 누구나
-                        .requestMatchers("/uploads/**").permitAll()       // 업로드된 이미지 조회는 누구나
+                        // WebSocket은 STOMP CONNECT 헤더의 JWT로 별도 인증한다.
+                        .requestMatchers("/ws/**").permitAll()
+                        // API 문서와 로컬 채팅 테스트 화면은 로그인 전에도 열 수 있다.
+                        .requestMatchers(
+                                "/v3/api-docs/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html",
+                                "/websocket-test.html"
+                        ).permitAll()
                         .anyRequest().authenticated()                     // 나머지는 전부 로그인 필수
                 )
                 // 인증 실패(토큰 없음/무효) 시 401 을 우리 형식으로 응답

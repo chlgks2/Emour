@@ -157,6 +157,34 @@ class CoupleServiceTest {
     }
 
     @Test
+    void 현재_커플방_ID를_조회한다() {
+        given(coupleMemberRepository.findCurrentRoomIdsByUserId(
+                any(Long.class),
+                any(LocalDateTime.class),
+                any(Pageable.class)
+        )).willReturn(List.of(ROOM_ID));
+
+        Long roomId = coupleService.getCurrentRoomId(USER_ID);
+
+        assertThat(roomId).isEqualTo(ROOM_ID);
+    }
+
+    @Test
+    void 유효한_현재_커플방이_없으면_조회할_수_없다() {
+        given(coupleMemberRepository.findCurrentRoomIdsByUserId(
+                any(Long.class),
+                any(LocalDateTime.class),
+                any(Pageable.class)
+        )).willReturn(List.of());
+
+        assertThatThrownBy(() -> coupleService.getCurrentRoomId(USER_ID))
+                .isInstanceOf(CustomException.class)
+                .satisfies(exception -> assertThat(
+                        ((CustomException) exception).getErrorCode()
+                ).isEqualTo(ErrorCode.ACTIVE_COUPLE_NOT_FOUND));
+    }
+
+    @Test
     void 중복_코드가_생성되면_새_코드를_다시_생성한다() {
         String duplicateCode = "AAAA-2222";
 

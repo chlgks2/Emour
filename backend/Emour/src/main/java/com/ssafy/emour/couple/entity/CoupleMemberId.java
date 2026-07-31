@@ -2,17 +2,11 @@ package com.ssafy.emour.couple.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
-import lombok.AccessLevel;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 @Embeddable
-@Getter
-@EqualsAndHashCode
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class CoupleMemberId implements Serializable {
 
     @Column(name = "room_id")
@@ -21,11 +15,36 @@ public class CoupleMemberId implements Serializable {
     @Column(name = "user_id")
     private Long userId;
 
-    /**
-     * 채팅 도메인에서 사용하는 순서와 동일하게 userId, roomId 순서로 받는다.
-     */
+    protected CoupleMemberId() {
+    }
+
     public CoupleMemberId(Long userId, Long roomId) {
         this.userId = userId;
         this.roomId = roomId;
+    }
+
+    public Long getUserId() {
+        return userId;
+    }
+
+    public Long getRoomId() {
+        return roomId;
+    }
+
+    @Override
+    public boolean equals(Object object) {
+        if (this == object) {
+            return true;
+        }
+        if (!(object instanceof CoupleMemberId that)) {
+            return false;
+        }
+        return Objects.equals(userId, that.userId)
+                && Objects.equals(roomId, that.roomId);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(userId, roomId);
     }
 }

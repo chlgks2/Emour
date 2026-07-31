@@ -1,5 +1,17 @@
 # ===== 공통 설정 (모든 환경 공유) =====
 spring:
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      
   application:
     name: Emour
   profiles:
@@ -30,3 +42,13 @@ jwt:
 # ===== 커플 초대 설정 =====
 couple:
   invitation-validity-hours: ${COUPLE_INVITATION_VALIDITY_HOURS:24}
+
+# 배포 서버에 health 주소만 공개하고 DB 등의 상세정보는 숨깁니다.
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never

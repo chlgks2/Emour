@@ -1,0 +1,98 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 300;
+  padding: 0 32px;
+  animation: fadeIn var(--duration-fast) var(--ease-out);
+  backdrop-filter: blur(2px);
+}
+
+.dialog {
+  width: 100%;
+  max-width: 320px;
+  background: var(--color-white);
+  border-radius: var(--radius-lg);
+  padding: 22px 20px 16px;
+  box-shadow: var(--shadow-float);
+  animation: popIn var(--duration-base) var(--ease-spring);
+}
+
+.title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-text);
+  text-align: center;
+  margin-bottom: 6px;
+}
+
+.description {
+  font-size: 12px;
+  color: var(--color-text-sub);
+  text-align: center;
+  margin-bottom: 18px;
+  line-height: 1.5;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+}
+
+.cancelBtn,
+.confirmBtn {
+  flex: 1;
+  min-height: var(--tap-target);
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 700;
+  transition: filter var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out);
+}
+
+.cancelBtn:active,
+.confirmBtn:active {
+  transform: scale(0.97);
+}
+
+.cancelBtn {
+  background: var(--color-sub-bg);
+  color: var(--color-text-sub);
+}
+
+.confirmBtn {
+  background: var(--color-primary);
+  color: var(--color-white);
+}
+
+.confirmBtn:hover {
+  filter: brightness(0.95);
+}
+
+/* 되돌리기 어려운 동작(삭제/해제)용 */
+.destructive {
+  background: var(--color-cancel);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes popIn {
+  from {
+    opacity: 0;
+    transform: scale(0.94) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
