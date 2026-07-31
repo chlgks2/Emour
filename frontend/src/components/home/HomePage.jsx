@@ -2,14 +2,15 @@ import {
   CalendarHeart,
   ChevronDown,
   Pencil,
+  User,
 } from "lucide-react";
 import styles from "./HomePage.module.css";
 
 // 커플 공용 홈 화면. 사진/문구/문구 위치/문구 스타일은 mypage에서가 아니라
 // 이 화면의 '수정' 버튼(HomeEditPage)에서 설정하고, 두 사용자 모두 같은 값을 봅니다.
 // - myProfileImageUrl / partnerProfileImageUrl : user.profile_image_url
-// - daysTogether : couple_room.dating_start_date 로부터 계산한 파생값
-// - imageUrl / caption / captionPosition / captionStyle / relationshipName
+// - datingStartDate : couple_room.dating_start_date ('from 260715' 형태로 표시)
+// - imageUrl / caption / captionPosition / captionStyle
 //   : ⚠️ ERD에 대응 컬럼이 아직 없음 (api/homeApi.js 상단 주석 참고)
 export default function HomePage({
   home,
@@ -28,15 +29,15 @@ export default function HomePage({
   }
 
   const {
-    daysTogether,
     datingStartDate,
+    myNickname,
+    partnerNickname,
     myProfileImageUrl,
     partnerProfileImageUrl,
     imageUrl,
     caption,
     captionPosition,
     captionStyle,
-    relationshipName = "우리",
   } = home;
 
   const position = captionPosition ?? { xPercent: 50, yPercent: 72 };
@@ -68,8 +69,7 @@ export default function HomePage({
         {datingStartDate ? (
           <div className={styles.daysRow}>
             <p className={styles.days}>
-              {relationshipName},{" "}
-              <span>{daysTogether}</span> Days
+              from <span>{formatFromDate(datingStartDate)}</span>
             </p>
 
             <button
@@ -93,13 +93,13 @@ export default function HomePage({
         )}
 
         <div className={styles.profiles}>
-          <span className={styles.profileCircle}>
-            {myProfileImageUrl && <img src={myProfileImageUrl} alt="나" />}
-          </span>
+          <ProfileCircle imageUrl={myProfileImageUrl} name={myNickname} fallbackLabel="나" />
           <span className={styles.heart}>♥</span>
-          <span className={styles.profileCircle}>
-            {partnerProfileImageUrl && <img src={partnerProfileImageUrl} alt="상대방" />}
-          </span>
+          <ProfileCircle
+            imageUrl={partnerProfileImageUrl}
+            name={partnerNickname}
+            fallbackLabel="상대방"
+          />
         </div>
       </div>
 
@@ -119,4 +119,32 @@ export default function HomePage({
       </button>
     </div>
   );
+}
+
+/**
+ * 프로필 사진이 아직 없을 수도 있어서(가입 직후 등) 빈 원이 그대로 보이지 않도록
+ * 닉네임 이니셜 -> 사람 아이콘 순서로 대체한다.
+ * (영문 닉네임은 대문자로 올려서 '민' / 'M' 처럼 크기가 비슷하게 보이도록 한다)
+ */
+function ProfileCircle({ imageUrl, name, fallbackLabel }) {
+  const initial = name?.trim()?.[0]?.toUpperCase() ?? "";
+
+  return (
+    <span className={styles.profileCircle}>
+      {imageUrl ? (
+        <img src={imageUrl} alt={`${name || fallbackLabel} 프로필 사진`} />
+      ) : (
+        <span className={styles.profileFallback} aria-label={`${name || fallbackLabel} 프로필 사진 없음`}>
+          {initial || <User size={26} aria-hidden="true" />}
+        </span>
+      )}
+    </span>
+  );
+}
+
+/** 'YYYY-MM-DD' -> '260715' (문자열 그대로 자르므로 타임존 영향 없음) */
+function formatFromDate(datingStartDate) {
+  const [year, month, day] = String(datingStartDate).split("-");
+  if (!year || !month || !day) return "";
+  return `${year.slice(2)}${month}${day}`;
 }
