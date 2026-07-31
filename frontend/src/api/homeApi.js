@@ -18,6 +18,10 @@
 // 각 함수 안의 TODO 위치만 실제 호출로 바꾸면 됩니다.
 import homeBg from "../assets/home-bg.jpg";
 import { calcDaysTogether } from "./dashboardApi";
+import {
+  getRelationshipStartDate,
+  updateRelationshipStartDate,
+} from "./calendarApi.js";
 import { mockCoupleRoom } from "./mock/db";
 
 const STORAGE_KEY = "emour_mock_home_v1";
@@ -51,13 +55,36 @@ function readSaved() {
 
 /** TODO: 백엔드 연동 시 -> GET /api/home */
 export async function fetchHomeScreen() {
-  await delay(200);
+  const [, datingStartDate] =
+    await Promise.all([
+      delay(200),
+      getRelationshipStartDate(),
+    ]);
+
   return {
     ...DEFAULT_HOME,
     ...readSaved(),
     roomId: mockCoupleRoom.roomId,
-    datingStartDate: mockCoupleRoom.datingStartDate,
-    daysTogether: calcDaysTogether(mockCoupleRoom.datingStartDate),
+    datingStartDate,
+    daysTogether: calcDaysTogether(
+      datingStartDate,
+    ),
+  };
+}
+
+export async function saveRelationshipStartDate(
+  startDate,
+) {
+  const datingStartDate =
+    await updateRelationshipStartDate(
+      startDate,
+    );
+
+  return {
+    datingStartDate,
+    daysTogether: calcDaysTogether(
+      datingStartDate,
+    ),
   };
 }
 

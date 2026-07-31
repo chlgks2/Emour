@@ -1,5 +1,3 @@
-import { useState } from 'react'
-
 import {
   ChevronRight,
   Heart,
@@ -20,98 +18,14 @@ function formatDate(dateKey) {
   return `${year}.${month}.${day}`
 }
 
-function createLocalDate(dateKey) {
-  const [year, month, day] =
-    dateKey.split('-').map(Number)
-
-  return new Date(year, month - 1, day)
-}
-
-function getRelationshipInformation(
-  startDate,
-) {
-  if (!startDate) {
-    return null
-  }
-
-  const start = createLocalDate(startDate)
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-
-  const millisecondsPerDay =
-    24 * 60 * 60 * 1000
-  const daysTogether = Math.max(
-    1,
-    Math.floor(
-      (today.getTime() -
-        start.getTime()) /
-        millisecondsPerDay,
-    ) + 1,
-  )
-  const nextMilestone =
-    Math.ceil(daysTogether / 100) * 100
-  const nextDate = new Date(start)
-
-  nextDate.setDate(
-    nextDate.getDate() +
-      nextMilestone -
-      1,
-  )
-
-  return {
-    daysTogether,
-    nextMilestone,
-    nextDate: [
-      nextDate.getFullYear(),
-      String(
-        nextDate.getMonth() + 1,
-      ).padStart(2, '0'),
-      String(nextDate.getDate()).padStart(
-        2,
-        '0',
-      ),
-    ].join('-'),
-  }
-}
-
 function AnniversaryManager({
   anniversaries,
   isLoading,
   isProcessing,
-  relationshipStartDate,
   onClose,
   onCreate,
   onEdit,
-  onSaveRelationshipStartDate,
 }) {
-  const [
-    relationshipStartDateDraft,
-    setRelationshipStartDateDraft,
-  ] = useState(
-    relationshipStartDate ?? '',
-  )
-
-  const relationshipInformation =
-    getRelationshipInformation(
-      relationshipStartDate,
-    )
-
-  const handleRelationshipSubmit =
-    (event) => {
-      event.preventDefault()
-
-      if (
-        !relationshipStartDateDraft ||
-        isProcessing
-      ) {
-        return
-      }
-
-      onSaveRelationshipStartDate(
-        relationshipStartDateDraft,
-      )
-    }
-
   return (
     <div
       className="anniversary-manager-backdrop"
@@ -156,82 +70,6 @@ function AnniversaryManager({
             />
           </button>
         </header>
-
-        <form
-          className="relationship-start-card"
-          onSubmit={
-            handleRelationshipSubmit
-          }
-        >
-          <div className="relationship-start-heading">
-            <span>
-              <Heart
-                size={17}
-                strokeWidth={1.9}
-                aria-hidden="true"
-              />
-            </span>
-
-            <div>
-              <strong>연애 시작일</strong>
-              <small>
-                100일 단위 기념일의 기준
-              </small>
-            </div>
-          </div>
-
-          <div className="relationship-start-input">
-            <input
-              type="date"
-              value={
-                relationshipStartDateDraft
-              }
-              disabled={isProcessing}
-              onChange={(event) =>
-                setRelationshipStartDateDraft(
-                  event.target.value,
-                )
-              }
-            />
-
-            <button
-              type="submit"
-              disabled={
-                isProcessing ||
-                !relationshipStartDateDraft ||
-                relationshipStartDateDraft ===
-                  relationshipStartDate
-              }
-            >
-              저장
-            </button>
-          </div>
-
-          {relationshipInformation && (
-            <div className="relationship-start-summary">
-              <span>
-                함께한 지{' '}
-                <strong>
-                  {
-                    relationshipInformation.daysTogether
-                  }
-                  일
-                </strong>
-              </span>
-
-              <span>
-                다음{' '}
-                {
-                  relationshipInformation.nextMilestone
-                }
-                일 ·{' '}
-                {formatDate(
-                  relationshipInformation.nextDate,
-                )}
-              </span>
-            </div>
-          )}
-        </form>
 
         <button
           type="button"

@@ -64,13 +64,51 @@
 }
 
 .days {
-  margin-top: 4px;
+  margin: 4px 0 0;
   font-size: 24px;
   font-weight: 800;
 }
 
 .days span {
   color: var(--color-primary);
+}
+
+.daysRow {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.dateEditButton {
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 4px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+}
+
+.registerDateButton {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 14px;
+  border: 1px solid rgba(255, 255, 255, 0.48);
+  border-radius: var(--radius-pill);
+  background: rgba(20, 20, 20, 0.3);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  backdrop-filter: blur(8px);
+}
+
+.dateEditButton:hover,
+.registerDateButton:hover {
+  background: rgba(255, 255, 255, 0.25);
 }
 
 .profiles {

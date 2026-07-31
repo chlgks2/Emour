@@ -3,8 +3,13 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { ChevronUp } from "lucide-react";
 import HomePage from "../components/home/HomePage";
 import HomeEditPage from "../components/home/HomeEditPage";
+import RelationshipStartDateModal from "../components/home/RelationshipStartDateModal";
 import DashboardPage from "./DashboardPage";
-import { fetchHomeScreen, saveHomeCustomization } from "../api/homeApi";
+import {
+  fetchHomeScreen,
+  saveHomeCustomization,
+  saveRelationshipStartDate,
+} from "../api/homeApi";
 import { HOME_SECTION } from "../constants/navigation";
 import { useToast } from "../hooks/useToast";
 import styles from "./HomeDashboardScreen.module.css";
@@ -15,6 +20,14 @@ export default function HomeDashboardScreen() {
   const navigate = useNavigate();
   const [home, setHome] = useState(null);
   const [editOpen, setEditOpen] = useState(false);
+  const [
+    relationshipDateOpen,
+    setRelationshipDateOpen,
+  ] = useState(false);
+  const [
+    relationshipDateSaving,
+    setRelationshipDateSaving,
+  ] = useState(false);
 
   const homeSectionRef = useRef(null);
   const dashboardSectionRef = useRef(null);
@@ -74,11 +87,47 @@ export default function HomeDashboardScreen() {
     }
   };
 
+  const handleRelationshipDateSave =
+    async (startDate) => {
+      try {
+        setRelationshipDateSaving(true);
+
+        const updated =
+          await saveRelationshipStartDate(
+            startDate,
+          );
+
+        setHome((previous) => ({
+          ...previous,
+          ...updated,
+        }));
+        setRelationshipDateOpen(false);
+        showToast(
+          "처음 만난 날을 저장했어요.",
+          { tone: "success" },
+        );
+      } catch {
+        showToast(
+          "처음 만난 날을 저장하지 못했어요.",
+          { tone: "error" },
+        );
+      } finally {
+        setRelationshipDateSaving(false);
+      }
+    };
+
   return (
     // data-scroll-container: 모달이 열리면 global.css 가 이 컨테이너의 스크롤을 잠근다
     <div className={styles.snapContainer} data-scroll-container>
       <section ref={homeSectionRef} className={styles.snapSection} aria-label="홈">
-        <HomePage home={home} onEdit={() => setEditOpen(true)} onViewDashboard={goToDashboard} />
+        <HomePage
+          home={home}
+          onEdit={() => setEditOpen(true)}
+          onEditStartDate={() =>
+            setRelationshipDateOpen(true)
+          }
+          onViewDashboard={goToDashboard}
+        />
       </section>
 
       <section ref={dashboardSectionRef} className={styles.snapSection} aria-label="대시보드">
@@ -95,6 +144,27 @@ export default function HomeDashboardScreen() {
 
       {editOpen && home && (
         <HomeEditPage initial={home} onCancel={() => setEditOpen(false)} onSave={handleSave} />
+      )}
+
+      {relationshipDateOpen && home && (
+        <RelationshipStartDateModal
+          key={
+            home.datingStartDate ||
+            "relationship-start-empty"
+          }
+          initialDate={
+            home.datingStartDate ?? ""
+          }
+          isSaving={
+            relationshipDateSaving
+          }
+          onClose={() =>
+            setRelationshipDateOpen(false)
+          }
+          onSave={
+            handleRelationshipDateSave
+          }
+        />
       )}
     </div>
   );
