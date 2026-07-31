@@ -5,27 +5,48 @@
   display: flex;
   align-items: flex-end;
   overflow: hidden;
-  background: rgba(64, 64, 64, 0.32);
-  backdrop-filter: blur(2px);
-  -webkit-backdrop-filter: blur(2px);
+  background: var(--color-scrim);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  animation: anniversary-fade var(--duration-base) var(--ease-out);
 }
 
 .anniversary-manager {
   width: 100%;
-  max-height: 82%;
+  max-height: 84%;
   overflow-y: auto;
-  padding: 10px 20px 26px;
-  border-radius: 28px 28px 0 0;
-  background: #fffdfc;
-  box-shadow: 0 -18px 42px rgba(64, 64, 64, 0.2);
+  padding: 10px 20px calc(24px + var(--safe-bottom));
+  border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sheet);
+  animation: anniversary-rise var(--duration-slow) var(--ease-out);
+}
+
+@keyframes anniversary-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes anniversary-rise {
+  from {
+    transform: translateY(14%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .anniversary-manager-backdrop,
+  .anniversary-manager {
+    animation: none;
+  }
 }
 
 .anniversary-manager-handle {
-  width: 42px;
+  width: 40px;
   height: 4px;
   margin: 0 auto 18px;
-  border-radius: 999px;
-  background: #d7cfcc;
+  border-radius: var(--radius-pill);
+  background: var(--color-border-strong);
 }
 
 .anniversary-manager > header {
@@ -36,9 +57,9 @@
 }
 
 .anniversary-manager > header p {
-  margin: 0 0 4px;
-  color: #ad887c;
-  font-size: 9px;
+  margin: 0 0 5px;
+  color: var(--color-primary);
+  font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.12em;
 }
@@ -46,10 +67,12 @@
 .anniversary-manager > header h2 {
   margin: 0;
   color: var(--color-text-primary);
-  font-size: 22px;
+  font-size: var(--font-title);
+  font-weight: 800;
 }
 
 .anniversary-manager-close {
+  flex-shrink: 0;
   width: 34px;
   height: 34px;
   display: inline-flex;
@@ -58,32 +81,162 @@
   padding: 0;
   border: 0;
   border-radius: 50%;
-  background: var(--color-secondary);
-  color: var(--color-text-primary);
+  background: var(--color-surface-tint);
+  color: var(--color-text-secondary);
   cursor: pointer;
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
+}
+
+.anniversary-manager-close:hover:not(:disabled) {
+  background: var(--color-surface-sunken);
+  color: var(--color-text-primary);
 }
 
 .anniversary-manager-create {
   width: 100%;
-  height: 48px;
+  height: 50px;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 7px;
   margin-top: 20px;
   border: 0;
-  border-radius: 15px;
-  background: var(--color-primary);
-  color: var(--color-text-primary);
-  font-weight: 800;
+  border-radius: var(--radius-pill);
+  background: var(--color-action);
+  color: var(--color-text-on-primary);
+  font-size: var(--font-body);
+  font-weight: 700;
   cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease-out);
 }
+
+.anniversary-manager-create:hover:not(:disabled) {
+  background: var(--color-action-hover);
+}
+
+/* =========================
+   연애 시작일 카드
+========================= */
+
+.relationship-start-card {
+  margin-top: 18px;
+  padding: 15px;
+  border: 1px solid var(--color-primary-soft);
+  border-radius: var(--radius-lg);
+  background: var(--color-primary-faint);
+}
+
+.relationship-start-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.relationship-start-heading > span {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-primary);
+}
+
+.relationship-start-heading strong,
+.relationship-start-heading small {
+  display: block;
+}
+
+.relationship-start-heading strong {
+  color: var(--color-text-primary);
+  font-size: var(--font-label);
+  font-weight: 700;
+}
+
+.relationship-start-heading small {
+  margin-top: 3px;
+  color: var(--color-text-secondary);
+  font-size: 10px;
+}
+
+.relationship-start-input {
+  display: grid;
+  grid-template-columns: 1fr 64px;
+  gap: 7px;
+  margin-top: 12px;
+}
+
+.relationship-start-input input,
+.relationship-start-input button {
+  height: 42px;
+  border-radius: var(--radius-sm);
+  font: inherit;
+}
+
+.relationship-start-input input {
+  min-width: 0;
+  padding: 0 12px;
+  border: 1px solid var(--color-border);
+  outline: none;
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  font-size: var(--font-caption);
+  transition:
+    border-color var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out);
+}
+
+.relationship-start-input input:focus {
+  border-color: var(--color-primary);
+  box-shadow: var(--focus-ring);
+}
+
+.relationship-start-input button {
+  border: 0;
+  background: var(--color-action);
+  color: var(--color-text-on-primary);
+  font-size: var(--font-caption);
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease-out);
+}
+
+.relationship-start-input button:hover:not(:disabled) {
+  background: var(--color-action-hover);
+}
+
+.relationship-start-summary {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 11px;
+  border-top: 1px solid var(--color-primary-soft);
+}
+
+.relationship-start-summary span {
+  color: var(--color-text-secondary);
+  font-size: 10px;
+}
+
+.relationship-start-summary strong {
+  color: var(--color-text-accent);
+  font-weight: 700;
+}
+
+/* =========================
+   기념일 목록
+========================= */
 
 .anniversary-manager-list {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  margin-top: 15px;
+  margin-top: 16px;
 }
 
 .anniversary-manager-item {
@@ -91,30 +244,34 @@
   min-height: 62px;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 11px;
-  border: 1px solid rgba(227, 198, 187, 0.68);
-  border-radius: 15px;
+  gap: 11px;
+  padding: 11px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
   background: var(--color-background);
   color: var(--color-text-primary);
   text-align: left;
   cursor: pointer;
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out);
 }
 
 .anniversary-manager-item:hover:not(:disabled) {
-  background: rgba(238, 221, 214, 0.48);
+  background: var(--color-surface-tint);
+  border-color: var(--color-primary-soft);
 }
 
 .anniversary-manager-icon {
-  width: 36px;
-  height: 36px;
+  width: 38px;
+  height: 38px;
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 12px;
-  background: rgba(211, 153, 153, 0.2);
-  color: #bd6674;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary-faint);
+  color: var(--color-primary);
 }
 
 .anniversary-manager-information {
@@ -131,64 +288,72 @@
 }
 
 .anniversary-manager-information strong {
-  font-size: 13px;
+  font-size: var(--font-label);
+  font-weight: 700;
 }
 
 .anniversary-manager-information small {
-  margin-top: 5px;
+  margin-top: 4px;
   color: var(--color-text-secondary);
-  font-size: 10px;
+  font-size: var(--font-micro);
 }
 
 .anniversary-manager-repeat {
   flex-shrink: 0;
-  padding: 5px 8px;
-  border-radius: 999px;
-  background: rgba(211, 153, 153, 0.16);
-  color: #9b6069;
-  font-size: 9px;
-  font-weight: 800;
+  padding: 5px 9px;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary-faint);
+  color: var(--color-text-accent);
+  font-size: 10px;
+  font-weight: 700;
 }
 
 .anniversary-manager-item > svg {
   flex-shrink: 0;
-  color: #aa9b95;
+  color: var(--color-text-placeholder);
 }
+
+/* =========================
+   상태 · 비어 있음
+========================= */
 
 .anniversary-manager-status,
 .anniversary-manager-empty {
   margin: 0;
   padding: 34px 18px;
-  border: 1px dashed var(--color-border);
-  border-radius: 17px;
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-lg);
   color: var(--color-text-secondary);
   text-align: center;
 }
 
 .anniversary-manager-status {
-  font-size: 12px;
+  margin-top: 16px;
+  font-size: var(--font-caption);
 }
 
 .anniversary-manager-empty {
+  margin-top: 16px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
 }
 
 .anniversary-manager-empty > svg {
-  color: #bd6674;
+  color: var(--color-primary);
 }
 
 .anniversary-manager-empty strong {
   color: var(--color-text-primary);
-  font-size: 13px;
+  font-size: var(--font-label);
+  font-weight: 700;
 }
 
 .anniversary-manager-empty p {
   margin: 0;
-  font-size: 11px;
-  line-height: 1.5;
+  font-size: var(--font-micro);
+  line-height: var(--leading-normal);
 }
 
 .anniversary-manager button:disabled {

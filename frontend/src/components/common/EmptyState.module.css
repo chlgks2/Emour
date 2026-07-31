@@ -21,8 +21,8 @@
 }
 
 .error .icon {
-  background: #fdecec;
-  color: var(--color-cancel);
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
 }
 
 .title {
@@ -43,8 +43,8 @@
   min-height: var(--tap-target);
   padding: 0 20px;
   border-radius: var(--radius-pill);
-  background: var(--color-primary);
-  color: var(--color-white);
+  background: var(--color-action);
+  color: var(--color-text-on-primary);
   font-size: 13px;
   font-weight: 700;
   transition: background-color var(--duration-fast) var(--ease-out),
@@ -52,7 +52,7 @@
 }
 
 .actionBtn:hover {
-  background: var(--color-primary-dark);
+  background: var(--color-action-hover);
 }
 
 .actionBtn:active {

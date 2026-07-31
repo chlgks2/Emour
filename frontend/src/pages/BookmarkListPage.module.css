@@ -98,7 +98,7 @@
 }
 
 .removeBtn:hover {
-  background: #fdecec;
+  background: var(--color-danger-bg);
   color: var(--color-cancel);
 }
 
