@@ -28,12 +28,42 @@ export const EMOTION_STYLE = {
 // dashboard JSON 키(대문자 코드) -> 한글 라벨
 export const EMOTION_CODE_LABEL = {
   JOY: "행복",
+  EXCITEMENT: "설렘",
+  COMFORT: "편안함",
+  WORRY: "걱정",
+  SURPRISE: "놀람",
+  EMBARRASSMENT: "당황",
+  CURIOSITY: "궁금함",
+  ANGER: "화남",
+  CONFUSION: "혼란",
+  DISTRESS: "괴로움",
+  GRATITUDE: "감사",
+  APOLOGY: "사과",
+  HURT: "상처",
   LOVE: "설렘",
   AFFECTION: "애정",
   CALM: "편안함",
   WARMTH: "따뜻함",
   SADNESS: "서운함",
   NEUTRAL: "중립",
+};
+
+const EMOTION_CODE_COLOR = {
+  JOY: "var(--emotion-happy)",
+  EXCITEMENT: "var(--emotion-love)",
+  COMFORT: "var(--emotion-calm)",
+  WORRY: "var(--emotion-neutral)",
+  SURPRISE: "var(--emotion-warm)",
+  NEUTRAL: "var(--emotion-neutral)",
+  EMBARRASSMENT: "var(--emotion-warm)",
+  CURIOSITY: "var(--emotion-calm)",
+  SADNESS: "var(--emotion-sad)",
+  ANGER: "var(--emotion-sad)",
+  CONFUSION: "var(--emotion-neutral)",
+  DISTRESS: "var(--emotion-sad)",
+  GRATITUDE: "var(--emotion-happy)",
+  APOLOGY: "var(--emotion-neutral)",
+  HURT: "var(--emotion-sad)",
 };
 
 // 대문자 코드로 오든 한글 라벨로 오든 동일하게 한글 라벨로 정규화
@@ -43,8 +73,15 @@ export function toEmotionLabel(emotion) {
 }
 
 export function getEmotionStyle(emotion) {
+  const emotionCode =
+    String(emotion ?? "").toUpperCase();
   const label = toEmotionLabel(emotion);
-  return EMOTION_STYLE[label] || { color: "var(--color-text-placeholder)", Icon: Meh };
+  return EMOTION_STYLE[label] || {
+    color:
+      EMOTION_CODE_COLOR[emotionCode] ??
+      "var(--color-text-placeholder)",
+    Icon: Meh,
+  };
 }
 
 /**
@@ -66,7 +103,7 @@ export function buildEmotionReport(emotionSummary) {
       label,
       count,
       ratio: Math.round((count / total) * 100),
-      color: getEmotionStyle(label).color,
+      color: getEmotionStyle(emotionCode).color,
     };
   });
 
