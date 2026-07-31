@@ -14,6 +14,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class DiaryService {
@@ -59,6 +61,19 @@ public class DiaryService {
         CoupleRoom room = getActiveRoom(userId);
         Diary diary = getMyDiary(userId, room.getId(), diaryId);
         diaryRepository.delete(diary);
+    }
+
+    @Transactional(readOnly = true)
+    public List<DiaryResponse> getAll(Long userId) {
+        CoupleRoom room = getActiveRoom(userId);
+        return diaryRepository
+                .findAllByRoomIdAndUserIdOrderByDiaryDateDesc(
+                        room.getId(),
+                        userId
+                )
+                .stream()
+                .map(DiaryResponse::from)
+                .toList();
     }
 
     private CoupleRoom getActiveRoom(Long userId) {

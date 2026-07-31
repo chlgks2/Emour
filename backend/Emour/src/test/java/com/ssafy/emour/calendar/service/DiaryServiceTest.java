@@ -16,6 +16,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -201,5 +202,52 @@ class DiaryServiceTest {
                 .isEqualTo(ErrorCode.ACCESS_DENIED);
 
         verify(diaryRepository, never()).delete(any());
+    }
+
+    @Test
+    void 본인의_한줄_일기_목록만_조회한다() {
+        Long userId = 1L;
+        Long roomId = 10L;
+        CoupleRoom room = mock(CoupleRoom.class);
+        Diary recentDiary = Diary.create(
+                roomId,
+                userId,
+                LocalDate.of(2026, 8, 6),
+                "최근 기록"
+        );
+        Diary oldDiary = Diary.create(
+                roomId,
+                userId,
+                LocalDate.of(2026, 8, 5),
+                "이전 기록"
+        );
+        given(memberRepository.existsById(userId)).willReturn(true);
+        given(coupleRoomRepository.findActiveRoomByUserId(userId))
+                .willReturn(Optional.of(room));
+        given(room.getId()).willReturn(roomId);
+        given(diaryRepository
+                .findAllByRoomIdAndUserIdOrderByDiaryDateDesc(
+                        roomId,
+                        userId
+                ))
+                .willReturn(List.of(recentDiary, oldDiary));
+
+        var responses = diaryService.getAll(userId);
+
+        assertThat(responses).hasSize(2);
+        assertThat(responses)
+                .extracting(response -> response.userId())
+                .containsOnly(userId);
+        assertThat(responses)
+                .extracting(response -> response.date())
+                .containsExactly(
+                        LocalDate.of(2026, 8, 6),
+                        LocalDate.of(2026, 8, 5)
+                );
+        verify(diaryRepository)
+                .findAllByRoomIdAndUserIdOrderByDiaryDateDesc(
+                        roomId,
+                        userId
+                );
     }
 }
