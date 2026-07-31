@@ -1,0 +1,92 @@
+.card {
+  /* 대시보드 카드 공통 간격 규약 — 다른 카드(DashboardStats 등)와 동일 */
+  margin: 14px 20px 0;
+  padding: var(--card-padding);
+  border-radius: var(--card-radius);
+  background: var(--card-surface);
+  box-shadow: var(--card-shadow);
+}
+
+.title {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 10px;
+  color: var(--color-text-primary);
+  font-size: var(--font-label);
+  font-weight: 800;
+}
+
+.title svg {
+  color: var(--color-primary);
+}
+
+.chart {
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.gridLine {
+  stroke: var(--color-divider);
+  stroke-width: 1;
+}
+
+.axisLabel {
+  fill: var(--color-text-tertiary);
+  font-size: 8px;
+  font-weight: 700;
+}
+
+/* 선 — 색/점선은 시리즈가 인라인으로 정한다 (소스 교체에 대비) */
+.line {
+  fill: none;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  /* 뷰박스가 늘어나도 선 굵기는 일정하게 */
+  vector-effect: non-scaling-stroke;
+}
+
+.dot {
+  stroke: var(--color-surface);
+  stroke-width: 1.6;
+}
+
+.legend {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 6px;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--color-text-secondary);
+  font-size: var(--font-micro);
+  font-weight: 700;
+}
+
+.legendDot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+.emptyText {
+  padding: 18px 0 10px;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-caption);
+  line-height: var(--leading-relaxed);
+  text-align: center;
+}
+
+/* 좁은 화면에서는 다른 카드와 같은 16px 로 줄인다 (.gridRow 와 동일) */
+@media (max-width: 420px) {
+  .card {
+    margin-right: 16px;
+    margin-left: 16px;
+  }
+}
