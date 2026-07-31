@@ -1,6 +1,7 @@
 import {
   CalendarHeart,
   ChevronDown,
+  Heart,
   Pencil,
   User,
 } from "lucide-react";
@@ -94,7 +95,7 @@ export default function HomePage({
 
         <div className={styles.profiles}>
           <ProfileCircle imageUrl={myProfileImageUrl} name={myNickname} fallbackLabel="나" />
-          <span className={styles.heart}>♥</span>
+          <Heart className={styles.heart} size={20} aria-hidden="true" />
           <ProfileCircle
             imageUrl={partnerProfileImageUrl}
             name={partnerNickname}

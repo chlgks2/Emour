@@ -40,7 +40,8 @@ export default function MessageBubble({
       <div className={styles.column}>
         {emotionStyle && (
           <span className={styles.emotionTag} style={{ color: emotionStyle.color }}>
-            {emotionStyle.icon} {toEmotionLabel(message.emotionType)}
+            <emotionStyle.Icon size={11} aria-hidden="true" />
+            {toEmotionLabel(message.emotionType)}
           </span>
         )}
 

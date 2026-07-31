@@ -161,8 +161,8 @@
 }
 
 .heart {
+  flex: none;
   color: var(--color-primary);
-  font-size: 22px;
 }
 
 .captionBox {

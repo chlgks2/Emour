@@ -10,16 +10,19 @@
  *    나머지 코드는 목업 라벨을 기준으로 추정한 값이다. AI/백엔드에서 쓰는 실제 코드 목록을
  *    받는 즉시 이 표만 고치면 화면 전체에 반영된다.
  */
+import { Frown, Heart, HeartPulse, Leaf, Meh, Smile, Sun } from "lucide-react";
 
 // 한글 감정 라벨 -> 색/아이콘
+// Icon 은 lucide 라인 아이콘 컴포넌트다. (OS 기본 이모지는 윈도우/맥/안드로이드에서
+// 제각각 렌더링돼 톤이 깨지므로 쓰지 않는다)
 export const EMOTION_STYLE = {
-  행복: { color: "var(--emotion-happy)", icon: "😊" },
-  설렘: { color: "var(--emotion-love)", icon: "🥰" },
-  애정: { color: "var(--emotion-love)", icon: "💕" },
-  편안함: { color: "var(--emotion-calm)", icon: "🙂" },
-  따뜻함: { color: "var(--emotion-warm)", icon: "☺️" },
-  서운함: { color: "var(--emotion-sad)", icon: "😔" },
-  중립: { color: "var(--emotion-neutral)", icon: "😐" },
+  행복: { color: "var(--emotion-happy)", Icon: Smile },
+  설렘: { color: "var(--emotion-love)", Icon: HeartPulse },
+  애정: { color: "var(--emotion-love)", Icon: Heart },
+  편안함: { color: "var(--emotion-calm)", Icon: Leaf },
+  따뜻함: { color: "var(--emotion-warm)", Icon: Sun },
+  서운함: { color: "var(--emotion-sad)", Icon: Frown },
+  중립: { color: "var(--emotion-neutral)", Icon: Meh },
 };
 
 // dashboard JSON 키(대문자 코드) -> 한글 라벨
@@ -41,7 +44,7 @@ export function toEmotionLabel(emotion) {
 
 export function getEmotionStyle(emotion) {
   const label = toEmotionLabel(emotion);
-  return EMOTION_STYLE[label] || { color: "var(--color-text-placeholder)", icon: "🙂" };
+  return EMOTION_STYLE[label] || { color: "var(--color-text-placeholder)", Icon: Meh };
 }
 
 /**

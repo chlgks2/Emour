@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Heart } from 'lucide-react'
 
 import {
   connectCouple,
@@ -135,7 +136,11 @@ function CoupleConnectPage() {
           className="couple-heart-symbol"
           aria-hidden="true"
         >
-          <span className="couple-heart-icon">♥</span>
+          <Heart
+            className="couple-heart-icon"
+            size={30}
+            aria-hidden="true"
+          />
         </div>
 
         <div className="couple-connect-heading">
