@@ -94,9 +94,11 @@ export default function DashboardStats({ dashboard }) {
   );
 }
 
-// busiest_hour(0~23) -> "밤 10시~11시"
+// busiest_hour(0~23) -> "오후 2시~오후 3시"
 function formatHourRange(hour) {
-  return `${formatHourLabel(hour)}~${(hour + 1) % 24}시`;
+  return `${formatHourLabel(hour)}~${formatHourLabel(
+    (hour + 1) % 24,
+  )}`;
 }
 
 function formatHourLabel(hour) {

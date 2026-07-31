@@ -16,7 +16,7 @@ import styles from "./MoodSlotList.module.css";
  * @param {object} window       알림 설정 { startTime, endTime, intervalHours }
  * @param {number|null} nowMinutes 오늘이면 현재 시각(분). 지난 날짜면 null
  * @param {(payload:{slot, minutesOfDay}) => void} onEditSlot
- *   slot 이 있으면 수정, 없으면 그 시간대에 새로 등록
+ *   현재 진행 중인 슬롯에서만 수정 또는 등록
  */
 export default function MoodSlotList({
   mySlots = [],
@@ -44,11 +44,15 @@ export default function MoodSlotList({
             <SlotCell
               label="나"
               slot={row.mine}
-              // 아직 오지 않은 시간대는 기록할 수 없다.
               onEdit={
-                row.isFuture
-                  ? undefined
-                  : () => onEditSlot?.({ slot: row.mine, minutesOfDay: row.minutesOfDay })
+                row.isEditable
+                  ? () =>
+                      onEditSlot?.({
+                        slot: row.mine,
+                        minutesOfDay:
+                          row.minutesOfDay,
+                      })
+                  : undefined
               }
             />
             <SlotCell label="상대방" slot={row.partner} />
