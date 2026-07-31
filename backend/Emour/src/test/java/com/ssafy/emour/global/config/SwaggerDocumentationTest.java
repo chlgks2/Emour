@@ -52,6 +52,9 @@ class SwaggerDocumentationTest {
                 ).exists())
                 .andExpect(jsonPath(
                         "$.paths['/chats/{messageId}/reaction'].delete"
+                ).exists())
+                .andExpect(jsonPath(
+                        "$.paths['/chats/analysis/run'].post"
                 ).exists());
     }
 
@@ -74,6 +77,15 @@ class SwaggerDocumentationTest {
                 ).exists())
                 .andExpect(jsonPath(
                         "$.paths['/dashboards/conversation-flow'].get"
+                ).exists());
+    }
+
+    @Test
+    void exposesProfileImagesApi() throws Exception {
+        mockMvc.perform(get("/v3/api-docs"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath(
+                        "$.paths['/users/profile-img'].get"
                 ).exists());
     }
 

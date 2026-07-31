@@ -1,18 +1,23 @@
 package com.ssafy.emour.member.service;
 
 import com.ssafy.emour.auth.service.RefreshTokenService;
+import com.ssafy.emour.couple.repository.CoupleMemberRepository;
 import com.ssafy.emour.global.exception.CustomException;
 import com.ssafy.emour.global.exception.ErrorCode;
 import com.ssafy.emour.member.dto.request.PasswordChangeRequest;
 import com.ssafy.emour.member.dto.request.ProfileUpdateRequest;
 import com.ssafy.emour.member.dto.response.MemberProfileResponse;
+import com.ssafy.emour.member.dto.response.MemberProfileImagesResponse;
 import com.ssafy.emour.member.entity.Member;
 import com.ssafy.emour.member.entity.MemberStatus;
 import com.ssafy.emour.member.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 /**
  * 회원(마이페이지) 관련 비즈니스 로직.
@@ -22,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class MemberService {
 
     private final MemberRepository memberRepository;
+    private final CoupleMemberRepository coupleMemberRepository;
     private final PasswordEncoder passwordEncoder;
     private final RefreshTokenService refreshTokenService;
 
@@ -29,6 +35,38 @@ public class MemberService {
     @Transactional(readOnly = true)
     public MemberProfileResponse getMyProfile(Long userId) {
         return MemberProfileResponse.from(getActiveMember(userId));
+    }
+
+    /** 로그인한 사용자와 현재 커플 상대방의 프로필 이미지를 함께 조회합니다. */
+    @Transactional(readOnly = true)
+    public MemberProfileImagesResponse getProfileImages(Long userId) {
+        Member me = getActiveMember(userId);
+        List<Long> partnerIds =
+                coupleMemberRepository.findActivePartnerUserIds(
+                        userId,
+                        PageRequest.of(0, 1)
+                );
+
+        if (partnerIds.isEmpty()) {
+            return new MemberProfileImagesResponse(
+                    me.getId(),
+                    me.getProfileImageUrl(),
+                    null,
+                    null
+            );
+        }
+
+        Member partner = memberRepository
+                .findById(partnerIds.get(0))
+                .filter(member ->
+                        member.getStatus() != MemberStatus.WITHDRAWN)
+                .orElse(null);
+        return new MemberProfileImagesResponse(
+                me.getId(),
+                me.getProfileImageUrl(),
+                partner == null ? null : partner.getId(),
+                partner == null ? null : partner.getProfileImageUrl()
+        );
     }
 
     /** 프로필 수정 (부분 수정) */

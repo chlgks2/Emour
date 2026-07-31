@@ -5,7 +5,9 @@ import com.ssafy.emour.global.util.SecurityUtil;
 import com.ssafy.emour.member.dto.request.PasswordChangeRequest;
 import com.ssafy.emour.member.dto.request.ProfileUpdateRequest;
 import com.ssafy.emour.member.dto.response.MemberProfileResponse;
+import com.ssafy.emour.member.dto.response.MemberProfileImagesResponse;
 import com.ssafy.emour.member.service.MemberService;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -64,5 +66,23 @@ public class MemberController {
         Long userId = SecurityUtil.getCurrentUserId();
         memberService.withdraw(userId);
         return ResponseEntity.ok(ApiResponse.success("회원 탈퇴가 완료되었습니다."));
+    }
+
+    @GetMapping("/profile-img")
+    @Operation(
+            summary = "나와 상대방 프로필 이미지 조회",
+            description = """
+                    로그인한 사용자와 현재 연결된 커플 상대방의 프로필 이미지 주소를 반환합니다.
+                    커플 연결 전이거나 상대방 이미지가 없으면 해당 값은 null입니다.
+                    """
+    )
+    public ResponseEntity<ApiResponse<MemberProfileImagesResponse>>
+    getProfileImages() {
+        Long userId = SecurityUtil.getCurrentUserId();
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        memberService.getProfileImages(userId)
+                )
+        );
     }
 }

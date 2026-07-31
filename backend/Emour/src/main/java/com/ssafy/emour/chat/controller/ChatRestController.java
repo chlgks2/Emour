@@ -2,6 +2,7 @@ package com.ssafy.emour.chat.controller;
 
 import com.ssafy.emour.chat.dto.ChatBookmarkListResponse;
 import com.ssafy.emour.chat.dto.ChatBookmarkResponse;
+import com.ssafy.emour.chat.dto.ChatAnalysisBatchResponse;
 import com.ssafy.emour.chat.dto.ChatHistoryResponse;
 import com.ssafy.emour.chat.dto.ChatMessageResponse;
 import com.ssafy.emour.chat.dto.ChatReactionEventResponse;
@@ -12,6 +13,7 @@ import com.ssafy.emour.chat.dto.ChatReadStatusResponse;
 import com.ssafy.emour.chat.dto.ChatRestMessageRequest;
 import com.ssafy.emour.chat.dto.ChatUnreadCountResponse;
 import com.ssafy.emour.chat.service.ChatBookmarkService;
+import com.ssafy.emour.chat.service.ChatAnalysisService;
 import com.ssafy.emour.chat.service.ChatMessageService;
 import com.ssafy.emour.chat.service.ChatReactionService;
 import com.ssafy.emour.chat.service.ChatReadService;
@@ -52,6 +54,7 @@ public class ChatRestController {
     private final ChatReadService chatReadService;
     private final ChatBookmarkService chatBookmarkService;
     private final ChatReactionService chatReactionService;
+    private final ChatAnalysisService chatAnalysisService;
     private final SimpMessagingTemplate messagingTemplate;
 
     /**
@@ -327,6 +330,25 @@ public class ChatRestController {
         );
 
         return response;
+    }
+
+    @PostMapping("/analysis/run")
+    @Operation(
+            summary = "대기 중인 채팅 감정 분석 실행",
+            description = """
+                    해당 방에서 아직 분석되지 않은 텍스트 메시지를 최대 10개 골라
+                    AI 서버에 즉시 요청하고 결과를 chat_analysis에 저장합니다.
+                    로컬 Swagger 연결 테스트에 사용할 수 있습니다.
+                    """
+    )
+    public ChatAnalysisBatchResponse analyzePendingMessages(
+            @Parameter(description = "커플 방 번호", example = "1")
+            @RequestParam Long roomId
+    ) {
+        return chatAnalysisService.analyzePendingMessages(
+                roomId,
+                SecurityUtil.getCurrentUserId()
+        );
     }
 
     private void publishReaction(
