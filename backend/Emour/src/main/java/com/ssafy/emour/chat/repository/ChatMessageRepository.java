@@ -3,7 +3,10 @@ package com.ssafy.emour.chat.repository;
 import com.ssafy.emour.chat.entity.ChatMessage;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -51,5 +54,28 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
             Long roomId,
             Long userId,
             Long lastReadMessageId
+    );
+
+    long countByRoomIdAndSenderIdAndSentAtGreaterThanEqualAndSentAtLessThan(
+            Long roomId,
+            Long senderId,
+            LocalDateTime start,
+            LocalDateTime end
+    );
+
+    @Query("""
+            select count(image)
+            from ChatMessage message
+            join message.images image
+            where message.roomId = :roomId
+              and message.senderId = :userId
+              and message.sentAt >= :start
+              and message.sentAt < :end
+            """)
+    long countImages(
+            @Param("roomId") Long roomId,
+            @Param("userId") Long userId,
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end
     );
 }

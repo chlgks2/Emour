@@ -161,13 +161,13 @@ CREATE TABLE `dashboard` (
     `room_id` BIGINT NOT NULL,
     `user_id` BIGINT NOT NULL,
     `summary_date` DATE NOT NULL,
-    -- 하루 동안 주고받은 전체 메시지 개수
+    -- 하루 동안 이 사용자가 보낸 메시지 개수
     `message_count` INT NOT NULL DEFAULT 0,
-    -- 하루 동안 채팅으로 주고받은 이미지 개수
+    -- 하루 동안 이 사용자가 보낸 이미지 개수
     `image_count` INT NOT NULL DEFAULT 0,
-    -- 하루 동안 메시지에 남긴 공감 및 반응 개수
+    -- 하루 동안 이 사용자가 메시지에 남긴 공감 및 반응 개수
     `reaction_count` INT NOT NULL DEFAULT 0,
-    -- 하루 동안 저장한 북마크 메시지 개수
+    -- 하루 동안 이 사용자가 저장한 북마크 메시지 개수
     `bookmark_count` INT NOT NULL DEFAULT 0,
     `average_response_seconds` DECIMAL(12, 2) NULL,
     -- 대화가 가장 활발했던 시간 (0 ~ 23)
