@@ -39,11 +39,24 @@ export function getMoodLabel(moodType) {
   return getMoodMeta(moodType)?.label ?? "";
 }
 
-// 두 사람의 감정을 좌상단(나) / 우하단(상대방) 대각선으로 채우는 원형 그라데이션
+/**
+ * mood 인자를 유연하게 받는다.
+ * 대시보드는 mood 레코드 객체를, 캘린더는 mood_type 코드 문자열을 넘긴다.
+ */
+function toMoodType(mood) {
+  if (!mood) return null;
+  return typeof mood === "string" ? mood : (mood.moodType ?? null);
+}
+
+// 두 사람의 감정을 좌상단(나) / 우하단(상대방) 대각선으로 채우는 그라데이션.
+// 캘린더 셀과 대시보드 감정 원이 같은 함수를 써서 톤이 어긋나지 않게 한다.
 // 한쪽만 등록된 경우 나머지 영역은 흰색으로 채움, 둘 다 없으면 연회색
 export function buildDayGradient(myMood, partnerMood) {
-  const myColor = myMood ? getMoodColor(myMood.moodType) : null;
-  const partnerColor = partnerMood ? getMoodColor(partnerMood.moodType) : null;
+  const myType = toMoodType(myMood);
+  const partnerType = toMoodType(partnerMood);
+
+  const myColor = myType ? getMoodColor(myType) : null;
+  const partnerColor = partnerType ? getMoodColor(partnerType) : null;
 
   if (!myColor && !partnerColor) return EMPTY_MOOD_COLOR;
 

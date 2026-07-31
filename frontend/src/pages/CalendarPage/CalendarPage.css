@@ -180,33 +180,18 @@
 }
 
 /*
-  나의 감정 색상
-  날짜 셀의 왼쪽 절반을 담당
+  두 사람의 감정 색.
+  예전에는 셀을 좌/우 절반으로 딱 잘라 칠했는데, 경계선이 그대로 드러나
+  대시보드의 감정 원(부드러운 그라데이션)과 톤이 맞지 않았다.
+  이제 utils/moodEmotion.buildDayGradient() 가 만든 같은 그라데이션을
+  --day-mood-gradient 로 받아 쓴다. (좌상단=나, 우하단=상대방, oklch 보간)
 */
 .calendar-day-cell::before {
   content: '';
   position: absolute;
   z-index: 0;
-  top: 0;
-  right: 50%;
-  bottom: 0;
-  left: 0;
-  background: var(--my-mood-color);
-}
-
-/*
-  상대방 감정 색상
-  날짜 셀의 오른쪽 절반을 담당
-*/
-.calendar-day-cell::after {
-  content: '';
-  position: absolute;
-  z-index: 0;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 50%;
-  background: var(--partner-mood-color);
+  inset: 0;
+  background: var(--day-mood-gradient);
 }
 
 /* 날짜와 표시 점을 배경보다 위에 배치 */

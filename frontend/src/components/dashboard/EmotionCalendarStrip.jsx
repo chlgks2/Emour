@@ -1,6 +1,5 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import Button from "../common/Button";
-import DayMoodDetail from "./DayMoodDetail";
+import MoodSlotList from "./MoodSlotList";
 import { buildDayGradient, getMoodLabel } from "../../utils/moodEmotion";
 import styles from "./EmotionCalendarStrip.module.css";
 
@@ -22,10 +21,12 @@ function buildDayAriaLabel(day) {
  * @param {() => void} onPrevWeek 이전 주로 이동
  * @param {() => void} onNextWeek 다음 주로 이동
  * @param {() => void} onMonthClick 월 라벨 클릭 시 월간 캘린더 모달 오픈
- * @param {() => void} onRegisterClick 오늘의 감정 등록 버튼 클릭
  * @param {string|null} selectedMoodDate 현재 확장되어 보이는 날짜
  * @param {(moodDate: string) => void} onSelectDate 원 클릭(토글) 핸들러
- * @param {(moodDate: string) => void} onEditMyMood 상세 패널의 "내 감정 수정/등록" 클릭 핸들러
+ * @param {{mySlots:Array, partnerSlots:Array}} detailMood 선택한 날짜의 무드 슬롯
+ * @param {object} moodWindow  알림 설정 { startTime, endTime, intervalHours }
+ * @param {number|null} detailNowMinutes 선택한 날짜가 오늘이면 현재 시각(분), 아니면 null
+ * @param {({slot, minutesOfDay}) => void} onEditSlot 시간대별 기분 등록/수정
  */
 export default function EmotionCalendarStrip({
   monthLabel,
@@ -33,10 +34,12 @@ export default function EmotionCalendarStrip({
   onPrevWeek,
   onNextWeek,
   onMonthClick,
-  onRegisterClick,
   selectedMoodDate,
   onSelectDate,
-  onEditMyMood,
+  detailMood = { mySlots: [], partnerSlots: [] },
+  moodWindow,
+  detailNowMinutes = null,
+  onEditSlot,
 }) {
   const selectedDay = weekDays.find((d) => d.moodDate === selectedMoodDate) ?? null;
 
@@ -81,23 +84,25 @@ export default function EmotionCalendarStrip({
         })}
       </div>
 
+      {/*
+        위 감정 원이 이미 그날의 최근 기분 색을 보여주므로 '최근 기분' 요약란은 두지 않는다.
+        날짜를 고르면 그날의 시간대별 기분이 이 카드 안에서 펼쳐진다.
+      */}
       {selectedDay && (
-        <DayMoodDetail
-          dateLabel={`${monthLabel} ${selectedDay.dayOfMonth}일`}
-          myMood={selectedDay.myMood}
-          partnerMood={selectedDay.partnerMood}
-          onEditMyMood={() => onEditMyMood(selectedDay.moodDate)}
-        />
-      )}
+        <div className={styles.detail}>
+          <p className={styles.detailLabel}>
+            {monthLabel} {selectedDay.dayOfMonth}일
+          </p>
 
-      <Button
-        variant="primary"
-        size="sm"
-        onClick={onRegisterClick}
-        style={{ background: "var(--color-white)", color: "var(--color-primary)" }}
-      >
-        오늘의 감정 등록하기
-      </Button>
+          <MoodSlotList
+            mySlots={detailMood.mySlots}
+            partnerSlots={detailMood.partnerSlots}
+            window={moodWindow}
+            nowMinutes={detailNowMinutes}
+            onEditSlot={onEditSlot}
+          />
+        </div>
+      )}
     </div>
   );
 }
