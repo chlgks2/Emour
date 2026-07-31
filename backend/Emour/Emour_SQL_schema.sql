@@ -267,7 +267,27 @@ CREATE TABLE `chat_analysis` (
     `message_id` BIGINT NOT NULL UNIQUE,
     -- 영어 감정으로 전달될 것
     `emotion_type`
-        ENUM('JOY', 'SADNESS', 'ANGER', 'ANXIETY', 'SURPRISE', 'CURIOSITY', 'NEUTRAL', 'ANNOYANCE', 'EXCITEMENT', 'BOREDOM')
+        ENUM(
+            -- 긍정 감정
+            'JOY',
+            'EXCITEMENT',
+            'COMFORT',
+            -- 중립 감정
+            'WORRY',
+            'SURPRISE',
+            'NEUTRAL',
+            'EMBARRASSMENT',
+            'CURIOSITY',
+            -- 부정 감정
+            'SADNESS',
+            'ANGER',
+            'CONFUSION',
+            'DISTRESS',
+            -- 관계 신호
+            'GRATITUDE',
+            'APOLOGY',
+            'HURT'
+            )
         NULL,
     `analysis_status` ENUM('PENDING', 'PROCESSING', 'COMPLETED', 'FAILED')
         NOT NULL DEFAULT 'PENDING',
