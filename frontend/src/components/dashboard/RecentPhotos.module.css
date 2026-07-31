@@ -68,41 +68,48 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  /* 점 사이 여백은 버튼 안쪽 여백(=버튼 폭 - 점 크기)만으로 만든다 */
+  /* 점 사이 여백은 버튼 좌우 padding 으로만 만든다 */
   gap: 0;
-  margin-top: 6px;
+  margin-top: 8px;
 }
 
 /*
  * ::before 로 보이는 점을 그리고, 버튼 자체는 투명한 히트 영역 역할을 한다.
- * 그래서 점 사이 간격 = 버튼 폭 - 점 크기 로 결정된다.
+ * 점 사이 간격 = 좌우 padding 합(10px).
  *
- * 7px 점 + 16px 버튼 -> 점 사이 9px.
- * (처음엔 6px 점 + 24px 버튼이라 간격이 20px 이나 벌어져 헐거워 보였다)
- * 세로는 24px 을 유지해 누를 곳은 충분히 남겨둔다.
+ * padding: 0 을 반드시 명시할 것.
+ * 브라우저 기본 버튼 padding(1px 6px)이 남아 있으면 border-box 기준으로
+ * 안쪽 폭이 4px 밖에 남지 않아, 7px 점이 눌려 세로 타원으로 찌그러진다.
+ *
+ * 폭을 고정하지 않고 내용에 맞춰 늘어나게 두어야
+ * 활성 알약이 옆 점을 밀어내며 제대로 길어진다.
  */
 .dot {
   position: relative;
-  width: 16px;
   height: 24px;
+  padding: 0 5px;
+  border: 0;
   display: flex;
   align-items: center;
   justify-content: center;
+  background: none;
   border-radius: var(--radius-pill);
 }
 
 .dot::before {
   content: "";
+  /* 눌려서 찌그러지지 않도록 */
+  flex-shrink: 0;
   width: 7px;
   height: 7px;
   border-radius: var(--radius-pill);
-  background: var(--color-border);
+  background: var(--color-border-strong);
   transition: width var(--duration-base) var(--ease-out),
     background-color var(--duration-base) var(--ease-out);
 }
 
-/* 활성 점은 알약 모양으로 늘어난다. 버튼 폭(16px)보다 작게 둬서 옆 점과 붙지 않게 한다. */
+/* 활성 점만 가로로 긴 알약이 된다 (원 + 알약 조합) */
 .dotActive::before {
-  width: 14px;
+  width: 18px;
   background: var(--color-primary);
 }

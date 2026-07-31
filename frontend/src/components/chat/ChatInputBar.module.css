@@ -10,6 +10,8 @@
 }
 
 .emojiBtn {
+  /* 브라우저 기본 버튼 padding 이 남으면 안쪽 아이콘이 눌린다 */
+  padding: 0;
   width: 38px;
   height: 38px;
   display: flex;
@@ -44,7 +46,7 @@
   width: 42px;
   height: 42px;
   border-radius: 50%;
-  background: var(--color-primary);
+  background: var(--color-action);
   color: var(--color-white);
   display: flex;
   align-items: center;

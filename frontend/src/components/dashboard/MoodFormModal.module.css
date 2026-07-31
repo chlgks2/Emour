@@ -187,7 +187,7 @@
   min-height: var(--tap-target);
   padding: 13px;
   border-radius: var(--radius-md);
-  background: var(--color-primary);
+  background: var(--color-action);
   color: var(--color-white);
   font-size: 14px;
   font-weight: 800;
@@ -220,7 +220,7 @@
 }
 
 .deleteBtn:not(:disabled):hover {
-  background: #fdecec;
+  background: var(--color-danger-bg);
 }
 
 .deleteBtn:disabled {
