@@ -3,7 +3,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 8px 24px calc(40px + var(--safe-bottom));
+  padding: 4px 24px calc(40px + var(--safe-bottom));
   /* 키보드가 올라오거나 화면이 작을 때 내용이 잘리지 않도록 */
   overflow-y: auto;
   min-height: 0;
@@ -13,35 +13,37 @@
   flex-shrink: 0;
 }
 
-.heartIcon {
-  width: 56px;
+/* 워드마크 로고 — 원본 비율 3825:932 */
+.logo {
+  width: 168px;
   height: auto;
-  margin: 12px 0 20px;
+  margin: 20px 0 22px;
 }
 
 .title {
-  font-size: 20px;
+  font-size: var(--font-title);
   font-weight: 800;
+  letter-spacing: var(--tracking-tight);
   text-align: center;
 }
 
 .subtitle {
-  font-size: 13px;
-  color: var(--color-text-sub);
-  margin-top: 6px;
-  margin-bottom: 20px;
+  font-size: var(--font-label);
+  color: var(--color-text-secondary);
+  margin-top: 8px;
+  margin-bottom: 26px;
 }
 
 .noticeBanner {
   width: 100%;
-  background: var(--color-sub-bg);
-  color: var(--color-primary-dark);
-  font-size: 13px;
+  background: var(--color-primary-faint);
+  color: var(--color-text-accent);
+  font-size: var(--font-label);
   font-weight: 600;
   text-align: center;
-  padding: 10px;
+  padding: 11px;
   border-radius: var(--radius-md);
-  margin-bottom: 16px;
+  margin-bottom: 18px;
 }
 
 .fields {
@@ -52,16 +54,16 @@
 }
 
 .submitBtn {
-  margin-top: 20px;
+  margin-top: 22px;
 }
 
 .helperLinks {
-  margin-top: 16px;
+  margin-top: 14px;
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 13px;
-  color: var(--color-text-sub);
+  font-size: var(--font-label);
+  color: var(--color-text-secondary);
 }
 
 /* 링크도 최소 터치 영역을 갖도록 패딩 확보 */
@@ -70,16 +72,16 @@
   align-items: center;
   min-height: 36px;
   padding: 0 8px;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-xs);
+  transition: color var(--duration-fast) var(--ease-out);
 }
 
 .helperLinks a:hover {
-  color: var(--color-primary-dark);
-  text-decoration: underline;
+  color: var(--color-primary-strong);
 }
 
 .divider {
-  color: var(--color-border);
+  color: var(--color-border-strong);
 }
 
 .orDivider {
@@ -87,21 +89,21 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  color: var(--color-text-placeholder);
-  font-size: 12px;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-caption);
   margin: 24px 0 20px;
 }
 
 .orDivider span {
   flex: 1;
   height: 1px;
-  background: var(--color-border);
+  background: var(--color-divider);
 }
 
 .signupLink {
-  margin-top: 24px;
-  font-size: 13px;
-  color: var(--color-text-sub);
+  margin-top: 22px;
+  font-size: var(--font-label);
+  color: var(--color-text-secondary);
 }
 
 .signupLink a {
@@ -109,8 +111,8 @@
   align-items: center;
   min-height: 36px;
   padding: 0 6px;
-  border-radius: var(--radius-sm);
-  color: var(--color-primary);
+  border-radius: var(--radius-xs);
+  color: var(--color-primary-strong);
   font-weight: 700;
 }
 
@@ -120,11 +122,11 @@
 
 /* 개발 모드에서만 보이는 데모 계정 안내 */
 .demoHint {
-  margin-top: 18px;
+  margin-top: 16px;
   padding: 7px 14px;
   border-radius: var(--radius-pill);
-  background: var(--color-sub-bg);
-  color: var(--color-text-sub);
-  font-size: 11px;
+  background: var(--color-surface-tint);
+  color: var(--color-text-tertiary);
+  font-size: var(--font-micro);
   letter-spacing: 0.01em;
 }
