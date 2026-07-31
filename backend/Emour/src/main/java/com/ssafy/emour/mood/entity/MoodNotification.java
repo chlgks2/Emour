@@ -38,12 +38,34 @@ public class MoodNotification {
             LocalTime endTime,
             int intervalHours
     ) {
+        return create(roomId, startTime, endTime, intervalHours, true);
+    }
+
+    public static MoodNotification create(
+            Long roomId,
+            LocalTime startTime,
+            LocalTime endTime,
+            int intervalHours,
+            boolean active
+    ) {
         MoodNotification notification = new MoodNotification();
         notification.roomId = roomId;
         notification.startTime = startTime;
         notification.endTime = endTime;
         notification.intervalHours = intervalHours;
-        notification.active = true;
+        notification.active = active;
         return notification;
+    }
+
+    public void update(
+            LocalTime startTime,
+            LocalTime endTime,
+            int intervalHours,
+            boolean active
+    ) {
+        this.startTime = startTime;
+        this.endTime = endTime;
+        this.intervalHours = intervalHours;
+        this.active = active;
     }
 }
