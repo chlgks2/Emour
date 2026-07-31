@@ -1,8 +1,10 @@
 package com.ssafy.emour.calendar.service;
 
 import com.ssafy.emour.calendar.dto.request.ScheduleCreateRequest;
+import com.ssafy.emour.calendar.dto.request.ScheduleUpdateRequest;
 import com.ssafy.emour.calendar.dto.response.ScheduleResponse;
 import com.ssafy.emour.calendar.entity.CoupleSchedule;
+import com.ssafy.emour.calendar.entity.ScheduleType;
 import com.ssafy.emour.calendar.repository.CoupleScheduleRepository;
 import com.ssafy.emour.couple.entity.CoupleRoom;
 import com.ssafy.emour.couple.repository.CoupleRoomRepository;
@@ -38,6 +40,26 @@ public class ScheduleService {
         return ScheduleResponse.from(scheduleRepository.save(schedule));
     }
 
+    @Transactional
+    public ScheduleResponse update(
+            Long userId,
+            Long scheduleId,
+            ScheduleUpdateRequest request
+    ) {
+        CoupleRoom room = getActiveRoom(userId);
+        CoupleSchedule schedule = getEditableSchedule(
+                userId,
+                room.getId(),
+                scheduleId
+        );
+        schedule.updateSchedule(
+                request.name(),
+                request.scheduleDate(),
+                request.scheduleTime()
+        );
+        return ScheduleResponse.from(schedule);
+    }
+
     private CoupleRoom getActiveRoom(Long userId) {
         if (!memberRepository.existsById(userId)) {
             throw new CustomException(ErrorCode.USER_NOT_FOUND);
@@ -47,5 +69,25 @@ public class ScheduleService {
                 .orElseThrow(() -> new CustomException(
                         ErrorCode.ACTIVE_COUPLE_NOT_FOUND
                 ));
+    }
+
+    private CoupleSchedule getEditableSchedule(
+            Long userId,
+            Long roomId,
+            Long scheduleId
+    ) {
+        CoupleSchedule schedule = scheduleRepository.findById(scheduleId)
+                .orElseThrow(() -> new CustomException(
+                        ErrorCode.SCHEDULE_NOT_FOUND
+                ));
+
+        if (!schedule.getRoomId().equals(roomId)
+                || !schedule.getCreatorId().equals(userId)) {
+            throw new CustomException(ErrorCode.ACCESS_DENIED);
+        }
+        if (schedule.getScheduleType() != ScheduleType.SCHEDULE) {
+            throw new CustomException(ErrorCode.SCHEDULE_TYPE_MISMATCH);
+        }
+        return schedule;
     }
 }

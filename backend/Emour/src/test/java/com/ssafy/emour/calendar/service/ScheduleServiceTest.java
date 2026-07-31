@@ -1,6 +1,7 @@
 package com.ssafy.emour.calendar.service;
 
 import com.ssafy.emour.calendar.dto.request.ScheduleCreateRequest;
+import com.ssafy.emour.calendar.dto.request.ScheduleUpdateRequest;
 import com.ssafy.emour.calendar.entity.CoupleSchedule;
 import com.ssafy.emour.calendar.entity.ScheduleType;
 import com.ssafy.emour.calendar.repository.CoupleScheduleRepository;
@@ -100,5 +101,72 @@ class ScheduleServiceTest {
                 .isEqualTo(ErrorCode.ACTIVE_COUPLE_NOT_FOUND);
 
         verify(scheduleRepository, never()).save(any());
+    }
+
+    @Test
+    void 자신이_만든_일정을_수정한다() {
+        Long userId = 1L;
+        Long roomId = 10L;
+        Long scheduleId = 100L;
+        CoupleRoom room = mock(CoupleRoom.class);
+        CoupleSchedule schedule = CoupleSchedule.createSchedule(
+                roomId, userId, "데이트",
+                LocalDate.of(2026, 8, 5), LocalTime.of(19, 0)
+        );
+        given(memberRepository.existsById(userId)).willReturn(true);
+        given(coupleRoomRepository.findActiveRoomByUserId(userId))
+                .willReturn(Optional.of(room));
+        given(room.getId()).willReturn(roomId);
+        given(scheduleRepository.findById(scheduleId))
+                .willReturn(Optional.of(schedule));
+
+        var response = scheduleService.update(
+                userId,
+                scheduleId,
+                new ScheduleUpdateRequest(
+                        "영화 데이트",
+                        LocalDate.of(2026, 8, 6),
+                        LocalTime.of(20, 0)
+                )
+        );
+
+        assertThat(response.name()).isEqualTo("영화 데이트");
+        assertThat(response.scheduleDate())
+                .isEqualTo(LocalDate.of(2026, 8, 6));
+        assertThat(response.scheduleTime())
+                .isEqualTo(LocalTime.of(20, 0));
+    }
+
+    @Test
+    void 상대방이_만든_일정은_수정할_수_없다() {
+        Long userId = 1L;
+        Long roomId = 10L;
+        Long scheduleId = 100L;
+        CoupleRoom room = mock(CoupleRoom.class);
+        CoupleSchedule partnerSchedule = CoupleSchedule.createSchedule(
+                roomId, 2L, "상대방 일정",
+                LocalDate.of(2026, 8, 5), LocalTime.of(19, 0)
+        );
+        given(memberRepository.existsById(userId)).willReturn(true);
+        given(coupleRoomRepository.findActiveRoomByUserId(userId))
+                .willReturn(Optional.of(room));
+        given(room.getId()).willReturn(roomId);
+        given(scheduleRepository.findById(scheduleId))
+                .willReturn(Optional.of(partnerSchedule));
+
+        assertThatThrownBy(() -> scheduleService.update(
+                userId,
+                scheduleId,
+                new ScheduleUpdateRequest(
+                        "변경 시도",
+                        LocalDate.of(2026, 8, 6),
+                        LocalTime.of(20, 0)
+                )
+        ))
+                .isInstanceOf(CustomException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.ACCESS_DENIED);
+
+        assertThat(partnerSchedule.getName()).isEqualTo("상대방 일정");
     }
 }

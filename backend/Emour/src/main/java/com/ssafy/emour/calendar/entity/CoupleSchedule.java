@@ -79,4 +79,14 @@ public class CoupleSchedule {
         schedule.yearlyRecurring = false;
         return schedule;
     }
+
+    public void updateSchedule(
+            String name,
+            LocalDate scheduleDate,
+            LocalTime scheduleTime
+    ) {
+        this.name = name;
+        this.scheduleDate = scheduleDate;
+        this.scheduleTime = scheduleTime;
+    }
 }

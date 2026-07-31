@@ -1,6 +1,7 @@
 package com.ssafy.emour.calendar.controller;
 
 import com.ssafy.emour.calendar.dto.request.ScheduleCreateRequest;
+import com.ssafy.emour.calendar.dto.request.ScheduleUpdateRequest;
 import com.ssafy.emour.calendar.dto.response.ScheduleResponse;
 import com.ssafy.emour.calendar.service.ScheduleService;
 import com.ssafy.emour.global.response.ApiResponse;
@@ -11,6 +12,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -34,5 +37,20 @@ public class ScheduleController {
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success("일정을 등록했습니다.", response));
+    }
+
+    @PatchMapping("/{scheduleId}")
+    public ResponseEntity<ApiResponse<ScheduleResponse>> update(
+            @PathVariable Long scheduleId,
+            @Valid @RequestBody ScheduleUpdateRequest request
+    ) {
+        ScheduleResponse response = scheduleService.update(
+                SecurityUtil.getCurrentUserId(),
+                scheduleId,
+                request
+        );
+        return ResponseEntity.ok(
+                ApiResponse.success("일정을 수정했습니다.", response)
+        );
     }
 }

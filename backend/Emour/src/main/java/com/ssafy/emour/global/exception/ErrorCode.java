@@ -53,6 +53,13 @@ public enum ErrorCode {
             HttpStatus.BAD_REQUEST,
             "현재 알림 시간대의 MOOD만 수정할 수 있습니다."
     ),
+
+    // ===== CALENDAR =====
+    SCHEDULE_NOT_FOUND(HttpStatus.NOT_FOUND, "일정을 찾을 수 없습니다."),
+    SCHEDULE_TYPE_MISMATCH(
+            HttpStatus.BAD_REQUEST,
+            "일정 API에서는 일반 일정만 처리할 수 있습니다."
+    ),
     ;
 
     private final HttpStatus status;
