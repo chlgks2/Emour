@@ -80,6 +80,23 @@ public class CoupleSchedule {
         return schedule;
     }
 
+    public static CoupleSchedule createAnniversary(
+            Long roomId,
+            Long creatorId,
+            String name,
+            LocalDate scheduleDate
+    ) {
+        CoupleSchedule anniversary = new CoupleSchedule();
+        anniversary.roomId = roomId;
+        anniversary.creatorId = creatorId;
+        anniversary.name = name;
+        anniversary.scheduleDate = scheduleDate;
+        anniversary.scheduleTime = null;
+        anniversary.scheduleType = ScheduleType.ANNIVERSARY;
+        anniversary.yearlyRecurring = true;
+        return anniversary;
+    }
+
     public void updateSchedule(
             String name,
             LocalDate scheduleDate,
