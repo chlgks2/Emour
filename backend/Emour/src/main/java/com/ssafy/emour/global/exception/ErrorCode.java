@@ -64,6 +64,13 @@ public enum ErrorCode {
             HttpStatus.BAD_REQUEST,
             "기념일 API에서는 기념일만 처리할 수 있습니다."
     ),
+
+    // ===== DIARY =====
+    DIARY_NOT_FOUND(HttpStatus.NOT_FOUND, "한줄 일기를 찾을 수 없습니다."),
+    DIARY_ALREADY_EXISTS(
+            HttpStatus.CONFLICT,
+            "해당 날짜의 한줄 일기가 이미 존재합니다."
+    ),
     ;
 
     private final HttpStatus status;
