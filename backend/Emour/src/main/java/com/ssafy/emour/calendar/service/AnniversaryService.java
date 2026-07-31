@@ -15,6 +15,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class AnniversaryService {
@@ -66,6 +68,19 @@ public class AnniversaryService {
                 anniversaryId
         );
         scheduleRepository.delete(anniversary);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ScheduleResponse> getAll(Long userId) {
+        CoupleRoom room = getActiveRoom(userId);
+        return scheduleRepository
+                .findAllByRoomIdAndScheduleTypeOrderByScheduleDateAsc(
+                        room.getId(),
+                        ScheduleType.ANNIVERSARY
+                )
+                .stream()
+                .map(ScheduleResponse::from)
+                .toList();
     }
 
     private CoupleRoom getActiveRoom(Long userId) {

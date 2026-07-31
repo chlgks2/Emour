@@ -17,4 +17,10 @@ public interface CoupleScheduleRepository
             LocalDate startDate,
             LocalDate endDate
     );
+
+    List<CoupleSchedule>
+    findAllByRoomIdAndScheduleTypeOrderByScheduleDateAsc(
+            Long roomId,
+            ScheduleType scheduleType
+    );
 }

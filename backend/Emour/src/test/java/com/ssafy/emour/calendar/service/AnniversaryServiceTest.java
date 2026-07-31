@@ -17,6 +17,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -158,5 +159,43 @@ class AnniversaryServiceTest {
         anniversaryService.delete(userId, anniversaryId);
 
         verify(scheduleRepository).delete(anniversary);
+    }
+
+    @Test
+    void 커플이_등록한_기념일_목록을_함께_조회한다() {
+        Long userId = 1L;
+        Long partnerId = 2L;
+        Long roomId = 10L;
+        CoupleRoom room = mock(CoupleRoom.class);
+        CoupleSchedule first = CoupleSchedule.createAnniversary(
+                roomId, userId, "첫 데이트",
+                LocalDate.of(2025, 8, 15)
+        );
+        CoupleSchedule second = CoupleSchedule.createAnniversary(
+                roomId, partnerId, "첫 여행",
+                LocalDate.of(2025, 9, 1)
+        );
+        given(memberRepository.existsById(userId)).willReturn(true);
+        given(coupleRoomRepository.findActiveRoomByUserId(userId))
+                .willReturn(Optional.of(room));
+        given(room.getId()).willReturn(roomId);
+        given(scheduleRepository
+                .findAllByRoomIdAndScheduleTypeOrderByScheduleDateAsc(
+                        roomId,
+                        ScheduleType.ANNIVERSARY
+                ))
+                .willReturn(List.of(first, second));
+
+        var responses = anniversaryService.getAll(userId);
+
+        assertThat(responses).hasSize(2);
+        assertThat(responses)
+                .extracting(response -> response.creatorId())
+                .containsExactly(userId, partnerId);
+        assertThat(responses)
+                .extracting(response -> response.scheduleType())
+                .containsOnly(ScheduleType.ANNIVERSARY);
+        assertThat(responses)
+                .allMatch(response -> response.yearlyRecurring());
     }
 }

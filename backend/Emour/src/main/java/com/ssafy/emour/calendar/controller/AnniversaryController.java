@@ -15,6 +15,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+
+import java.util.List;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -64,6 +67,16 @@ public class AnniversaryController {
         );
         return ResponseEntity.ok(
                 ApiResponse.success("기념일을 삭제했습니다.", null)
+        );
+    }
+
+    @GetMapping
+    public ResponseEntity<ApiResponse<List<ScheduleResponse>>> getAll() {
+        List<ScheduleResponse> response = anniversaryService.getAll(
+                SecurityUtil.getCurrentUserId()
+        );
+        return ResponseEntity.ok(
+                ApiResponse.success("기념일 목록을 조회했습니다.", response)
         );
     }
 }
