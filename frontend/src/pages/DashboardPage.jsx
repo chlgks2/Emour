@@ -184,7 +184,7 @@ export default function DashboardPage() {
 
   return (
     <div className="app-shell">
-      <DashboardTopBar daysTogether={dashboardData.daysTogether} onMenuClick={() => {}} />
+      <DashboardTopBar daysTogether={dashboardData.daysTogether} />
 
       {/* data-scroll-container: 모달이 열리면 global.css 가 이 영역의 스크롤을 잠근다 */}
       <div className={styles.scrollArea} data-scroll-container>

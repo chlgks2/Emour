@@ -38,6 +38,14 @@ export async function connectCouple(
   return response?.data ?? null
 }
 
+export async function getCoupleStatus() {
+  const response = await apiRequest(
+    COUPLE_ENDPOINTS.status,
+  )
+
+  return response?.data ?? null
+}
+
 export async function getMyCoupleRoom() {
   try {
     const roomIdResponse =
@@ -53,14 +61,12 @@ export async function getMyCoupleRoom() {
     }
 
     const statusResponse =
-      await apiRequest(
-        COUPLE_ENDPOINTS.status,
-      )
+      await getCoupleStatus()
 
     return {
       roomId,
       status:
-        statusResponse?.data?.status ??
+        statusResponse?.status ??
         'WAITING',
     }
   } catch (error) {
