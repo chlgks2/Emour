@@ -148,7 +148,7 @@ export async function getMyPageProfile() {
 
   const [
     userResponse,
-    serverRoom,
+    fetchedServerRoom,
   ] = await Promise.all([
     getMyProfile(),
     getMyCoupleRoom(),
@@ -156,6 +156,37 @@ export async function getMyPageProfile() {
 
   const storedRoom =
     getPendingCoupleRoom()
+
+  const storedRoomBelongsToUser =
+    storedRoom?.roomId &&
+    (storedRoom.ownerUserId === null ||
+      storedRoom.ownerUserId ===
+        undefined ||
+      Number(storedRoom.ownerUserId) ===
+        Number(userResponse.userId))
+
+  let serverRoom = fetchedServerRoom
+
+  /*
+   * 연결된 두 사람 중 상대방이 나가면 백엔드는 기존 방을 INACTIVE로
+   * 전환하여 room-id/status 조회에서 제외합니다. 남은 사용자는 기존
+   * ACTIVE 방을 로컬에 보관하고 있으므로 새 초대 코드를 자동 발급해
+   * WAITING 화면으로 전환합니다.
+   */
+  if (
+    !serverRoom &&
+    storedRoomBelongsToUser &&
+    storedRoom.roomStatus === 'ACTIVE'
+  ) {
+    const invitation =
+      await createCoupleInvitation()
+
+    serverRoom =
+      savePendingCoupleRoom(
+        invitation,
+        userResponse.userId,
+      )
+  }
 
   if (!serverRoom) {
     clearPendingCoupleRoom()
