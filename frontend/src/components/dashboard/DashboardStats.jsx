@@ -2,15 +2,11 @@ import { ChartColumn, MessageSquare, Image, Bookmark, Clock, Timer } from "lucid
 import styles from "./DashboardStats.module.css";
 
 /**
- * dashboard 테이블(최종본)의 집계 값을 보여주는 카드.
- * 컬럼 -> 화면 매핑
- *   message_count            -> 메시지
- *   image_count              -> 사진
- *   bookmark_count           -> 북마크
+ * 오늘의 대화 기록 카드. **커플 합산** 기준이다.
+ *   메시지 / 사진 / 가장 활발했던 시간 / 평균 답장 시간 / 자주 쓴 말 : 두 사람 합산
+ *   북마크 : 내 개수만. 북마크는 백엔드에서 roomId+userId 로 묶여 있어
+ *            커플 합산이 불가능하므로 라벨도 '내 북마크' 로 구분한다.
  *   (reaction_count 는 화면에 노출하지 않는다)
- *   busiest_hour             -> 가장 활발했던 시간
- *   average_response_seconds -> 평균 답장 시간
- *   frequent_words           -> 자주 쓴 말
  *
  * @param {object} dashboard - dashboardApi.fetchDashboard().dashboard
  */
@@ -29,7 +25,7 @@ export default function DashboardStats({ dashboard }) {
   const counts = [
     { key: "message", label: "메시지", value: messageCount, Icon: MessageSquare },
     { key: "image", label: "사진", value: imageCount, Icon: Image },
-    { key: "bookmark", label: "북마크", value: bookmarkCount, Icon: Bookmark },
+    { key: "bookmark", label: "내 북마크", value: bookmarkCount, Icon: Bookmark },
   ];
 
   const highlights = [

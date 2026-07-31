@@ -13,23 +13,23 @@
 :root {
   /* ----------------------------------------------------------------
      1. CI 원색 (팔레트 원본. 이 블록의 값만 바꾸면 전체 톤이 바뀐다)
+
+     · 중성색에서 갈색기를 덜어내고 명도 폭을 넓혔다.
+       기존 팔레트는 배경(#FAF8F7)과 본문(#625955)이 모두 같은 갈색 계열이라
+       화면 전체에 옅은 갈색 막이 씌운 것처럼 탁하게 보였다.
+       hue 는 CI 그대로 두고 채도만 낮춘 회색을 써서 색이 아니라 대비로 읽히게 한다.
+     · 브랜드 로즈는 반대로 채도를 올려서 강조가 강조로 보이게 했다.
      ---------------------------------------------------------------- */
-  --ci-bg-base: #faf8f7;
-  --ci-bg-tint: #f4edec;
-  --ci-bg-deep: #dac2bc;
+  --ci-bg-base: #fbfaf9;
+  --ci-bg-tint: #f5f0ef;
+  --ci-bg-deep: #e6dcda;
 
-  --ci-accent-soft: #e2bec6;
-  --ci-accent: #ca8495;
+  --ci-accent-soft: #f0c3ce;
+  --ci-accent: #d1748d;
 
-  --ci-ink: #625955;
-  --ci-ink-accent: #b85c73;
+  --ci-ink: #352d2b;
+  --ci-ink-accent: #c14a67;
   --ci-white: #ffffff;
-
-  --ci-emotion-violet: #b1a6d6;
-  --ci-emotion-sky: #9ecce6;
-  --ci-emotion-green: #bed399;
-  --ci-emotion-yellow: #f6e192;
-  --ci-emotion-orange: #f7c291;
 
   /* ----------------------------------------------------------------
      2. 역할 기반 컬러
@@ -43,62 +43,82 @@
   --color-primary: var(--ci-accent);
   --color-primary-strong: var(--ci-ink-accent);
   --color-primary-soft: var(--ci-accent-soft);
-  --color-primary-faint: #f7e9ec;
+  --color-primary-faint: #fdeef2;
   --color-primary-contrast: var(--ci-white);
 
   --color-action: var(--ci-ink-accent);
-  --color-action-hover: #a64f65;
-  --color-action-disabled: var(--ci-accent-soft);
+  --color-action-hover: #a63a54;
+  --color-action-disabled: #e8cdd4;
 
   /* 표면 */
   --color-background: var(--ci-bg-base);
   --color-surface: var(--ci-white);
   --color-surface-tint: var(--ci-bg-tint);
-  --color-surface-sunken: #f2ebe9;
-  --color-scrim: rgba(62, 54, 51, 0.44);
+  --color-surface-sunken: #f2eeed;
+  --color-scrim: rgba(36, 29, 28, 0.48);
 
-  /* 경계선 */
-  --color-border: #ebdfdd;
-  --color-border-strong: #dfcbc8;
-  --color-divider: #f0e7e5;
+  /* 경계선 — 분홍기를 빼고 중성 회색으로. 카드 윤곽이 색으로 보이지 않게 한다. */
+  --color-border: #eae5e3;
+  --color-border-strong: #d9d2cf;
+  --color-divider: #f1eceb;
 
-  /* 텍스트 */
+  /* 텍스트 — 4단계 모두 대비를 올려 "흐릿함"을 없앤다 (본문 12.5:1) */
   --color-text-primary: var(--ci-ink);
-  --color-text-secondary: #8c817c;
-  --color-text-tertiary: #ab9f9a;
-  --color-text-placeholder: #bdb2ad;
+  --color-text-secondary: #6d6360;
+  --color-text-tertiary: #8f8681;
+  --color-text-placeholder: #a89f9b;
   --color-text-on-primary: var(--ci-white);
   --color-text-accent: var(--ci-ink-accent);
 
-  /* 상태 */
-  --color-success: #7f9a55;
-  --color-success-bg: #eef3e4;
-  --color-danger: var(--ci-ink-accent);
-  --color-danger-bg: #f9e9ec;
-  --color-warning: #c08a3a;
-  --color-warning-bg: #fdf4dc;
-  --color-info: #5f8aa8;
-  --color-info-bg: #e8f2f7;
+  /* 상태 — 회색기를 덜어내 상태색이 상태로 읽히게 */
+  --color-success: #4f8a5b;
+  --color-success-bg: #e8f4ea;
+  --color-danger: #c93f4f;
+  --color-danger-bg: #fdeaec;
+  --color-warning: #b57724;
+  --color-warning-bg: #fdf2df;
+  --color-info: #3f7fa8;
+  --color-info-bg: #e7f2f8;
 
   /* ----------------------------------------------------------------
-     3. 감정 컬러 (CI "감정 요소" 그룹)
-        utils/emotions.js 의 EMOTION_STYLE 이 이 토큰을 참조한다.
-     ---------------------------------------------------------------- */
-  --emotion-love: var(--ci-accent);
-  --emotion-happy: var(--ci-emotion-yellow);
-  --emotion-warm: var(--ci-emotion-orange);
-  --emotion-calm: var(--ci-emotion-green);
-  --emotion-sad: var(--ci-emotion-sky);
-  --emotion-neutral: var(--ci-emotion-violet);
-  --emotion-empty: #ece5e3;
+     3. 감정 컬러 — 백엔드 EmotionType 15종과 1:1
+        utils/emotions.js 의 EMOTION_TYPES 가 이 토큰을 참조한다.
 
-  /* 감정 칩 배경 — 원색 위에 흰색을 섞은 톤 */
-  --emotion-love-bg: #f7e9ec;
-  --emotion-happy-bg: #fdf7e4;
-  --emotion-warm-bg: #fdf0e4;
-  --emotion-calm-bg: #f0f5e8;
-  --emotion-sad-bg: #eaf4fa;
-  --emotion-neutral-bg: #efedf7;
+        도넛 차트 위에서 서로 구분돼야 하므로 CI 파스텔을 그대로 쓰지 않고
+        같은 hue 를 유지한 채 채도를 올리고 명도를 한 단계 낮췄다.
+        (기존 파스텔은 흰 배경에서 서로 뭉개져 어떤 감정인지 읽히지 않았다)
+     ---------------------------------------------------------------- */
+
+  /* POSITIVE */
+  --emotion-joy: #f0b23f;
+  --emotion-excitement: #ee7b9e;
+  --emotion-comfort: #64b98e;
+  --emotion-gratitude: #ef9a5b;
+
+  /* NEUTRAL */
+  --emotion-worry: #8397bd;
+  --emotion-surprise: #56b6d6;
+  --emotion-plain: #a29a96;
+  --emotion-embarrassment: #bf94db;
+  --emotion-curiosity: #4fb3bf;
+  --emotion-apology: #a396d2;
+
+  /* NEGATIVE */
+  --emotion-sadness: #5f86c4;
+  --emotion-anger: #df6350;
+  --emotion-confusion: #93819f;
+  --emotion-distress: #9a5a83;
+  --emotion-hurt: #c04361;
+
+  /* 감정 극성 요약(감정 흐름 그래프용) */
+  --emotion-positive: var(--emotion-joy);
+  --emotion-negative: var(--emotion-hurt);
+  --emotion-neutral: var(--emotion-plain);
+  --emotion-empty: #ebe6e4;
+
+  /* 옅은 배경 톤 */
+  --emotion-warm-bg: #fdf2e6;
+  --emotion-love-bg: var(--color-primary-faint);
 
   /* ----------------------------------------------------------------
      4. 레이아웃
@@ -129,15 +149,17 @@
   --radius-pill: 999px;
 
   /* ----------------------------------------------------------------
-     6. 그림자 — 회색이 아니라 CI 계열 갈색빛으로 깔아 톤을 맞춘다
+     6. 그림자
+        갈색 그림자를 넓게 깔면 카드 주변이 누렇게 떠서 탁해 보인다.
+        중성에 가까운 그림자를 좁고 옅게(2단 레이어) 써서 깊이만 만든다.
      ---------------------------------------------------------------- */
-  --shadow-xs: 0 1px 2px rgba(98, 89, 85, 0.06);
-  --shadow-card: 0 6px 18px rgba(98, 89, 85, 0.07);
-  --shadow-raised: 0 12px 28px rgba(98, 89, 85, 0.1);
-  --shadow-float: 0 16px 36px rgba(98, 89, 85, 0.14);
-  --shadow-sheet: 0 -12px 32px rgba(98, 89, 85, 0.14);
-  --shadow-frame: 0 32px 70px rgba(83, 70, 66, 0.22), 0 6px 18px rgba(83, 70, 66, 0.1);
-  --shadow-primary: 0 10px 22px rgba(202, 132, 149, 0.28);
+  --shadow-xs: 0 1px 2px rgba(46, 38, 36, 0.05);
+  --shadow-card: 0 1px 2px rgba(46, 38, 36, 0.04), 0 4px 14px rgba(46, 38, 36, 0.06);
+  --shadow-raised: 0 2px 4px rgba(46, 38, 36, 0.05), 0 10px 24px rgba(46, 38, 36, 0.08);
+  --shadow-float: 0 4px 8px rgba(46, 38, 36, 0.06), 0 16px 36px rgba(46, 38, 36, 0.12);
+  --shadow-sheet: 0 -10px 30px rgba(46, 38, 36, 0.13);
+  --shadow-frame: 0 32px 70px rgba(50, 40, 38, 0.24), 0 6px 18px rgba(50, 40, 38, 0.1);
+  --shadow-primary: 0 6px 16px rgba(193, 74, 103, 0.24);
 
   /* ----------------------------------------------------------------
      7. 타이포그래피
@@ -170,8 +192,19 @@
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
 
-  --focus-ring: 0 0 0 3px rgba(202, 132, 149, 0.32);
-  --focus-ring-danger: 0 0 0 3px rgba(184, 92, 115, 0.28);
+  --focus-ring: 0 0 0 3px rgba(209, 116, 141, 0.34);
+  --focus-ring-danger: 0 0 0 3px rgba(201, 63, 79, 0.3);
+
+  /* ----------------------------------------------------------------
+     8-1. 카드 표준 (톤앤매너 기준값)
+       모든 탭의 카드는 이 세 값을 그대로 쓴다.
+       윤곽선 대신 그림자로만 면을 띄우고, 라디우스는 --radius-lg 하나로 통일한다.
+       (마이페이지·캘린더·앨범이 각자 border + radius-xl 을 쓰면서 대시보드와 어긋나 있었다)
+     ---------------------------------------------------------------- */
+  --card-radius: var(--radius-lg);
+  --card-shadow: var(--shadow-card);
+  --card-surface: var(--color-surface);
+  --card-padding: 16px;
 
   /* ----------------------------------------------------------------
      9. 하위 호환 별칭
