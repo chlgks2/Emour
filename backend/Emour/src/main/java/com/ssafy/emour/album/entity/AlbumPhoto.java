@@ -31,8 +31,8 @@ public class AlbumPhoto {
     @Column(name = "photo_id")
     private Long id;
 
-    @Column(name = "room_id")
-    private Long roomId; // TODO: 커플룸 연동 시 NOT NULL 로
+    @Column(name = "room_id", nullable = false)
+    private Long roomId;
 
     @Column(name = "uploader_id", nullable = false)
     private Long uploaderId;

@@ -3,11 +3,15 @@ package com.ssafy.emour.album.service;
 import com.ssafy.emour.album.dto.response.AlbumPhotoResponse;
 import com.ssafy.emour.album.entity.AlbumPhoto;
 import com.ssafy.emour.album.repository.AlbumPhotoRepository;
+import com.ssafy.emour.couple.entity.CoupleRoom;
+import com.ssafy.emour.couple.entity.CoupleRoomStatus;
+import com.ssafy.emour.couple.repository.CoupleRoomRepository;
 import com.ssafy.emour.global.exception.CustomException;
 import com.ssafy.emour.global.exception.ErrorCode;
 import com.ssafy.emour.global.storage.FileStorage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -26,6 +30,7 @@ public class AlbumPhotoService {
 
     private final AlbumPhotoRepository albumPhotoRepository;
     private final FileStorage fileStorage;
+    private final CoupleRoomRepository coupleRoomRepository;
 
     // 응답에 붙일 이미지 URL 접두어 (환경변수 APP_UPLOAD_BASE_URL 로 주입, 로컬 기본 localhost:8080)
     @Value("${app.upload.base-url}")
@@ -34,9 +39,11 @@ public class AlbumPhotoService {
     /** 사진 업로드 (파일 저장 → key 를 DB 에 기록) */
     @Transactional
     public AlbumPhotoResponse upload(Long userId, MultipartFile file, String memo) {
+        Long roomId = getActiveRoomId(userId);
         String key = fileStorage.store(file); // 파일 저장 후 key 획득
 
         AlbumPhoto photo = AlbumPhoto.builder()
+                .roomId(roomId)
                 .uploaderId(userId)
                 .imageKey(key)
                 .memo(memo)
@@ -45,10 +52,11 @@ public class AlbumPhotoService {
         return AlbumPhotoResponse.of(albumPhotoRepository.save(photo), baseUrl);
     }
 
-    /** 내 사진 전체 조회 (최신순) */
+    /** 현재 커플방의 사진 전체 조회 (최신순) */
     @Transactional(readOnly = true)
-    public List<AlbumPhotoResponse> getMyPhotos(Long userId) {
-        return albumPhotoRepository.findByUploaderIdOrderByCreatedAtDesc(userId)
+    public List<AlbumPhotoResponse> getRoomPhotos(Long userId) {
+        Long roomId = getActiveRoomId(userId);
+        return albumPhotoRepository.findByRoomIdOrderByCreatedAtDesc(roomId)
                 .stream()
                 .map(photo -> AlbumPhotoResponse.of(photo, baseUrl))
                 .toList();
@@ -74,11 +82,26 @@ public class AlbumPhotoService {
      * 사진을 찾고, "내가 올린 사진"이 맞는지 소유권을 확인한다.
      */
     private AlbumPhoto getOwnedPhoto(Long userId, Long photoId) {
+        Long roomId = getActiveRoomId(userId);
         AlbumPhoto photo = albumPhotoRepository.findById(photoId)
                 .orElseThrow(() -> new CustomException(ErrorCode.PHOTO_NOT_FOUND));
-        if (!photo.getUploaderId().equals(userId)) {
+        if (!photo.getRoomId().equals(roomId)
+                || !photo.getUploaderId().equals(userId)) {
             throw new CustomException(ErrorCode.ACCESS_DENIED);
         }
         return photo;
+    }
+
+    private Long getActiveRoomId(Long userId) {
+        List<CoupleRoom> rooms = coupleRoomRepository.findCurrentRoomsByUserId(
+                userId,
+                PageRequest.of(0, 1)
+        );
+
+        if (rooms.isEmpty() || rooms.get(0).getStatus() != CoupleRoomStatus.ACTIVE) {
+            throw new CustomException(ErrorCode.ACTIVE_COUPLE_NOT_FOUND);
+        }
+
+        return rooms.get(0).getId();
     }
 }

@@ -55,9 +55,9 @@ public class AlbumPhotoController {
      * 내 사진 전체 조회.  GET /photos
      */
     @GetMapping
-    public ResponseEntity<ApiResponse<List<AlbumPhotoResponse>>> getMyPhotos() {
+    public ResponseEntity<ApiResponse<List<AlbumPhotoResponse>>> getRoomPhotos() {
         Long userId = SecurityUtil.getCurrentUserId();
-        return ResponseEntity.ok(ApiResponse.success(albumPhotoService.getMyPhotos(userId)));
+        return ResponseEntity.ok(ApiResponse.success(albumPhotoService.getRoomPhotos(userId)));
     }
 
     /**
