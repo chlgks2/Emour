@@ -2,8 +2,10 @@ package com.ssafy.emour.dashboard.controller;
 
 import com.ssafy.emour.dashboard.dto.DashboardCountResponse;
 import com.ssafy.emour.dashboard.dto.DashboardEmotionFlowResponse;
+import com.ssafy.emour.dashboard.dto.DashboardFrequentWordsResponse;
 import com.ssafy.emour.dashboard.service.DashboardEmotionService;
 import com.ssafy.emour.dashboard.service.DashboardService;
+import com.ssafy.emour.dashboard.service.DashboardWordService;
 import com.ssafy.emour.global.util.SecurityUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -27,6 +29,7 @@ public class DashboardController {
 
     private final DashboardService dashboardService;
     private final DashboardEmotionService dashboardEmotionService;
+    private final DashboardWordService dashboardWordService;
 
     @GetMapping("/daily")
     @Operation(
@@ -70,6 +73,35 @@ public class DashboardController {
                 roomId,
                 SecurityUtil.getCurrentUserId(),
                 date
+        );
+    }
+
+    @GetMapping("/frequent-words")
+    @Operation(
+            summary = "날짜별 자주 사용하는 단어 조회",
+            description = """
+                    내가 보낸 텍스트 메시지를 단어로 나누고 사용 횟수가 많은 순서로 반환합니다.
+                    같은 횟수라면 가나다 및 알파벳 순서로 정렬합니다.
+                    """
+    )
+    public DashboardFrequentWordsResponse getDailyFrequentWords(
+            @Parameter(description = "커플 방 번호", example = "1")
+            @RequestParam Long roomId,
+
+            @Parameter(description = "조회 날짜", example = "2026-07-31")
+            @RequestParam
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate date,
+
+            @Parameter(description = "가져올 단어 개수, 기본 10개, 최대 50개", example = "10")
+            @RequestParam(required = false)
+            Integer limit
+    ) {
+        return dashboardWordService.getDailyFrequentWords(
+                roomId,
+                SecurityUtil.getCurrentUserId(),
+                date,
+                limit
         );
     }
 }

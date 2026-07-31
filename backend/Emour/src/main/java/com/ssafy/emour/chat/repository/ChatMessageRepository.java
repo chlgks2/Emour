@@ -78,4 +78,22 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
             @Param("start") LocalDateTime start,
             @Param("end") LocalDateTime end
     );
+
+    @Query("""
+            select message.content
+            from ChatMessage message
+            where message.roomId = :roomId
+              and message.senderId = :userId
+              and message.messageType =
+                  com.ssafy.emour.chat.entity.MessageType.TEXT
+              and message.content is not null
+              and message.sentAt >= :start
+              and message.sentAt < :end
+            """)
+    List<String> findDailyTextContents(
+            @Param("roomId") Long roomId,
+            @Param("userId") Long userId,
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end
+    );
 }

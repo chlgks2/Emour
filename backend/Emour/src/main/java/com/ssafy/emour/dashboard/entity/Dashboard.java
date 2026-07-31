@@ -50,6 +50,9 @@ public class Dashboard {
     @Column(name = "emotion_flow", columnDefinition = "json")
     private String emotionFlow;
 
+    @Column(name = "frequent_words", columnDefinition = "json")
+    private String frequentWords;
+
     @Column(name = "calculated_at", nullable = false)
     private LocalDateTime calculatedAt;
 
@@ -95,6 +98,13 @@ public class Dashboard {
         this.updatedAt = this.calculatedAt;
     }
 
+    public void updateFrequentWords(String frequentWords) {
+        // 단어와 사용 횟수 목록을 JSON으로 보관합니다.
+        this.frequentWords = frequentWords;
+        this.calculatedAt = LocalDateTime.now();
+        this.updatedAt = this.calculatedAt;
+    }
+
     public Long getDashboardId() {
         return dashboardId;
     }
@@ -129,6 +139,10 @@ public class Dashboard {
 
     public String getEmotionFlow() {
         return emotionFlow;
+    }
+
+    public String getFrequentWords() {
+        return frequentWords;
     }
 
     public LocalDateTime getCalculatedAt() {
