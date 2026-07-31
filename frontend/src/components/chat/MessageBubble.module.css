@@ -70,7 +70,7 @@
   background: var(--color-action);
   color: var(--color-text-on-primary);
   border-bottom-right-radius: 4px;
-  box-shadow: 0 4px 12px rgba(184, 92, 115, 0.2);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--color-action) 20%, transparent);
 }
 
 /* 북마크된 메시지 우상단에 걸리는 리본 아이콘 */

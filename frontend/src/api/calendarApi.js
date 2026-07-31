@@ -14,6 +14,7 @@ import {
 
 const MOCK_DELAY = 250
 const MOCK_CURRENT_USER_ID = 1
+const MOCK_CURRENT_ROOM_ID = 1
 const RELATIONSHIP_START_DATE_KEY =
   'emour_relationship_start_date'
 
@@ -239,6 +240,49 @@ export async function getMonthlyCalendar(
     diaryResponses,
     currentUserId: MOCK_CURRENT_USER_ID,
   })
+}
+
+/**
+ * 대시보드의 "오늘의 주요 일정" 카드용. 캘린더 탭과 같은 소스를 쓰므로
+ * 캘린더에서 일정을 추가하면 대시보드에도 그대로 반영된다.
+ *
+ * @param {string} dateKey 'YYYY-MM-DD'
+ * @returns {Promise<Array<{scheduleId, name, scheduleDate, scheduleTime, scheduleType}>>}
+ *   TodaySchedule 컴포넌트가 기대하는 couple_schedule 필드명으로 맞춰서 반환한다.
+ */
+export async function getTodaySchedules(
+  dateKey,
+  coupleRoomId = MOCK_CURRENT_ROOM_ID,
+) {
+  const [year, month] = dateKey
+    .split('-')
+    .map(Number)
+
+  const monthData =
+    await getMonthlyCalendar(
+      coupleRoomId,
+      year,
+      month,
+    )
+
+  const day = monthData?.[dateKey]
+
+  // 기념일도 "오늘의 일정"에 함께 보여준다. (캘린더는 둘을 나눠 담는다)
+  const schedules = [
+    ...(day?.schedules ?? []),
+    ...(day?.anniversaries ?? []),
+  ]
+
+  return schedules.map((schedule) => ({
+    scheduleId: schedule.scheduleId,
+    name: schedule.name,
+    description: schedule.description ?? '',
+    scheduleDate: schedule.date,
+    scheduleTime: schedule.time || null,
+    scheduleType: schedule.type,
+    yearlyRecurring:
+      schedule.yearlyRecurring,
+  }))
 }
 
 export async function getAnniversaries(

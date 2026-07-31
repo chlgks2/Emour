@@ -19,7 +19,7 @@
   gap: 12px;
   padding: 0 var(--page-padding-x);
   border-bottom: 1px solid var(--color-divider);
-  background: rgba(250, 248, 247, 0.86);
+  background: color-mix(in srgb, var(--color-background) 86%, transparent);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
 }
@@ -59,7 +59,9 @@
   font-size: var(--font-caption);
   font-weight: 700;
   cursor: pointer;
-  transition: background-color var(--duration-fast) var(--ease-out);
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out);
 }
 
 .album-add-button:hover:not(:disabled) {
@@ -245,7 +247,7 @@
   justify-content: center;
   padding: 30px 20px;
   border: 1px dashed var(--color-border-strong);
-  border-radius: var(--radius-xl);
+  border-radius: var(--card-radius);
   background: var(--color-surface);
   color: var(--color-text-secondary);
   text-align: center;
@@ -370,8 +372,7 @@
 .album-photo-modal,
 .album-delete-modal {
   width: 100%;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-xl);
+  border-radius: var(--card-radius);
   background: var(--color-surface);
   box-shadow: var(--shadow-float);
 }
@@ -415,8 +416,9 @@
   padding: 0;
   border: 0;
   border-radius: 50%;
-  background: var(--color-surface-tint);
-  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
   cursor: pointer;
   transition:
     background-color var(--duration-fast) var(--ease-out),
@@ -471,7 +473,9 @@
   background: transparent;
   color: var(--color-text-secondary);
   cursor: pointer;
-  transition: background-color var(--duration-fast) var(--ease-out);
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out);
 }
 
 .album-upload-select-area:hover:not(:disabled) {
@@ -624,18 +628,22 @@
   font-size: var(--font-label);
   font-weight: 700;
   cursor: pointer;
-  transition: background-color var(--duration-fast) var(--ease-out);
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out);
 }
 
 .album-upload-cancel,
 .album-delete-cancel {
-  background: var(--color-surface-tint);
-  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
 }
 
 .album-upload-cancel:hover:not(:disabled),
 .album-delete-cancel:hover:not(:disabled) {
-  background: var(--color-surface-sunken);
+  background: var(--color-surface-tint);
+  border-color: var(--color-primary-soft);
 }
 
 .album-upload-submit {
@@ -689,8 +697,9 @@
   padding: 0;
   border: 0;
   border-radius: 50%;
-  background: var(--color-surface-tint);
-  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
   cursor: pointer;
   transition:
     background-color var(--duration-fast) var(--ease-out),
@@ -741,7 +750,9 @@
   font-size: var(--font-label);
   font-weight: 700;
   cursor: pointer;
-  transition: background-color var(--duration-fast) var(--ease-out);
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out);
 }
 
 .album-photo-delete-button:hover:not(:disabled) {
@@ -843,4 +854,15 @@
     width: 50px;
     height: 50px;
   }
+}
+
+/* 공용 Button(primary)과 동일한 눌림 피드백 — 앱 전체에서 버튼 반응이 같게 */
+.album-add-button:not(:disabled):active {
+  transform: scale(0.98);
+}
+.album-upload-submit:not(:disabled):active {
+  transform: scale(0.98);
+}
+.album-delete-submit:not(:disabled):active {
+  transform: scale(0.98);
 }
