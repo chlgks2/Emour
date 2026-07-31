@@ -8,6 +8,7 @@ import com.ssafy.emour.chat.dto.ChatReactionEventResponse;
 import com.ssafy.emour.chat.dto.ChatReactionRequest;
 import com.ssafy.emour.chat.dto.ChatReactionResponse;
 import com.ssafy.emour.chat.dto.ChatReadResponse;
+import com.ssafy.emour.chat.dto.ChatReadStatusResponse;
 import com.ssafy.emour.chat.dto.ChatRestMessageRequest;
 import com.ssafy.emour.chat.dto.ChatUnreadCountResponse;
 import com.ssafy.emour.chat.service.ChatBookmarkService;
@@ -114,6 +115,27 @@ public class ChatRestController {
             @RequestParam Long roomId
     ) {
         return chatReadService.getUnreadCount(
+                roomId,
+                SecurityUtil.getCurrentUserId()
+        );
+    }
+
+    /**
+     * 상대방이 내 메시지를 어디까지 읽었는지 조회합니다.
+     */
+    @GetMapping("/read-status")
+    @Operation(
+            summary = "상대방 읽음 상태 조회",
+            description = """
+                    상대방이 마지막으로 읽은 메시지 번호를 조회합니다.
+                    내 메시지 번호가 이 번호보다 작거나 같으면 상대방이 읽은 메시지입니다.
+                    """
+    )
+    public ChatReadStatusResponse getReadStatus(
+            @Parameter(description = "커플방 번호", example = "1")
+            @RequestParam Long roomId
+    ) {
+        return chatReadService.getPartnerReadStatus(
                 roomId,
                 SecurityUtil.getCurrentUserId()
         );

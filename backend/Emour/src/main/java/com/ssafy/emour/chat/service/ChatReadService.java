@@ -2,6 +2,7 @@ package com.ssafy.emour.chat.service;
 
 import com.ssafy.emour.chat.dto.ChatReadRequest;
 import com.ssafy.emour.chat.dto.ChatReadResponse;
+import com.ssafy.emour.chat.dto.ChatReadStatusResponse;
 import com.ssafy.emour.chat.dto.ChatUnreadCountResponse;
 import com.ssafy.emour.chat.entity.ChatReadState;
 import com.ssafy.emour.chat.entity.ChatReadStateId;
@@ -114,6 +115,31 @@ public class ChatReadService {
                 lastReadMessageId,
                 unreadCount
         );
+    }
+
+    /**
+     * 채팅방에 다시 들어왔을 때 상대방이 내 메시지를 어디까지 읽었는지 조회합니다.
+     */
+    @Transactional(readOnly = true)
+    public ChatReadStatusResponse getPartnerReadStatus(
+            Long roomId,
+            Long userId
+    ) {
+        validateActiveMember(userId, roomId);
+
+        return chatReadStateRepository
+                .findPartnerReadState(roomId, userId)
+                .map(state -> new ChatReadStatusResponse(
+                        roomId,
+                        state.getLastReadMessageId(),
+                        state.getReadAt()
+                ))
+                // 상대방이 아직 한 번도 읽음 처리하지 않았다면 읽은 위치가 없습니다.
+                .orElseGet(() -> new ChatReadStatusResponse(
+                        roomId,
+                        null,
+                        null
+                ));
     }
 
     private void validateActiveMember(Long userId, Long roomId) {
