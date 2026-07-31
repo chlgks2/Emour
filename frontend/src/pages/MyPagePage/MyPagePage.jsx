@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useEffect,
   useState,
 } from 'react'
@@ -39,6 +40,7 @@ import BottomNavigation from '../../components/common/BottomNavigation/BottomNav
 
 import PartnerNicknameModal from '../../components/mypage/PartnerNicknameModal/PartnerNicknameModal.jsx'
 import { useAuth } from '../../hooks/useAuth.js'
+import { useLiveSync } from '../../hooks/useLiveSync.js'
 
 import './MyPagePage.css'
 
@@ -135,36 +137,31 @@ function MyPagePage() {
     setIsRoomCodeCopied,
   ] = useState(false)
 
-  useEffect(() => {
-    let isCancelled = false
-
-    getMyPageProfile()
-      .then((profileData) => {
-        if (isCancelled) {
-          return
-        }
+  const loadProfile = useCallback(
+    async () => {
+      try {
+        const profileData =
+          await getMyPageProfile()
 
         setProfile(profileData)
         setErrorMessage('')
-        setIsLoading(false)
-      })
-      .catch((error) => {
-        if (isCancelled) {
-          return
-        }
-
+      } catch (error) {
         setErrorMessage(
           error.message ||
             '사용자 정보를 불러오지 못했습니다.',
         )
-
+      } finally {
         setIsLoading(false)
-      })
+      }
+    },
+    [],
+  )
 
-    return () => {
-      isCancelled = true
-    }
-  }, [])
+  useEffect(() => {
+    Promise.resolve().then(loadProfile)
+  }, [loadProfile])
+
+  useLiveSync(loadProfile)
 
   useEffect(() => {
     if (

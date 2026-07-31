@@ -36,6 +36,7 @@ import { formatSlotTime } from '../../utils/moodSlotFormat.js'
 import { DEFAULT_MOOD_WINDOW } from '../../utils/moodSlotGrid.js'
 import { getMoodNotificationSetting } from '../../api/notificationSettingApi.js'
 import MoodFormModal from '../../components/dashboard/MoodFormModal.jsx'
+import { useLiveSync } from '../../hooks/useLiveSync.js'
 
 import {
   createEmptyCalendarDay,
@@ -400,6 +401,43 @@ function CalendarPage() {
       isCancelled = true
     }
   }, [currentMonthNumber, currentYear])
+
+  const refreshCalendar =
+    useCallback(async () => {
+      const results =
+        await Promise.allSettled([
+          getMonthlyCalendar(
+            TEMP_COUPLE_ROOM_ID,
+            currentYear,
+            currentMonthNumber,
+          ),
+          fetchMoodSlots(),
+        ])
+
+      if (
+        results[0].status ===
+        'fulfilled'
+      ) {
+        setCalendarData(
+          results[0].value,
+        )
+        setErrorMessage('')
+      }
+
+      if (
+        results[1].status ===
+        'fulfilled'
+      ) {
+        setMoodSlots(
+          results[1].value,
+        )
+      }
+    }, [
+      currentMonthNumber,
+      currentYear,
+    ])
+
+  useLiveSync(refreshCalendar)
 
   const changeCurrentMonth = (
     nextMonth,
