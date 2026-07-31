@@ -54,11 +54,6 @@ class AlbumPhotoServiceTest {
                 fileStorage,
                 coupleRoomRepository
         );
-        ReflectionTestUtils.setField(
-                albumPhotoService,
-                "baseUrl",
-                "http://localhost:8080"
-        );
     }
 
     @Test
@@ -94,6 +89,12 @@ class AlbumPhotoServiceTest {
         assertThat(responses)
                 .extracting(response -> response.uploaderId())
                 .containsExactly(USER_ID, 2L);
+        assertThat(responses)
+                .extracting(response -> response.imageUrl())
+                .containsExactly(
+                        "/uploads/first.jpg",
+                        "/uploads/partner.jpg"
+                );
     }
 
     @Test
