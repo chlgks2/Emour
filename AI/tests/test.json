@@ -1,10 +1,15 @@
 {
   "context": [
-    {"speaker": "A", "text": "너 뭐하는 짓이야?"},
-    {"speaker": "B", "text": "왜 그래 자기야.. ㅠㅠ"}
+    {"speaker": "A", "text": "오빠 나 아까 계단에서 넘어져서 발목 꺾임ㅠㅠ"},
+    {"speaker": "B", "text": "헐 많이 아파?? 걸을 수 있어?"},
+    {"speaker": "A", "text": "붓기 시작하는데 진짜 너무 아파ㅠㅠ"},
+    {"speaker": "B", "text": "어디야 지금? 병원 가야 되는 거 아니야?"}
   ],
   "target": [
-    {"message_id": 101, "speaker": "A", "text": "넌 또 그 딴식이지? 됐다 그만하자. 짜증난다."},
-    {"message_id": 102, "speaker": "B", "text": "자기야 미안해, 내가 잘못했어.. 전화 좀 받아 ㅠㅠ"}
+    {"message_id": 101, "speaker": "A", "text": "회사 근처 병원 가는 중인데 무서워ㅠㅠ"},
+    {"message_id": 102, "speaker": "B", "text": "일단 조심히 걸어가고 나 지금 바로 갈게!!"},
+    {"message_id": 103, "speaker": "A", "text": "오빠 일하는 중이잖아 괜찮아!"},
+    {"message_id": 104, "speaker": "B", "text": "괜찮긴 뭐가 괜찮아 금방 갈 테니까 가만히 있어"},
+    {"message_id": 105, "speaker": "A", "text": "응 조심히 와 오빠ㅠㅠ"}
   ]
 }
