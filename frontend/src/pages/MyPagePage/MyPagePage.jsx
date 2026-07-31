@@ -428,15 +428,31 @@ function MyPagePage() {
           confirmAction ===
           'leaveRoom'
         ) {
+          const wasWaitingRoom =
+            profile?.roomStatus ===
+            'WAITING'
+
           const updatedProfile =
             await leaveCoupleRoom()
 
-          setProfile(updatedProfile)
+          if (updatedProfile) {
+            setProfile(updatedProfile)
+          }
+
           setIsRoomCodeVisible(false)
+          setConfirmAction(null)
 
           window.alert(
-            '방에서 나왔습니다.',
+            wasWaitingRoom
+              ? '대기 중인 방을 삭제했습니다.'
+              : '방에서 나왔습니다.',
           )
+
+          navigate('/couple/connect', {
+            replace: true,
+          })
+
+          return
         }
 
         if (
@@ -485,7 +501,19 @@ function MyPagePage() {
 
   const confirmInformation =
     confirmAction
-      ? CONFIRM_ACTIONS[confirmAction]
+      ? confirmAction ===
+          'leaveRoom' &&
+        profile?.roomStatus ===
+          'WAITING'
+        ? {
+            ...CONFIRM_ACTIONS.leaveRoom,
+            title:
+              '대기 중인 방을 삭제할까요?',
+            description:
+              '아직 연인이 참여하지 않은 방과 초대 코드가 삭제되며, 연인 연결 화면으로 이동합니다.',
+            confirmLabel: '방 삭제',
+          }
+        : CONFIRM_ACTIONS[confirmAction]
       : null
 
   const roomStatusInformation =
