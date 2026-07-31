@@ -151,4 +151,55 @@ class DiaryServiceTest {
 
         assertThat(partnerDiary.getContent()).isEqualTo("상대방 기록");
     }
+
+    @Test
+    void 본인의_한줄_일기를_삭제한다() {
+        Long userId = 1L;
+        Long roomId = 10L;
+        Long diaryId = 100L;
+        CoupleRoom room = mock(CoupleRoom.class);
+        Diary diary = Diary.create(
+                roomId,
+                userId,
+                LocalDate.of(2026, 8, 5),
+                "나의 기록"
+        );
+        given(memberRepository.existsById(userId)).willReturn(true);
+        given(coupleRoomRepository.findActiveRoomByUserId(userId))
+                .willReturn(Optional.of(room));
+        given(room.getId()).willReturn(roomId);
+        given(diaryRepository.findById(diaryId))
+                .willReturn(Optional.of(diary));
+
+        diaryService.delete(userId, diaryId);
+
+        verify(diaryRepository).delete(diary);
+    }
+
+    @Test
+    void 상대방의_한줄_일기는_삭제할_수_없다() {
+        Long userId = 1L;
+        Long roomId = 10L;
+        Long diaryId = 100L;
+        CoupleRoom room = mock(CoupleRoom.class);
+        Diary partnerDiary = Diary.create(
+                roomId,
+                2L,
+                LocalDate.of(2026, 8, 5),
+                "상대방 기록"
+        );
+        given(memberRepository.existsById(userId)).willReturn(true);
+        given(coupleRoomRepository.findActiveRoomByUserId(userId))
+                .willReturn(Optional.of(room));
+        given(room.getId()).willReturn(roomId);
+        given(diaryRepository.findById(diaryId))
+                .willReturn(Optional.of(partnerDiary));
+
+        assertThatThrownBy(() -> diaryService.delete(userId, diaryId))
+                .isInstanceOf(CustomException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.ACCESS_DENIED);
+
+        verify(diaryRepository, never()).delete(any());
+    }
 }

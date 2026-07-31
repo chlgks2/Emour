@@ -54,6 +54,13 @@ public class DiaryService {
         return DiaryResponse.from(diary);
     }
 
+    @Transactional
+    public void delete(Long userId, Long diaryId) {
+        CoupleRoom room = getActiveRoom(userId);
+        Diary diary = getMyDiary(userId, room.getId(), diaryId);
+        diaryRepository.delete(diary);
+    }
+
     private CoupleRoom getActiveRoom(Long userId) {
         if (!memberRepository.existsById(userId)) {
             throw new CustomException(ErrorCode.USER_NOT_FOUND);
