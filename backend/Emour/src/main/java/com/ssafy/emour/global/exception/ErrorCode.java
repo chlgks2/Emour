@@ -60,6 +60,10 @@ public enum ErrorCode {
             HttpStatus.BAD_REQUEST,
             "일정 API에서는 일반 일정만 처리할 수 있습니다."
     ),
+    ANNIVERSARY_TYPE_MISMATCH(
+            HttpStatus.BAD_REQUEST,
+            "기념일 API에서는 기념일만 처리할 수 있습니다."
+    ),
     ;
 
     private final HttpStatus status;

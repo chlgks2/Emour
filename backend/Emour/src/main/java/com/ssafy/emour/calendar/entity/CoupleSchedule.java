@@ -106,4 +106,12 @@ public class CoupleSchedule {
         this.scheduleDate = scheduleDate;
         this.scheduleTime = scheduleTime;
     }
+
+    public void updateAnniversary(
+            String name,
+            LocalDate scheduleDate
+    ) {
+        this.name = name;
+        this.scheduleDate = scheduleDate;
+    }
 }
