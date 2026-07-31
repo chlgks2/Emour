@@ -20,6 +20,7 @@ import { getMoodNotificationSetting } from "../api/notificationSettingApi";
 import { formatSlotTime } from "../utils/moodSlotFormat";
 import { addDays, formatDateKey, getWeekStart, parseDateKey } from "../utils/moodEmotion";
 import { useToast } from "../hooks/useToast";
+import { useLiveSync } from "../hooks/useLiveSync";
 import styles from "./DashboardPage.module.css";
 
 export default function DashboardPage() {
@@ -61,7 +62,7 @@ export default function DashboardPage() {
   }, [loadDashboard]);
 
   const loadMonth = useCallback((cursor) => {
-    fetchMoodRecordsForMonth(cursor.getFullYear(), cursor.getMonth())
+    return fetchMoodRecordsForMonth(cursor.getFullYear(), cursor.getMonth())
       .then((records) => {
         setMoodRecords((prev) => ({ ...prev, ...records }));
       })
@@ -80,6 +81,17 @@ export default function DashboardPage() {
     loadMonth(weekStart);
     loadMonth(addDays(weekStart, 6));
   }, [weekStart, loadMonth]);
+
+  const refreshDashboard = useCallback(async () => {
+    await Promise.allSettled([
+      loadDashboard(),
+      loadMonth(monthCursor),
+      loadMonth(weekStart),
+      loadMonth(addDays(weekStart, 6)),
+    ]);
+  }, [loadDashboard, loadMonth, monthCursor, weekStart]);
+
+  useLiveSync(refreshDashboard);
 
   const weekDays = useMemo(() => {
     return Array.from({ length: 7 }, (_, i) => {
