@@ -8,6 +8,8 @@ import com.ssafy.emour.chat.dto.ChatReactionRequest;
 import com.ssafy.emour.chat.dto.ChatReactionResponse;
 import com.ssafy.emour.chat.dto.ChatReadRequest;
 import com.ssafy.emour.chat.dto.ChatUnreadCountResponse;
+import com.ssafy.emour.chat.entity.AnalysisStatus;
+import com.ssafy.emour.chat.entity.EmotionType;
 import com.ssafy.emour.chat.entity.MessageType;
 import com.ssafy.emour.chat.repository.ChatAnalysisRepository;
 import com.ssafy.emour.chat.repository.ChatBookmarkRepository;
@@ -100,6 +102,14 @@ class ChatMessageIntegrationTest {
                 )
         );
 
+        // AI 분석이 끝난 상황처럼 감정을 저장한 뒤 다시 채팅 내역을 조회합니다.
+        chatAnalysisRepository
+                .findByMessageMessageId(sent.messageId())
+                .orElseThrow()
+                .complete(EmotionType.JOY);
+        entityManager.flush();
+        entityManager.clear();
+
         ChatHistoryResponse history = chatMessageService.getMessages(
                 1L,
                 10L,
@@ -116,6 +126,9 @@ class ChatMessageIntegrationTest {
                 .anySatisfy(message -> {
                     assertThat(message.messageId()).isEqualTo(sent.messageId());
                     assertThat(message.content()).isEqualTo("안녕!");
+                    assertThat(message.analysisStatus())
+                            .isEqualTo(AnalysisStatus.COMPLETED);
+                    assertThat(message.emotion()).isEqualTo("JOY");
                 });
     }
 

@@ -78,6 +78,15 @@ class SwaggerDocumentationTest {
     }
 
     @Test
+    void exposesProfileImagesApi() throws Exception {
+        mockMvc.perform(get("/v3/api-docs"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath(
+                        "$.paths['/users/profile-img'].get"
+                ).exists());
+    }
+
+    @Test
     void exposesMoodApisWithBearerAuth() throws Exception {
         mockMvc.perform(get("/v3/api-docs"))
                 .andExpect(status().isOk())

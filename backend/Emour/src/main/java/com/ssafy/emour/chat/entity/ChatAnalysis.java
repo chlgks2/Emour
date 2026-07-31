@@ -51,11 +51,29 @@ public class ChatAnalysis {
         return analysis;
     }
 
+    public void startProcessing() {
+        this.analysisStatus = AnalysisStatus.PROCESSING;
+    }
+
+    public void complete(EmotionType emotionType) {
+        this.emotionType = emotionType.name();
+        this.analysisStatus = AnalysisStatus.COMPLETED;
+        this.analyzedAt = LocalDateTime.now();
+    }
+
     public ChatMessage getMessage() {
         return message;
     }
 
     public String getEmotionType() {
         return emotionType;
+    }
+
+    public AnalysisStatus getAnalysisStatus() {
+        return analysisStatus;
+    }
+
+    public LocalDateTime getAnalyzedAt() {
+        return analyzedAt;
     }
 }
