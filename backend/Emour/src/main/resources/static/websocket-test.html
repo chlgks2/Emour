@@ -298,6 +298,10 @@
                 frame => receiveReadNotice(JSON.parse(frame.body))
             );
             stompClient.subscribe(
+                `/sub/chat/rooms/${roomId}/analysis`,
+                frame => receiveAnalysis(JSON.parse(frame.body))
+            );
+            stompClient.subscribe(
                 "/user/queue/errors",
                 frame => addMessage(frame.body, "error", "서버 오류")
             );
@@ -395,6 +399,19 @@
             `${notice.userId}번 사용자가 ${notice.lastReadMessageId}번 메시지까지 읽었습니다.`,
             "system",
             "읽음 알림"
+        );
+    }
+
+    // AI 분석이 DB에 저장된 뒤 서버가 보내 준 메시지별 감정을 표시합니다.
+    function receiveAnalysis(result) {
+        const emotions = Object.entries(result.emotions || {})
+            .map(([messageId, emotion]) => `${messageId}번: ${emotion}`)
+            .join("\n");
+
+        addMessage(
+            emotions || "분석된 메시지가 없습니다.",
+            "system",
+            `감정 분석 완료 · ${result.analyzedCount}개`
         );
     }
 

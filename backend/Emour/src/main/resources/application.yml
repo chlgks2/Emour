@@ -11,7 +11,7 @@ spring:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
       password: ${REDIS_PASSWORD:}
-      
+
   application:
     name: Emour
   profiles:
@@ -39,6 +39,14 @@ jwt:
 # ===== 커플 초대 설정 =====
 couple:
   invitation-validity-hours: ${COUPLE_INVITATION_VALIDITY_HOURS:24}
+
+# ===== AI 감정 분석 설정 =====
+ai:
+  service:
+    # 로컬은 localhost:8000, 서버는 AI_SERVICE_URL 환경변수를 사용합니다.
+    url: ${AI_SERVICE_URL:http://localhost:8000}
+    enabled: ${AI_ANALYSIS_ENABLED:true}
+    poll-delay-ms: ${AI_ANALYSIS_POLL_DELAY_MS:1000}
 
 # 배포 서버에 health 주소만 공개하고 DB 등의 상세정보는 숨깁니다.
 management:
