@@ -47,6 +47,9 @@ public class Dashboard {
     @Column(name = "bookmark_count", nullable = false)
     private int bookmarkCount;
 
+    @Column(name = "emotion_summary", columnDefinition = "json")
+    private String emotionSummary;
+
     @Column(name = "emotion_flow", columnDefinition = "json")
     private String emotionFlow;
 
@@ -87,6 +90,13 @@ public class Dashboard {
         this.imageCount = imageCount;
         this.reactionCount = reactionCount;
         this.bookmarkCount = bookmarkCount;
+        this.calculatedAt = LocalDateTime.now();
+        this.updatedAt = this.calculatedAt;
+    }
+
+    public void updateEmotionSummary(String emotionSummary) {
+        // 감정별 개수를 도넛 그래프용 JSON으로 보관합니다.
+        this.emotionSummary = emotionSummary;
         this.calculatedAt = LocalDateTime.now();
         this.updatedAt = this.calculatedAt;
     }
@@ -135,6 +145,10 @@ public class Dashboard {
 
     public int getBookmarkCount() {
         return bookmarkCount;
+    }
+
+    public String getEmotionSummary() {
+        return emotionSummary;
     }
 
     public String getEmotionFlow() {

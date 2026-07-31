@@ -3,6 +3,8 @@ package com.ssafy.emour.dashboard.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ssafy.emour.chat.entity.ChatAnalysis;
+import com.ssafy.emour.chat.entity.EmotionPolarity;
+import com.ssafy.emour.chat.entity.EmotionType;
 import com.ssafy.emour.chat.repository.ChatAnalysisRepository;
 import com.ssafy.emour.couple.entity.CoupleMemberId;
 import com.ssafy.emour.couple.entity.CoupleMemberStatus;
@@ -21,8 +23,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
-import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -30,30 +30,6 @@ public class DashboardEmotionService {
 
     private static final int SLOT_HOURS = 2;
     private static final int SLOT_COUNT = 12;
-
-    private static final Set<String> POSITIVE_EMOTIONS = Set.of(
-            "JOY",
-            "EXCITEMENT",
-            "CURIOSITY",
-            "SURPRISE",
-            "기쁨",
-            "설렘",
-            "궁금함",
-            "놀람"
-    );
-
-    private static final Set<String> NEGATIVE_EMOTIONS = Set.of(
-            "SADNESS",
-            "ANGER",
-            "ANXIETY",
-            "ANNOYANCE",
-            "BOREDOM",
-            "슬픔",
-            "화남",
-            "불안",
-            "짜증",
-            "지루함"
-    );
 
     private final ChatAnalysisRepository chatAnalysisRepository;
     private final DashboardRepository dashboardRepository;
@@ -122,19 +98,15 @@ public class DashboardEmotionService {
     }
 
     private int getPolarityIndex(String emotionType) {
-        if (emotionType == null) {
-            return 2;
-        }
-
-        String normalized = emotionType.trim().toUpperCase(Locale.ROOT);
-        if (POSITIVE_EMOTIONS.contains(normalized)) {
+        EmotionPolarity polarity = EmotionType
+                .fromStoredValue(emotionType)
+                .getPolarity();
+        if (polarity == EmotionPolarity.POSITIVE) {
             return 0;
         }
-        if (NEGATIVE_EMOTIONS.contains(normalized)) {
+        if (polarity == EmotionPolarity.NEGATIVE) {
             return 1;
         }
-
-        // 평범(NEUTRAL)과 예기치 않은 값은 그래프 왜곡을 막기 위해 중립으로 셉니다.
         return 2;
     }
 

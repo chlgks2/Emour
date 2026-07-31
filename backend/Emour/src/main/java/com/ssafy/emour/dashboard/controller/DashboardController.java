@@ -3,7 +3,10 @@ package com.ssafy.emour.dashboard.controller;
 import com.ssafy.emour.dashboard.dto.DashboardCountResponse;
 import com.ssafy.emour.dashboard.dto.DashboardEmotionFlowResponse;
 import com.ssafy.emour.dashboard.dto.DashboardFrequentWordsResponse;
+import com.ssafy.emour.dashboard.dto.DashboardMainEmotionResponse;
+import com.ssafy.emour.dashboard.dto.DashboardPeriod;
 import com.ssafy.emour.dashboard.service.DashboardEmotionService;
+import com.ssafy.emour.dashboard.service.DashboardMainEmotionService;
 import com.ssafy.emour.dashboard.service.DashboardService;
 import com.ssafy.emour.dashboard.service.DashboardWordService;
 import com.ssafy.emour.global.util.SecurityUtil;
@@ -30,6 +33,7 @@ public class DashboardController {
     private final DashboardService dashboardService;
     private final DashboardEmotionService dashboardEmotionService;
     private final DashboardWordService dashboardWordService;
+    private final DashboardMainEmotionService dashboardMainEmotionService;
 
     @GetMapping("/daily")
     @Operation(
@@ -102,6 +106,37 @@ public class DashboardController {
                 SecurityUtil.getCurrentUserId(),
                 date,
                 limit
+        );
+    }
+
+    @GetMapping("/main-emotions")
+    @Operation(
+            summary = "일·월·년 주요 감정 조회",
+            description = """
+                    분석이 완료된 내 메시지를 감정별로 집계합니다.
+                    15개 감정의 개수와 가장 많이 나타난 감정을 반환합니다.
+                    """
+    )
+    public DashboardMainEmotionResponse getMainEmotions(
+            @Parameter(description = "커플 방 번호", example = "1")
+            @RequestParam Long roomId,
+
+            @Parameter(description = "조회 단위: DAY, MONTH, YEAR", example = "MONTH")
+            @RequestParam DashboardPeriod period,
+
+            @Parameter(
+                    description = "기준 날짜. 월·년 조회에서는 해당 월·연도만 사용합니다.",
+                    example = "2026-07-31"
+            )
+            @RequestParam
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate date
+    ) {
+        return dashboardMainEmotionService.getMainEmotions(
+                roomId,
+                SecurityUtil.getCurrentUserId(),
+                period,
+                date
         );
     }
 }
