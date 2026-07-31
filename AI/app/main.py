@@ -55,7 +55,7 @@ app = FastAPI(
     description="커플 대화의 감정을 분석합니다.",
     version="0.2.0",
     lifespan=lifespan,
-    root_path="/ai",
+    root_path="/ai", 
 )
 
 
