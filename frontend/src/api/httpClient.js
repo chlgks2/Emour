@@ -175,3 +175,79 @@ export async function apiRequest(
 
   return responseData
 }
+
+export async function apiBlobRequest(
+  path,
+  {
+    headers: customHeaders,
+    skipAuth = false,
+    retryOnUnauthorized = true,
+    ...options
+  } = {},
+) {
+  const headers = new Headers(customHeaders)
+  const accessToken = getAccessToken()
+
+  if (accessToken && !skipAuth) {
+    headers.set(
+      'Authorization',
+      `Bearer ${accessToken}`,
+    )
+  }
+
+  const requestUrl =
+    /^https?:\/\//i.test(path)
+      ? path
+      : `${API_BASE_URL}${path}`
+
+  const response = await fetch(
+    requestUrl,
+    {
+      method: 'GET',
+      headers,
+      credentials: 'include',
+      ...options,
+    },
+  )
+
+  if (
+    response.status === 401 &&
+    !skipAuth &&
+    retryOnUnauthorized
+  ) {
+    const refreshedAccessToken =
+      await refreshAccessToken()
+
+    if (refreshedAccessToken) {
+      return apiBlobRequest(path, {
+        headers: customHeaders,
+        skipAuth,
+        retryOnUnauthorized: false,
+        ...options,
+      })
+    }
+  }
+
+  if (!response.ok) {
+    const responseData =
+      await parseResponse(response)
+
+    const errorMessage =
+      responseData?.message ||
+      responseData?.error ||
+      (typeof responseData === 'string'
+        ? responseData
+        : '') ||
+      '이미지를 불러오지 못했습니다.'
+
+    const requestError =
+      new Error(errorMessage)
+
+    requestError.status = response.status
+    requestError.response = responseData
+
+    throw requestError
+  }
+
+  return response.blob()
+}

@@ -1,4 +1,8 @@
-import { ChevronDown } from "lucide-react";
+import {
+  CalendarHeart,
+  ChevronDown,
+  Pencil,
+} from "lucide-react";
 import styles from "./HomePage.module.css";
 
 // 커플 공용 홈 화면. 사진/문구/문구 위치/문구 스타일은 mypage에서가 아니라
@@ -7,7 +11,12 @@ import styles from "./HomePage.module.css";
 // - daysTogether : couple_room.dating_start_date 로부터 계산한 파생값
 // - imageUrl / caption / captionPosition / captionStyle / relationshipName
 //   : ⚠️ ERD에 대응 컬럼이 아직 없음 (api/homeApi.js 상단 주석 참고)
-export default function HomePage({ home, onEdit, onViewDashboard }) {
+export default function HomePage({
+  home,
+  onEdit,
+  onEditStartDate,
+  onViewDashboard,
+}) {
   // 로딩 중에 아무것도 렌더하지 않으면 검은 화면만 보이므로 최소한의 자리를 잡아둔다.
   if (!home) {
     return (
@@ -20,6 +29,7 @@ export default function HomePage({ home, onEdit, onViewDashboard }) {
 
   const {
     daysTogether,
+    datingStartDate,
     myProfileImageUrl,
     partnerProfileImageUrl,
     imageUrl,
@@ -55,9 +65,32 @@ export default function HomePage({ home, onEdit, onViewDashboard }) {
       </button>
 
       <div className={styles.headerInfo}>
-        <p className={styles.days}>
-          {relationshipName}, <span> {daysTogether}</span> Days
-        </p>
+        {datingStartDate ? (
+          <div className={styles.daysRow}>
+            <p className={styles.days}>
+              {relationshipName},{" "}
+              <span>{daysTogether}</span> Days
+            </p>
+
+            <button
+              type="button"
+              className={styles.dateEditButton}
+              aria-label="처음 만난 날 수정"
+              onClick={onEditStartDate}
+            >
+              <Pencil size={13} />
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            className={styles.registerDateButton}
+            onClick={onEditStartDate}
+          >
+            <CalendarHeart size={17} />
+            <span>처음 만난 날 등록하기</span>
+          </button>
+        )}
 
         <div className={styles.profiles}>
           <span className={styles.profileCircle}>
