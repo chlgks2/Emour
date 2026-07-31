@@ -6,6 +6,7 @@ import com.ssafy.emour.global.exception.CustomException;
 import com.ssafy.emour.global.exception.ErrorCode;
 import com.ssafy.emour.member.repository.MemberRepository;
 import com.ssafy.emour.mood.dto.request.MoodCreateRequest;
+import com.ssafy.emour.mood.dto.request.MoodUpdateRequest;
 import com.ssafy.emour.mood.dto.response.MoodCreateResponse;
 import com.ssafy.emour.mood.entity.Mood;
 import com.ssafy.emour.mood.entity.MoodNotification;
@@ -184,5 +185,124 @@ class MoodServiceTest {
                 .isEqualTo(ErrorCode.ACTIVE_COUPLE_NOT_FOUND);
 
         verify(moodRepository, never()).save(any());
+    }
+
+    @Test
+    void 현재_알림_시간대의_본인_기분을_수정한다() {
+        Long userId = 1L;
+        Long roomId = 10L;
+        Long moodId = 100L;
+        LocalDateTime slot = LocalDateTime.of(2026, 7, 31, 9, 0);
+        LocalDateTime currentTime = LocalDateTime.of(2026, 7, 31, 10, 30);
+        CoupleRoom room = mock(CoupleRoom.class);
+        Mood mood = Mood.create(
+                roomId,
+                userId,
+                slot,
+                MoodType.NEUTRAL,
+                slot
+        );
+        MoodNotification notification = MoodNotification.create(
+                roomId,
+                LocalTime.of(9, 0),
+                LocalTime.of(21, 0),
+                3
+        );
+
+        given(memberRepository.existsById(userId)).willReturn(true);
+        given(coupleRoomRepository.findActiveRoomByUserId(userId))
+                .willReturn(Optional.of(room));
+        given(room.getId()).willReturn(roomId);
+        given(moodRepository.findById(moodId)).willReturn(Optional.of(mood));
+        given(moodNotificationRepository.findByRoomIdAndActiveTrue(roomId))
+                .willReturn(Optional.of(notification));
+        given(moodTimeProvider.now()).willReturn(currentTime);
+
+        var response = moodService.update(
+                userId,
+                moodId,
+                new MoodUpdateRequest(MoodType.HAPPY)
+        );
+
+        assertThat(mood.getMoodType()).isEqualTo(MoodType.HAPPY);
+        assertThat(mood.getUpdatedAt()).isEqualTo(currentTime);
+        assertThat(response.moodType()).isEqualTo(MoodType.HAPPY);
+        assertThat(response.updatedAt()).isEqualTo(currentTime);
+    }
+
+    @Test
+    void 상대방의_기분은_수정할_수_없다() {
+        Long userId = 1L;
+        Long roomId = 10L;
+        Long moodId = 100L;
+        CoupleRoom room = mock(CoupleRoom.class);
+        Mood partnerMood = Mood.create(
+                roomId,
+                2L,
+                LocalDateTime.of(2026, 7, 31, 9, 0),
+                MoodType.NEUTRAL,
+                LocalDateTime.of(2026, 7, 31, 9, 0)
+        );
+
+        given(memberRepository.existsById(userId)).willReturn(true);
+        given(coupleRoomRepository.findActiveRoomByUserId(userId))
+                .willReturn(Optional.of(room));
+        given(room.getId()).willReturn(roomId);
+        given(moodRepository.findById(moodId))
+                .willReturn(Optional.of(partnerMood));
+
+        assertThatThrownBy(() -> moodService.update(
+                userId,
+                moodId,
+                new MoodUpdateRequest(MoodType.SAD)
+        ))
+                .isInstanceOf(CustomException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.ACCESS_DENIED);
+
+        assertThat(partnerMood.getMoodType()).isEqualTo(MoodType.NEUTRAL);
+    }
+
+    @Test
+    void 지난_알림_시간대의_기분은_수정할_수_없다() {
+        Long userId = 1L;
+        Long roomId = 10L;
+        Long moodId = 100L;
+        LocalDateTime previousSlot = LocalDateTime.of(2026, 7, 31, 9, 0);
+        LocalDateTime currentTime = LocalDateTime.of(2026, 7, 31, 13, 0);
+        CoupleRoom room = mock(CoupleRoom.class);
+        Mood mood = Mood.create(
+                roomId,
+                userId,
+                previousSlot,
+                MoodType.NEUTRAL,
+                previousSlot
+        );
+        MoodNotification notification = MoodNotification.create(
+                roomId,
+                LocalTime.of(9, 0),
+                LocalTime.of(21, 0),
+                3
+        );
+
+        given(memberRepository.existsById(userId)).willReturn(true);
+        given(coupleRoomRepository.findActiveRoomByUserId(userId))
+                .willReturn(Optional.of(room));
+        given(room.getId()).willReturn(roomId);
+        given(moodRepository.findById(moodId)).willReturn(Optional.of(mood));
+        given(moodNotificationRepository.findByRoomIdAndActiveTrue(roomId))
+                .willReturn(Optional.of(notification));
+        given(moodTimeProvider.now()).willReturn(currentTime);
+
+        assertThatThrownBy(() -> moodService.update(
+                userId,
+                moodId,
+                new MoodUpdateRequest(MoodType.VERY_HAPPY)
+        ))
+                .isInstanceOf(CustomException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.MOOD_UPDATE_NOT_ALLOWED);
+
+        assertThat(mood.getMoodType()).isEqualTo(MoodType.NEUTRAL);
     }
 }

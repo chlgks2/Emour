@@ -6,7 +6,9 @@ import com.ssafy.emour.global.exception.CustomException;
 import com.ssafy.emour.global.exception.ErrorCode;
 import com.ssafy.emour.member.repository.MemberRepository;
 import com.ssafy.emour.mood.dto.request.MoodCreateRequest;
+import com.ssafy.emour.mood.dto.request.MoodUpdateRequest;
 import com.ssafy.emour.mood.dto.response.MoodCreateResponse;
+import com.ssafy.emour.mood.dto.response.MoodUpdateResponse;
 import com.ssafy.emour.mood.entity.Mood;
 import com.ssafy.emour.mood.entity.MoodNotification;
 import com.ssafy.emour.mood.repository.MoodNotificationRepository;
@@ -69,5 +71,51 @@ public class MoodService {
         );
 
         return MoodCreateResponse.from(moodRepository.save(mood));
+    }
+
+    @Transactional
+    public MoodUpdateResponse update(
+            Long userId,
+            Long moodId,
+            MoodUpdateRequest request
+    ) {
+        if (!memberRepository.existsById(userId)) {
+            throw new CustomException(ErrorCode.USER_NOT_FOUND);
+        }
+
+        CoupleRoom room = coupleRoomRepository.findActiveRoomByUserId(userId)
+                .orElseThrow(() -> new CustomException(
+                        ErrorCode.ACTIVE_COUPLE_NOT_FOUND
+                ));
+
+        Mood mood = moodRepository.findById(moodId)
+                .orElseThrow(() -> new CustomException(ErrorCode.MOOD_NOT_FOUND));
+
+        if (!mood.getRoomId().equals(room.getId())
+                || !mood.getUserId().equals(userId)) {
+            throw new CustomException(ErrorCode.ACCESS_DENIED);
+        }
+
+        MoodNotification notification = moodNotificationRepository
+                .findByRoomIdAndActiveTrue(room.getId())
+                .orElseThrow(() -> new CustomException(
+                        ErrorCode.MOOD_NOTIFICATION_NOT_FOUND
+                ));
+
+        LocalDateTime currentTime = moodTimeProvider.now();
+        LocalDateTime currentSlot = moodSlotCalculator.currentSlot(
+                        notification,
+                        currentTime
+                )
+                .orElseThrow(() -> new CustomException(
+                        ErrorCode.MOOD_UPDATE_NOT_ALLOWED
+                ));
+
+        if (!mood.getMoodDatetime().equals(currentSlot)) {
+            throw new CustomException(ErrorCode.MOOD_UPDATE_NOT_ALLOWED);
+        }
+
+        mood.updateMoodType(request.moodType(), currentTime);
+        return MoodUpdateResponse.from(mood);
     }
 }

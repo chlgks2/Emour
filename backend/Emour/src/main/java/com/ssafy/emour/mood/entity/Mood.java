@@ -75,4 +75,12 @@ public class Mood {
                 createdAt
         );
     }
+
+    public void updateMoodType(
+            MoodType moodType,
+            LocalDateTime updatedAt
+    ) {
+        this.moodType = moodType;
+        this.updatedAt = updatedAt;
+    }
 }
