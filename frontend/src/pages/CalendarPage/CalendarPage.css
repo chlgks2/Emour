@@ -20,7 +20,7 @@
   justify-content: center;
   padding: 0 16px;
   border-bottom: 1px solid var(--color-divider);
-  background: rgba(250, 248, 247, 0.86);
+  background: color-mix(in srgb, var(--color-background) 86%, transparent);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
 }
@@ -71,12 +71,12 @@
    공통 카드
 ========================= */
 
+/* 카드 표준(tokens.css 8-1) — 대시보드/마이페이지/앨범과 동일 */
 .calendar-month-section,
 .selected-day-card {
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-xl);
-  background: var(--color-surface);
-  box-shadow: var(--shadow-card);
+  border-radius: var(--card-radius);
+  background: var(--card-surface);
+  box-shadow: var(--card-shadow);
 }
 
 .calendar-month-section {
@@ -222,7 +222,7 @@
 .calendar-day-cell-selected {
   box-shadow:
     inset 0 0 0 2px var(--color-primary),
-    0 6px 14px rgba(202, 132, 149, 0.24);
+    0 6px 14px color-mix(in srgb, var(--color-primary) 24%, transparent);
 }
 
 .calendar-day-cell-outside {
@@ -278,7 +278,7 @@
 }
 
 .schedule-dot {
-  background: var(--ci-emotion-orange);
+  background: var(--emotion-gratitude);
 }
 
 /* =========================
@@ -404,7 +404,9 @@
   font-size: var(--font-caption);
   font-weight: 700;
   cursor: pointer;
-  transition: background-color var(--duration-fast) var(--ease-out);
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out);
 }
 
 .add-schedule-button:hover:not(:disabled) {
@@ -451,7 +453,7 @@
   flex-shrink: 0;
   width: 22px;
   height: 22px;
-  border: 1px solid rgba(98, 89, 85, 0.1);
+  border: 1px solid color-mix(in srgb, var(--color-text-primary) 10%, transparent);
   border-radius: 50%;
 }
 
@@ -534,7 +536,9 @@
   color: var(--color-text-primary);
   text-align: left;
   cursor: pointer;
-  transition: background-color var(--duration-fast) var(--ease-out);
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out);
 }
 
 .schedule-list-item:hover {
@@ -583,7 +587,9 @@
   color: inherit;
   text-align: left;
   cursor: pointer;
-  transition: background-color var(--duration-fast) var(--ease-out);
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out);
 }
 
 .anniversary-list-item:hover {
@@ -702,30 +708,43 @@
   margin-top: 10px;
 }
 
+/* 공용 Button 컴포넌트의 sm 사이즈 규격(38px pill)과 동일하게 맞춘다.
+   취소는 outline, 저장은 primary — 앱 전체에서 같은 의미에 같은 모양을 쓴다. */
 .diary-cancel-button,
 .diary-save-button {
-  height: 36px;
+  height: 38px;
   padding: 0 16px;
   border: 0;
   border-radius: var(--radius-pill);
-  font-size: var(--font-caption);
+  font-size: var(--font-label);
   font-weight: 700;
   cursor: pointer;
-  transition: background-color var(--duration-fast) var(--ease-out);
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out);
+}
+
+.diary-cancel-button:not(:disabled):active,
+.diary-save-button:not(:disabled):active {
+  transform: scale(0.98);
 }
 
 .diary-cancel-button {
-  background: var(--color-surface-tint);
-  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
 }
 
 .diary-cancel-button:hover:not(:disabled) {
-  background: var(--color-surface-sunken);
+  background: var(--color-surface-tint);
+  border-color: var(--color-primary-soft);
 }
 
 .diary-save-button {
   background: var(--color-action);
   color: var(--color-text-on-primary);
+  box-shadow: var(--shadow-primary);
 }
 
 .diary-save-button:hover:not(:disabled) {
@@ -770,4 +789,12 @@
   .calendar-day-cell {
     border-radius: var(--radius-xs);
   }
+}
+
+/* 공용 Button(primary)과 동일한 눌림 피드백 — 앱 전체에서 버튼 반응이 같게 */
+.add-schedule-button:not(:disabled):active {
+  transform: scale(0.98);
+}
+.diary-save-button:not(:disabled):active {
+  transform: scale(0.98);
 }
