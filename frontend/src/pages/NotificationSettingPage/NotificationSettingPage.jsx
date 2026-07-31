@@ -289,6 +289,16 @@ function NotificationSettingPage() {
       setErrorMessage('')
       setSuccessMessage('')
 
+      if (
+        isEnabled &&
+        'Notification' in window &&
+        window.Notification
+          .permission === 'default'
+      ) {
+        await window.Notification
+          .requestPermission()
+      }
+
       const updatedSetting =
         await updateMoodNotificationSetting({
           isEnabled,

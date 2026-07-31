@@ -993,7 +993,8 @@ function CalendarPage() {
                   disabled={isLoading}
                   style={{
                     // 대시보드 감정 원과 같은 그라데이션 (반반 분할 대신).
-                    // 그날의 대표색은 무드트래커의 마지막 슬롯을 쓴다.
+                    // 그날의 대표색은 무드트래커에서 가장 많이 입력된 무드를 쓴다.
+                    // 입력 횟수가 같으면 가장 최근 무드를 사용한다.
                     '--day-mood-gradient':
                       buildDayGradient(
                         moodSlots[cell.dateKey]

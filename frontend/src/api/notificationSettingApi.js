@@ -12,14 +12,15 @@ import {
 } from './httpClient.js'
 
 const USE_MOCK_API =
-  import.meta.env.VITE_USE_MOCK_API !==
-  'false'
+  import.meta.env
+    .VITE_USE_NOTIFICATION_MOCK_API ===
+  'true'
 
 const MOCK_DELAY = 250
 
 const ENDPOINTS = {
   moodNotificationSetting:
-    '/api/users/me/mood-notification-setting',
+    '/users/me/mood-notification-setting',
 }
 
 let mockNotificationSettingResponse = {
