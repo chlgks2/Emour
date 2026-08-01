@@ -232,8 +232,12 @@ def build_llm() -> EmotionLLM:
         return OpenAICompatibleEmotionLLM()
     if provider == "anthropic":
         return AnthropicEmotionLLM()
+    if provider in ("local", "kcelectra"):
+        # 파인튜닝 로컬 모델. LOCAL_MODEL_PATH 로 모델 폴더/HF repo 지정.
+        from .local_model import KcElectraEmotionLLM
+        return KcElectraEmotionLLM()
 
     raise ValueError(
         f"알 수 없는 LLM_PROVIDER='{provider}'. "
-        "mock / openai / openai_compatible / anthropic 중에서 고르세요."
+        "mock / openai / openai_compatible / anthropic / local 중에서 고르세요."
     )
