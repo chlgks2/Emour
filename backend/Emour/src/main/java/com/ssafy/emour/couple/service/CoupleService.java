@@ -2,10 +2,12 @@ package com.ssafy.emour.couple.service;
 
 import com.ssafy.emour.couple.dto.request.CoupleConnectRequest;
 import com.ssafy.emour.couple.dto.request.CoupleReconnectRequest;
+import com.ssafy.emour.couple.dto.request.CoupleStartDateRequest;
 import com.ssafy.emour.couple.dto.response.CoupleConnectResponse;
 import com.ssafy.emour.couple.dto.response.CoupleDisconnectResponse;
 import com.ssafy.emour.couple.dto.response.CoupleInvitationResponse;
 import com.ssafy.emour.couple.dto.response.CoupleStatusResponse;
+import com.ssafy.emour.couple.dto.response.CoupleStartDateResponse;
 import com.ssafy.emour.couple.entity.CoupleMember;
 import com.ssafy.emour.couple.entity.CoupleMemberId;
 import com.ssafy.emour.couple.entity.CoupleMemberStatus;
@@ -154,6 +156,24 @@ public class CoupleService {
         member.reconnect();
         room.reconnect();
         return CoupleConnectResponse.from(room);
+    }
+
+    @Transactional
+    public CoupleStartDateResponse updateStartDate(
+            Long userId,
+            CoupleStartDateRequest request
+    ) {
+        memberRepository.findByIdForUpdate(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        CoupleRoom room = coupleRoomRepository
+                .findActiveRoomByUserIdForUpdate(userId)
+                .orElseThrow(() -> new CustomException(
+                        ErrorCode.ACTIVE_COUPLE_NOT_FOUND
+                ));
+
+        room.updateDatingStartDate(request.startDate());
+        return CoupleStartDateResponse.from(room);
     }
 
     @Transactional(readOnly = true)
