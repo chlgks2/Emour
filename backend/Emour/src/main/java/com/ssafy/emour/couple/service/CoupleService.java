@@ -177,6 +177,19 @@ public class CoupleService {
     }
 
     @Transactional(readOnly = true)
+    public CoupleStartDateResponse getStartDate(Long userId) {
+        if (!memberRepository.existsById(userId)) {
+            throw new CustomException(ErrorCode.USER_NOT_FOUND);
+        }
+
+        CoupleRoom room = coupleRoomRepository.findActiveRoomByUserId(userId)
+                .orElseThrow(() -> new CustomException(
+                        ErrorCode.ACTIVE_COUPLE_NOT_FOUND
+                ));
+        return CoupleStartDateResponse.from(room);
+    }
+
+    @Transactional(readOnly = true)
     public CoupleStatusResponse getStatus(Long userId) {
         if (!memberRepository.existsById(userId)) {
             throw new CustomException(ErrorCode.USER_NOT_FOUND);

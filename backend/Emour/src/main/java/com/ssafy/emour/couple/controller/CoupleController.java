@@ -94,6 +94,16 @@ public class CoupleController {
         );
     }
 
+    @GetMapping("/startDate")
+    public ResponseEntity<ApiResponse<CoupleStartDateResponse>> getStartDate() {
+        CoupleStartDateResponse response = coupleService.getStartDate(
+                SecurityUtil.getCurrentUserId()
+        );
+        return ResponseEntity.ok(
+                ApiResponse.success("커플이 만난 날을 조회했습니다.", response)
+        );
+    }
+
     @GetMapping("/status")
     public ResponseEntity<ApiResponse<CoupleStatusResponse>> getStatus() {
         CoupleStatusResponse response = coupleService.getStatus(

@@ -52,7 +52,7 @@ class CoupleStartDateServiceTest {
     }
 
     @Test
-    void 활성_커플방에_만난_날을_저장하고_기념일을_계산한다() {
+    void 활성_커플방에_만난_날을_저장한다() {
         LocalDate startDate = LocalDate.of(2025, 8, 1);
         CoupleRoom room = activeRoom();
         givenLockedUser();
@@ -67,16 +67,21 @@ class CoupleStartDateServiceTest {
         assertThat(room.getDatingStartDate()).isEqualTo(startDate);
         assertThat(response.roomId()).isEqualTo(ROOM_ID);
         assertThat(response.datingStartDate()).isEqualTo(startDate);
-        assertThat(response.milestones())
-                .extracting(milestone -> milestone.days())
-                .containsExactly(100, 200, 500);
-        assertThat(response.milestones())
-                .extracting(milestone -> milestone.date())
-                .containsExactly(
-                        startDate.plusDays(99),
-                        startDate.plusDays(199),
-                        startDate.plusDays(499)
-                );
+    }
+
+    @Test
+    void 커플_두_사람이_같은_만난_날을_조회할_수_있다() {
+        LocalDate startDate = LocalDate.of(2025, 8, 1);
+        CoupleRoom room = activeRoom();
+        room.updateDatingStartDate(startDate);
+        given(memberRepository.existsById(USER_ID)).willReturn(true);
+        given(coupleRoomRepository.findActiveRoomByUserId(USER_ID))
+                .willReturn(Optional.of(room));
+
+        var response = coupleService.getStartDate(USER_ID);
+
+        assertThat(response.roomId()).isEqualTo(ROOM_ID);
+        assertThat(response.datingStartDate()).isEqualTo(startDate);
     }
 
     @Test

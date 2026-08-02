@@ -8,9 +8,6 @@ import {
   SCHEDULE_TYPE,
 } from '../mappers/calendarMapper.js'
 
-const RELATIONSHIP_START_DATE_KEY =
-  'emour_relationship_start_date'
-
 function unwrap(response, fallback = null) {
   return response?.data ?? response ?? fallback
 }
@@ -60,12 +57,6 @@ function createLocalDate(dateKey) {
   return new Date(year, month - 1, day)
 }
 
-function getRelationshipStartDateValue() {
-  return localStorage.getItem(
-    RELATIONSHIP_START_DATE_KEY,
-  ) ?? ''
-}
-
 function createAnniversaryOccurrences(
   anniversary,
   year,
@@ -103,10 +94,8 @@ function createAnniversaryOccurrences(
 function createRelationshipMilestones(
   year,
   month,
+  relationshipStartDate,
 ) {
-  const relationshipStartDate =
-    getRelationshipStartDateValue()
-
   if (!relationshipStartDate) {
     return []
   }
@@ -223,10 +212,12 @@ export async function getMonthlyCalendar(
     schedules,
     anniversaries,
     diaries,
+    relationshipStartDate,
   ] = await Promise.all([
     fetchSchedules(year, month),
     fetchAnniversaries(),
     fetchDiaries(),
+    getRelationshipStartDate(),
   ])
 
   const scheduleResponses = [
@@ -242,6 +233,7 @@ export async function getMonthlyCalendar(
     ...createRelationshipMilestones(
       year,
       month,
+      relationshipStartDate,
     ),
   ]
   const diaryResponses = diaries.filter(
@@ -304,7 +296,10 @@ export async function getAnniversaries() {
 }
 
 export async function getRelationshipStartDate() {
-  return getRelationshipStartDateValue()
+  const response = await apiRequest(
+    '/couples/startDate',
+  )
+  return unwrap(response)?.datingStartDate ?? ''
 }
 
 export async function updateRelationshipStartDate(
@@ -316,12 +311,14 @@ export async function updateRelationshipStartDate(
     )
   }
 
-  localStorage.setItem(
-    RELATIONSHIP_START_DATE_KEY,
-    startDate,
+  const response = await apiRequest(
+    '/couples/startDate',
+    {
+      method: 'POST',
+      body: { startDate },
+    },
   )
-
-  return startDate
+  return unwrap(response)?.datingStartDate ?? ''
 }
 
 function validateScheduleInput({
