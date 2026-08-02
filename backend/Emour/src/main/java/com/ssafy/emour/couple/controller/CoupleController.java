@@ -1,6 +1,7 @@
 package com.ssafy.emour.couple.controller;
 
 import com.ssafy.emour.couple.dto.request.CoupleConnectRequest;
+import com.ssafy.emour.couple.dto.request.CoupleReconnectRequest;
 import com.ssafy.emour.couple.dto.response.CoupleConnectResponse;
 import com.ssafy.emour.couple.dto.response.CoupleDisconnectResponse;
 import com.ssafy.emour.couple.dto.response.CoupleInvitationResponse;
@@ -62,6 +63,19 @@ public class CoupleController {
         );
         return ResponseEntity.ok(
                 ApiResponse.success("커플 연결이 완료되었습니다.", response)
+        );
+    }
+
+    @PostMapping("/reconnect")
+    public ResponseEntity<ApiResponse<CoupleConnectResponse>> reconnect(
+            @Valid @RequestBody CoupleReconnectRequest request
+    ) {
+        CoupleConnectResponse response = coupleService.reconnect(
+                SecurityUtil.getCurrentUserId(),
+                request
+        );
+        return ResponseEntity.ok(
+                ApiResponse.success("커플 재결합이 완료되었습니다.", response)
         );
     }
 

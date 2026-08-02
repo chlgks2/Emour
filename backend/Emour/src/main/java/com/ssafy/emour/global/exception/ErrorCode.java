@@ -41,6 +41,11 @@ public enum ErrorCode {
             HttpStatus.INTERNAL_SERVER_ERROR,
             "초대 코드를 생성하지 못했습니다. 잠시 후 다시 시도해 주세요."
     ),
+    RECONNECT_NOT_AVAILABLE(
+            HttpStatus.CONFLICT,
+            "재결합할 수 없는 커플방이거나 재결합 대상이 아닙니다."
+    ),
+
     // ===== MOOD =====
     MOOD_NOTIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "MOOD 알림 설정을 찾을 수 없습니다."),
     MOOD_REGISTRATION_NOT_ALLOWED(

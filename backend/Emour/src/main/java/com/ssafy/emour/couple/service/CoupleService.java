@@ -1,6 +1,7 @@
 package com.ssafy.emour.couple.service;
 
 import com.ssafy.emour.couple.dto.request.CoupleConnectRequest;
+import com.ssafy.emour.couple.dto.request.CoupleReconnectRequest;
 import com.ssafy.emour.couple.dto.response.CoupleConnectResponse;
 import com.ssafy.emour.couple.dto.response.CoupleDisconnectResponse;
 import com.ssafy.emour.couple.dto.response.CoupleInvitationResponse;
@@ -103,6 +104,55 @@ public class CoupleService {
         coupleMemberRepository.save(CoupleMember.active(userId, room.getId()));
         room.activate();
 
+        return CoupleConnectResponse.from(room);
+    }
+
+    @Transactional
+    public CoupleConnectResponse reconnect(
+            Long userId,
+            CoupleReconnectRequest request
+    ) {
+        memberRepository.findByIdForUpdate(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        if (coupleMemberRepository.existsActiveCoupleByUserId(userId)) {
+            throw new CustomException(ErrorCode.ALREADY_COUPLED);
+        }
+
+        String invitationCode = normalizeInvitationCode(
+                request.invitationCode()
+        );
+        CoupleRoom room = coupleRoomRepository
+                .findByRoomCodeForUpdate(invitationCode)
+                .orElseThrow(() -> new CustomException(
+                        ErrorCode.INVITATION_CODE_NOT_FOUND
+                ));
+
+        if (room.getStatus() != CoupleRoomStatus.INACTIVE) {
+            throw new CustomException(ErrorCode.RECONNECT_NOT_AVAILABLE);
+        }
+
+        CoupleMember member = coupleMemberRepository.findById(
+                        new CoupleMemberId(userId, room.getId())
+                )
+                .orElseThrow(() -> new CustomException(
+                        ErrorCode.RECONNECT_NOT_AVAILABLE
+                ));
+        if (member.getStatus() != CoupleMemberStatus.LEFT) {
+            throw new CustomException(ErrorCode.RECONNECT_NOT_AVAILABLE);
+        }
+
+        long remainingMemberCount =
+                coupleMemberRepository.countByIdRoomIdAndStatus(
+                        room.getId(),
+                        CoupleMemberStatus.ACTIVE
+                );
+        if (remainingMemberCount != 1) {
+            throw new CustomException(ErrorCode.RECONNECT_NOT_AVAILABLE);
+        }
+
+        member.reconnect();
+        room.reconnect();
         return CoupleConnectResponse.from(room);
     }
 

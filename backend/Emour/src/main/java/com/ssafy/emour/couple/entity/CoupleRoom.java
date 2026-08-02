@@ -91,4 +91,13 @@ public class CoupleRoom {
         }
         this.status = CoupleRoomStatus.INACTIVE;
     }
+
+    public void reconnect() {
+        if (status != CoupleRoomStatus.INACTIVE) {
+            throw new IllegalStateException(
+                    "비활성 상태의 커플방만 재결합할 수 있습니다."
+            );
+        }
+        this.status = CoupleRoomStatus.ACTIVE;
+    }
 }
