@@ -1,11 +1,11 @@
 package com.ssafy.emour.chat.service;
 
 import com.ssafy.emour.chat.dto.ChatAnalysisBatchResponse;
+import com.ssafy.emour.chat.messaging.ChatRealtimePublisher;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import java.util.Map;
 import java.util.Optional;
@@ -20,7 +20,7 @@ class ChatAnalysisSchedulerTest {
     private ChatAnalysisService chatAnalysisService;
 
     @Mock
-    private SimpMessagingTemplate messagingTemplate;
+    private ChatRealtimePublisher realtimePublisher;
 
     // DB 저장을 마친 분석 결과를 같은 방의 WebSocket 구독자에게 전달합니다.
     @Test
@@ -41,13 +41,10 @@ class ChatAnalysisSchedulerTest {
 
         ChatAnalysisScheduler scheduler = new ChatAnalysisScheduler(
                 chatAnalysisService,
-                messagingTemplate
+                realtimePublisher
         );
         scheduler.analyzePendingMessages();
 
-        verify(messagingTemplate).convertAndSend(
-                "/sub/chat/rooms/1/analysis",
-                response
-        );
+        verify(realtimePublisher).publishAnalysis(1L, response);
     }
 }
