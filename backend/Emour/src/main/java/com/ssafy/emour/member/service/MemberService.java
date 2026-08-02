@@ -6,6 +6,7 @@ import com.ssafy.emour.global.exception.CustomException;
 import com.ssafy.emour.global.exception.ErrorCode;
 import com.ssafy.emour.member.dto.request.PasswordChangeRequest;
 import com.ssafy.emour.member.dto.request.ProfileUpdateRequest;
+import com.ssafy.emour.member.dto.response.MemberProfileImageResponse;
 import com.ssafy.emour.member.dto.response.MemberProfileResponse;
 import com.ssafy.emour.member.dto.response.MemberProfileImagesResponse;
 import com.ssafy.emour.member.entity.Member;
@@ -37,10 +38,40 @@ public class MemberService {
         return MemberProfileResponse.from(getActiveMember(userId));
     }
 
+    /** 로그인한 사용자의 프로필 이미지만 조회합니다. */
+    @Transactional(readOnly = true)
+    public MemberProfileImageResponse getMyProfileImage(Long userId) {
+        Member me = getActiveMember(userId);
+        return toProfileImageResponse(me);
+    }
+
+    /** 현재 연결된 커플 상대방의 프로필 이미지만 조회합니다. */
+    @Transactional(readOnly = true)
+    public MemberProfileImageResponse getPartnerProfileImage(Long userId) {
+        getActiveMember(userId);
+        Member partner = findActivePartner(userId);
+
+        if (partner == null) {
+            return new MemberProfileImageResponse(null, null);
+        }
+        return toProfileImageResponse(partner);
+    }
+
     /** 로그인한 사용자와 현재 커플 상대방의 프로필 이미지를 함께 조회합니다. */
     @Transactional(readOnly = true)
     public MemberProfileImagesResponse getProfileImages(Long userId) {
         Member me = getActiveMember(userId);
+        Member partner = findActivePartner(userId);
+
+        return new MemberProfileImagesResponse(
+                me.getId(),
+                me.getProfileImageUrl(),
+                partner == null ? null : partner.getId(),
+                partner == null ? null : partner.getProfileImageUrl()
+        );
+    }
+
+    private Member findActivePartner(Long userId) {
         List<Long> partnerIds =
                 coupleMemberRepository.findActivePartnerUserIds(
                         userId,
@@ -48,24 +79,22 @@ public class MemberService {
                 );
 
         if (partnerIds.isEmpty()) {
-            return new MemberProfileImagesResponse(
-                    me.getId(),
-                    me.getProfileImageUrl(),
-                    null,
-                    null
-            );
+            return null;
         }
 
-        Member partner = memberRepository
+        return memberRepository
                 .findById(partnerIds.get(0))
                 .filter(member ->
                         member.getStatus() != MemberStatus.WITHDRAWN)
                 .orElse(null);
-        return new MemberProfileImagesResponse(
-                me.getId(),
-                me.getProfileImageUrl(),
-                partner == null ? null : partner.getId(),
-                partner == null ? null : partner.getProfileImageUrl()
+    }
+
+    private MemberProfileImageResponse toProfileImageResponse(
+            Member member
+    ) {
+        return new MemberProfileImageResponse(
+                member.getId(),
+                member.getProfileImageUrl()
         );
     }
 

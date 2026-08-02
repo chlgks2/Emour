@@ -4,6 +4,7 @@ import com.ssafy.emour.global.response.ApiResponse;
 import com.ssafy.emour.global.util.SecurityUtil;
 import com.ssafy.emour.member.dto.request.PasswordChangeRequest;
 import com.ssafy.emour.member.dto.request.ProfileUpdateRequest;
+import com.ssafy.emour.member.dto.response.MemberProfileImageResponse;
 import com.ssafy.emour.member.dto.response.MemberProfileResponse;
 import com.ssafy.emour.member.dto.response.MemberProfileImagesResponse;
 import com.ssafy.emour.member.service.MemberService;
@@ -36,6 +37,39 @@ public class MemberController {
         Long userId = SecurityUtil.getCurrentUserId();
         return ResponseEntity.ok(
                 ApiResponse.success(memberService.getMyProfile(userId))
+        );
+    }
+
+    @GetMapping("/me/profile-img")
+    @Operation(
+            summary = "내 프로필 이미지 조회",
+            description = "JWT로 로그인한 사용자의 프로필 이미지 주소만 반환합니다."
+    )
+    public ResponseEntity<ApiResponse<MemberProfileImageResponse>>
+    getMyProfileImage() {
+        Long userId = SecurityUtil.getCurrentUserId();
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        memberService.getMyProfileImage(userId)
+                )
+        );
+    }
+
+    @GetMapping("/partner/profile-img")
+    @Operation(
+            summary = "상대방 프로필 이미지 조회",
+            description = """
+                    현재 연결된 커플 상대방의 사용자 번호와 프로필 이미지 주소를 반환합니다.
+                    커플 연결 전이면 두 값 모두 null입니다.
+                    """
+    )
+    public ResponseEntity<ApiResponse<MemberProfileImageResponse>>
+    getPartnerProfileImage() {
+        Long userId = SecurityUtil.getCurrentUserId();
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        memberService.getPartnerProfileImage(userId)
+                )
         );
     }
 
