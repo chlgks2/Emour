@@ -1,10 +1,10 @@
 package com.ssafy.emour.chat.service;
 
 import com.ssafy.emour.chat.dto.ChatAnalysisBatchResponse;
+import com.ssafy.emour.chat.messaging.ChatRealtimePublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -19,7 +19,7 @@ import org.springframework.stereotype.Component;
 public class ChatAnalysisScheduler {
 
     private final ChatAnalysisService chatAnalysisService;
-    private final SimpMessagingTemplate messagingTemplate;
+    private final ChatRealtimePublisher realtimePublisher;
 
     @Scheduled(
             fixedDelayString = "${ai.service.poll-delay-ms:1000}"
@@ -44,9 +44,6 @@ public class ChatAnalysisScheduler {
     private void publishAnalysis(
             ChatAnalysisBatchResponse response
     ) {
-        messagingTemplate.convertAndSend(
-                "/sub/chat/rooms/" + response.roomId() + "/analysis",
-                response
-        );
+        realtimePublisher.publishAnalysis(response.roomId(), response);
     }
 }
