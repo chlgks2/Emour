@@ -8,10 +8,26 @@
  *    (색 배분 60 중성 / 30 보조 / 10 강조 — 이 블록이 그 10 을 맡는다)
  */
 .card {
+  position: relative;
   margin: 12px var(--page-gutter) 0;
   padding: 18px;
   border-radius: var(--radius-xl);
   background: var(--color-sub-bg);
+}
+
+/*
+ * 물음표는 카드의 오른쪽 위 모서리.
+ * 아래 .monthRow 는 가운데 정렬(justify-content: center)이라 양 끝이 비어 있어서
+ * 주 이동 화살표와 부딪히지 않는다. 높이는 그 화살표(36px) 줄에 맞춘다.
+ */
+.help {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  z-index: 2;
 }
 
 .monthRow {

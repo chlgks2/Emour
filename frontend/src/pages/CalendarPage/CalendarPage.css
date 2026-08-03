@@ -99,6 +99,14 @@
   margin-bottom: 16px;
 }
 
+/* 달 이름 + 날짜 색 기준 물음표. 격자의 가운데 칸 안에서 나란히 선다. */
+.calendar-month-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
 .calendar-month-navigation h2 {
   margin: 0;
   color: var(--color-text-primary);
@@ -587,8 +595,19 @@
     transform var(--duration-fast) var(--ease-out);
 }
 
+/*
+ * 호버는 "손이 닿았다"는 표시일 뿐이라, 두 목록에서 변화의 크기가 같아야 한다.
+ *
+ * 옅은 분홍(--color-primary-faint #fdeef2)에서 진한 분홍(--color-primary-soft
+ * #f0c3ce)으로 갈아끼우고 있었다. 바로 위 일정 항목은 #fbfaf9 -> #f3efee 로
+ * 거의 티가 안 나는데 기념일만 확 붉어져서, 손이 닿은 정도가 아니라 선택된
+ * 항목처럼 보였다.
+ *
+ * 다른 색으로 건너뛰지 않고 원래 면에 강조색을 조금 섞는다. 기준이 되는
+ * 토큰이 바뀌어도 변화의 폭은 그대로 8% 로 남는다.
+ */
 .anniversary-list-item:hover {
-  background: var(--color-primary-soft);
+  background: color-mix(in srgb, var(--color-primary-faint) 92%, var(--color-primary));
 }
 
 .anniversary-list-item strong {

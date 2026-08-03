@@ -109,11 +109,6 @@
 }
 
 /* 브랜드 고유 컬러 가이드 최적화 */
-.kakao {
-  background: #fee500;
-  color: #191919;
-}
-
 .google {
   background: #ffffff;
   border: 1px solid rgba(0, 0, 0, 0.08); /* 구글 버튼은 화이트 배경이므로 깔끔한 소프트 보더 추가 */
