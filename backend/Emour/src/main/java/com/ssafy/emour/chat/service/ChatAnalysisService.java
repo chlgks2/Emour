@@ -41,8 +41,8 @@ public class ChatAnalysisService {
     /**
      * 분석할 준비가 된 방 하나를 골라 최대 10개의 메시지를 분석합니다.
      *
-     * <p>대기 메시지가 10개이면 바로 분석합니다. 10개 미만이면 두 사용자가
-     * 모두 메시지를 보냈고 마지막 메시지 이후 10초가 지났을 때 분석합니다.</p>
+     * <p>대기 메시지가 10개이면 바로 분석합니다. 10개 미만이어도
+     * 마지막 메시지 이후 10초 동안 새 메시지가 없으면 분석합니다.</p>
      */
     @Transactional
     public Optional<ChatAnalysisBatchResponse> analyzeReadyBatch() {
@@ -189,8 +189,7 @@ public class ChatAnalysisService {
             return true;
         }
 
-        return summary.getSenderCount() >= 2
-                && summary.getLastSentAt() != null
+        return summary.getLastSentAt() != null
                 && !summary.getLastSentAt().isAfter(idleThreshold);
     }
 

@@ -67,10 +67,11 @@ class ChatAnalysisServiceTest {
         );
     }
 
-    // 두 사람이 메시지를 보낸 뒤 10초간 새 메시지가 없으면 분석합니다.
+    // 한 사람만 메시지를 보냈어도 10초간 새 메시지가 없으면 분석합니다.
     @Test
     void analyzesAfterIdle() {
-        LocalDateTime base = NOW.minusSeconds(20);
+        // 두 번째 메시지가 정확히 현재 시각보다 10초 전이 되도록 맞춥니다.
+        LocalDateTime base = NOW.minusSeconds(11);
         ChatAnalysis oldContext = analysis(
                 90L,
                 1L,
@@ -98,14 +99,13 @@ class ChatAnalysisServiceTest {
         ChatAnalysis secondTarget = analysis(
                 102L,
                 1L,
-                20L,
+                21L,
                 "공강이야",
                 base.plusSeconds(1),
                 false
         );
         PendingAnalysisRoomSummary summary = roomSummary(
                 1L,
-                2,
                 2,
                 base.plusSeconds(1)
         );
@@ -172,7 +172,6 @@ class ChatAnalysisServiceTest {
         PendingAnalysisRoomSummary summary = roomSummary(
                 1L,
                 10,
-                1,
                 NOW
         );
 
@@ -204,7 +203,6 @@ class ChatAnalysisServiceTest {
         PendingAnalysisRoomSummary summary = roomSummary(
                 1L,
                 2,
-                2,
                 NOW.minusSeconds(9)
         );
         when(chatAnalysisRepository.findPendingRoomSummaries(
@@ -225,7 +223,6 @@ class ChatAnalysisServiceTest {
     private PendingAnalysisRoomSummary roomSummary(
             Long roomId,
             long pendingCount,
-            long senderCount,
             LocalDateTime lastSentAt
     ) {
         PendingAnalysisRoomSummary summary =
@@ -233,8 +230,6 @@ class ChatAnalysisServiceTest {
         lenient().when(summary.getRoomId()).thenReturn(roomId);
         lenient().when(summary.getPendingCount())
                 .thenReturn(pendingCount);
-        lenient().when(summary.getSenderCount())
-                .thenReturn(senderCount);
         lenient().when(summary.getLastSentAt())
                 .thenReturn(lastSentAt);
         return summary;
