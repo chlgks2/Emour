@@ -5,7 +5,6 @@ import com.ssafy.emour.chat.entity.ChatMessage;
 import com.ssafy.emour.chat.entity.ChatMessageImage;
 import com.ssafy.emour.chat.entity.MessageType;
 import com.ssafy.emour.chat.event.ChatImageFileDeleteEvent;
-import com.ssafy.emour.chat.event.ChatImageDeletedEvent;
 import com.ssafy.emour.chat.exception.ChatException;
 import com.ssafy.emour.chat.repository.ChatMessageImageRepository;
 import com.ssafy.emour.chat.repository.ChatMessageRepository;
@@ -79,7 +78,6 @@ public class ChatImageDeleteService {
         eventPublisher.publishEvent(
                 new ChatImageFileDeleteEvent(image.getImageUrl())
         );
-        eventPublisher.publishEvent(new ChatImageDeletedEvent(response));
         dashboardChangePublisher.messageChanged(message);
         return response;
     }
