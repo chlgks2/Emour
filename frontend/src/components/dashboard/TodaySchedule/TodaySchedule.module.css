@@ -43,15 +43,17 @@
   margin: 0;
 }
 
+/*
+ * overflow: hidden 을 여기 두면 안 된다.
+ * 점은 왼쪽 바깥(left: -18px)에 절대배치라 그 경계에서 잘려 사라진다.
+ * 말줄임은 안쪽 .name 이 맡는다. (아래 일정 항목과 같은 구조)
+ */
 .anniversaryItem {
   position: relative;
+  display: flex;
+  align-items: center;
   min-width: 0;
-  overflow: hidden;
-  color: var(--color-text-primary);
   font-size: 13px;
-  font-weight: 600;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .timeline {
