@@ -123,7 +123,14 @@ export default function LoginPage() {
         </Button>
 
         <div className={styles.helperLinks}>
-          <Link to="/find-id">아이디 찾기</Link>
+          <button
+            type="button"
+            onClick={() => {
+              window.alert("계정 찾기는 아직 구현되지 않았습니다.");
+            }}
+          >
+            계정 찾기
+          </button>
           <span className={styles.divider} aria-hidden="true">
             |
           </span>

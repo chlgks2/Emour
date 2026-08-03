@@ -67,16 +67,20 @@
 }
 
 /* 링크도 최소 터치 영역을 갖도록 패딩 확보 */
-.helperLinks a {
+.helperLinks a,
+.helperLinks button {
   display: inline-flex;
   align-items: center;
   min-height: 36px;
   padding: 0 8px;
   border-radius: var(--radius-xs);
+  color: inherit;
+  font: inherit;
   transition: color var(--duration-fast) var(--ease-out);
 }
 
-.helperLinks a:hover {
+.helperLinks a:hover,
+.helperLinks button:hover {
   color: var(--color-primary-strong);
 }
 
