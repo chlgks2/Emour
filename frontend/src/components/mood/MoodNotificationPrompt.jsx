@@ -2,6 +2,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react'
 import {
@@ -128,6 +129,24 @@ export default function MoodNotificationPrompt() {
     useState(false)
   const [errorMessage, setErrorMessage] =
     useState('')
+  const authStateRef = useRef({
+    isAuthenticated,
+    userId,
+  })
+
+  useEffect(() => {
+    authStateRef.current = {
+      isAuthenticated,
+      userId,
+    }
+
+    return () => {
+      authStateRef.current = {
+        isAuthenticated: false,
+        userId: null,
+      }
+    }
+  }, [isAuthenticated, userId])
 
   const dismissedStorageKey =
     useMemo(
@@ -151,6 +170,16 @@ export default function MoodNotificationPrompt() {
       try {
         const setting =
           await getMoodNotificationSetting()
+
+        if (
+          !authStateRef.current
+            .isAuthenticated ||
+          Number(authStateRef.current.userId) !==
+            Number(userId)
+        ) {
+          return
+        }
+
         const currentSlot =
           getCurrentSlot(
             setting,
@@ -171,6 +200,15 @@ export default function MoodNotificationPrompt() {
 
         const entries =
           await getMoodEntries()
+
+        if (
+          !authStateRef.current
+            .isAuthenticated ||
+          Number(authStateRef.current.userId) !==
+            Number(userId)
+        ) {
+          return
+        }
 
         const alreadyRegistered =
           entries.some(
@@ -267,7 +305,7 @@ export default function MoodNotificationPrompt() {
     isAuthenticated,
   ])
 
-  if (!slotKey) {
+  if (!isAuthenticated || !userId || !slotKey) {
     return null
   }
 
