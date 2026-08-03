@@ -72,9 +72,11 @@ function buildQuery(params) {
   return query.toString();
 }
 
-/** GET /dashboards/daily */
-export async function getDailyCounts(roomId, date) {
-  const response = await apiRequest(`/dashboards/daily?${buildQuery({ roomId, date })}`);
+/** GET /dashboards/counts — period: 'DAY' | 'MONTH' | 'YEAR' */
+export async function getDailyCounts(roomId, date, period = "DAY") {
+  const response = await apiRequest(
+    `/dashboards/counts?${buildQuery({ roomId, period, date })}`,
+  );
   return unwrap(response);
 }
 
@@ -86,10 +88,15 @@ export async function getMainEmotions(roomId, date, period = "DAY") {
   return unwrap(response);
 }
 
-/** GET /dashboards/frequent-words */
-export async function getFrequentWords(roomId, date, limit = FREQUENT_WORD_LIMIT) {
+/** GET /dashboards/frequent-words — period: 'DAY' | 'MONTH' | 'YEAR' */
+export async function getFrequentWords(
+  roomId,
+  date,
+  period = "DAY",
+  limit = FREQUENT_WORD_LIMIT,
+) {
   const response = await apiRequest(
-    `/dashboards/frequent-words?${buildQuery({ roomId, date, limit })}`
+    `/dashboards/frequent-words?${buildQuery({ roomId, period, date, limit })}`
   );
   return unwrap(response);
 }
@@ -102,9 +109,11 @@ export async function getConversationFlow(roomId, date, period = "DAY") {
   return unwrap(response);
 }
 
-/** GET /dashboards/emotion-flow — 2시간 단위 12구간 */
-export async function getEmotionFlow(roomId, date) {
-  const response = await apiRequest(`/dashboards/emotion-flow?${buildQuery({ roomId, date })}`);
+/** GET /dashboards/emotion-flow — 기간별 2시간 단위 12구간 */
+export async function getEmotionFlow(roomId, date, period = "DAY") {
+  const response = await apiRequest(
+    `/dashboards/emotion-flow?${buildQuery({ roomId, period, date })}`,
+  );
   return unwrap(response);
 }
 
@@ -381,44 +390,32 @@ export async function fetchDashboardPeriod({
     throw new Error("연결된 커플방 정보가 없습니다.");
   }
 
-  const [mainEmotions, conversationFlow, dailyMessages] =
+  const [counts, mainEmotions, conversationFlow, emotionFlow, frequentWords] =
     await Promise.all([
+      safe(getDailyCounts(roomId, dateKey, period), null),
       safe(getMainEmotions(roomId, dateKey, period), null),
       safe(getConversationFlow(roomId, dateKey, period), null),
-      period === "DAY" ? safe(fetchTodayMessages(roomId, dateKey), []) : [],
+      safe(getEmotionFlow(roomId, dateKey, period), null),
+      safe(getFrequentWords(roomId, dateKey, period), null),
     ]);
-
-  const coupleImageCount = dailyMessages.reduce(
-    (total, message) =>
-      total + (Array.isArray(message.images) ? message.images.length : 0),
-    0,
-  );
-  const coupleReactionCount = dailyMessages.reduce(
-    (total, message) =>
-      total + (Array.isArray(message.reactions) ? message.reactions.length : 0),
-    0,
-  );
 
   return {
     period,
     date: dateKey,
-    startDate: mainEmotions?.startDate ?? conversationFlow?.startDate ?? dateKey,
-    endDate: mainEmotions?.endDate ?? conversationFlow?.endDate ?? dateKey,
+    startDate: counts?.startDate ?? mainEmotions?.startDate ?? dateKey,
+    endDate: counts?.endDate ?? mainEmotions?.endDate ?? dateKey,
     emotionSummary: mainEmotions?.emotions ?? [],
     dominantEmotion: mainEmotions?.dominantEmotion ?? null,
     analyzedMessageCount: mainEmotions?.analyzedMessageCount ?? 0,
-    // 일간 집계 API가 배포 환경에서 실패해도 원본 메시지로 기록 카드를 유지한다.
     messageCount:
-      conversationFlow?.totalMessageCount ??
-      (period === "DAY" ? dailyMessages.length : 0),
-    imageCount: period === "DAY" ? coupleImageCount : null,
-    reactionCount: period === "DAY" ? coupleReactionCount : null,
+      counts?.messageCount ?? conversationFlow?.totalMessageCount ?? 0,
+    imageCount: counts?.imageCount ?? 0,
+    reactionCount: counts?.reactionCount ?? 0,
+    bookmarkCount: counts?.bookmarkCount ?? 0,
     busiestHour: conversationFlow?.busiestHour ?? null,
     averageResponseSeconds: conversationFlow?.averageResponseSeconds ?? null,
     dailyFrequency: conversationFlow?.dailyFrequency ?? [],
-    // 기간 전환 뒤 frequent-words 요청이 실패해 목록이 사라지는 일을 막고,
-    // 메시지/사진/공감과 동일하게 두 사람의 일간 대화 원본을 기준으로 계산한다.
-    frequentWords:
-      period === "DAY" ? calcFrequentWords(dailyMessages, null) : [],
+    emotionFlow: mapEmotionFlow(emotionFlow),
+    frequentWords: frequentWords?.words ?? [],
   };
 }

@@ -113,7 +113,11 @@ function CoupleConnectPage() {
 
       clearPendingCoupleRoom()
       saveCurrentCoupleRoom(
-        connectedRoom,
+        {
+          ...connectedRoom,
+          invitationCode:
+            trimmedRoomCode,
+        },
         user?.userId,
       )
       invalidateCoupleRoom()
