@@ -41,6 +41,9 @@ public class ChatMessageImage {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
     protected ChatMessageImage() {
     }
 
@@ -67,5 +70,24 @@ public class ChatMessageImage {
 
     public Integer getDisplayOrder() {
         return displayOrder;
+    }
+
+    public ChatMessage getMessage() {
+        return message;
+    }
+
+    public LocalDateTime getDeletedAt() {
+        return deletedAt;
+    }
+
+    public boolean isDeleted() {
+        return deletedAt != null;
+    }
+
+    /** DB 기록은 남기고 채팅과 앨범 조회에서는 보이지 않게 합니다. */
+    public void delete(LocalDateTime deletedAt) {
+        if (this.deletedAt == null) {
+            this.deletedAt = deletedAt;
+        }
     }
 }
