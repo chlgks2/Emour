@@ -11,58 +11,84 @@
 //   그래서 이 모듈은 날짜별로 "슬롯 배열"을 돌려주고, 화면이 필요에 따라
 //   최신 1건(대시보드 미리보기)이나 전체(캘린더 상세)를 골라 쓴다.
 //
-// ── 백엔드에 아직 없는 것 ──────────────────────────────────────────
+// ── 기록할 수 있는 건 "지금 진행 중인 시간대" 뿐이다 ──────────────────
+//   지난 시간대 등록·수정은 지원하지 않기로 한 기능이다. 서버가 그렇게 막고 있고
+//   (MoodService.create/update 가 둘 다 MoodSlotCalculator.currentSlot 과 대조한다)
+//   화면도 같은 규칙을 따른다. (moodSlotGrid.isEditable)
+//
+//   한동안은 지난 시간대를 localStorage 에 따로 저장했는데, 그 기록은
+//     · 상대방에게 보이지 않고
+//     · 다른 기기·다른 브라우저에서도 보이지 않고
+//     · 그런데 화면에는 저장된 것처럼 보여서
+//   같은 커플방인데 창마다 다른 기분이 보이는 원인이 됐다. 지금은 만들지 않는다.
+//   기분 기록의 출처는 서버 하나뿐이다.
+//
+// ── 아직 백엔드에 없는 것 ─────────────────────────────────────────
 //   ⚠️ reason(사유) 컬럼이 mood 테이블에 없다. MoodResponse 에도 없다.
-//      화면에는 사유 입력이 이미 있으므로, 서버에 컬럼이 생기기 전까지
-//      moodId 를 키로 localStorage 에 함께 보관한다. (REASON_KEY)
+//      화면에는 사유 입력이 이미 있으므로, 서버에 컬럼이 생기기 전까지만
+//      moodId 를 키로 localStorage 에 보관한다. (이것도 이 기기에서만 보인다)
 //      백엔드에 reason 이 추가되면 readReasons/writeReason 만 지우면 된다.
-//   ⚠️ POST /moods 는 body 가 moodType 뿐이라 "현재 슬롯"에만 기록된다.
-//      지난 시간대에 새로 추가하는 것은 API 로 불가능하다. (수정은 moodId 로 언제든 가능)
 import { apiRequest } from "./httpClient.js";
 import { getCurrentUser } from "./authApi.js";
 import { formatDateKey } from "../utils/moodEmotion";
 
+// 사용자별 키는 여기에 ':userId' 를 붙여 만든다.
+// 접미사 없는 원래 키는 사용자 구분이 없던 시절의 값이라 정리 대상이다.
 const REASON_KEY = "emour_mood_reasons_v1";
-const LOCAL_MOODS_KEY = "emour_mood_local_v1";
-// 서버가 만든 moodId 와 충돌하지 않도록 로컬 전용 id 는 이 위에서 발급한다.
-const LOCAL_ID_BASE = 1_000_000;
-// 로그인 정보가 없을 때 쓰는 임시 사용자 id. 조회/저장이 같은 값을 써야 한다.
-const DEFAULT_LOCAL_USER_ID = 1;
+const LEGACY_LOCAL_MOODS_KEY = "emour_mood_local_v1";
+
+/** 로그인한 사용자 id. 없으면 null */
+function currentUserId() {
+  return getCurrentUser()?.userId ?? null;
+}
+
+/** 사유 저장소 키는 사용자별로 나눈다. (한 브라우저를 두 계정이 쓸 수 있다) */
+function reasonStorageKey(userId) {
+  return `${REASON_KEY}:${userId}`;
+}
+
+/*
+ * 예전 저장소 정리.
+ *   · 기분 기록(emour_mood_local_v1): 서버에 없는 사본이라 버린다.
+ *   · 사유: moodId 가 키라서 그대로 옮겨도 어긋나지 않는다. 사용자별 키로 옮긴다.
+ */
+function migrateLegacyStorage(userId) {
+  localStorage.removeItem(LEGACY_LOCAL_MOODS_KEY);
+  localStorage.removeItem(`${LEGACY_LOCAL_MOODS_KEY}:${userId}`);
+
+  const legacyReasons = localStorage.getItem(REASON_KEY);
+  if (legacyReasons === null) return;
+
+  if (localStorage.getItem(reasonStorageKey(userId)) === null) {
+    localStorage.setItem(reasonStorageKey(userId), legacyReasons);
+  }
+  localStorage.removeItem(REASON_KEY);
+}
 
 /* ---------------------------------------------------------------- */
 /* 사유(reason) — 백엔드 컬럼이 생기기 전까지의 로컬 보관소            */
 /* ---------------------------------------------------------------- */
 
-function readReasons() {
+function readReasons(userId = currentUserId()) {
+  if (userId == null) return {};
+  migrateLegacyStorage(userId);
+
   try {
-    return JSON.parse(localStorage.getItem(REASON_KEY)) ?? {};
+    return JSON.parse(localStorage.getItem(reasonStorageKey(userId))) ?? {};
   } catch {
     return {};
   }
 }
 
 function writeReason(moodId, reason) {
-  if (moodId === null || moodId === undefined) return;
-  const all = readReasons();
+  const userId = currentUserId();
+  if (userId == null || moodId === null || moodId === undefined) return;
+
+  const all = readReasons(userId);
   if (reason) all[String(moodId)] = reason;
   else delete all[String(moodId)];
-  localStorage.setItem(REASON_KEY, JSON.stringify(all));
-}
 
-/* ---------------------------------------------------------------- */
-/* 로컬 폴백 — 백엔드가 없을 때도 화면이 동작하도록                    */
-/* ---------------------------------------------------------------- */
-
-function readLocalMoods() {
-  try {
-    return JSON.parse(localStorage.getItem(LOCAL_MOODS_KEY)) ?? [];
-  } catch {
-    return [];
-  }
-}
-
-function writeLocalMoods(moods) {
-  localStorage.setItem(LOCAL_MOODS_KEY, JSON.stringify(moods));
+  localStorage.setItem(reasonStorageKey(userId), JSON.stringify(all));
 }
 
 /* ---------------------------------------------------------------- */
@@ -109,7 +135,7 @@ function toSlot(mood, reasons) {
  * @returns {Record<string, { mySlots: Array, partnerSlots: Array }>}
  */
 function groupByDate(moods, myUserId) {
-  const reasons = readReasons();
+  const reasons = readReasons(myUserId);
   const byDate = {};
 
   moods.forEach((mood) => {
@@ -201,6 +227,11 @@ function withDaySummary(byDate) {
 
 /**
  * 방 전체 기분 기록을 날짜별 슬롯 묶음으로 조회한다.
+ *
+ * 서버가 유일한 출처다. 조회에 실패하면 빈 값을 돌려주고, 화면은
+ * "기록 없음"을 보여준다. 예전 로컬 사본으로 채워 넣지 않는다.
+ * (그렇게 하면 지워진 기록이 되살아나 상대 화면과 어긋난다)
+ *
  * @returns {Promise<Record<string, {mySlots, partnerSlots, myMood, partnerMood}>>}
  */
 export async function fetchMoodSlots() {
@@ -213,34 +244,9 @@ export async function fetchMoodSlots() {
     serverMoods = null;
   }
 
-  /*
-   * 서버 응답이 있어도 로컬 기록을 버리면 안 된다.
-   * 지난 시간대는 POST /moods 로 만들 수 없어 로컬에만 남는데,
-   * 예전에는 서버가 빈 배열만 돌려줘도 로컬을 덮어써서
-   * "기록하기를 눌러도 화면에 반영되지 않는" 문제가 있었다.
-   */
-  const moods = mergeMoods(
-    Array.isArray(serverMoods) ? serverMoods : [],
-    readLocalMoods()
+  return withDaySummary(
+    groupByDate(Array.isArray(serverMoods) ? serverMoods : [], myUserId)
   );
-
-  return withDaySummary(groupByDate(moods, myUserId));
-}
-
-/** 로그인 정보가 없을 때도 createLocalMood 와 같은 값을 쓴다. (안 맞으면 내 기록이 상대 쪽으로 간다) */
-function currentUserId() {
-  return getCurrentUser()?.userId ?? DEFAULT_LOCAL_USER_ID;
-}
-
-/**
- * 서버 기록 + 로컬 기록 합치기.
- * 같은 사람의 같은 슬롯이 양쪽에 있으면 서버 값을 남긴다.
- */
-function mergeMoods(serverMoods, localMoods) {
-  const keyOf = (mood) => `${mood.userId}@${mood.moodDatetime}`;
-  const seen = new Set(serverMoods.map(keyOf));
-
-  return [...serverMoods, ...localMoods.filter((mood) => !seen.has(keyOf(mood)))];
 }
 
 /**
@@ -264,128 +270,57 @@ export async function fetchMoodRecordsForMonth(year, month) {
 /**
  * 내 기분을 등록한다.
  *
- * ⚠️ POST /moods 는 body 가 { moodType } 뿐이고 슬롯 시각을 서버(MoodSlotCalculator)가
- *    "현재 시각" 기준으로 정한다. 그래서 지나간 시간대는 서버에 만들 수 없다.
- *    지난 슬롯은 로컬에 저장해 화면에서는 각 시간대를 따로 기록할 수 있게 하고,
- *    백엔드가 moodDatetime 을 받게 되면 아래 분기만 지우면 된다.
+ * 기록 시각은 서버가 정한다. POST /moods 의 body 는 { moodType } 뿐이고,
+ * 슬롯은 MoodSlotCalculator 가 "현재 시각"으로 계산한다.
+ * 모달을 열어둔 채 시간대가 넘어갔다면 다시 불러올 때 실제 시각에 나타난다.
  *
- * @param {string} [dateKey]        'YYYY-MM-DD'  (없으면 오늘)
- * @param {number} [minutesOfDay]   대상 슬롯의 하루 내 분 위치 (없으면 현재 슬롯)
+ * dateKey 는 지난 날짜를 고른 채로 등록이 호출되는 사고를 막는 안전장치다.
+ * 그대로 두면 오늘 지금 시각에 엉뚱하게 기록된다.
+ *
+ * @param {string} [dateKey] 'YYYY-MM-DD' (없으면 오늘)
  */
-export async function createMyMood({ moodType, reason = "", dateKey, minutesOfDay }) {
-  if (isCurrentSlot(dateKey, minutesOfDay)) {
-    try {
-      const created = unwrap(await apiRequest("/moods", { method: "POST", body: { moodType } }));
-      if (created?.moodId != null) {
-        writeReason(created.moodId, reason);
-        return created;
-      }
-    } catch (error) {
-      // 서버가 없을 때만 로컬에 남긴다. 검증 실패(400 등)는 그대로 알려야 한다.
-      if (error?.status && error.status < 500) throw error;
-    }
+export async function createMyMood({ moodType, reason = "", dateKey }) {
+  if (dateKey && dateKey !== formatDateKey(new Date())) {
+    throw new Error("지난 날짜의 기분은 아직 등록할 수 없어요.");
   }
 
-  return createLocalMood({ moodType, reason, dateKey, minutesOfDay });
+  const created = unwrap(
+    await apiRequest("/moods", { method: "POST", body: { moodType } })
+  );
+
+  if (created?.moodId == null) {
+    throw new Error("기분을 저장하지 못했습니다.");
+  }
+
+  writeReason(created.moodId, reason);
+  return created;
 }
 
-/** 대상 슬롯이 "지금" 인지. 지금이면 서버에 만들 수 있다. */
-function isCurrentSlot(dateKey, minutesOfDay) {
-  if (!dateKey || minutesOfDay === undefined || minutesOfDay === null) return true;
-
-  const now = new Date();
-  if (dateKey !== formatDateKey(now)) return false;
-
-  const nowMinutes = now.getHours() * 60 + now.getMinutes();
-  // 슬롯 간격을 모르므로 "이미 시작했고 아직 다음 정시 전"이면 현재 슬롯으로 본다.
-  return minutesOfDay <= nowMinutes && nowMinutes - minutesOfDay < 60;
-}
-
-/** 기존 기록 수정. moodId 만 있으면 지난 시간대도 수정할 수 있다. */
+/**
+ * 기존 기록 수정.
+ *
+ * 진행 중인 시간대의 기록만 고칠 수 있다. 지난 시간대를 보내면 서버가
+ * MOOD_UPDATE_NOT_ALLOWED 로 거절한다. 화면도 그 슬롯에는 수정 버튼을 달지 않는다.
+ */
 export async function updateMyMood(moodId, { moodType, reason = "" }) {
-  // 로컬에서 만든 기록은 서버에 없으므로 바로 로컬을 고친다.
-  if (Number(moodId) > LOCAL_ID_BASE) {
-    return updateLocalMood(moodId, { moodType, reason });
+  const updated = unwrap(
+    await apiRequest(`/moods/${moodId}`, { method: "PATCH", body: { moodType } })
+  );
+
+  if (updated?.moodId == null) {
+    throw new Error("기분을 수정하지 못했습니다.");
   }
 
-  try {
-    const updated = unwrap(
-      await apiRequest(`/moods/${moodId}`, { method: "PATCH", body: { moodType } })
-    );
-    if (updated?.moodId != null) {
-      writeReason(updated.moodId, reason);
-      return updated;
-    }
-  } catch (error) {
-    if (error?.status && error.status < 500) throw error;
-  }
-
-  return updateLocalMood(moodId, { moodType, reason });
+  writeReason(updated.moodId, reason);
+  return updated;
 }
 
 /**
  * 슬롯이 이미 있으면 수정, 없으면 새로 등록.
  * 화면에서는 "저장" 하나로 처리할 수 있게 이 함수를 쓴다.
  */
-export async function saveMyMood({ moodId, moodType, reason = "", dateKey, minutesOfDay }) {
+export async function saveMyMood({ moodId, moodType, reason = "", dateKey }) {
   return moodId != null
     ? updateMyMood(moodId, { moodType, reason })
-    : createMyMood({ moodType, reason, dateKey, minutesOfDay });
-}
-
-/* ---------------------------------------------------------------- */
-/* 로컬 폴백 구현                                                     */
-/* ---------------------------------------------------------------- */
-
-/** 대상 슬롯의 moodDatetime 문자열. 지정이 없으면 지금 정시. */
-function slotDatetime(dateKey, minutesOfDay) {
-  const now = new Date();
-  const day = dateKey ?? formatDateKey(now);
-  const minutes = minutesOfDay ?? now.getHours() * 60;
-  const hour = String(Math.floor(minutes / 60)).padStart(2, "0");
-  const minute = String(minutes % 60).padStart(2, "0");
-  return `${day}T${hour}:${minute}:00`;
-}
-
-function createLocalMood({ moodType, reason, dateKey, minutesOfDay }) {
-  const moods = readLocalMoods();
-  // 서버 id 와 겹치지 않도록 로컬 id 는 큰 수에서 시작한다.
-  const moodId =
-    Math.max(
-      LOCAL_ID_BASE,
-      moods.reduce((max, m) => Math.max(max, Number(m.moodId) || 0), 0)
-    ) + 1;
-  const moodDatetime = slotDatetime(dateKey, minutesOfDay);
-  const myUserId = currentUserId();
-
-  // 같은 슬롯에 이미 기록이 있으면 새로 만들지 않고 갱신한다.
-  const existing = moods.find(
-    (m) => m.moodDatetime === moodDatetime && String(m.userId) === String(myUserId)
-  );
-
-  if (existing) {
-    existing.moodType = moodType;
-    writeLocalMoods(moods);
-    writeReason(existing.moodId, reason);
-    return existing;
-  }
-
-  const created = { moodId, userId: myUserId, moodDatetime, moodType };
-  moods.push(created);
-  writeLocalMoods(moods);
-  writeReason(moodId, reason);
-  return created;
-}
-
-function updateLocalMood(moodId, { moodType, reason }) {
-  const moods = readLocalMoods();
-  const target = moods.find((m) => String(m.moodId) === String(moodId));
-
-  if (target) {
-    target.moodType = moodType;
-    writeLocalMoods(moods);
-  }
-
-  writeReason(moodId, reason);
-  return target ?? null;
+    : createMyMood({ moodType, reason, dateKey });
 }

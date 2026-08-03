@@ -1,4 +1,5 @@
 import { apiRequest } from './httpClient.js'
+import { getPartnerProfileImage } from './memberApi.js'
 
 const CHAT_ENDPOINTS = {
   messages: '/chats',
@@ -214,11 +215,27 @@ export async function removeChatReaction(
  * feature/frontend-minhee의 채팅 화면이 사용하는 호환 API입니다.
  * 기존 Spring 연동 함수는 위에 그대로 유지합니다.
  */
+/**
+ * 채팅 헤더에 쓰는 상대방 정보.
+ *
+ * 프로필 사진은 GET /users/partner/profile-img 에서 받아온다.
+ * 별명(couple_member.partner_nickname)은 아직 어떤 응답 DTO 에도 실려오지 않아
+ * 기본 문구를 쓴다. 백엔드가 노출하면 nickname 만 갈아 끼우면 된다.
+ */
 export async function fetchChatPartner() {
+  let partner
+
+  try {
+    partner = await getPartnerProfileImage()
+  } catch {
+    partner = null
+  }
+
   return {
+    userId: partner?.userId ?? null,
     nickname: '연인',
     statusMessage: '',
-    profileImageUrl: null,
+    profileImageUrl: partner?.profileImageUrl ?? null,
   }
 }
 

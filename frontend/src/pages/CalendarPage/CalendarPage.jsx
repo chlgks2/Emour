@@ -26,7 +26,10 @@ import ScheduleModal from '../../components/calendar/ScheduleModal/ScheduleModal
 import AnniversaryManager from '../../components/calendar/AnniversaryManager/AnniversaryManager.jsx'
 import BottomNavigation from '../../components/common/BottomNavigation/BottomNavigation.jsx'
 
-import { buildDayGradient } from '../../utils/moodEmotion.js'
+import {
+  buildDayGradient,
+  formatDateKey,
+} from '../../utils/moodEmotion.js'
 import {
   fetchMoodSlots,
   saveMyMood,
@@ -207,11 +210,24 @@ function formatAnniversaryRepeat(
 }
 
 function CalendarPage() {
+  /*
+   * 캘린더는 오늘을 보여주면서 열린다.
+   * (2026년 7월로 고정돼 있던 값이라 실제 날짜와 상관없이 7월 21일이 선택돼 있었다)
+   */
   const [currentMonth, setCurrentMonth] =
-    useState(new Date(2026, 6, 1))
+    useState(() => {
+      const now = new Date()
+      return new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        1,
+      )
+    })
 
   const [selectedDate, setSelectedDate] =
-    useState('2026-07-21')
+    useState(() =>
+      formatDateKey(new Date()),
+    )
 
   const [calendarData, setCalendarData] =
     useState({})
@@ -320,13 +336,10 @@ function CalendarPage() {
   // 오늘을 보고 있을 때만 미래 시간대를 잠근다.
   const selectedDayNowMinutes = useMemo(() => {
     const now = new Date()
-    const todayKey = [
-      now.getFullYear(),
-      String(now.getMonth() + 1).padStart(2, '0'),
-      String(now.getDate()).padStart(2, '0'),
-    ].join('-')
 
-    if (selectedDate !== todayKey) return null
+    if (selectedDate !== formatDateKey(now)) {
+      return null
+    }
 
     return (
       now.getHours() * 60 + now.getMinutes()
@@ -350,16 +363,31 @@ function CalendarPage() {
     moodType,
     reason,
   }) => {
-    await saveMyMood({
-      moodId:
-        moodModal?.slot?.moodId ?? null,
-      moodType,
-      reason,
-      dateKey: selectedDate,
-      minutesOfDay:
-        moodModal?.minutesOfDay,
-    })
+    /*
+     * 저장은 서버에 바로 반영된다. 실패하면 알려야 한다.
+     * (예전에는 실패해도 조용히 이 브라우저에만 남아서, 상대 화면에는 없는
+     *  기록이 내 화면에만 저장된 것처럼 보였다)
+     * 기록 시각은 서버가 정하므로 슬롯 위치는 보내지 않는다.
+     */
+    try {
+      await saveMyMood({
+        moodId:
+          moodModal?.slot?.moodId ?? null,
+        moodType,
+        reason,
+        dateKey: selectedDate,
+      })
+    } catch (error) {
+      // 모달은 닫지 않는다. 입력값을 잃지 않고 바로 다시 시도할 수 있어야 한다.
+      setErrorMessage(
+        error.message ||
+          '기분을 저장하지 못했습니다.',
+      )
 
+      return
+    }
+
+    setErrorMessage('')
     closeMoodModal()
     loadMoodSlots()
   }
