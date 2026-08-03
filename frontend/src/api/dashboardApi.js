@@ -372,10 +372,8 @@ export async function fetchDashboardPeriod({
   period = "DAY",
   date = new Date(),
 } = {}) {
-  const storedRoom = getCurrentCoupleRoom();
-  const currentRoom = storedRoom?.roomId
-    ? storedRoom
-    : await safe(getMyCoupleRoom());
+  // fetchDashboard 와 같은 경로로 방을 잡는다. (localStorage 를 먼저 믿지 않는다)
+  const currentRoom = await safe(resolveCoupleRoom());
   const roomId = currentRoom?.roomId ?? null;
   const dateKey = formatLocalDateKey(date);
 
