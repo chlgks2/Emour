@@ -1,15 +1,18 @@
 package com.ssafy.emour.member.service;
 
 import com.ssafy.emour.auth.service.RefreshTokenService;
+import com.ssafy.emour.couple.entity.CoupleMember;
 import com.ssafy.emour.couple.repository.CoupleMemberRepository;
 import com.ssafy.emour.global.exception.CustomException;
 import com.ssafy.emour.global.exception.ErrorCode;
 import com.ssafy.emour.global.storage.FileStorage;
 import com.ssafy.emour.member.dto.request.PasswordChangeRequest;
+import com.ssafy.emour.member.dto.request.PartnerNicknameRequest;
 import com.ssafy.emour.member.dto.request.ProfileUpdateRequest;
 import com.ssafy.emour.member.dto.response.MemberProfileImageResponse;
 import com.ssafy.emour.member.dto.response.MemberProfileResponse;
 import com.ssafy.emour.member.dto.response.MemberProfileImagesResponse;
+import com.ssafy.emour.member.dto.response.PartnerNicknameResponse;
 import com.ssafy.emour.member.entity.Member;
 import com.ssafy.emour.member.entity.MemberStatus;
 import com.ssafy.emour.member.repository.MemberRepository;
@@ -83,6 +86,36 @@ public class MemberService {
         );
     }
 
+    /** 등록한 애칭이 없으면 상대방이 회원가입할 때 정한 닉네임을 반환합니다. */
+    @Transactional(readOnly = true)
+    public PartnerNicknameResponse getPartnerNickname(Long userId) {
+        getActiveMember(userId);
+        CoupleMember membership = findActiveMembership(userId);
+        Member partner = getActivePartner(userId);
+
+        return toPartnerNicknameResponse(membership, partner);
+    }
+
+    /** 로그인 사용자의 커플 멤버 행에 상대방 애칭을 저장합니다. */
+    @Transactional
+    public PartnerNicknameResponse updatePartnerNickname(
+            Long userId,
+            PartnerNicknameRequest request
+    ) {
+        getActiveMember(userId);
+        CoupleMember membership = findActiveMembership(userId);
+        Member partner = getActivePartner(userId);
+
+        String partnerNickname = request.partnerNickname().trim();
+        membership.updatePartnerNickname(partnerNickname);
+
+        return new PartnerNicknameResponse(
+                partner.getId(),
+                partnerNickname,
+                true
+        );
+    }
+
     /** 로그인한 사용자의 프로필 이미지를 저장하고 DB의 이미지 주소를 변경합니다. */
     @Transactional
     public MemberProfileImageResponse uploadProfileImage(
@@ -131,6 +164,42 @@ public class MemberService {
                 .filter(member ->
                         member.getStatus() != MemberStatus.WITHDRAWN)
                 .orElse(null);
+    }
+
+    private Member getActivePartner(Long userId) {
+        Member partner = findActivePartner(userId);
+        if (partner == null) {
+            throw new CustomException(ErrorCode.ACTIVE_COUPLE_NOT_FOUND);
+        }
+        return partner;
+    }
+
+    private CoupleMember findActiveMembership(Long userId) {
+        List<CoupleMember> memberships =
+                coupleMemberRepository.findActiveMembershipsByUserId(
+                        userId,
+                        PageRequest.of(0, 1)
+                );
+
+        if (memberships.isEmpty()) {
+            throw new CustomException(ErrorCode.ACTIVE_COUPLE_NOT_FOUND);
+        }
+        return memberships.get(0);
+    }
+
+    private PartnerNicknameResponse toPartnerNicknameResponse(
+            CoupleMember membership,
+            Member partner
+    ) {
+        String customNickname = membership.getPartnerNickname();
+        boolean customized = customNickname != null
+                && !customNickname.isBlank();
+
+        return new PartnerNicknameResponse(
+                partner.getId(),
+                customized ? customNickname : partner.getNickname(),
+                customized
+        );
     }
 
     private MemberProfileImageResponse toProfileImageResponse(
