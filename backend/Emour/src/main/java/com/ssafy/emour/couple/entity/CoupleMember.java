@@ -50,4 +50,14 @@ public class CoupleMember {
         this.status = CoupleMemberStatus.LEFT;
         this.leftAt = leftAt;
     }
+
+    public void reconnect() {
+        if (status != CoupleMemberStatus.LEFT) {
+            throw new IllegalStateException(
+                    "연결을 해제한 커플 멤버만 재결합할 수 있습니다."
+            );
+        }
+        this.status = CoupleMemberStatus.ACTIVE;
+        this.leftAt = null;
+    }
 }
