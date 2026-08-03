@@ -30,7 +30,6 @@
 //      백엔드에 reason 이 추가되면 readReasons/writeReason 만 지우면 된다.
 import { apiRequest } from "./httpClient.js";
 import { getCurrentUser } from "./authApi.js";
-import { formatDateKey } from "../utils/moodEmotion";
 
 // 사용자별 키는 여기에 ':userId' 를 붙여 만든다.
 // 접미사 없는 원래 키는 사용자 구분이 없던 시절의 값이라 정리 대상이다.

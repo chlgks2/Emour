@@ -15,6 +15,7 @@ import {
   fetchPartnerReadState,
   normalizeChatMessage,
   sendMessage,
+  uploadChatImages,
   fetchSuggestions,
 } from "../api/chatApi";
 import { connectChatSocket } from "../api/chatSocket.js";
@@ -566,6 +567,88 @@ export default function ChatRoomPage() {
     }
   };
 
+  const handleImagesSelect = async (files) => {
+    if (sending || !files.length) return;
+
+    if (files.length > 10) {
+      showToast("사진은 한 번에 최대 10장까지 보낼 수 있어요.", {
+        tone: "error",
+      });
+      return;
+    }
+
+    const invalidFile = files.find(
+      (file) => !file.type.startsWith("image/"),
+    );
+    if (invalidFile) {
+      showToast("이미지 파일만 전송할 수 있어요.", { tone: "error" });
+      return;
+    }
+
+    setSending(true);
+    const clientMessageId = createClientMessageId();
+
+    try {
+      const imageUrls = await uploadChatImages({ roomId, files });
+      const optimisticMessage = {
+        messageId: null,
+        roomId,
+        senderId: myUserId,
+        clientMessageId,
+        messageType: MESSAGE_TYPE.IMAGE,
+        content: null,
+        sentAt: new Date().toISOString(),
+        images: imageUrls.map((imageUrl, index) => ({
+          imageUrl,
+          imageOrder: index + 1,
+        })),
+        emotionType: null,
+        analysisStatus: null,
+      };
+
+      setMessages((previous) => [
+        ...previous,
+        optimisticMessage,
+      ]);
+
+      requestAnimationFrame(() => {
+        if (containerRef.current) {
+          containerRef.current.scrollTop =
+            containerRef.current.scrollHeight;
+        }
+      });
+
+      const savedMessage = await sendMessage({
+        roomId,
+        content: null,
+        messageType: MESSAGE_TYPE.IMAGE,
+        imageUrls,
+        clientMessageId,
+      });
+
+      setMessages((previous) =>
+        previous.map((message) =>
+          message.clientMessageId === clientMessageId ||
+          message.messageId === savedMessage.messageId
+            ? { ...message, ...savedMessage }
+            : message,
+        ),
+      );
+    } catch (error) {
+      setMessages((previous) =>
+        previous.filter(
+          (message) => message.clientMessageId !== clientMessageId,
+        ),
+      );
+      showToast(
+        error.message || "사진을 보내지 못했어요. 다시 시도해주세요.",
+        { tone: "error" },
+      );
+    } finally {
+      setSending(false);
+    }
+  };
+
   // ─────────────────────────────────────────────────────────
   // 스크롤 감지 및 맨 아래로 이동
   // ─────────────────────────────────────────────────────────
@@ -780,6 +863,7 @@ export default function ChatRoomPage() {
         value={inputValue}
         onChange={handleInputChange}
         onSend={handleSend}
+        onImagesSelect={handleImagesSelect}
         disabled={sending}
       />
 

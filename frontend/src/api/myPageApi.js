@@ -21,6 +21,7 @@ import {
 
 import {
   getMyProfile,
+  uploadMyProfileImage,
   updateMyProfile,
   uploadMyProfileImage,
   withdrawMyAccount,
@@ -176,6 +177,22 @@ export async function getMyPageProfile() {
         Number(userResponse.userId))
 
   let serverRoom = fetchedServerRoom
+
+  // 상대방이 나간 뒤에도 남은 사용자는 기존 INACTIVE 방을 유지하며
+  // 같은 방으로 돌아올 수 있는 재결합 초대 코드를 받는다.
+  if (serverRoom?.status === 'INACTIVE') {
+    const invitation =
+      await createCoupleInvitation()
+
+    serverRoom = {
+      ...serverRoom,
+      ...savePendingCoupleRoom(
+        invitation,
+        userResponse.userId,
+      ),
+      status: 'INACTIVE',
+    }
+  }
 
   /*
    * 연결된 두 사람 중 상대방이 나가면 백엔드는 기존 방을 INACTIVE로

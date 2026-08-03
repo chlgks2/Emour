@@ -465,7 +465,11 @@ function CalendarPage() {
       currentYear,
     ])
 
-  useLiveSync(refreshCalendar)
+  // 상대방 무드 등록은 같은 브라우저 이벤트에 의존하지 않고,
+  // 주기적인 GET /moods 재조회로 반영한다.
+  useLiveSync(refreshCalendar, {
+    intervalMs: 3000,
+  })
 
   const changeCurrentMonth = (
     nextMonth,

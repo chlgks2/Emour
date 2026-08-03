@@ -23,7 +23,6 @@ public interface ChatAnalysisRepository extends JpaRepository<ChatAnalysis, Long
     @Query("""
             select message.roomId as roomId,
                    count(analysis) as pendingCount,
-                   count(distinct message.senderId) as senderCount,
                    max(message.sentAt) as lastSentAt
             from ChatAnalysis analysis
             join analysis.message message

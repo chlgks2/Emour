@@ -363,3 +363,61 @@ export async function fetchDashboard() {
     recentPhotos: albumPhotos.slice(0, RECENT_PHOTO_LIMIT),
   };
 }
+
+/**
+ * 감정 리포트와 대화 기록을 일·월·년 단위로 조회한다.
+ * MONTH/YEAR에는 백엔드가 기간 합산으로 제공하는 항목만 반환한다.
+ */
+export async function fetchDashboardPeriod({
+  period = "DAY",
+  date = new Date(),
+} = {}) {
+  const storedRoom = getCurrentCoupleRoom();
+  const currentRoom = storedRoom?.roomId
+    ? storedRoom
+    : await safe(getMyCoupleRoom());
+  const roomId = currentRoom?.roomId ?? null;
+  const dateKey = formatLocalDateKey(date);
+
+  if (!roomId) {
+    throw new Error("연결된 커플방 정보가 없습니다.");
+  }
+
+  const [mainEmotions, conversationFlow, dailyMessages] =
+    await Promise.all([
+      getMainEmotions(roomId, dateKey, period),
+      getConversationFlow(roomId, dateKey, period),
+      period === "DAY" ? safe(fetchTodayMessages(roomId, dateKey), []) : [],
+    ]);
+
+  const coupleImageCount = dailyMessages.reduce(
+    (total, message) =>
+      total + (Array.isArray(message.images) ? message.images.length : 0),
+    0,
+  );
+  const coupleReactionCount = dailyMessages.reduce(
+    (total, message) =>
+      total + (Array.isArray(message.reactions) ? message.reactions.length : 0),
+    0,
+  );
+
+  return {
+    period,
+    date: dateKey,
+    startDate: mainEmotions?.startDate ?? conversationFlow?.startDate ?? dateKey,
+    endDate: mainEmotions?.endDate ?? conversationFlow?.endDate ?? dateKey,
+    emotionSummary: mainEmotions?.emotions ?? [],
+    dominantEmotion: mainEmotions?.dominantEmotion ?? null,
+    analyzedMessageCount: mainEmotions?.analyzedMessageCount ?? 0,
+    messageCount: conversationFlow?.totalMessageCount ?? 0,
+    imageCount: period === "DAY" ? coupleImageCount : null,
+    reactionCount: period === "DAY" ? coupleReactionCount : null,
+    busiestHour: conversationFlow?.busiestHour ?? null,
+    averageResponseSeconds: conversationFlow?.averageResponseSeconds ?? null,
+    dailyFrequency: conversationFlow?.dailyFrequency ?? [],
+    // 기간 전환 뒤 frequent-words 요청이 실패해 목록이 사라지는 일을 막고,
+    // 메시지/사진/공감과 동일하게 두 사람의 일간 대화 원본을 기준으로 계산한다.
+    frequentWords:
+      period === "DAY" ? calcFrequentWords(dailyMessages, null) : [],
+  };
+}

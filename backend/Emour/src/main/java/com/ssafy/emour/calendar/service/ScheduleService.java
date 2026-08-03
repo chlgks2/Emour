@@ -14,6 +14,7 @@ import com.ssafy.emour.member.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.PageRequest;
 
 import java.time.DateTimeException;
 import java.time.YearMonth;
@@ -81,7 +82,7 @@ public class ScheduleService {
             int year,
             int month
     ) {
-        CoupleRoom room = getActiveRoom(userId);
+        CoupleRoom room = getReadableRoom(userId);
         YearMonth yearMonth;
         try {
             yearMonth = YearMonth.of(year, month);
@@ -107,6 +108,22 @@ public class ScheduleService {
         }
 
         return coupleRoomRepository.findActiveRoomByUserId(userId)
+                .orElseThrow(() -> new CustomException(
+                        ErrorCode.ACTIVE_COUPLE_NOT_FOUND
+                ));
+    }
+
+    private CoupleRoom getReadableRoom(Long userId) {
+        if (!memberRepository.existsById(userId)) {
+            throw new CustomException(ErrorCode.USER_NOT_FOUND);
+        }
+
+        return coupleRoomRepository.findReadableRoomsByUserId(
+                        userId,
+                        PageRequest.of(0, 1)
+                )
+                .stream()
+                .findFirst()
                 .orElseThrow(() -> new CustomException(
                         ErrorCode.ACTIVE_COUPLE_NOT_FOUND
                 ));

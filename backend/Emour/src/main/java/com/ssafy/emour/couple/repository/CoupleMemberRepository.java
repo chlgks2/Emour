@@ -58,6 +58,16 @@ public interface CoupleMemberRepository extends JpaRepository<CoupleMember, Coup
     boolean existsActiveCoupleByUserId(@Param("userId") Long userId);
 
     @Query("""
+            select (count(cm) > 0)
+            from CoupleMember cm
+            join CoupleRoom cr on cr.id = cm.id.roomId
+            where cm.id.userId = :userId
+              and cm.status = com.ssafy.emour.couple.entity.CoupleMemberStatus.ACTIVE
+              and cr.status = com.ssafy.emour.couple.entity.CoupleRoomStatus.INACTIVE
+            """)
+    boolean existsRetainedInactiveRoomByUserId(@Param("userId") Long userId);
+
+    @Query("""
             select cm.id.roomId
             from CoupleMember cm
             join CoupleRoom cr on cr.id = cm.id.roomId
@@ -65,6 +75,7 @@ public interface CoupleMemberRepository extends JpaRepository<CoupleMember, Coup
               and cm.status = com.ssafy.emour.couple.entity.CoupleMemberStatus.ACTIVE
               and (
                     cr.status = com.ssafy.emour.couple.entity.CoupleRoomStatus.ACTIVE
+                    or cr.status = com.ssafy.emour.couple.entity.CoupleRoomStatus.INACTIVE
                     or (
                         cr.status = com.ssafy.emour.couple.entity.CoupleRoomStatus.WAITING
                         and cr.roomCodeExpiresAt > :currentTime
@@ -74,7 +85,9 @@ public interface CoupleMemberRepository extends JpaRepository<CoupleMember, Coup
               case
                   when cr.status = com.ssafy.emour.couple.entity.CoupleRoomStatus.ACTIVE
                   then 0
-                  else 1
+                  when cr.status = com.ssafy.emour.couple.entity.CoupleRoomStatus.WAITING
+                  then 1
+                  else 2
               end,
               cr.createdAt desc
             """)

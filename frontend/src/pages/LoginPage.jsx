@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import AuthHeader from "../components/layout/AuthHeader";
 import TextField from "../components/common/TextField";
@@ -29,17 +29,15 @@ export default function LoginPage() {
   const [socialLoading, setSocialLoading] = useState(null);
 
   const justSignedUp = location.state?.justSignedUp;
+
   const getPostLoginPath = async () => {
-    // 이전 사용자의 방이 캐시에 남아 있을 수 있으니 버리고 서버에 다시 묻는다.
     invalidateCoupleRoom();
-
-    // resolveCoupleRoom 이 서버 값을 localStorage 에도 반영해준다.
-    if ((await resolveCoupleRoom())?.roomId) {
-      return "/dashboard";
+    const currentRoom = await resolveCoupleRoom();
+    if (currentRoom?.roomId) {
+      const roomStatus = currentRoom.roomStatus ?? currentRoom.status;
+      return roomStatus === "WAITING" ? "/mypage" : "/dashboard";
     }
-
     clearPendingCoupleRoom();
-
     return "/couple/connect";
   };
 

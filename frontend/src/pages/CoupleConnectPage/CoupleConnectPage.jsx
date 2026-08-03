@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { Heart, Plus } from 'lucide-react'
 
 import {
-  connectCouple,
   createCoupleInvitation,
+  joinOrReconnectCouple,
 } from '../../api/coupleApi.js'
 
 import Button from '../../components/common/Button'
@@ -70,7 +70,7 @@ function CoupleConnectPage() {
       // 방이 새로 생겼으니 캐시해 둔 roomId 를 버린다.
       invalidateCoupleRoom()
 
-      navigate('/dashboard', {
+      navigate('/mypage', {
         replace: true,
       })
     } catch (error) {
@@ -107,7 +107,7 @@ function CoupleConnectPage() {
       })
 
       const connectedRoom =
-        await connectCouple(
+        await joinOrReconnectCouple(
           trimmedRoomCode,
         )
 
