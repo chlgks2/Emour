@@ -3,10 +3,12 @@ package com.ssafy.emour.member.controller;
 import com.ssafy.emour.global.response.ApiResponse;
 import com.ssafy.emour.global.util.SecurityUtil;
 import com.ssafy.emour.member.dto.request.PasswordChangeRequest;
+import com.ssafy.emour.member.dto.request.PartnerNicknameRequest;
 import com.ssafy.emour.member.dto.request.ProfileUpdateRequest;
 import com.ssafy.emour.member.dto.response.MemberProfileImageResponse;
 import com.ssafy.emour.member.dto.response.MemberProfileResponse;
 import com.ssafy.emour.member.dto.response.MemberProfileImagesResponse;
+import com.ssafy.emour.member.dto.response.PartnerNicknameResponse;
 import com.ssafy.emour.member.service.MemberService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -122,6 +124,39 @@ public class MemberController {
         return ResponseEntity.ok(
                 ApiResponse.success(
                         memberService.getProfileImages(userId)
+                )
+        );
+    }
+
+    @GetMapping("/partner-nickname")
+    @Operation(
+            summary = "상대방 표시 닉네임 조회",
+            description = "등록한 애칭이 없으면 상대방의 회원 닉네임을 반환합니다."
+    )
+    public ResponseEntity<ApiResponse<PartnerNicknameResponse>>
+    getPartnerNickname() {
+        Long userId = SecurityUtil.getCurrentUserId();
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        memberService.getPartnerNickname(userId)
+                )
+        );
+    }
+
+    @PatchMapping("/partner-nickname")
+    @Operation(
+            summary = "상대방 애칭 등록 및 수정",
+            description = "로그인한 사용자의 커플 멤버 정보에 상대방 애칭을 저장합니다."
+    )
+    public ResponseEntity<ApiResponse<PartnerNicknameResponse>>
+    updatePartnerNickname(
+            @Valid @RequestBody PartnerNicknameRequest request
+    ) {
+        Long userId = SecurityUtil.getCurrentUserId();
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "상대방 애칭이 저장되었습니다.",
+                        memberService.updatePartnerNickname(userId, request)
                 )
         );
     }

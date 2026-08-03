@@ -43,6 +43,11 @@ public class CoupleMember {
         return member;
     }
 
+    /** 내가 상대방에게 붙인 애칭을 변경합니다. */
+    public void updatePartnerNickname(String partnerNickname) {
+        this.partnerNickname = partnerNickname;
+    }
+
     public void leave(LocalDateTime leftAt) {
         if (status != CoupleMemberStatus.ACTIVE) {
             throw new IllegalStateException("활성 상태의 커플 멤버만 연결을 해제할 수 있습니다.");
