@@ -25,6 +25,7 @@ import { getAlbumPhotos } from "./albumApi.js";
 import { getChatBookmarks, getChatMessages } from "./chatApi.js";
 import { getRelationshipStartDate, getTodaySchedules } from "./calendarApi.js";
 import { resolveCoupleRoom } from "./coupleRoomContext.js";
+import { EMOTION_POLARITY, getEmotionPolarity } from "../utils/emotions.js";
 
 const RECENT_PHOTO_LIMIT = 5;
 const FREQUENT_WORD_LIMIT = 10;
@@ -72,23 +73,31 @@ function buildQuery(params) {
   return query.toString();
 }
 
-/** GET /dashboards/counts — period: 'DAY' | 'MONTH' | 'YEAR' */
+/** GET /dashboards/couple/counts — period: 'DAY' | 'MONTH' | 'YEAR' */
 export async function getDailyCounts(roomId, date, period = "DAY") {
   const response = await apiRequest(
-    `/dashboards/counts?${buildQuery({ roomId, period, date })}`,
+    `/dashboards/couple/counts?${buildQuery({ roomId, period, date })}`,
   );
   return unwrap(response);
 }
 
-/** GET /dashboards/main-emotions — period: 'DAY' | 'MONTH' | 'YEAR' */
+/** GET /dashboards/me/counts — 로그인 사용자의 북마크 집계 */
+export async function getMemberCounts(roomId, date, period = "DAY") {
+  const response = await apiRequest(
+    `/dashboards/me/counts?${buildQuery({ roomId, period, date })}`,
+  );
+  return unwrap(response);
+}
+
+/** GET /dashboards/couple/main-emotions — period: 'DAY' | 'MONTH' | 'YEAR' */
 export async function getMainEmotions(roomId, date, period = "DAY") {
   const response = await apiRequest(
-    `/dashboards/main-emotions?${buildQuery({ roomId, period, date })}`
+    `/dashboards/couple/main-emotions?${buildQuery({ roomId, period, date })}`
   );
   return unwrap(response);
 }
 
-/** GET /dashboards/frequent-words — period: 'DAY' | 'MONTH' | 'YEAR' */
+/** GET /dashboards/couple/frequent-words — period: 'DAY' | 'MONTH' | 'YEAR' */
 export async function getFrequentWords(
   roomId,
   date,
@@ -96,23 +105,23 @@ export async function getFrequentWords(
   limit = FREQUENT_WORD_LIMIT,
 ) {
   const response = await apiRequest(
-    `/dashboards/frequent-words?${buildQuery({ roomId, period, date, limit })}`
+    `/dashboards/couple/frequent-words?${buildQuery({ roomId, period, date, limit })}`
   );
   return unwrap(response);
 }
 
-/** GET /dashboards/conversation-flow */
+/** GET /dashboards/couple/conversation-flow */
 export async function getConversationFlow(roomId, date, period = "DAY") {
   const response = await apiRequest(
-    `/dashboards/conversation-flow?${buildQuery({ roomId, period, date })}`
+    `/dashboards/couple/conversation-flow?${buildQuery({ roomId, period, date })}`
   );
   return unwrap(response);
 }
 
-/** GET /dashboards/emotion-flow — 기간별 2시간 단위 12구간 */
+/** GET /dashboards/couple/emotion-flow — 기간별 두 구성원의 감정 흐름 */
 export async function getEmotionFlow(roomId, date, period = "DAY") {
   const response = await apiRequest(
-    `/dashboards/emotion-flow?${buildQuery({ roomId, period, date })}`,
+    `/dashboards/couple/emotion-flow?${buildQuery({ roomId, period, date })}`,
   );
   return unwrap(response);
 }
@@ -122,15 +131,33 @@ export async function getEmotionFlow(roomId, date, period = "DAY") {
  * (develop/v1 의 "대시보드 API 연동" 작업에서 들어온 매퍼 — 머지 중 유실된 것을 복구)
  */
 function mapEmotionFlow(response) {
-  if (!Array.isArray(response?.flow)) return [];
+  const legacyFlow = Array.isArray(response?.flow) ? response.flow : null;
+  if (legacyFlow) return legacyFlow;
 
-  return response.flow.map((slot) => ({
-    startHour: slot.startHour,
-    endHour: slot.endHour,
-    positiveCount: Number(slot.positiveCount) || 0,
-    negativeCount: Number(slot.negativeCount) || 0,
-    neutralCount: Number(slot.neutralCount) || 0,
-  }));
+  const myFlow = Array.isArray(response?.me?.flow) ? response.me.flow : [];
+  const partnerFlow = Array.isArray(response?.partner?.flow)
+    ? response.partner.flow
+    : [];
+  const slots = new Map();
+
+  [...myFlow, ...partnerFlow].forEach((slot) => {
+    const key = `${slot.startHour}-${slot.endHour}`;
+    const previous = slots.get(key) ?? {
+      startHour: slot.startHour,
+      endHour: slot.endHour,
+      positiveCount: 0,
+      negativeCount: 0,
+      neutralCount: 0,
+    };
+    slots.set(key, {
+      ...previous,
+      positiveCount: previous.positiveCount + (Number(slot.positiveCount) || 0),
+      negativeCount: previous.negativeCount + (Number(slot.negativeCount) || 0),
+      neutralCount: previous.neutralCount + (Number(slot.neutralCount) || 0),
+    });
+  });
+
+  return [...slots.values()].sort((first, second) => first.startHour - second.startHour);
 }
 
 /* ------------------------------------------------------------------
@@ -260,6 +287,37 @@ function calcFrequentWords(messages, myUserId, limit = FREQUENT_WORD_LIMIT) {
     .slice(0, limit);
 }
 
+function calcEmotionFlow(messages) {
+  const flow = Array.from({ length: 12 }, (_, index) => ({
+    startHour: index * 2,
+    endHour: index * 2 + 2,
+    positiveCount: 0,
+    negativeCount: 0,
+    neutralCount: 0,
+  }));
+
+  messages.forEach((message) => {
+    if (!message.emotionType || !message.sentAt) return;
+    const sentAt = new Date(message.sentAt);
+    if (!Number.isFinite(sentAt.getTime())) return;
+
+    const slot = flow[Math.floor(sentAt.getHours() / 2)];
+    const polarity = getEmotionPolarity(message.emotionType);
+    if (polarity === EMOTION_POLARITY.POSITIVE) slot.positiveCount += 1;
+    else if (polarity === EMOTION_POLARITY.NEGATIVE) slot.negativeCount += 1;
+    else slot.neutralCount += 1;
+  });
+
+  return flow;
+}
+
+function hasEmotionFlowData(flow) {
+  return flow.some(
+    (slot) =>
+      slot.positiveCount + slot.negativeCount + slot.neutralCount > 0,
+  );
+}
+
 /**
  * 사귄 날짜(couple_room.dating_start_date)로부터 D+N 계산.
  * daysTogether 는 DB 컬럼이 아니라 프론트 파생값이다.
@@ -292,9 +350,11 @@ export async function fetchDashboard() {
   // getFrequentWords 는 내 메시지만 대상이라 이 카드(커플 합산)에서는 호출하지 않는다.
   const [
     counts,
+    memberCounts,
     mainEmotions,
     conversationFlow,
     emotionFlow,
+    frequentWords,
     albumData,
     datingStartDate,
     todaySchedules,
@@ -302,9 +362,11 @@ export async function fetchDashboard() {
     localBookmarkCount,
   ] = await Promise.all([
     roomId ? safe(getDailyCounts(roomId, todayKey)) : null,
+    roomId ? safe(getMemberCounts(roomId, todayKey)) : null,
     roomId ? safe(getMainEmotions(roomId, todayKey, "DAY")) : null,
     roomId ? safe(getConversationFlow(roomId, todayKey, "DAY")) : null,
     roomId ? safe(getEmotionFlow(roomId, todayKey)) : null,
+    roomId ? safe(getFrequentWords(roomId, todayKey, "DAY")) : null,
     safe(getAlbumPhotos(), { albumPhotos: [] }),
     safe(getRelationshipStartDate(), ""),
     safe(getTodaySchedules(todayKey), []),
@@ -323,6 +385,12 @@ export async function fetchDashboard() {
   const localImageCount = messages.reduce(
     (sum, message) => sum + (Array.isArray(message.images) ? message.images.length : 0),
     0
+  );
+
+  const localReactionCount = messages.reduce(
+    (sum, message) =>
+      sum + (Array.isArray(message.reactions) ? message.reactions.length : 0),
+    0,
   );
 
   // 서버 집계가 아직 비어 있으면 오늘 대화에서 직접 계산한 값으로 채운다.
@@ -347,11 +415,10 @@ export async function fetchDashboard() {
       summaryDate: todayKey,
       messageCount: coupleMessageCount,
       totalMessageCount: coupleMessageCount,
-      // 커플 합산 사진 개수를 주는 엔드포인트가 없어 오늘 대화에서 직접 센다.
-      imageCount: localImageCount + todayAlbumPhotoCount,
-      reactionCount: counts?.reactionCount ?? 0,
-      // 북마크만 "내" 개수 (백엔드 구조상 커플 합산 불가)
-      bookmarkCount: pick(counts?.bookmarkCount, localBookmarkCount ?? 0),
+      imageCount: pick(counts?.imageCount, localImageCount + todayAlbumPhotoCount),
+      reactionCount: pick(counts?.reactionCount, localReactionCount),
+      // 북마크는 개인 집계 API에서 받는다.
+      bookmarkCount: pick(memberCounts?.bookmarkCount, localBookmarkCount ?? 0),
       busiestHour: pickAllowZero(conversationFlow?.busiestHour, calcBusiestHour(messages)),
       averageResponseSeconds: pick(
         conversationFlow?.averageResponseSeconds,
@@ -365,8 +432,10 @@ export async function fetchDashboard() {
       emotionFlow: mapEmotionFlow(emotionFlow),
       // 날짜별 커플 메시지 수
       dailyFrequency: conversationFlow?.dailyFrequency ?? [],
-      // 두 사람이 쓴 말을 합쳐서 센다. (서버 frequent-words 는 내 메시지만 대상이라 쓰지 않는다)
-      frequentWords: calcFrequentWords(messages, null),
+      frequentWords:
+        frequentWords?.words?.length > 0
+          ? frequentWords.words
+          : calcFrequentWords(messages, null),
     },
     todaySchedules: todaySchedules ?? [],
     recentPhotos: albumPhotos.slice(0, RECENT_PHOTO_LIMIT),
@@ -390,14 +459,29 @@ export async function fetchDashboardPeriod({
     throw new Error("연결된 커플방 정보가 없습니다.");
   }
 
-  const [counts, mainEmotions, conversationFlow, emotionFlow, frequentWords] =
+  const [
+    counts,
+    memberCounts,
+    mainEmotions,
+    conversationFlow,
+    emotionFlow,
+    frequentWords,
+    periodMessages,
+  ] =
     await Promise.all([
       safe(getDailyCounts(roomId, dateKey, period), null),
+      safe(getMemberCounts(roomId, dateKey, period), null),
       safe(getMainEmotions(roomId, dateKey, period), null),
       safe(getConversationFlow(roomId, dateKey, period), null),
       safe(getEmotionFlow(roomId, dateKey, period), null),
       safe(getFrequentWords(roomId, dateKey, period), null),
+      period === "DAY" ? safe(fetchTodayMessages(roomId, dateKey), []) : [],
     ]);
+
+  const serverEmotionFlow = mapEmotionFlow(emotionFlow);
+  const displayedEmotionFlow = hasEmotionFlowData(serverEmotionFlow)
+    ? serverEmotionFlow
+    : calcEmotionFlow(periodMessages);
 
   return {
     period,
@@ -417,11 +501,11 @@ export async function fetchDashboardPeriod({
       counts?.messageCount ?? conversationFlow?.totalMessageCount ?? 0,
     imageCount: counts?.imageCount ?? 0,
     reactionCount: counts?.reactionCount ?? 0,
-    bookmarkCount: counts?.bookmarkCount ?? 0,
+    bookmarkCount: memberCounts?.bookmarkCount ?? 0,
     busiestHour: conversationFlow?.busiestHour ?? null,
     averageResponseSeconds: conversationFlow?.averageResponseSeconds ?? null,
     dailyFrequency: conversationFlow?.dailyFrequency ?? [],
-    emotionFlow: mapEmotionFlow(emotionFlow),
+    emotionFlow: displayedEmotionFlow,
     frequentWords: frequentWords?.words ?? [],
   };
 }
