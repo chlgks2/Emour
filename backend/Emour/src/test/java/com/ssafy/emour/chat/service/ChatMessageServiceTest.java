@@ -11,6 +11,7 @@ import com.ssafy.emour.chat.repository.ChatMessageRepository;
 import com.ssafy.emour.couple.entity.CoupleMemberId;
 import com.ssafy.emour.couple.entity.CoupleMemberStatus;
 import com.ssafy.emour.couple.repository.CoupleMemberRepository;
+import com.ssafy.emour.dashboard.event.DashboardChangePublisher;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -37,6 +38,9 @@ class ChatMessageServiceTest {
 
     @Mock
     private CoupleMemberRepository coupleMemberRepository;
+
+    @Mock
+    private DashboardChangePublisher dashboardChangePublisher;
 
     @InjectMocks
     private ChatMessageService chatMessageService;

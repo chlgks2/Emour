@@ -98,6 +98,18 @@ public class Dashboard {
         touch();
     }
 
+    /** 이미 더 최신 값이 계산된 경우 집계 값을 되돌리지 않고 확정 시점만 기록합니다. */
+    public void markFinalizedUntil(
+            LocalDateTime finalizedUntil,
+            LocalDateTime updatedAt
+    ) {
+        if (this.finalizedUntil == null
+                || this.finalizedUntil.isBefore(finalizedUntil)) {
+            this.finalizedUntil = finalizedUntil;
+        }
+        this.updatedAt = updatedAt;
+    }
+
     private void touch() {
         this.calculatedAt = LocalDateTime.now();
         this.updatedAt = this.calculatedAt;

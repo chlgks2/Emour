@@ -10,6 +10,7 @@ import com.ssafy.emour.couple.entity.CoupleMemberId;
 import com.ssafy.emour.couple.entity.CoupleMemberStatus;
 import com.ssafy.emour.couple.repository.CoupleMemberRepository;
 import com.ssafy.emour.dashboard.dto.DashboardPeriod;
+import com.ssafy.emour.dashboard.event.DashboardChangePublisher;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -31,6 +32,7 @@ public class ChatBookmarkService {
     private final ChatBookmarkRepository chatBookmarkRepository;
     private final CoupleMemberRepository coupleMemberRepository;
     private final ChatMessageService chatMessageService;
+    private final DashboardChangePublisher dashboardChangePublisher;
 
     @Transactional
     public ChatBookmarkResponse addBookmark(
@@ -43,13 +45,19 @@ public class ChatBookmarkService {
         // 이미 저장한 메시지라면 같은 북마크를 그대로 돌려줍니다.
         ChatBookmark bookmark = chatBookmarkRepository
                 .findByUserIdAndMessage_MessageId(userId, messageId)
-                .orElseGet(() -> chatBookmarkRepository.save(
-                        ChatBookmark.create(
-                                message.getRoomId(),
-                                userId,
-                                message
-                        )
-                ));
+                .orElse(null);
+        if (bookmark == null) {
+            bookmark = chatBookmarkRepository.save(ChatBookmark.create(
+                    message.getRoomId(),
+                    userId,
+                    message
+            ));
+            dashboardChangePublisher.bookmarkChanged(
+                    bookmark.getRoomId(),
+                    bookmark.getUserId(),
+                    bookmark.getCreatedAt()
+            );
+        }
 
         return toResponse(bookmark);
     }
@@ -62,7 +70,14 @@ public class ChatBookmarkService {
         // 이미 취소된 북마크라면 오류를 내지 않고 그대로 끝냅니다.
         chatBookmarkRepository
                 .findByUserIdAndMessage_MessageId(userId, messageId)
-                .ifPresent(chatBookmarkRepository::delete);
+                .ifPresent(bookmark -> {
+                    chatBookmarkRepository.delete(bookmark);
+                    dashboardChangePublisher.bookmarkChanged(
+                            bookmark.getRoomId(),
+                            bookmark.getUserId(),
+                            bookmark.getCreatedAt()
+                    );
+                });
     }
 
     @Transactional(readOnly = true)

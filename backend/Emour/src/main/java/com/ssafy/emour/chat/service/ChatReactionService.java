@@ -9,6 +9,7 @@ import com.ssafy.emour.chat.repository.ChatReactionRepository;
 import com.ssafy.emour.couple.entity.CoupleMemberId;
 import com.ssafy.emour.couple.entity.CoupleMemberStatus;
 import com.ssafy.emour.couple.repository.CoupleMemberRepository;
+import com.ssafy.emour.dashboard.event.DashboardChangePublisher;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,6 +26,7 @@ public class ChatReactionService {
     private final ChatReactionRepository chatReactionRepository;
     private final CoupleMemberRepository coupleMemberRepository;
     private final ChatMessageService chatMessageService;
+    private final DashboardChangePublisher dashboardChangePublisher;
 
     @Transactional
     public ChatReactionResponse setReaction(
@@ -37,20 +39,29 @@ public class ChatReactionService {
         String reactionType = normalizeReactionType(request);
 
         // 이미 공감했다면 행을 추가하지 않고 반응 종류만 바꿉니다.
-        ChatReaction reaction = chatReactionRepository
-                .findByUserIdAndMessage_MessageId(userId, messageId)
-                .map(found -> {
-                    found.changeType(reactionType);
-                    return found;
-                })
-                .orElseGet(() -> ChatReaction.create(
-                        message.getRoomId(),
-                        userId,
-                        message,
-                        reactionType
-                ));
+        Optional<ChatReaction> existing = chatReactionRepository
+                .findByUserIdAndMessage_MessageId(userId, messageId);
+        ChatReaction reaction;
+        if (existing.isPresent()) {
+            reaction = existing.get();
+            reaction.changeType(reactionType);
+        } else {
+            reaction = ChatReaction.create(
+                    message.getRoomId(),
+                    userId,
+                    message,
+                    reactionType
+            );
+        }
 
-        return toResponse(chatReactionRepository.save(reaction));
+        ChatReaction saved = chatReactionRepository.save(reaction);
+        if (existing.isEmpty()) {
+            dashboardChangePublisher.reactionChanged(
+                    saved.getRoomId(),
+                    saved.getCreatedAt()
+            );
+        }
+        return toResponse(saved);
     }
 
     @Transactional
@@ -68,6 +79,10 @@ public class ChatReactionService {
                     ChatReactionResponse response = toResponse(reaction);
                     reaction.detachFromMessage();
                     chatReactionRepository.delete(reaction);
+                    dashboardChangePublisher.reactionChanged(
+                            reaction.getRoomId(),
+                            reaction.getCreatedAt()
+                    );
                     return response;
                 });
     }

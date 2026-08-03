@@ -10,6 +10,7 @@ import com.ssafy.emour.chat.entity.ChatMessage;
 import com.ssafy.emour.chat.entity.EmotionType;
 import com.ssafy.emour.chat.repository.ChatAnalysisRepository;
 import com.ssafy.emour.chat.repository.PendingAnalysisRoomSummary;
+import com.ssafy.emour.dashboard.event.DashboardChangePublisher;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -37,6 +38,7 @@ public class ChatAnalysisService {
     private final ChatAnalysisRepository chatAnalysisRepository;
     private final AiAnalysisClient aiAnalysisClient;
     private final Clock dashboardClock;
+    private final DashboardChangePublisher dashboardChangePublisher;
 
     /**
      * 분석할 준비가 된 방 하나를 골라 최대 10개의 메시지를 분석합니다.
@@ -119,6 +121,9 @@ public class ChatAnalysisService {
             );
             target.complete(emotionType);
             savedEmotions.put(messageId, emotionType.name());
+            dashboardChangePublisher.analysisCompleted(
+                    target.getMessage()
+            );
         }
 
         return new ChatAnalysisBatchResponse(
