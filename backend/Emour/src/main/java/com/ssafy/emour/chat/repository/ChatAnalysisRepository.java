@@ -109,4 +109,20 @@ public interface ChatAnalysisRepository extends JpaRepository<ChatAnalysis, Long
             @Param("start") LocalDateTime start,
             @Param("end") LocalDateTime end
     );
+
+    @Query("""
+            select analysis.emotionType
+            from ChatAnalysis analysis
+            join analysis.message message
+            where message.roomId = :roomId
+              and message.sentAt >= :start
+              and message.sentAt < :end
+              and analysis.analysisStatus =
+                  com.ssafy.emour.chat.entity.AnalysisStatus.COMPLETED
+            """)
+    List<String> findCompletedRoomEmotionTypes(
+            @Param("roomId") Long roomId,
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end
+    );
 }
