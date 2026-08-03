@@ -13,7 +13,7 @@
 .sheet {
   width: 100%;
   max-width: var(--app-max-width);
-  max-height: 92dvh;
+  max-height: 92%;
   overflow-y: auto;
   background: var(--color-white);
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;

@@ -1,0 +1,72 @@
+/* ==========================================================================
+   앱 뷰포트
+   서비스 화면을 직사각형 하나로 띄우고, 설계 비율(412x892)을 유지한 채
+   transform: scale() 로 확대만 한다. 폰 목업(베젤·노치·홈 인디케이터·측면 버튼)은
+   더 이상 그리지 않는다.
+   ========================================================================== */
+
+.app-stage {
+  position: relative;
+  width: 100%;
+  height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  /*
+   * CI 배경 3색으로 만든 무대 + 바닥의 브랜드 글로우.
+   *
+   * 글로우는 반드시 background 레이어로 그린다.
+   * ::before 를 밖으로 삐져나가게 두면 overflow: hidden 인 이 요소가
+   * "프로그램적으로 스크롤 가능한" 상태가 되어, 자식 쪽에서 scrollIntoView 를
+   * 부를 때 화면 전체가 딸려 올라간다.
+   */
+  background:
+    radial-gradient(120% 90% at 50% 0%, #f4edec 0%, rgba(244, 237, 236, 0) 62%),
+    radial-gradient(
+      58% 42% at 50% 106%,
+      color-mix(in srgb, var(--color-primary) 26%, transparent) 0%,
+      color-mix(in srgb, var(--color-primary) 0%, transparent) 72%
+    ),
+    linear-gradient(168deg, #e6d5d0 0%, #dac2bc 52%, #d3b9b4 100%);
+}
+
+/*
+ * 설계 크기를 그대로 유지하는 화면.
+ * 크기를 늘리는 대신 배율만 키우기 때문에 내부 레이아웃은 전혀 바뀌지 않는다.
+ * 배율은 AppViewport.jsx 가 --app-scale 로 넣어준다.
+ */
+.app-viewport {
+  position: relative;
+  z-index: 1;
+  flex: none;
+  width: var(--app-frame-width);
+  height: var(--app-frame-height);
+  overflow: hidden;
+  /* 모서리를 굴리지 않은 그냥 직사각형. 위/아래는 창 끝에 붙는다. */
+  border-radius: 0;
+  background: var(--color-background);
+  box-shadow: var(--shadow-frame);
+  transform: scale(var(--app-scale, 1));
+  transform-origin: center center;
+  /* 내부 z-index 가 무대 배경과 섞이지 않도록 */
+  isolation: isolate;
+}
+
+/* --------------------------------------------------------------------------
+   실제 모바일: 무대와 확대를 걷어내고 화면을 꽉 채운다.
+   좁은 화면에서 배율을 적용하면 앱이 오히려 축소돼 레터박스가 생긴다.
+   -------------------------------------------------------------------------- */
+@media (max-width: 480px) {
+  .app-stage {
+    background: var(--color-background);
+  }
+
+  .app-viewport {
+    width: 100%;
+    height: 100dvh;
+    box-shadow: none;
+    /* transform 을 없애야 position:fixed 자손이 다시 브라우저 전체를 기준으로 잡는다 */
+    transform: none;
+  }
+}

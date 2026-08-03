@@ -137,6 +137,8 @@
   /* ----------------------------------------------------------------
      4. 레이아웃
      ---------------------------------------------------------------- */
+  /* 화면 설계 기준 크기. AppViewport 가 이 비율을 유지한 채 배율만 키운다.
+     (layouts/AppViewport/appViewport.js 의 APP_DESIGN_* 와 같은 값이어야 한다) */
   --app-frame-width: 412px;
   --app-frame-height: 892px;
   --app-max-width: var(--app-frame-width);
