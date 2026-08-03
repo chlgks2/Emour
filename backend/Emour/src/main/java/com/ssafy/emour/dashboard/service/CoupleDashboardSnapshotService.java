@@ -97,6 +97,21 @@ public class CoupleDashboardSnapshotService {
     ) {
         validateRange(roomId, date, snapshotUntil);
         LocalDateTime start = date.atStartOfDay();
+        LocalDateTime calculatedAt = LocalDateTime.now(dashboardClock);
+
+        CoupleDashboard dashboard = coupleDashboardRepository
+                .findByRoomIdAndSummaryDate(roomId, date)
+                .orElse(null);
+        if (hasSnapshotThrough(dashboard, snapshotUntil)) {
+            if (finalized) {
+                dashboard.markFinalizedUntil(
+                        snapshotUntil,
+                        calculatedAt
+                );
+                return coupleDashboardRepository.save(dashboard);
+            }
+            return dashboard;
+        }
 
         int messageCount = Math.toIntExact(chatMessageRepository
                 .countByRoomIdAndSentAtGreaterThanEqualAndSentAtLessThan(
@@ -135,9 +150,9 @@ public class CoupleDashboardSnapshotService {
         ConversationFlowCalculator.ConversationMetrics conversation =
                 conversationFlowCalculator.calculate(messages, date, date);
 
-        CoupleDashboard dashboard = coupleDashboardRepository
-                .findByRoomIdAndSummaryDate(roomId, date)
-                .orElseGet(() -> CoupleDashboard.create(roomId, date));
+        if (dashboard == null) {
+            dashboard = CoupleDashboard.create(roomId, date);
+        }
         dashboard.applyHourlySnapshot(
                 messageCount,
                 imageCount,
@@ -149,9 +164,21 @@ public class CoupleDashboardSnapshotService {
                 toJson(conversation.dailyFrequency()),
                 snapshotUntil,
                 finalized,
-                LocalDateTime.now(dashboardClock)
+                calculatedAt
         );
         return coupleDashboardRepository.save(dashboard);
+    }
+
+    private boolean hasSnapshotThrough(
+            CoupleDashboard dashboard,
+            LocalDateTime snapshotUntil
+    ) {
+        return dashboard != null
+                && dashboard.getEmotionSummary() != null
+                && dashboard.getFrequentWords() != null
+                && dashboard.getConversationFrequency() != null
+                && dashboard.getAggregatedUntil() != null
+                && dashboard.getAggregatedUntil().isAfter(snapshotUntil);
     }
 
     private boolean needsRefresh(

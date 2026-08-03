@@ -6,6 +6,7 @@ import com.ssafy.emour.couple.entity.CoupleMemberId;
 import com.ssafy.emour.couple.entity.CoupleMemberStatus;
 import com.ssafy.emour.couple.repository.CoupleMemberRepository;
 import com.ssafy.emour.dashboard.dto.DashboardPeriod;
+import com.ssafy.emour.dashboard.event.DashboardChangePublisher;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -30,6 +31,8 @@ class ChatBookmarkServiceTest {
     private CoupleMemberRepository coupleMemberRepository;
     @Mock
     private ChatMessageService chatMessageService;
+    @Mock
+    private DashboardChangePublisher dashboardChangePublisher;
 
     // 월 조회는 해당 월에 전송된 메시지의 북마크만 검색합니다.
     @Test
@@ -48,7 +51,8 @@ class ChatBookmarkServiceTest {
         ChatBookmarkService service = new ChatBookmarkService(
                 chatBookmarkRepository,
                 coupleMemberRepository,
-                chatMessageService
+                chatMessageService,
+                dashboardChangePublisher
         );
 
         ChatBookmarkListResponse response = service.getBookmarks(

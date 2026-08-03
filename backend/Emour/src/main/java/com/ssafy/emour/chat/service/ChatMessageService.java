@@ -14,6 +14,7 @@ import com.ssafy.emour.chat.repository.ChatMessageRepository;
 import com.ssafy.emour.couple.entity.CoupleMemberId;
 import com.ssafy.emour.couple.entity.CoupleMemberStatus;
 import com.ssafy.emour.couple.repository.CoupleMemberRepository;
+import com.ssafy.emour.dashboard.event.DashboardChangePublisher;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -38,6 +39,7 @@ public class ChatMessageService {
     private final ChatMessageRepository chatMessageRepository;
     private final ChatAnalysisRepository chatAnalysisRepository;
     private final CoupleMemberRepository coupleMemberRepository;
+    private final DashboardChangePublisher dashboardChangePublisher;
 
     @Transactional
     public ChatMessageResponse sendMessage(
@@ -169,6 +171,9 @@ public class ChatMessageService {
         if (saved.getMessageType() == MessageType.TEXT) {
             chatAnalysisRepository.save(ChatAnalysis.pending(saved));
         }
+
+        // 저장이 실제로 완료된 뒤 오늘 대시보드를 최신 상태로 다시 집계합니다.
+        dashboardChangePublisher.messageSaved(saved);
 
         return toResponse(saved);
     }
