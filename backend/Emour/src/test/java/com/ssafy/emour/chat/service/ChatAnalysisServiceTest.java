@@ -9,6 +9,7 @@ import com.ssafy.emour.chat.entity.ChatMessage;
 import com.ssafy.emour.chat.entity.EmotionType;
 import com.ssafy.emour.chat.repository.ChatAnalysisRepository;
 import com.ssafy.emour.chat.repository.PendingAnalysisRoomSummary;
+import com.ssafy.emour.dashboard.event.DashboardChangePublisher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -52,6 +53,9 @@ class ChatAnalysisServiceTest {
     @Mock
     private AiAnalysisClient aiAnalysisClient;
 
+    @Mock
+    private DashboardChangePublisher dashboardChangePublisher;
+
     private ChatAnalysisService chatAnalysisService;
 
     @BeforeEach
@@ -63,7 +67,8 @@ class ChatAnalysisServiceTest {
         chatAnalysisService = new ChatAnalysisService(
                 chatAnalysisRepository,
                 aiAnalysisClient,
-                clock
+                clock,
+                dashboardChangePublisher
         );
     }
 

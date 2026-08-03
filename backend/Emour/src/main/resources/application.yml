@@ -59,6 +59,10 @@ chat:
     # 모든 백엔드 서버가 같은 채널을 사용해야 서로의 채팅을 받을 수 있습니다.
     channel: ${CHAT_REDIS_CHANNEL:emour:chat:events}
 
+# 원본 데이터가 바뀐 방의 대시보드 변경을 묶어서 반영하는 간격입니다.
+dashboard:
+  change-refresh-delay-ms: ${DASHBOARD_CHANGE_REFRESH_DELAY_MS:1000}
+
 # 배포 서버에 health 주소만 공개하고 DB 등의 상세정보는 숨깁니다.
 management:
   endpoints:

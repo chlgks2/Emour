@@ -92,6 +92,21 @@ public class DashboardSnapshotService {
         validateMember(roomId, userId);
         validateRange(date, snapshotUntil);
         LocalDateTime start = date.atStartOfDay();
+        LocalDateTime calculatedAt = LocalDateTime.now(dashboardClock);
+
+        Dashboard dashboard = dashboardRepository
+                .findByRoomIdAndUserIdAndSummaryDate(roomId, userId, date)
+                .orElse(null);
+        if (hasSnapshotThrough(dashboard, snapshotUntil)) {
+            if (finalized) {
+                dashboard.markFinalizedUntil(
+                        snapshotUntil,
+                        calculatedAt
+                );
+                return dashboardRepository.save(dashboard);
+            }
+            return dashboard;
+        }
 
         int bookmarkCount = Math.toIntExact(chatBookmarkRepository
                 .countByRoomIdAndUserIdAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
@@ -108,17 +123,27 @@ public class DashboardSnapshotService {
                         snapshotUntil
                 );
 
-        Dashboard dashboard = dashboardRepository
-                .findByRoomIdAndUserIdAndSummaryDate(roomId, userId, date)
-                .orElseGet(() -> Dashboard.create(roomId, userId, date));
+        if (dashboard == null) {
+            dashboard = Dashboard.create(roomId, userId, date);
+        }
         dashboard.applyHourlySnapshot(
                 bookmarkCount,
                 toJson(createEmotionFlow(analyses)),
                 snapshotUntil,
                 finalized,
-                LocalDateTime.now(dashboardClock)
+                calculatedAt
         );
         return dashboardRepository.save(dashboard);
+    }
+
+    private boolean hasSnapshotThrough(
+            Dashboard dashboard,
+            LocalDateTime snapshotUntil
+    ) {
+        return dashboard != null
+                && dashboard.getEmotionFlow() != null
+                && dashboard.getAggregatedUntil() != null
+                && dashboard.getAggregatedUntil().isAfter(snapshotUntil);
     }
 
     private boolean needsRefresh(
