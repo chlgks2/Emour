@@ -72,4 +72,22 @@ public class HomeImageSetting {
         setting.textColor = HomeTextColor.WHITE;
         return setting;
     }
+
+    public void updateTextSetting(
+            String textContent,
+            BigDecimal textPositionX,
+            BigDecimal textPositionY,
+            HomeTextSize textSize,
+            HomeTextAlignment textAlignment,
+            HomeBackgroundStyle backgroundStyle,
+            HomeTextColor textColor
+    ) {
+        this.textContent = textContent;
+        this.textPositionX = textPositionX;
+        this.textPositionY = textPositionY;
+        this.textSize = textSize;
+        this.textAlignment = textAlignment;
+        this.backgroundStyle = backgroundStyle;
+        this.textColor = textColor;
+    }
 }
