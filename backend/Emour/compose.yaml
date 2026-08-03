@@ -26,8 +26,9 @@ services:
       # MySQL 데이터가 처음 만들어질 때 프로젝트 스키마를 자동 적용합니다.
       - './Emour_SQL_schema.sql:/docker-entrypoint-initdb.d/01-emour-schema.sql:ro'
     ports:
+      # 기존 로컬 MySQL과 충돌하지 않도록 사용 가능한 호스트 포트를 자동 배정합니다.
       - '3306'
   redis:
     image: 'redis:latest'
     ports:
-      - '6379'
+      - '127.0.0.1:${REDIS_PORT:-6379}:6379'

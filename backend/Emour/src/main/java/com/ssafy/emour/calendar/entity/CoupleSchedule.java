@@ -66,6 +66,7 @@ public class CoupleSchedule {
             Long roomId,
             Long creatorId,
             String name,
+            String description,
             LocalDate scheduleDate,
             LocalTime scheduleTime
     ) {
@@ -73,11 +74,48 @@ public class CoupleSchedule {
         schedule.roomId = roomId;
         schedule.creatorId = creatorId;
         schedule.name = name;
+        schedule.description = description;
         schedule.scheduleDate = scheduleDate;
         schedule.scheduleTime = scheduleTime;
         schedule.scheduleType = ScheduleType.SCHEDULE;
         schedule.yearlyRecurring = false;
         return schedule;
+    }
+
+    public static CoupleSchedule createSchedule(
+            Long roomId,
+            Long creatorId,
+            String name,
+            LocalDate scheduleDate,
+            LocalTime scheduleTime
+    ) {
+        return createSchedule(
+                roomId,
+                creatorId,
+                name,
+                null,
+                scheduleDate,
+                scheduleTime
+        );
+    }
+
+    public static CoupleSchedule createAnniversary(
+            Long roomId,
+            Long creatorId,
+            String name,
+            String description,
+            LocalDate scheduleDate
+    ) {
+        CoupleSchedule anniversary = new CoupleSchedule();
+        anniversary.roomId = roomId;
+        anniversary.creatorId = creatorId;
+        anniversary.name = name;
+        anniversary.description = description;
+        anniversary.scheduleDate = scheduleDate;
+        anniversary.scheduleTime = null;
+        anniversary.scheduleType = ScheduleType.ANNIVERSARY;
+        anniversary.yearlyRecurring = true;
+        return anniversary;
     }
 
     public static CoupleSchedule createAnniversary(
@@ -86,15 +124,25 @@ public class CoupleSchedule {
             String name,
             LocalDate scheduleDate
     ) {
-        CoupleSchedule anniversary = new CoupleSchedule();
-        anniversary.roomId = roomId;
-        anniversary.creatorId = creatorId;
-        anniversary.name = name;
-        anniversary.scheduleDate = scheduleDate;
-        anniversary.scheduleTime = null;
-        anniversary.scheduleType = ScheduleType.ANNIVERSARY;
-        anniversary.yearlyRecurring = true;
-        return anniversary;
+        return createAnniversary(
+                roomId,
+                creatorId,
+                name,
+                null,
+                scheduleDate
+        );
+    }
+
+    public void updateSchedule(
+            String name,
+            String description,
+            LocalDate scheduleDate,
+            LocalTime scheduleTime
+    ) {
+        this.name = name;
+        this.description = description;
+        this.scheduleDate = scheduleDate;
+        this.scheduleTime = scheduleTime;
     }
 
     public void updateSchedule(
@@ -102,16 +150,23 @@ public class CoupleSchedule {
             LocalDate scheduleDate,
             LocalTime scheduleTime
     ) {
+        updateSchedule(name, description, scheduleDate, scheduleTime);
+    }
+
+    public void updateAnniversary(
+            String name,
+            String description,
+            LocalDate scheduleDate
+    ) {
         this.name = name;
+        this.description = description;
         this.scheduleDate = scheduleDate;
-        this.scheduleTime = scheduleTime;
     }
 
     public void updateAnniversary(
             String name,
             LocalDate scheduleDate
     ) {
-        this.name = name;
-        this.scheduleDate = scheduleDate;
+        updateAnniversary(name, description, scheduleDate);
     }
 }

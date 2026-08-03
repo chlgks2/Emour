@@ -27,6 +27,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AlbumPhotoService {
 
+    private static final int MAX_MEMO_LENGTH = 100;
+
     private final AlbumPhotoRepository albumPhotoRepository;
     private final FileStorage fileStorage;
     private final CoupleRoomRepository coupleRoomRepository;
@@ -34,6 +36,7 @@ public class AlbumPhotoService {
     /** 사진 업로드 (파일 저장 → key 를 DB 에 기록) */
     @Transactional
     public AlbumPhotoResponse upload(Long userId, MultipartFile file, String memo) {
+        validateMemo(memo);
         Long roomId = getActiveRoomId(userId);
         String key = fileStorage.store(file); // 파일 저장 후 key 획득
 
@@ -69,6 +72,7 @@ public class AlbumPhotoService {
     @Transactional
     public AlbumPhotoResponse updateMemo(Long userId, Long photoId, String memo) {
         AlbumPhoto photo = getOwnedPhoto(userId, photoId);
+        validateMemo(memo);
         photo.updateMemo(memo);
         return AlbumPhotoResponse.of(photo);
     }
@@ -111,5 +115,11 @@ public class AlbumPhotoService {
         }
 
         return rooms.get(0).getId();
+    }
+
+    private void validateMemo(String memo) {
+        if (memo != null && memo.length() > MAX_MEMO_LENGTH) {
+            throw new CustomException(ErrorCode.INVALID_INPUT);
+        }
     }
 }

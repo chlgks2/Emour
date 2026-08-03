@@ -1,5 +1,7 @@
 -- MySQL 8.4.7
 -- DATABASE 생성
+# DROP DATABASE IF EXISTS `emour`;
+
 CREATE DATABASE IF NOT EXISTS `emour`
     DEFAULT CHARACTER SET utf8mb4
     DEFAULT COLLATE utf8mb4_unicode_ci;
@@ -25,7 +27,7 @@ CREATE TABLE `app_user` (
 CREATE TABLE `social_login` (
     `social_id` BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     `user_id` BIGINT NOT NULL UNIQUE,
-    -- GOOGLE / KAKAO
+    -- 소셜 로그인 제공자 코드 (예: GOOGLE, KAKAO, NAVER)
     `provider` VARCHAR(30) NOT NULL,
     `provider_id` VARCHAR(255) NOT NULL,
     `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
@@ -59,9 +61,9 @@ CREATE TABLE `mood_notification` (
     `room_id` BIGINT NOT NULL PRIMARY KEY,
     `start_time` TIME NOT NULL,
     `end_time` TIME NOT NULL,
-    -- 알람 간격
+    -- 알림 반복 간격(시간 단위)
     `interval_hours` TINYINT UNSIGNED NOT NULL,
-    -- 알람 활성화
+    -- 무드 알림 활성화 여부
     `is_active` BOOLEAN NOT NULL DEFAULT TRUE,
 
     FOREIGN KEY (`room_id`) REFERENCES `couple_room` (`room_id`) ON DELETE CASCADE,
@@ -101,7 +103,7 @@ CREATE TABLE `album_photo` (
     `room_id` BIGINT NOT NULL,
     `uploader_id` BIGINT NOT NULL,
     `image_url` VARCHAR(2048) NOT NULL,
-    `memo` VARCHAR(500) NULL,
+    `memo` VARCHAR(100) NULL,
     `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
 
     FOREIGN KEY (`room_id`, `uploader_id`) REFERENCES `couple_member` (`room_id`, `user_id`)
@@ -113,7 +115,7 @@ CREATE TABLE `diary` (
     `room_id` BIGINT NOT NULL,
     `user_id` BIGINT NOT NULL,
     `diary_date` DATE NOT NULL,
-    `content` VARCHAR(500) NOT NULL,
+    `content` VARCHAR(300) NOT NULL,
     `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     `updated_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
         ON UPDATE CURRENT_TIMESTAMP(6),
@@ -127,9 +129,12 @@ CREATE TABLE `mood` (
     `mood_id` BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     `room_id` BIGINT NOT NULL,
     `user_id` BIGINT NOT NULL,
+    -- 사용자가 기분을 등록하는 시간 구간의 기준 시각
     `mood_datetime` DATETIME(6) NOT NULL,
     `mood_type` ENUM('VERY_HAPPY', 'HAPPY', 'NEUTRAL', 'SAD', 'VERY_SAD')
         NOT NULL DEFAULT 'NEUTRAL',
+    -- 기분을 선택한 이유
+    `reason` VARCHAR(100) NULL,
     `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     `updated_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
         ON UPDATE CURRENT_TIMESTAMP(6),
@@ -236,7 +241,7 @@ CREATE TABLE `chat_message_image` (
     `image_id` BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     `message_id` BIGINT NOT NULL,
     `image_url` VARCHAR(2048) NOT NULL,
-    -- '메시지 안에서 이미지가 보이는 순서'
+    -- 메시지 안에서 이미지가 표시되는 순서
     `display_order` INT NOT NULL DEFAULT 1,
     `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
 

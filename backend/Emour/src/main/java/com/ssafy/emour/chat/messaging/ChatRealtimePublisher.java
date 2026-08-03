@@ -15,6 +15,9 @@ public class ChatRealtimePublisher {
 
     private final String channel;
 
+    @Value("${chat.redis.enabled:true}")
+    private boolean enabled = true;
+
     public ChatRealtimePublisher(
             StringRedisTemplate redisTemplate,
             ObjectMapper objectMapper,
@@ -42,6 +45,9 @@ public class ChatRealtimePublisher {
     }
 
     private void publish(String destination, Object payload) {
+        if (!enabled) {
+            return;
+        }
         try {
             // Java 객체를 JSON으로 바꿔 Redis 채널에 한 번만 발행합니다.
             JsonNode payloadNode = objectMapper.valueToTree(payload);
