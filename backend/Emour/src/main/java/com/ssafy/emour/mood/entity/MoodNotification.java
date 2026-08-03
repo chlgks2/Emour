@@ -16,6 +16,10 @@ import java.time.LocalTime;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class MoodNotification {
 
+    public static final LocalTime DEFAULT_START_TIME = LocalTime.of(8, 0);
+    public static final LocalTime DEFAULT_END_TIME = LocalTime.of(22, 0);
+    public static final int DEFAULT_INTERVAL_HOURS = 2;
+
     @Id
     @Column(name = "room_id")
     private Long roomId;
@@ -31,6 +35,16 @@ public class MoodNotification {
 
     @Column(name = "is_active", nullable = false)
     private boolean active;
+
+    public static MoodNotification createDefault(Long roomId) {
+        return create(
+                roomId,
+                DEFAULT_START_TIME,
+                DEFAULT_END_TIME,
+                DEFAULT_INTERVAL_HOURS,
+                true
+        );
+    }
 
     public static MoodNotification create(
             Long roomId,

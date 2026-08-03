@@ -11,6 +11,7 @@ public record MoodCreateResponse(
         Long userId,
         LocalDateTime moodDatetime,
         MoodType moodType,
+        String reason,
         LocalDateTime createdAt
 ) {
     public static MoodCreateResponse from(Mood mood) {
@@ -20,6 +21,7 @@ public record MoodCreateResponse(
                 mood.getUserId(),
                 mood.getMoodDatetime(),
                 mood.getMoodType(),
+                mood.getReason(),
                 mood.getCreatedAt()
         );
     }

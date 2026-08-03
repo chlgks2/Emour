@@ -10,7 +10,7 @@ import {
 import { useModalA11y } from "../../hooks/useModalA11y";
 import styles from "./MoodFormModal.module.css";
 
-const REASON_MAX_LENGTH = 500; // diary/mood 사유 컬럼 길이에 맞춘 상한
+const REASON_MAX_LENGTH = 100; // mood.reason 컬럼과 API 입력 제한에 맞춘 상한
 
 /**
  * 감정 등록/수정 모달

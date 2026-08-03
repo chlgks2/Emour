@@ -21,13 +21,13 @@ public class MoodNotificationService {
     private final MemberRepository memberRepository;
     private final CoupleRoomRepository coupleRoomRepository;
 
-    @Transactional(readOnly = true)
+    @Transactional
     public MoodNotificationResponse get(Long userId) {
         CoupleRoom room = getActiveRoom(userId);
         MoodNotification notification = moodNotificationRepository
                 .findById(room.getId())
-                .orElseThrow(() -> new CustomException(
-                        ErrorCode.MOOD_NOTIFICATION_NOT_FOUND
+                .orElseGet(() -> moodNotificationRepository.save(
+                        MoodNotification.createDefault(room.getId())
                 ));
 
         return MoodNotificationResponse.from(notification);
