@@ -11,8 +11,8 @@ services:
       MAX_TARGET: ${AI_MAX_TARGET:-10}
       MAX_CONTEXT: ${AI_MAX_CONTEXT:-10}
     ports:
-      # IntelliJ에서 실행한 백엔드는 http://localhost:8000 으로 접근합니다.
-      - '8000:8000'
+      # 호스트의 8083 포트를 AI 컨테이너 내부 8000 포트에 연결합니다.
+      - '8083:8000'
     restart: unless-stopped
 
   mysql:
