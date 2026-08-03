@@ -65,7 +65,12 @@ export default function TodaySchedule({ schedules = [] }) {
             {anniversaries.map((anniversary) => (
               <li key={anniversary.scheduleId} className={styles.anniversaryItem}>
                 <span className={styles.dot} aria-hidden="true" />
-                {anniversary.name}
+                {/*
+                  말줄임은 이 안쪽 span 이 맡는다.
+                  li 에 overflow: hidden 을 걸었더니 왼쪽 바깥(-18px)에 세운
+                  점이 그 경계에서 잘려 아예 보이지 않았다.
+                */}
+                <span className={styles.name}>{anniversary.name}</span>
               </li>
             ))}
           </ul>
