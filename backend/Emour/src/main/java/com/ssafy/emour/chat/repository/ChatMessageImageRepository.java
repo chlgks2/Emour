@@ -15,9 +15,8 @@ public interface ChatMessageImageRepository
             from ChatMessageImage image
             join fetch image.message message
             where image.imageId = :imageId
-              and image.deletedAt is null
             """)
-    Optional<ChatMessageImage> findActiveById(
+    Optional<ChatMessageImage> findWithMessageById(
             @Param("imageId") Long imageId
     );
 }
