@@ -3,6 +3,7 @@ import { apiRequest } from './httpClient.js'
 const MEMBER_ENDPOINTS = {
   myProfile: '/users/me',
   password: '/users/me/password',
+  partnerNickname: '/users/partner-nickname',
 }
 
 export async function getMyProfile() {
@@ -49,6 +50,30 @@ export async function changeMyPassword({
       },
     },
   )
+}
+
+export async function getPartnerNickname() {
+  const response = await apiRequest(
+    MEMBER_ENDPOINTS.partnerNickname,
+  )
+
+  return response?.data ?? null
+}
+
+export async function savePartnerNickname(
+  partnerNickname,
+) {
+  const response = await apiRequest(
+    MEMBER_ENDPOINTS.partnerNickname,
+    {
+      method: 'PATCH',
+      body: {
+        partnerNickname,
+      },
+    },
+  )
+
+  return response?.data ?? null
 }
 
 export async function withdrawMyAccount() {
