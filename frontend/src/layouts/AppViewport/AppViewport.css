@@ -8,6 +8,13 @@
 .app-stage {
   position: relative;
   width: 100%;
+  /*
+   * 더 좁아지지 않는 바닥.
+   * 480px 아래에서는 앱이 창 폭을 그대로 따라가는데(아래 미디어 쿼리),
+   * 끝없이 따라가면 어느 순간 안쪽 레이아웃이 무너진다. body 도 같은 값으로
+   * 묶여 있어서(index.css) 이보다 좁은 창은 문서가 가로로 밀린다.
+   */
+  min-width: 360px;
   height: 100dvh;
   display: flex;
   align-items: center;
