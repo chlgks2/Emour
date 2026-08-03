@@ -25,10 +25,11 @@
   -webkit-backdrop-filter: blur(16px);
 }
 
+/* 채팅·앨범·마이페이지 상단바와 같은 서식 (tokens.css --font-topbar-title) */
 .calendar-header h1 {
   margin: 0;
   color: var(--color-text-primary);
-  font-size: var(--font-heading);
+  font-size: var(--font-topbar-title);
   font-weight: 800;
   text-align: center;
 }
@@ -71,12 +72,16 @@
    공통 카드
 ========================= */
 
-/* 카드 표준(tokens.css 8-1) — 대시보드/마이페이지/앨범과 동일 */
+/*
+ * 표면 규약(styles/surfaces.css)과 같은 결.
+ * 그림자로 띄우지 않고 헤어라인으로 경계만 만든다.
+ * 화면 안에 카드가 여러 장 떠 있으면 정보 위계가 사라진다.
+ */
 .calendar-month-section,
 .selected-day-card {
+  border: 1px solid var(--color-border);
   border-radius: var(--card-radius);
   background: var(--card-surface);
-  box-shadow: var(--card-shadow);
 }
 
 .calendar-month-section {
@@ -174,9 +179,7 @@
   background: var(--color-surface-sunken);
   color: var(--color-text-primary);
   cursor: pointer;
-  transition:
-    transform var(--duration-fast) var(--ease-out),
-    box-shadow var(--duration-fast) var(--ease-out);
+  transition: box-shadow var(--duration-fast) var(--ease-out);
 }
 
 /*
@@ -199,15 +202,41 @@
   z-index: 1;
 }
 
-.calendar-day-cell:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-xs);
+/*
+ * hover 는 칸을 띄우지 않고 색만 한 단계 어둡게 한다.
+ * 칸이 42개나 붙어 있어서 하나가 튀어오르면 격자 전체가 출렁이는 것처럼 보였다.
+ *
+ * 칸마다 배경이 다르므로(감정 그라데이션 / 빈 칸 회색) 고정 색을 지정하면
+ * 어떤 칸은 진해지고 어떤 칸은 오히려 흐려진다. 반투명 검정을 덧씌워
+ * 어떤 색 위에서든 같은 비율로 어두워지게 한다.
+ */
+.calendar-day-cell::after {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  background-color: transparent;
+  transition: background-color var(--duration-fast) var(--ease-out);
 }
 
+.calendar-day-cell:hover:not(:disabled)::after {
+  background-color: rgba(0, 0, 0, 0.08);
+}
+
+/*
+ * 선택 표시는 대시보드 감정 원(EmotionCalendarStrip .moodCircleSelected)과 같은 방식.
+ *
+ * 예전에는 안쪽 테두리 + 분홍 번짐 그림자였는데, 번짐이 셀 아래로 퍼져서
+ * 눌린 자리에 그라데이션이 낀 것처럼 보였다. 감정 색까지 얹히면 더 지저분하다.
+ *
+ * 대시보드 감정 원처럼 배경색으로 한 겹 띄우지는 않는다.
+ * 원 7개가 널찍이 떨어져 있는 스트립과 달리 여기는 칸이 5px 간격으로 붙어 있어서,
+ * 띄우는 2px 까지 더하면 링이 격자 간격을 거의 다 먹고 그 칸만 밖으로 삐져나온 것처럼 보였다.
+ * 칸에 딱 붙은 로즈 링 하나로 충분하다. (흰 카드 위라 얇아도 또렷하다)
+ */
 .calendar-day-cell-selected {
-  box-shadow:
-    inset 0 0 0 2px var(--color-primary),
-    0 6px 14px color-mix(in srgb, var(--color-primary) 24%, transparent);
+  z-index: 1;
+  box-shadow: 0 0 0 2px var(--color-primary);
 }
 
 .calendar-day-cell-outside {
@@ -270,78 +299,34 @@
    일정·기념일 추가
 ========================= */
 
-.calendar-create-actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  margin-top: 12px;
-}
-
-.calendar-create-actions button {
-  min-width: 0;
-  min-height: 62px;
-  display: flex;
+/*
+ * 섹션 제목 줄 안의 작은 동작 버튼 (일정 추가 / 기념일 관리 / 한줄 일기 수정).
+ * 달력 아래 큰 버튼 두 개를 따로 두면 달력과 상세 사이가 끊기고,
+ * "무엇에 대한 추가인지"도 제목에서 떨어져 있어 한 번 더 읽어야 했다.
+ */
+.section-action-button,
+.diary-edit-button {
+  flex-shrink: 0;
+  display: inline-flex;
   align-items: center;
-  gap: 10px;
-  padding: 12px 13px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  color: var(--color-text-primary);
-  text-align: left;
+  justify-content: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-tint);
+  color: var(--color-text-secondary);
+  font-size: var(--font-micro);
+  font-weight: 700;
   cursor: pointer;
   transition:
-    border-color var(--duration-fast) var(--ease-out),
-    transform var(--duration-fast) var(--ease-out),
-    box-shadow var(--duration-fast) var(--ease-out);
+    background-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
 }
 
-.calendar-create-actions button > svg {
-  flex-shrink: 0;
-}
-
-.calendar-create-actions button > span {
-  min-width: 0;
-}
-
-.calendar-create-actions strong,
-.calendar-create-actions small {
-  display: block;
-}
-
-.calendar-create-actions strong {
-  font-size: var(--font-label);
-  font-weight: 700;
-}
-
-.calendar-create-actions small {
-  margin-top: 3px;
-  overflow: hidden;
-  color: var(--color-text-secondary);
-  font-size: 10px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.calendar-create-schedule {
-  background: var(--emotion-warm-bg);
-}
-
-.calendar-create-schedule > svg {
-  color: var(--color-warning);
-}
-
-.calendar-create-anniversary {
+.section-action-button:hover:not(:disabled) {
   background: var(--color-primary-faint);
-}
-
-.calendar-create-anniversary > svg {
-  color: var(--color-primary-strong);
-}
-
-.calendar-create-actions button:hover:not(:disabled) {
-  border-color: var(--color-primary-soft);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-xs);
+  color: var(--color-text-accent);
 }
 
 /* =========================
@@ -372,30 +357,6 @@
   color: var(--color-text-primary);
   font-size: var(--font-heading);
   font-weight: 800;
-}
-
-.add-schedule-button {
-  flex-shrink: 0;
-  height: 36px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  padding: 0 14px;
-  border: 0;
-  border-radius: var(--radius-pill);
-  background: var(--color-action);
-  color: var(--color-text-on-primary);
-  font-size: var(--font-caption);
-  font-weight: 700;
-  cursor: pointer;
-  transition:
-    background-color var(--duration-fast) var(--ease-out),
-    transform var(--duration-fast) var(--ease-out);
-}
-
-.add-schedule-button:hover:not(:disabled) {
-  background: var(--color-action-hover);
 }
 
 /* =========================
@@ -611,7 +572,6 @@
    비어 있는 영역
 ========================= */
 
-.empty-section-message,
 .diary-content {
   margin: 0;
   color: var(--color-text-secondary);
@@ -619,12 +579,17 @@
   line-height: var(--leading-relaxed);
 }
 
+/* 빈 상태 문구 서식은 공용 .empty-note 를 따른다 (styles/surfaces.css) */
+/*
+ * 서식·색은 공용 .empty-note 가 정한다. 여백만 여기서.
+ *
+ * 예전에는 회색 면을 깔고 가운데 정렬한 상자였다. 대시보드의 같은 성격 문구
+ * ('아직 기록된 감정이 없어요.' 등)는 상자 없이 왼쪽에 그대로 놓이는데,
+ * 여기만 상자에 담겨 있으니 "뭔가 들어 있다가 비었다"처럼 읽혔다.
+ */
 .empty-section-message {
-  padding: 14px;
-  border-radius: var(--radius-sm);
-  background: var(--color-background);
-  color: var(--color-text-tertiary);
-  text-align: center;
+  margin: 0;
+  padding: 2px 0 4px;
 }
 
 .diary-content {
@@ -638,103 +603,18 @@
    한줄 일기
 ========================= */
 
-.diary-edit-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  padding: 6px 12px;
-  border: 0;
-  border-radius: var(--radius-pill);
-  background: var(--color-surface-tint);
-  color: var(--color-text-secondary);
-  font-size: var(--font-micro);
-  font-weight: 700;
-  cursor: pointer;
-  transition:
-    background-color var(--duration-fast) var(--ease-out),
-    color var(--duration-fast) var(--ease-out);
-}
-
+/* 모양은 .section-action-button 과 함께 위에서 정의한다 (일정·기념일 버튼과 동일) */
 .diary-edit-button:hover:not(:disabled) {
   background: var(--color-primary-faint);
   color: var(--color-text-accent);
 }
 
-.diary-editor textarea {
-  width: 100%;
-  padding: 13px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  outline: none;
-  resize: none;
-  background: var(--color-background);
-  color: var(--color-text-primary);
-  font-size: var(--font-label);
-  line-height: var(--leading-relaxed);
-  transition:
-    border-color var(--duration-fast) var(--ease-out),
-    box-shadow var(--duration-fast) var(--ease-out);
-}
-
-.diary-editor textarea::placeholder {
-  color: var(--color-text-placeholder);
-}
-
-.diary-editor textarea:focus {
-  border-color: var(--color-primary);
-  box-shadow: var(--focus-ring);
-}
-
-.diary-editor > div {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-top: 10px;
-}
-
-/* 공용 Button 컴포넌트의 sm 사이즈 규격(38px pill)과 동일하게 맞춘다.
-   취소는 outline, 저장은 primary — 앱 전체에서 같은 의미에 같은 모양을 쓴다. */
-.diary-cancel-button,
-.diary-save-button {
-  height: 38px;
-  padding: 0 16px;
-  border: 0;
-  border-radius: var(--radius-pill);
-  font-size: var(--font-label);
-  font-weight: 700;
-  cursor: pointer;
-  transition:
-    background-color var(--duration-fast) var(--ease-out),
-    border-color var(--duration-fast) var(--ease-out),
-    transform var(--duration-fast) var(--ease-out);
-}
-
-.diary-cancel-button:not(:disabled):active,
-.diary-save-button:not(:disabled):active {
-  transform: scale(0.98);
-}
-
-.diary-cancel-button {
-  border: 1px solid var(--color-border-strong);
-  background: var(--color-surface);
-  color: var(--color-text-primary);
-}
-
-.diary-cancel-button:hover:not(:disabled) {
-  background: var(--color-surface-tint);
-  border-color: var(--color-primary-soft);
-}
-
-.diary-save-button {
-  background: var(--color-action);
-  color: var(--color-text-on-primary);
-  box-shadow: var(--shadow-primary);
-}
-
-.diary-save-button:hover:not(:disabled) {
-  background: var(--color-action-hover);
-}
+/*
+ * 인라인 편집기(.diary-editor / .diary-cancel-button / .diary-save-button)는
+ * 없앴다. 같은 카드 안의 일정·기념일은 시트로 여는데 일기만 제자리에서
+ * 펼쳐져서, 편집을 시작하면 아래 내용이 통째로 밀려 내려갔다.
+ * 이제 셋 다 같은 바텀 시트로 연다. (components/calendar/DiaryModal)
+ */
 
 /* =========================
    비활성화 상태
@@ -742,11 +622,8 @@
 
 .calendar-month-navigation button:disabled,
 .calendar-day-cell:disabled,
-.calendar-create-actions button:disabled,
-.add-schedule-button:disabled,
-.diary-edit-button:disabled,
-.diary-cancel-button:disabled,
-.diary-save-button:disabled {
+.section-action-button:disabled,
+.diary-edit-button:disabled {
   cursor: not-allowed;
   opacity: 0.5;
 }
@@ -777,9 +654,7 @@
 }
 
 /* 공용 Button(primary)과 동일한 눌림 피드백 — 앱 전체에서 버튼 반응이 같게 */
-.add-schedule-button:not(:disabled):active {
-  transform: scale(0.98);
-}
-.diary-save-button:not(:disabled):active {
+.section-action-button:not(:disabled):active,
+.diary-edit-button:not(:disabled):active {
   transform: scale(0.98);
 }

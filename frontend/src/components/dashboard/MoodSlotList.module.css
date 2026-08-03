@@ -136,9 +136,7 @@
   transform: scale(0.98);
 }
 
+/* 서식은 공용 .empty-note 가 정한다. 여백만 여기서. (정렬은 화면 전체가 왼쪽) */
 .emptyText {
   padding: 6px 0;
-  color: var(--color-text-tertiary);
-  font-size: var(--font-caption);
-  text-align: center;
 }

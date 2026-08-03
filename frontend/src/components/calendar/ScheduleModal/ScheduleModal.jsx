@@ -65,7 +65,7 @@ function ScheduleModal({
 
   return (
     <div
-      className="schedule-modal-backdrop"
+      className="sheet-backdrop schedule-modal-backdrop"
       role="presentation"
       onMouseDown={(event) => {
         if (
@@ -77,12 +77,12 @@ function ScheduleModal({
       }}
     >
       <section
-        className="schedule-modal"
+        className="sheet-panel schedule-modal"
         role="dialog"
         aria-modal="true"
         aria-labelledby="schedule-modal-title"
       >
-        <div className="schedule-modal-handle" />
+        <div className="sheet-handle" />
 
         <header className="schedule-modal-header">
           <div>

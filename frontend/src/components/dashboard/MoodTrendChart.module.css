@@ -1,25 +1,7 @@
-.card {
-  /* 대시보드 카드 공통 간격 규약 — 다른 카드(DashboardStats 등)와 동일 */
-  margin: 14px 20px 0;
-  padding: var(--card-padding);
-  border-radius: var(--card-radius);
-  background: var(--card-surface);
-  box-shadow: var(--card-shadow);
-}
-
-.title {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  margin-bottom: 10px;
-  color: var(--color-text-primary);
-  font-size: var(--font-label);
-  font-weight: 800;
-}
-
-.title svg {
-  color: var(--color-primary);
-}
+/*
+ * 상자와 제목은 공용 표면 레이어(styles/surfaces.css)가 담당한다.
+ * 그래프는 그 자체로 형태가 뚜렷해서 흰 카드로 한 번 더 감쌀 필요가 없다.
+ */
 
 .chart {
   width: 100%;
@@ -75,12 +57,14 @@
   border-radius: 50%;
 }
 
+/* 서식은 공용 .empty-note 가 정한다. 가운데 정렬만 여기서. */
+/*
+ * 서식은 공용 .empty-note 가 정한다. 여백만 여기서.
+ * 가운데 정렬이었는데, 같은 화면의 다른 빈 상태 문구는 전부 왼쪽 정렬이라
+ * 이 문구만 따로 놀았다. 두 줄짜리 문장은 왼쪽 정렬이 읽기도 편하다.
+ */
 .emptyText {
   padding: 18px 0 10px;
-  color: var(--color-text-tertiary);
-  font-size: var(--font-caption);
-  line-height: var(--leading-relaxed);
-  text-align: center;
 }
 
 /* 좁은 화면에서는 다른 카드와 같은 16px 로 줄인다 (.gridRow 와 동일) */

@@ -28,7 +28,7 @@ export default function MoodSlotList({
   const grid = buildDaySlotGrid({ mySlots, partnerSlots, window, nowMinutes });
 
   if (grid.length === 0) {
-    return <p className={styles.emptyText}>표시할 시간대가 없어요.</p>;
+    return <p className={`empty-note ${styles.emptyText}`}>표시할 시간대가 없어요.</p>;
   }
 
   /*
@@ -41,7 +41,7 @@ export default function MoodSlotList({
   return (
     <>
       {!hasEditableSlot && (
-        <p className={styles.emptyText}>
+        <p className={`empty-note ${styles.emptyText}`}>
           {nowMinutes === null
             ? "지난 날짜는 볼 수만 있어요."
             : "지금은 기록할 수 있는 시간대가 아니에요."}

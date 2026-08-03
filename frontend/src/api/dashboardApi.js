@@ -407,6 +407,12 @@ export async function fetchDashboardPeriod({
     emotionSummary: mainEmotions?.emotions ?? [],
     dominantEmotion: mainEmotions?.dominantEmotion ?? null,
     analyzedMessageCount: mainEmotions?.analyzedMessageCount ?? 0,
+    /*
+     * 기간별 집계는 이제 전부 서버가 준다.
+     * 예전에는 이 함수가 일간 대화 원본을 따로 받아와 사진·공감을 직접 세고
+     * 활발한 시간·평균 답장 시간도 계산해 채웠는데, /dashboards/* 가 period 를
+     * 받게 되면서 그 폴백이 필요 없어졌다. (원본을 받아오던 코드도 함께 빠졌다)
+     */
     messageCount:
       counts?.messageCount ?? conversationFlow?.totalMessageCount ?? 0,
     imageCount: counts?.imageCount ?? 0,

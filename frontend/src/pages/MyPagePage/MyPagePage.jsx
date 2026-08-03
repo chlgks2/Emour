@@ -12,7 +12,6 @@ import {
   Eye,
   EyeOff,
   KeyRound,
-  Link2,
   LogOut,
   Pencil,
   RefreshCw,
@@ -29,6 +28,7 @@ import {
   getMyPageProfile,
   leaveCoupleRoom,
   regenerateRoomCode,
+  resolveReconnectRoomCode,
   updatePartnerNickname,
   withdrawCurrentUser,
 } from '../../api/myPageApi.js'
@@ -82,6 +82,51 @@ const ROOM_STATUS_INFORMATION = {
 
 const COUPLE_STATUS_POLL_INTERVAL = 2000
 
+/**
+ * 확인 모달 문구.
+ * '방 나가기'는 방 상태마다 실제로 벌어지는 일이 달라서 설명도 달라야 한다.
+ *   WAITING  : 아직 아무도 안 들어온 방과 초대 코드를 지운다
+ *   INACTIVE : 상대가 이미 나간 방을 정리한다 (되돌릴 수 없다)
+ *   ACTIVE   : 연결을 끊는다
+ */
+function buildConfirmInformation({
+  confirmAction,
+  roomStatus,
+}) {
+  if (!confirmAction) {
+    return null
+  }
+
+  const baseInformation =
+    CONFIRM_ACTIONS[confirmAction]
+
+  if (confirmAction !== 'leaveRoom') {
+    return baseInformation
+  }
+
+  if (roomStatus === 'WAITING') {
+    return {
+      ...baseInformation,
+      title: '대기 중인 방을 삭제할까요?',
+      description:
+        '아직 연인이 참여하지 않은 방과 초대 코드가 삭제되며, 연인 연결 화면으로 이동합니다.',
+      confirmLabel: '방 삭제',
+    }
+  }
+
+  if (roomStatus === 'INACTIVE') {
+    return {
+      ...baseInformation,
+      title: '이 방을 없앨까요?',
+      description:
+        '연인은 아직 방 코드로 이 방에 돌아올 수 있습니다. 나까지 나가면 방이 사라져 되돌릴 수 없습니다.',
+      confirmLabel: '방 나가기',
+    }
+  }
+
+  return baseInformation
+}
+
 function formatDate(value) {
   if (!value) {
     return '-'
@@ -101,6 +146,30 @@ function formatDate(value) {
       day: 'numeric',
     },
   ).format(date)
+}
+
+/**
+ * 커플 연결 줄에 놓는 연인 프로필 원.
+ * 사진이 아직 없을 수 있어(가입 직후 등) 빈 원 대신 사람 아이콘을 둔다.
+ */
+function PartnerAvatar({ imageUrl, label }) {
+  return (
+    <span
+      className="mypage-partner-avatar"
+      role="img"
+      aria-label={label}
+    >
+      {imageUrl ? (
+        <img src={imageUrl} alt="" />
+      ) : (
+        <UserRound
+          size={17}
+          strokeWidth={1.8}
+          aria-hidden="true"
+        />
+      )}
+    </span>
+  )
 }
 
 function MyPagePage() {
@@ -329,6 +398,52 @@ function MyPagePage() {
       setProfile(updatedProfile)
     }
 
+  /*
+   * 재연결 코드 복사.
+   *
+   * 초대 코드 복사(handleCopyRoomCode)와 나누어 둔다. 만료를 따지지 않고
+   * (재연결 경로는 만료를 보지 않는다), 이 기기에 코드가 없으면 서버에
+   * 발급을 요청하는 단계가 하나 더 있다.
+   */
+  const handleCopyReconnectCode =
+    async () => {
+      if (isProcessing) {
+        return
+      }
+
+      try {
+        setIsProcessing(true)
+
+        const reconnectCode =
+          await resolveReconnectRoomCode(
+            profile?.userId,
+          )
+
+        if (!reconnectCode) {
+          window.alert(
+            '재연결 코드를 불러오지 못했습니다.\n잠시 후 다시 시도해주세요.',
+          )
+          return
+        }
+
+        await navigator.clipboard.writeText(
+          reconnectCode,
+        )
+
+        setIsRoomCodeCopied(true)
+
+        window.setTimeout(() => {
+          setIsRoomCodeCopied(false)
+        }, 1500)
+      } catch {
+        window.alert(
+          '재연결 코드를 복사하지 못했습니다.',
+        )
+      } finally {
+        setIsProcessing(false)
+      }
+    }
+
   const handleCopyRoomCode = async () => {
     if (
       !profile?.roomCode ||
@@ -526,29 +641,35 @@ function MyPagePage() {
       }
     }
 
-  const confirmInformation =
-    confirmAction
-      ? confirmAction ===
-          'leaveRoom' &&
-        profile?.roomStatus ===
-          'WAITING'
-        ? {
-            ...CONFIRM_ACTIONS.leaveRoom,
-            title:
-              '대기 중인 방을 삭제할까요?',
-            description:
-              '아직 연인이 참여하지 않은 방과 초대 코드가 삭제되며, 연인 연결 화면으로 이동합니다.',
-            confirmLabel: '방 삭제',
-          }
-        : CONFIRM_ACTIONS[confirmAction]
-      : null
-
   const roomStatusInformation =
     profile?.roomStatus
       ? ROOM_STATUS_INFORMATION[
           profile.roomStatus
         ]
       : null
+
+  /*
+   * CoupleRouteGuard 가 WAITING 상태의 모든 경로를 여기로 돌려보낸다.
+   * 그런데 하단 탭은 그대로 떠 있어서, 어느 탭을 눌러도 다시 이 화면으로
+   * 튕겨 나왔다. 갈 수 없는 곳을 보여주고 누르게 두는 셈이라 탭을 감춘다.
+   * (가드와 같은 조건이어야 한다. INACTIVE 는 가드가 통과시키므로 제외)
+   */
+  const isWaitingForPartner =
+    profile?.roomStatus === 'WAITING'
+
+  /*
+   * 상대방이 나간 뒤. 방은 INACTIVE 로 남고 나는 아직 그 방의 멤버다.
+   * '연결 전'과 겉모습이 같아서는 안 된다. 연결한 적이 없는 상태가 아니라
+   * 끝난 상태이고, 사용자가 할 일도 다르다(코드 전달 X, 방 정리 O).
+   */
+  const isRoomEnded =
+    profile?.roomStatus === 'INACTIVE'
+
+  const confirmInformation =
+    buildConfirmInformation({
+      confirmAction,
+      roomStatus: profile?.roomStatus,
+    })
 
   return (
     <div className="mypage-page">
@@ -638,52 +759,78 @@ function MyPagePage() {
                 </div>
               </section>
 
+              {/*
+                방 이름('우리 방')과 'COUPLE ROOM' 눈썹 문구를 걷어냈다.
+                방은 커플당 하나뿐이라 이름이 정보를 더하지 않고,
+                이름이 빠지면 그 위 눈썹 문구도 가리킬 대상이 없어진다.
+                대신 섹션 제목을 카드 밖으로 빼서 위계를 만든다.
+              */}
+              {/*
+                상태는 섹션 제목 오른쪽에 딱지로 붙인다.
+                카드 안에 다시 제목 줄을 만들 필요가 없고, 목록을 훑을 때
+                '커플 연결 — 연결 중' 이 한 줄로 읽힌다.
+              */}
+              <div className="mypage-section-head">
+                <h2 className="mypage-section-title">
+                  커플 연결 상대
+                </h2>
+
+                {profile.hasRoom && (
+                  <span
+                    className={`mypage-room-status mypage-room-status-${profile.roomStatus?.toLowerCase()}`}
+                  >
+                    {roomStatusInformation?.label ||
+                      '상태 확인 중'}
+                  </span>
+                )}
+              </div>
+
               {profile.hasRoom ? (
-                <section className="mypage-room-card">
-                  <div className="mypage-room-header">
-                    <div>
-                      <p className="mypage-card-eyebrow">
-                        COUPLE ROOM
-                      </p>
+                <section className="mypage-room-section">
+                  {/*
+                    상태 설명 문구('연인과 같은 방을 이용하고 있어요.')는
+                    위 딱지가 이미 같은 말을 하고 있어 지웠다.
+                    함께한 날짜도 홈 화면이 매일 보여주므로 여기서는 빼고,
+                    연결 상대 한 줄만 남겨 애칭 수정 동선을 분명히 한다.
 
-                      <h2>우리 방</h2>
-                    </div>
-
-                    <span
-                      className={`mypage-room-status mypage-room-status-${profile.roomStatus?.toLowerCase()}`}
-                    >
-                      {roomStatusInformation?.label ||
-                        '상태 확인 중'}
-                    </span>
-                  </div>
-
-                  <p className="mypage-room-description">
-                    {roomStatusInformation?.description}
-                  </p>
-
-                  <div className="mypage-room-information">
-                    <div className="mypage-room-information-item">
-                      <UsersRound
-                        size={18}
-                        strokeWidth={1.8}
+                    사진은 연인 것 하나만 둔다. 이 줄이 말하는 건 '연결 상대가
+                    누구인가'인데, 내 사진은 바로 위 프로필 영역에 이미 크게
+                    떠 있어서 두 번 나올 이유가 없다.
+                    아직 상대가 없을 때는 점선 빈 자리가 글자보다 먼저 알려준다.
+                  */}
+                  <div className="mypage-partner-row">
+                    {profile.isCoupleConnected ? (
+                      <PartnerAvatar
+                        imageUrl={
+                          profile.partnerProfileImageUrl
+                        }
+                        label={`${profile.partnerNickname || '연인'} 프로필 사진`}
+                      />
+                    ) : (
+                      <span
+                        className="mypage-partner-avatar mypage-partner-avatar-empty"
                         aria-hidden="true"
                       />
+                    )}
 
-                      <div>
-                        <span>연결 상대</span>
-
-                        <strong>
-                          {profile.isCoupleConnected
-                            ? `${profile.partnerNickname || '연인'}님`
+                    {/*
+                      '연결 상대' 라벨은 섹션 제목이 이미 하고 있는 말이라 뺐다.
+                      버튼은 이름 바로 옆에 둔다. 오른쪽 끝으로 밀어두면
+                      무엇의 애칭을 고치는 버튼인지가 멀어진다.
+                    */}
+                    <div className="mypage-partner-info">
+                      <strong>
+                        {profile.isCoupleConnected
+                          ? `${profile.partnerNickname || '연인'}님`
+                          : isRoomEnded
+                            ? '연결이 끝났어요'
                             : '아직 연결되지 않았어요'}
-                        </strong>
-                      </div>
+                      </strong>
 
                       {profile.isCoupleConnected && (
                         <button
                           type="button"
                           className="mypage-partner-edit-button"
-                          aria-label="연인 애칭 수정"
                           disabled={isProcessing}
                           onClick={
                             openPartnerNicknameModal
@@ -694,30 +841,115 @@ function MyPagePage() {
                             strokeWidth={2}
                             aria-hidden="true"
                           />
+
+                          <span>애칭 수정</span>
+                        </button>
+                      )}
+
+                      {/*
+                        재연결 수단을 상태 바로 옆에 둔다.
+                        '연결이 끝났어요' 를 읽은 그 자리에서 되돌릴 방법이
+                        보여야 아래 '방 나가기' 를 되돌리기 버튼으로 오해하지 않는다.
+
+                        이 기기에 코드가 없으면 눌렀을 때 서버에 발급을 요청한다.
+                        (resolveReconnectRoomCode)
+                      */}
+                      {isRoomEnded && (
+                        <button
+                          type="button"
+                          className="mypage-partner-edit-button"
+                          disabled={isProcessing}
+                          onClick={
+                            handleCopyReconnectCode
+                          }
+                        >
+                          <Copy
+                            size={13}
+                            strokeWidth={2}
+                            aria-hidden="true"
+                          />
+
+                          <span>
+                            {isRoomCodeCopied
+                              ? '복사됨'
+                              : '재연결 코드 복사'}
+                          </span>
                         </button>
                       )}
                     </div>
-
-                    <div className="mypage-room-information-item">
-                      <Link2
-                        size={18}
-                        strokeWidth={1.8}
-                        aria-hidden="true"
-                      />
-
-                      <div>
-                        <span>함께한 날짜</span>
-
-                        <strong>
-                          {formatDate(
-                            profile.roomStartedAt,
-                          )}
-                        </strong>
-                      </div>
-                    </div>
                   </div>
 
-                  {!profile.isCoupleConnected &&
+                  {/*
+                    방 상태 안내는 두 경우 모두 같은 자리에 둔다.
+                    상태 줄 바로 아래, 방 코드/방 나가기 바로 위.
+                    지금 이 방이 어떤 상태인지 -> 그래서 무엇을 하면 되는지 순서로
+                    읽히고, 이어지는 방 코드 영역이 그 '무엇을'을 그대로 받는다.
+                    (페이지 맨 위에 두면 이 방 이야기인지가 멀어진다)
+                  */}
+                  {isWaitingForPartner && (
+                    <div
+                      className="mypage-notice-banner"
+                      role="status"
+                    >
+                      <span className="mypage-notice-icon">
+                        <UsersRound
+                          size={19}
+                          strokeWidth={1.8}
+                          aria-hidden="true"
+                        />
+                      </span>
+
+                      <div>
+                        <strong>
+                          연인의 참여를 기다리고 있어요
+                        </strong>
+
+                        <p>
+                          아래 방 코드를 전달해주세요. 연인이 참여하면 대화·캘린더·앨범이 함께 열려요.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/*
+                    끝난 상태가 아니라 되돌릴 수 있는 상태다. 방 코드는 그대로
+                    살아 있고, 나간 연인이 그 코드를 다시 넣으면 이 방으로
+                    돌아온다. 그래서 '못 쓴다'가 아니라 '돌아올 수 있다'를 먼저 말한다.
+                  */}
+                  {isRoomEnded && (
+                    <div
+                      className="mypage-notice-banner mypage-notice-banner-ended"
+                      role="status"
+                    >
+                      <span className="mypage-notice-icon">
+                        <DoorOpen
+                          size={19}
+                          strokeWidth={1.8}
+                          aria-hidden="true"
+                        />
+                      </span>
+
+                      <div>
+                        <strong>
+                          연인이 방에서 나갔어요
+                        </strong>
+
+                        <p>
+                          위 &lsquo;재연결 코드 복사&rsquo;를 눌러 코드를 연인에게 다시
+                          전달하면 이 방으로 돌아올 수 있어요. 나까지 방을 나가면
+                          방이 사라져서 되돌릴 수 없어요.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/*
+                    방 코드 패널은 초대 대기 중일 때만.
+                    상대가 나간 방에서는 이 자리에 '코드 재발급'과 만료 표시가
+                    같이 붙는데, 그 상태에서 재발급은 서버가 거절하고
+                    재연결 코드는 만료를 보지도 않아 둘 다 틀린 말이 된다.
+                  */}
+                  {isWaitingForPartner &&
                     profile.roomCode && (
                     <div className="mypage-room-code-section">
                     <div className="mypage-room-code-title">
@@ -874,8 +1106,18 @@ function MyPagePage() {
                 </section>
               )}
 
+              <h2 className="mypage-section-title">
+                설정
+              </h2>
+
+              {/*
+                네 줄뿐인 목록이라 카드로 다시 묶을 필요가 없다.
+                위의 '설정' 제목이 이미 묶어주고 있어서, 카드는 같은 일을
+                한 번 더 하면서 화면에 상자만 하나 더 얹고 있었다.
+                구분선만 남기고 아이콘 액자도 뺐다.
+              */}
               <section
-                className="mypage-menu-card"
+                className="mypage-menu-list"
                 aria-label="마이페이지 메뉴"
               >
                 <button
@@ -887,7 +1129,7 @@ function MyPagePage() {
                 >
                   <span className="mypage-menu-icon">
                     <Bell
-                      size={21}
+                      size={20}
                       strokeWidth={1.8}
                       aria-hidden="true"
                     />
@@ -899,7 +1141,7 @@ function MyPagePage() {
 
                   <ChevronRight
                     className="mypage-menu-chevron"
-                    size={19}
+                    size={18}
                     aria-hidden="true"
                   />
                 </button>
@@ -911,7 +1153,7 @@ function MyPagePage() {
                 >
                   <span className="mypage-menu-icon">
                     <KeyRound
-                      size={21}
+                      size={20}
                       strokeWidth={1.8}
                       aria-hidden="true"
                     />
@@ -923,7 +1165,7 @@ function MyPagePage() {
 
                   <ChevronRight
                     className="mypage-menu-chevron"
-                    size={19}
+                    size={18}
                     aria-hidden="true"
                   />
                 </button>
@@ -936,7 +1178,7 @@ function MyPagePage() {
                 >
                   <span className="mypage-menu-icon">
                     <LogOut
-                      size={21}
+                      size={20}
                       strokeWidth={1.8}
                       aria-hidden="true"
                     />
@@ -948,7 +1190,7 @@ function MyPagePage() {
 
                   <ChevronRight
                     className="mypage-menu-chevron"
-                    size={19}
+                    size={18}
                     aria-hidden="true"
                   />
                 </button>
@@ -969,7 +1211,7 @@ function MyPagePage() {
                 >
                   <span className="mypage-menu-icon">
                     <Trash2
-                      size={21}
+                      size={20}
                       strokeWidth={1.9}
                       aria-hidden="true"
                     />
@@ -981,7 +1223,7 @@ function MyPagePage() {
 
                   <ChevronRight
                     className="mypage-menu-chevron"
-                    size={19}
+                    size={18}
                     aria-hidden="true"
                   />
                 </button>
@@ -990,7 +1232,9 @@ function MyPagePage() {
           )}
       </main>
 
-      <BottomNavigation />
+      {!isLoading && !isWaitingForPartner && (
+        <BottomNavigation />
+      )}
 
       {isPartnerNicknameModalOpen && (
         <PartnerNicknameModal

@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Camera } from "lucide-react";
 import styles from "./RecentPhotos.module.css";
 
 const MAX_PHOTOS = 5;
@@ -116,15 +115,16 @@ export default function RecentPhotos({ photos = [] }) {
     pauseThenResume();
   };
 
-  // 사진이 없을 때 카드를 통째로 감추면 "왜 없는지" 알 수 없으므로 안내 문구를 보여준다.
+  // 사진이 없을 때 영역을 통째로 감추면 "왜 없는지" 알 수 없으므로 안내 문구를 보여준다.
   if (total === 0) {
     return (
-      <section className={styles.card} aria-labelledby="recent-photos-title">
-        <p id="recent-photos-title" className={styles.title}>
-          <Camera size={14} aria-hidden="true" />
-          최근에 찍은 사진
-        </p>
-        <p className={styles.emptyText}>아직 함께 올린 사진이 없어요.</p>
+      <section className="surface-plain" aria-labelledby="recent-photos-title">
+        <header className="section-head">
+          <h2 id="recent-photos-title" className="section-title">
+            최근에 찍은 사진
+          </h2>
+        </header>
+        <p className={`empty-note ${styles.emptyText}`}>아직 함께 올린 사진이 없어요.</p>
       </section>
     );
   }
@@ -138,11 +138,20 @@ export default function RecentPhotos({ photos = [] }) {
   const translate = baseTranslate + dragTranslatePercent;
 
   return (
-    <section className={styles.card} aria-labelledby="recent-photos-title" aria-roledescription="캐러셀">
-      <p id="recent-photos-title" className={styles.title}>
-        <Camera size={14} aria-hidden="true" />
-        최근에 찍은 사진
-      </p>
+    <section
+      className={styles.section}
+      aria-labelledby="recent-photos-title"
+      aria-roledescription="캐러셀"
+    >
+      {/* 제목만 본문 기준선에 맞추고, 사진은 화면 끝까지 흘린다 */}
+      <header className={`section-head ${styles.head}`}>
+        <h2 id="recent-photos-title" className="section-title">
+          최근에 찍은 사진
+        </h2>
+        <span className="section-meta">
+          {index + 1} / {total}
+        </span>
+      </header>
 
       <div
         ref={viewportRef}

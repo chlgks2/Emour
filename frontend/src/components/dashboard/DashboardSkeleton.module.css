@@ -11,15 +11,18 @@
   padding: 18px 20px;
 }
 
+/*
+ * 스켈레톤은 실제 화면과 같은 형태로 보여야 한다.
+ * 흰 카드 그림자를 그대로 두면 로딩이 끝나는 순간 레이아웃이 달라 보인다.
+ */
 .card {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  margin: 14px 20px 0;
-  padding: 16px;
-  border-radius: var(--radius-lg);
-  background: var(--color-white);
-  box-shadow: var(--shadow-card);
+  margin: var(--section-gap) var(--page-gutter) 0;
+  padding: 14px;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-sunken);
 }
 
 .circleRow {
@@ -31,8 +34,8 @@
 .gridRow {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 14px;
-  margin: 14px 20px 0;
+  gap: 10px;
+  margin: var(--section-gap) var(--page-gutter) 0;
 }
 
 .gridRow .card {

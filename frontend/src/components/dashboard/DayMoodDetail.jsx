@@ -40,7 +40,7 @@ function PersonMood({ label, mood }) {
           )}
         </>
       ) : (
-        <span className={styles.emptyText}>기록 없음</span>
+        <span className={`empty-note ${styles.emptyText}`}>기록 없음</span>
       )}
     </div>
   );
