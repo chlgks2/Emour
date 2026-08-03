@@ -3,6 +3,7 @@ import { apiRequest } from './httpClient.js'
 const COUPLE_ENDPOINTS = {
   invitation: '/couples/invitation',
   connect: '/couples/connect',
+  reconnect: '/couples/reconnect',
   roomId: '/couples/room-id',
   status: '/couples/status',
   disconnect: '/couples',
@@ -36,6 +37,23 @@ export async function connectCouple(
   )
 
   return response?.data ?? null
+}
+
+export async function joinOrReconnectCouple(invitationCode) {
+  const normalizedCode = invitationCode.trim()
+
+  try {
+    const response = await apiRequest(
+      COUPLE_ENDPOINTS.reconnect,
+      {
+        method: 'POST',
+        body: { invitationCode: normalizedCode },
+      },
+    )
+    return response?.data ?? null
+  } catch {
+    return connectCouple(normalizedCode)
+  }
 }
 
 export async function getCoupleStatus() {

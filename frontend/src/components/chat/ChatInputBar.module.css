@@ -9,7 +9,7 @@
   flex-shrink: 0;
 }
 
-.emojiBtn {
+.imageBtn {
   /* 브라우저 기본 버튼 padding 이 남으면 안쪽 아이콘이 눌린다 */
   padding: 0;
   width: 38px;
@@ -23,12 +23,16 @@
   transition: background-color var(--duration-fast) var(--ease-out);
 }
 
-.emojiBtn:not(:disabled):hover {
+.imageBtn:not(:disabled):hover {
   background: var(--color-sub-bg);
 }
 
-.emojiBtn:disabled {
+.imageBtn:disabled {
   opacity: 0.4;
+}
+
+.fileInput {
+  display: none;
 }
 
 .input {

@@ -78,6 +78,19 @@ class CoupleStatusServiceTest {
     }
 
     @Test
+    void 상대방이_나가도_남은_사용자는_INACTIVE_상태를_조회한다() {
+        CoupleRoom room = waitingRoom();
+        room.activate();
+        room.deactivate();
+        givenCurrentRoom(room);
+
+        CoupleStatusResponse response = coupleService.getStatus(INVITER_ID);
+
+        assertThat(response.roomId()).isEqualTo(ROOM_ID);
+        assertThat(response.status()).isEqualTo(CoupleRoomStatus.INACTIVE);
+    }
+
+    @Test
     void 참여_중인_커플방이_없으면_조회할_수_없다() {
         given(memberRepository.existsById(INVITER_ID)).willReturn(true);
         given(coupleRoomRepository.findCurrentRoomsByUserId(

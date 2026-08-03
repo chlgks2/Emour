@@ -46,7 +46,9 @@ export default function LoginPage() {
         user.userId,
       );
 
-      return "/dashboard";
+      return serverRoom.status === "WAITING"
+        ? "/mypage"
+        : "/dashboard";
     }
 
     clearPendingCoupleRoom();

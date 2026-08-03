@@ -71,14 +71,14 @@ export function mapMyPageResponse({
 
   const hasRoom =
     Boolean(roomId) &&
-    memberStatus === 'ACTIVE' &&
-    roomStatus !== 'INACTIVE'
+    memberStatus === 'ACTIVE'
 
   const isCoupleConnected =
     hasRoom && roomStatus === 'ACTIVE'
 
   const isWaitingForPartner =
-    hasRoom && roomStatus === 'WAITING'
+    hasRoom &&
+    (roomStatus === 'WAITING' || roomStatus === 'INACTIVE')
 
   return {
     userId,
