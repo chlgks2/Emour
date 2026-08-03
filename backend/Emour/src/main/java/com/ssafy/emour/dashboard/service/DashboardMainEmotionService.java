@@ -1,8 +1,5 @@
 package com.ssafy.emour.dashboard.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ssafy.emour.chat.entity.EmotionType;
 import com.ssafy.emour.chat.repository.ChatAnalysisRepository;
 import com.ssafy.emour.couple.entity.CoupleMemberId;
@@ -11,7 +8,6 @@ import com.ssafy.emour.couple.repository.CoupleMemberRepository;
 import com.ssafy.emour.dashboard.dto.DashboardMainEmotionResponse;
 import com.ssafy.emour.dashboard.dto.DashboardPeriod;
 import com.ssafy.emour.dashboard.dto.EmotionSummaryItem;
-import com.ssafy.emour.dashboard.entity.Dashboard;
 import com.ssafy.emour.global.exception.CustomException;
 import com.ssafy.emour.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -32,9 +28,9 @@ public class DashboardMainEmotionService {
 
     private final ChatAnalysisRepository chatAnalysisRepository;
     private final CoupleMemberRepository coupleMemberRepository;
+    // 기존 생성자 호환성을 유지하며, 조회는 원본 데이터 직접 집계를 사용한다.
     private final DashboardSnapshotService dashboardSnapshotService;
     private final Clock dashboardClock;
-    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Transactional
     public DashboardMainEmotionResponse getMainEmotions(
@@ -45,21 +41,6 @@ public class DashboardMainEmotionService {
     ) {
         validateRequest(roomId, userId, period, date);
         DateRange range = createRange(period, date);
-
-        if (period == DashboardPeriod.DAY) {
-            Dashboard dashboard = dashboardSnapshotService
-                    .ensureSnapshot(roomId, userId, date);
-            Map<EmotionType, Integer> counts =
-                    readEmotionCounts(dashboard.getEmotionSummary());
-            return createResponse(
-                    roomId,
-                    userId,
-                    period,
-                    range,
-                    counts,
-                    dashboard.getCalculatedAt()
-            );
-        }
 
         List<String> storedEmotions =
                 chatAnalysisRepository.findCompletedEmotionTypes(
@@ -142,25 +123,6 @@ public class DashboardMainEmotionService {
                         entry.getValue()
                 ))
                 .toList();
-    }
-
-    private Map<EmotionType, Integer> readEmotionCounts(String json) {
-        try {
-            Map<String, Integer> stored = objectMapper.readValue(
-                    json,
-                    new TypeReference<Map<String, Integer>>() {
-                    }
-            );
-            Map<EmotionType, Integer> counts = emptyCounts();
-            stored.forEach((type, count) ->
-                    counts.put(
-                            EmotionType.fromStoredValue(type),
-                            count
-                    ));
-            return counts;
-        } catch (JsonProcessingException exception) {
-            throw new CustomException(ErrorCode.INTERNAL_ERROR);
-        }
     }
 
     private DateRange createRange(

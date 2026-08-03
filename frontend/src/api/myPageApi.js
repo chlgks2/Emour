@@ -21,7 +21,9 @@ import {
 
 import {
   getMyProfile,
+  getPartnerNickname,
   updateMyProfile,
+  updatePartnerNickname as updatePartnerNicknameOnServer,
   uploadMyProfileImage,
   withdrawMyAccount,
 } from './memberApi.js'
@@ -240,12 +242,24 @@ export async function getMyPageProfile() {
       : null,
   })
 
+  let partner = null
+  if (currentRoom?.status === 'ACTIVE') {
+    try {
+      partner = await getPartnerNickname()
+    } catch {
+      // 상대방 이름만 실패해도 마이페이지의 나머지 정보는 표시한다.
+    }
+  }
+
   /*
    * user.profile_image_url 은 인증이 필요한 /uploads/... 경로다.
    * <img src> 에 그대로 걸면 401 이 나므로 화면에 걸 수 있는 형태로 바꿔서 넘긴다.
    */
   return {
     ...profile,
+    partnerNickname:
+      partner?.partnerNickname ??
+      profile.partnerNickname,
     profileImageUrl:
       (await resolveProtectedImageUrl(
         profile.profileImageUrl,
@@ -372,9 +386,11 @@ export async function updatePartnerNickname({
     return createMappedMockResponse()
   }
 
-  throw new Error(
-    '연인 애칭 수정 API는 아직 제공되지 않습니다.',
+  await updatePartnerNicknameOnServer(
+    trimmedPartnerNickname,
   )
+
+  return getMyPageProfile()
 }
 
 export async function regenerateRoomCode() {
