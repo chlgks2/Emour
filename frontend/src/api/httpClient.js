@@ -14,10 +14,30 @@ function getRefreshToken() {
   return localStorage.getItem('refreshToken')
 }
 
+/**
+ * 세션을 끝낸다.
+ *
+ * 예전에는 토큰 두 개만 지웠다. 그런데 로그인 여부는 accessToken 이 있는지로
+ * 판단하면서(authApi.isAuthenticated) 화면에 보이는 사용자 정보는 currentUser
+ * 에서 읽는다. 토큰만 지우면 currentUser 가 남아 어중간한 상태가 된다.
+ *
+ * 더 중요한 건 React 쪽이다. AuthProvider 는 첫 렌더에 localStorage 를 한 번만
+ * 읽고 그 값을 상태로 들고 있어서, 여기서 저장소를 비워도 앱은 여전히
+ * "로그인됨" 으로 동작했다. 토큰이 죽은 뒤에도 로그인 전용 기능(무드 알림 등)이
+ * 계속 돌던 이유다. 그래서 비운 뒤 알려준다.
+ */
 function clearTokens() {
   localStorage.removeItem('accessToken')
   localStorage.removeItem('refreshToken')
+  localStorage.removeItem('currentUser')
+
+  window.dispatchEvent(
+    new CustomEvent(SESSION_EXPIRED_EVENT),
+  )
 }
+
+export const SESSION_EXPIRED_EVENT =
+  'emour:session-expired'
 
 async function parseResponse(response) {
   if (response.status === 204) {
@@ -38,6 +58,11 @@ async function refreshAccessToken() {
   const refreshToken = getRefreshToken()
 
   if (!refreshToken) {
+    /*
+     * 갱신할 방법이 없는데 accessToken 만 남아 있는 상태.
+     * 그대로 두면 isAuthenticated() 가 계속 true 라 로그인한 것처럼 동작한다.
+     */
+    clearTokens()
     return null
   }
 

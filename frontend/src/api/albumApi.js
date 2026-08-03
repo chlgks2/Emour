@@ -13,23 +13,22 @@ import {
 } from './httpClient.js'
 
 import {
+  resolveProtectedImageUrl,
+} from '../utils/protectedImageUrl.js'
+
+import {
   getChatMessages,
 } from './chatApi.js'
 
 import {
-  resolveCoupleRoom,
+  resolveRoomId,
 } from './coupleRoomContext.js'
-
-import {
-  resolveProtectedImageUrl,
-} from '../utils/protectedImageUrl.js'
 
 const USE_MOCK_API =
   import.meta.env
     .VITE_USE_ALBUM_MOCK_API === 'true'
 
 const MOCK_DELAY = 250
-const CHAT_PAGE_SIZE = 100
 
 /*
  * 실제 Spring API 주소가 정해지면
@@ -146,19 +145,20 @@ async function attachProtectedImageUrl(
 async function attachProtectedImageUrls(
   response,
 ) {
-  const albumPhotos =
-    await Promise.all(
-      (response.albumPhotos ?? []).map(
-        attachProtectedImageUrl,
+  // 채팅 사진도 같은 /uploads/ 경로라 앨범 사진과 같은 변환이 필요하다.
+  const [albumPhotos, chatPhotos] =
+    await Promise.all([
+      Promise.all(
+        (response.albumPhotos ?? []).map(
+          attachProtectedImageUrl,
+        ),
       ),
-    )
-
-  const chatPhotos =
-    await Promise.all(
-      (response.chatPhotos ?? []).map(
-        attachProtectedImageUrl,
+      Promise.all(
+        (response.chatPhotos ?? []).map(
+          attachProtectedImageUrl,
+        ),
       ),
-    )
+    ])
 
   return {
     ...response,
@@ -167,36 +167,111 @@ async function attachProtectedImageUrls(
   }
 }
 
-async function fetchChatPhotos() {
-  const room = await resolveCoupleRoom()
-  if (!room?.roomId) return []
+/*
+ * 채팅으로 주고받은 사진.
+ *
+ * ⚠️ 이 사진들을 한 번에 주는 엔드포인트가 없다.
+ *    ChatImageController(/chats/images)는 POST(업로드)만 있고 목록 조회가 없다.
+ *    (backend .../chat/controller/ChatImageController.java)
+ *    그래서 대화 목록(GET /chats)을 커서로 거슬러 올라가며 message.images 를 모은다.
+ *
+ *    앨범은 "지금까지 주고받은 사진 전부"를 보여주는 곳이라 끝까지 거슬러 올라간다.
+ *    대화가 길면 그만큼 요청이 늘어난다. (100건씩)
+ *    CHAT_IMAGE_PAGE_LIMIT 은 커서가 고장 났을 때 무한히 도는 것만 막는 안전장치이고,
+ *    정상 동작에서는 hasNext 가 false 가 되는 지점에서 멈춘다.
+ *    ↳ 백엔드에 GET /chats/images 가 생기면 이 함수만 갈아끼우면 된다.
+ */
+const CHAT_IMAGE_PAGE_SIZE = 100
+const CHAT_IMAGE_PAGE_LIMIT = 500
 
-  const photos = []
+/** 채팅 메시지 한 건 -> 앨범 매퍼가 아는 채팅 사진 배열 */
+function toChatPhotoResponses(message) {
+  const images = Array.isArray(message?.images)
+    ? message.images
+    : []
+
+  return images
+    .map((image, order) => {
+      const imageUrl =
+        typeof image === 'string'
+          ? image
+          : image?.imageUrl ??
+            image?.image_url
+
+      if (!imageUrl) {
+        return null
+      }
+
+      return {
+        // imageId 가 없으면 메시지+순번으로 고유 키를 만든다
+        imageId:
+          image?.imageId ??
+          image?.image_id ??
+          `${message.messageId}-${order}`,
+        messageId: message.messageId,
+        imageUrl,
+        displayOrder:
+          image?.displayOrder ??
+          image?.display_order ??
+          order,
+        createdAt: message.sentAt,
+        deletedAt:
+          image?.deletedAt ??
+          image?.deleted_at ??
+          null,
+      }
+    })
+    .filter(Boolean)
+}
+
+/**
+ * 대화에서 사진을 모은다.
+ * @param {number} maxPages 거슬러 올라갈 페이지 수 (기본: 끝까지)
+ */
+export async function collectChatPhotos(
+  maxPages = CHAT_IMAGE_PAGE_LIMIT,
+) {
+  const roomId = await resolveRoomId()
+
+  if (!roomId) {
+    return []
+  }
+
+  const collected = []
   const visitedCursors = new Set()
   let beforeMessageId = null
 
-  while (true) {
-    const response = await getChatMessages({
-      roomId: room.roomId,
-      beforeMessageId,
-      size: CHAT_PAGE_SIZE,
-    })
+  const pageLimit = Math.min(
+    maxPages,
+    CHAT_IMAGE_PAGE_LIMIT,
+  )
 
-    ;(response?.messages ?? []).forEach(
-      (message) => {
-        ;(message.images ?? []).forEach(
-          (chatImage) => {
-            photos.push({
-              ...chatImage,
-              messageId:
-                message.messageId,
-              createdAt:
-                message.sentAt,
-            })
-          },
-        )
-      },
-    )
+  for (
+    let page = 0;
+    page < pageLimit;
+    page += 1
+  ) {
+    let response
+
+    try {
+      response = await getChatMessages({
+        roomId,
+        beforeMessageId,
+        size: CHAT_IMAGE_PAGE_SIZE,
+      })
+    } catch {
+      // 한 페이지가 실패해도 지금까지 모은 것은 보여준다.
+      break
+    }
+
+    const messages =
+      response?.messages ?? []
+
+    messages.forEach((message) => {
+      collected.push(
+        ...toChatPhotoResponses(message),
+      )
+    })
 
     const nextCursor = response?.hasNext
       ? response.nextCursor
@@ -213,10 +288,19 @@ async function fetchChatPhotos() {
     beforeMessageId = nextCursor
   }
 
-  return photos
+  return collected
 }
 
-export async function getAlbumPhotos() {
+/**
+ * @param {object} [options]
+ * @param {number} [options.chatPhotoPages]
+ *   대화를 몇 페이지까지 거슬러 올라가 사진을 모을지.
+ *   앨범(전체 목록)은 기본값(끝까지)을 그대로 쓰고, 최근 몇 장만 필요한 화면
+ *   (대시보드 '최근에 찍은 사진')은 1 을 넘겨 요청을 한 번으로 줄인다.
+ */
+export async function getAlbumPhotos({
+  chatPhotoPages = CHAT_IMAGE_PAGE_LIMIT,
+} = {}) {
   if (USE_MOCK_API) {
     await wait()
 
@@ -227,10 +311,11 @@ export async function getAlbumPhotos() {
     albumPhotoPayload,
     chatPhotosResponse,
   ] = await Promise.all([
-    apiRequest(
-      ENDPOINTS.albumPhotos,
-    ),
-    fetchChatPhotos(),
+    apiRequest(ENDPOINTS.albumPhotos),
+    // 채팅 사진이 없어도 앨범은 떠야 한다.
+    collectChatPhotos(
+      chatPhotoPages,
+    ).catch(() => []),
   ])
 
   const mappedResponse =
