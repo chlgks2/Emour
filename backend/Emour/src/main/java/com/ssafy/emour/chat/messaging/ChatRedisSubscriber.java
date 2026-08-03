@@ -43,7 +43,7 @@ public class ChatRedisSubscriber implements MessageListener {
             // 이 서버에 WebSocket으로 연결된 사용자들에게 이벤트를 전달합니다.
             messagingTemplate.convertAndSend(
                     event.destination(),
-                    event.payload()
+                    event.payload().toString()
             );
         } catch (Exception exception) {
             // 잘못된 이벤트 하나 때문에 Redis 구독 스레드가 멈추지 않게 합니다.
