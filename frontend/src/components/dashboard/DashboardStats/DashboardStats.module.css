@@ -1,0 +1,136 @@
+/*
+ * 대화 기록 — 벤토 그리드.
+ * 상자(카드)와 섹션 제목은 공용 표면 레이어(styles/surfaces.css)가 담당한다.
+ * 여기에는 셀 안쪽 타이포만 둔다.
+ */
+
+/* 셀 라벨. 수치보다 확실히 작고 흐려야 수치가 먼저 읽힌다. */
+.cellLabel {
+  margin-bottom: 6px;
+  color: var(--color-text-tertiary);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+/*
+ * 개수 3종(메시지·사진·공감)은 한 행에 나란히.
+ * 칸 수는 --count-columns 로 받는다. (월/연간은 메시지 하나만 내려온다)
+ * 세로 구분선으로 칸을 나눠 상자를 3개 만들지 않는다.
+ */
+.countRow {
+  display: grid;
+  grid-template-columns: repeat(var(--count-columns, 3), minmax(0, 1fr));
+  padding: 16px 4px;
+  border-radius: var(--radius-md);
+  background: var(--color-sub-bg);
+}
+
+.countCell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 0 4px;
+}
+
+/* 첫 칸을 뺀 나머지에만 왼쪽 괘선 */
+.countCell + .countCell {
+  border-left: 1px solid var(--color-primary-soft);
+}
+
+.countValue {
+  color: var(--color-text-accent);
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1;
+  /* 큰 숫자는 자간을 좁혀야 덩어리로 읽힌다 */
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+
+/*
+ * 오늘의 채팅 감정 분포.
+ * 위(로즈 개수 행)와 아래(회색 벤토 셀) 사이에 또 색 면을 깔면 세 겹이 겹쳐
+ * 무엇이 주인공인지 사라진다. 면은 흰색으로 비우고 경계만 남긴다.
+ *
+ * 테두리는 캘린더 페이지의 카드와 같은 중성 회색이다.
+ * 로즈로 그었더니 담는 상자가 강조처럼 읽혔고, 두 화면의 같은 성격 블록이
+ * 서로 다른 색 테두리를 갖게 됐다. 색은 강조(활성 탭·선택 표시)에만 쓴다.
+ *
+ * --donut-hole 은 도넛 구멍 색이다. 기본값이 로즈 면 기준이라 흰 면에 맞춰 바꿔 끼운다.
+ */
+.emotionPanel {
+  --donut-hole: var(--color-surface);
+
+  margin-top: 10px;
+  padding: 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.detailGrid {
+  margin-top: 10px;
+}
+
+/*
+ * 집계 기준 각주.
+ * 하루의 경계가 어디인지 모르면 자정 무렵의 수치를 보고 "왜 안 세지?" 가 된다.
+ * 수치를 읽고 난 뒤에 눈에 들어오면 되는 정보라 맨 아래에 작게 둔다.
+ */
+.periodNote {
+  margin-top: 10px;
+  color: var(--color-text-placeholder);
+  font-size: var(--font-micro);
+  line-height: 1.5;
+}
+
+/* 반칸 셀의 문장형 값 ("오후 2시~오후 3시" 처럼 숫자가 아닌 것) */
+.cellText {
+  color: var(--color-text-primary);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.35;
+  word-break: keep-all;
+}
+
+/*
+ * 아직 집계 전. 값처럼 읽히지 않게 흐리고 가볍게.
+ * 앱 전체의 빈 상태 문구와 같은 서식이다. (북마크 미리보기 등)
+ */
+.cellTextEmpty {
+  color: var(--color-text-placeholder);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.wordRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/*
+ * 알약 안에 또 알약(빨간 카운트 배지)을 넣으면 알림 뱃지처럼 보여 유치해진다.
+ * 배지 대신 같은 알약 안에서 무게와 색으로만 개수를 구분한다.
+ */
+.wordChip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  padding: 5px 11px;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.wordCount {
+  color: var(--color-primary);
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}

@@ -25,7 +25,6 @@ import { getAlbumPhotos } from "./albumApi.js";
 import { getChatBookmarks, getChatMessages } from "./chatApi.js";
 import { getRelationshipStartDate, getTodaySchedules } from "./calendarApi.js";
 import { resolveCoupleRoom } from "./coupleRoomContext.js";
-import { EMOTION_POLARITY, getEmotionPolarity } from "../utils/emotions.js";
 
 const RECENT_PHOTO_LIMIT = 5;
 const FREQUENT_WORD_LIMIT = 10;
@@ -116,48 +115,6 @@ export async function getConversationFlow(roomId, date, period = "DAY") {
     `/dashboards/couple/conversation-flow?${buildQuery({ roomId, period, date })}`
   );
   return unwrap(response);
-}
-
-/** GET /dashboards/couple/emotion-flow — 기간별 두 구성원의 감정 흐름 */
-export async function getEmotionFlow(roomId, date, period = "DAY") {
-  const response = await apiRequest(
-    `/dashboards/couple/emotion-flow?${buildQuery({ roomId, period, date })}`,
-  );
-  return unwrap(response);
-}
-
-/**
- * emotion-flow 응답을 화면용 배열로 정규화한다.
- * (develop/v1 의 "대시보드 API 연동" 작업에서 들어온 매퍼 — 머지 중 유실된 것을 복구)
- */
-function mapEmotionFlow(response) {
-  const legacyFlow = Array.isArray(response?.flow) ? response.flow : null;
-  if (legacyFlow) return legacyFlow;
-
-  const myFlow = Array.isArray(response?.me?.flow) ? response.me.flow : [];
-  const partnerFlow = Array.isArray(response?.partner?.flow)
-    ? response.partner.flow
-    : [];
-  const slots = new Map();
-
-  [...myFlow, ...partnerFlow].forEach((slot) => {
-    const key = `${slot.startHour}-${slot.endHour}`;
-    const previous = slots.get(key) ?? {
-      startHour: slot.startHour,
-      endHour: slot.endHour,
-      positiveCount: 0,
-      negativeCount: 0,
-      neutralCount: 0,
-    };
-    slots.set(key, {
-      ...previous,
-      positiveCount: previous.positiveCount + (Number(slot.positiveCount) || 0),
-      negativeCount: previous.negativeCount + (Number(slot.negativeCount) || 0),
-      neutralCount: previous.neutralCount + (Number(slot.neutralCount) || 0),
-    });
-  });
-
-  return [...slots.values()].sort((first, second) => first.startHour - second.startHour);
 }
 
 /* ------------------------------------------------------------------
@@ -287,37 +244,6 @@ function calcFrequentWords(messages, myUserId, limit = FREQUENT_WORD_LIMIT) {
     .slice(0, limit);
 }
 
-function calcEmotionFlow(messages) {
-  const flow = Array.from({ length: 12 }, (_, index) => ({
-    startHour: index * 2,
-    endHour: index * 2 + 2,
-    positiveCount: 0,
-    negativeCount: 0,
-    neutralCount: 0,
-  }));
-
-  messages.forEach((message) => {
-    if (!message.emotionType || !message.sentAt) return;
-    const sentAt = new Date(message.sentAt);
-    if (!Number.isFinite(sentAt.getTime())) return;
-
-    const slot = flow[Math.floor(sentAt.getHours() / 2)];
-    const polarity = getEmotionPolarity(message.emotionType);
-    if (polarity === EMOTION_POLARITY.POSITIVE) slot.positiveCount += 1;
-    else if (polarity === EMOTION_POLARITY.NEGATIVE) slot.negativeCount += 1;
-    else slot.neutralCount += 1;
-  });
-
-  return flow;
-}
-
-function hasEmotionFlowData(flow) {
-  return flow.some(
-    (slot) =>
-      slot.positiveCount + slot.negativeCount + slot.neutralCount > 0,
-  );
-}
-
 /**
  * 사귄 날짜(couple_room.dating_start_date)로부터 D+N 계산.
  * daysTogether 는 DB 컬럼이 아니라 프론트 파생값이다.
@@ -353,7 +279,6 @@ export async function fetchDashboard() {
     memberCounts,
     mainEmotions,
     conversationFlow,
-    emotionFlow,
     frequentWords,
     albumData,
     datingStartDate,
@@ -365,7 +290,6 @@ export async function fetchDashboard() {
     roomId ? safe(getMemberCounts(roomId, todayKey)) : null,
     roomId ? safe(getMainEmotions(roomId, todayKey, "DAY")) : null,
     roomId ? safe(getConversationFlow(roomId, todayKey, "DAY")) : null,
-    roomId ? safe(getEmotionFlow(roomId, todayKey)) : null,
     roomId ? safe(getFrequentWords(roomId, todayKey, "DAY")) : null,
     /*
      * 최근 사진은 5장만 쓰므로 채팅은 가장 최근 한 페이지만 훑는다.
@@ -449,8 +373,6 @@ export async function fetchDashboard() {
       emotionSummary: mainEmotions?.emotions ?? [],
       dominantEmotion: mainEmotions?.dominantEmotion ?? null,
       analyzedMessageCount: mainEmotions?.analyzedMessageCount ?? 0,
-      // 2시간 단위 감정 흐름 12구간 (아직 화면에 붙이지 않았지만 응답은 내려준다)
-      emotionFlow: mapEmotionFlow(emotionFlow),
       // 날짜별 커플 메시지 수
       dailyFrequency: conversationFlow?.dailyFrequency ?? [],
       frequentWords:
@@ -480,29 +402,24 @@ export async function fetchDashboardPeriod({
     throw new Error("연결된 커플방 정보가 없습니다.");
   }
 
+  if (period === "WEEK") {
+    return fetchWeekDashboard(roomId, date);
+  }
+
   const [
     counts,
     memberCounts,
     mainEmotions,
     conversationFlow,
-    emotionFlow,
     frequentWords,
-    periodMessages,
   ] =
     await Promise.all([
       safe(getDailyCounts(roomId, dateKey, period), null),
       safe(getMemberCounts(roomId, dateKey, period), null),
       safe(getMainEmotions(roomId, dateKey, period), null),
       safe(getConversationFlow(roomId, dateKey, period), null),
-      safe(getEmotionFlow(roomId, dateKey, period), null),
       safe(getFrequentWords(roomId, dateKey, period), null),
-      period === "DAY" ? safe(fetchTodayMessages(roomId, dateKey), []) : [],
     ]);
-
-  const serverEmotionFlow = mapEmotionFlow(emotionFlow);
-  const displayedEmotionFlow = hasEmotionFlowData(serverEmotionFlow)
-    ? serverEmotionFlow
-    : calcEmotionFlow(periodMessages);
 
   return {
     period,
@@ -526,7 +443,157 @@ export async function fetchDashboardPeriod({
     busiestHour: conversationFlow?.busiestHour ?? null,
     averageResponseSeconds: conversationFlow?.averageResponseSeconds ?? null,
     dailyFrequency: conversationFlow?.dailyFrequency ?? [],
-    emotionFlow: displayedEmotionFlow,
     frequentWords: frequentWords?.words ?? [],
   };
+}
+
+/* ------------------------------------------------------------------
+   주간 집계 — 하루치를 일곱 번 받아 프론트에서 합친다
+   ------------------------------------------------------------------
+   ⚠️ 임시 구현이다. 원래는 서버가 한 번에 내려줘야 한다.
+      backend .../dashboard/dto/DashboardPeriod.java 에 WEEK 가 없어서,
+      period=WEEK 로 물으면 그대로 400 이 떨어진다. 그 열거형에 WEEK 를 넣고
+      각 서비스의 toDateRange switch(DashboardService / DashboardEmotionService /
+      DashboardMainEmotionService / DashboardConversationService / DashboardWordService)
+      에 case WEEK 를 더하면 이 블록은 통째로 지울 수 있다.
+
+      그때까지는 요일별로 DAY 를 일곱 번 부른다. 요청이 한 번에 35개라 3초마다
+      도는 useLiveSync 에 그대로 물리면 안 되므로, 같은 주는 1분 동안 재사용한다.
+   ------------------------------------------------------------------ */
+
+const WEEK_CACHE_TTL_MS = 60_000;
+
+/** { key, at, promise } — 마지막으로 만든 주간 집계 하나만 들고 있는다 */
+let weekDashboardCache = null;
+
+function startOfWeek(date) {
+  const start = new Date(date);
+  start.setDate(start.getDate() - start.getDay()); // 일요일 시작
+  start.setHours(0, 0, 0, 0);
+  return start;
+}
+
+function fetchWeekDashboard(roomId, date) {
+  const start = startOfWeek(date);
+  const dateKeys = Array.from({ length: 7 }, (_, index) => {
+    const day = new Date(start);
+    day.setDate(day.getDate() + index);
+    return formatLocalDateKey(day);
+  });
+
+  const cacheKey = `${roomId}|${dateKeys[0]}`;
+  const now = Date.now();
+
+  if (
+    weekDashboardCache?.key === cacheKey &&
+    now - weekDashboardCache.at < WEEK_CACHE_TTL_MS
+  ) {
+    return weekDashboardCache.promise;
+  }
+
+  const promise = aggregateWeek(roomId, dateKeys).catch((error) => {
+    // 실패한 약속을 캐시에 남겨 두면 1분 동안 계속 같은 실패를 돌려준다.
+    weekDashboardCache = null;
+    throw error;
+  });
+
+  weekDashboardCache = { key: cacheKey, at: now, promise };
+  return promise;
+}
+
+async function aggregateWeek(roomId, dateKeys) {
+  const days = await Promise.all(
+    dateKeys.map(async (dateKey) => {
+      const [counts, memberCounts, mainEmotions, conversationFlow, frequentWords] =
+        await Promise.all([
+          safe(getDailyCounts(roomId, dateKey, "DAY"), null),
+          safe(getMemberCounts(roomId, dateKey, "DAY"), null),
+          safe(getMainEmotions(roomId, dateKey, "DAY"), null),
+          safe(getConversationFlow(roomId, dateKey, "DAY"), null),
+          safe(getFrequentWords(roomId, dateKey, "DAY"), null),
+        ]);
+
+      return {
+        dateKey,
+        messageCount:
+          counts?.messageCount ?? conversationFlow?.totalMessageCount ?? 0,
+        imageCount: counts?.imageCount ?? 0,
+        reactionCount: counts?.reactionCount ?? 0,
+        bookmarkCount: memberCounts?.bookmarkCount ?? 0,
+        busiestHour: conversationFlow?.busiestHour ?? null,
+        averageResponseSeconds: conversationFlow?.averageResponseSeconds ?? null,
+        emotions: mainEmotions?.emotions ?? [],
+        analyzedMessageCount: mainEmotions?.analyzedMessageCount ?? 0,
+        words: frequentWords?.words ?? [],
+      };
+    }),
+  );
+
+  const sum = (pick) => days.reduce((total, day) => total + (Number(pick(day)) || 0), 0);
+  const messageCount = sum((day) => day.messageCount);
+
+  /*
+   * 가장 활발했던 시간 / 평균 답장 시간은 더할 수 있는 값이 아니다.
+   *   · 활발한 시간 — 메시지가 가장 많았던 날의 시간을 그 주의 대표로 삼는다.
+   *   · 평균 답장   — 날마다 대화량이 다르므로 메시지 수로 가중평균한다.
+   * 둘 다 근사값이다. 정확한 주간 값은 서버가 한 주를 통으로 봐야 나온다.
+   */
+  const busiestDay = days.reduce(
+    (best, day) =>
+      day.busiestHour != null && day.messageCount > (best?.messageCount ?? -1) ? day : best,
+    null,
+  );
+
+  const weightedResponse = days.reduce(
+    (acc, day) => {
+      if (day.averageResponseSeconds == null || day.messageCount <= 0) return acc;
+      return {
+        total: acc.total + day.averageResponseSeconds * day.messageCount,
+        weight: acc.weight + day.messageCount,
+      };
+    },
+    { total: 0, weight: 0 },
+  );
+
+  return {
+    period: "WEEK",
+    date: dateKeys[0],
+    startDate: dateKeys[0],
+    endDate: dateKeys.at(-1),
+    emotionSummary: mergeCounted(days.flatMap((day) => day.emotions), "emotionType"),
+    dominantEmotion: null,
+    analyzedMessageCount: sum((day) => day.analyzedMessageCount),
+    messageCount,
+    imageCount: sum((day) => day.imageCount),
+    reactionCount: sum((day) => day.reactionCount),
+    bookmarkCount: sum((day) => day.bookmarkCount),
+    busiestHour: busiestDay?.busiestHour ?? null,
+    averageResponseSeconds:
+      weightedResponse.weight > 0
+        ? weightedResponse.total / weightedResponse.weight
+        : null,
+    dailyFrequency: days.map((day) => ({
+      date: day.dateKey,
+      messageCount: day.messageCount,
+    })),
+    frequentWords: mergeCounted(days.flatMap((day) => day.words), "word"),
+  };
+}
+
+/** [{ <idKey>, label, count }] 여러 날치를 같은 항목끼리 합쳐 개수 내림차순으로 */
+function mergeCounted(entries, idKey) {
+  const merged = new Map();
+
+  entries.forEach((entry) => {
+    const id = entry?.[idKey];
+    if (id == null) return;
+
+    const previous = merged.get(id);
+    merged.set(id, {
+      ...entry,
+      count: (previous?.count ?? 0) + (Number(entry.count) || 0),
+    });
+  });
+
+  return [...merged.values()].sort((first, second) => second.count - first.count);
 }

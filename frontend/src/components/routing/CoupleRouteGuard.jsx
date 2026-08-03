@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 
 import { getCoupleStatus } from '../../api/coupleApi.js'
-import FullScreenLoader from '../common/FullScreenLoader.jsx'
+import FullScreenLoader from '../common/FullScreenLoader/FullScreenLoader.jsx'
 
 const ACCESSIBLE_ROOM_STATUSES = new Set([
   'ACTIVE',

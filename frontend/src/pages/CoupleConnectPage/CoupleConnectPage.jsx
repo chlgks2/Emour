@@ -9,8 +9,8 @@ import {
   joinOrReconnectCouple,
 } from '../../api/coupleApi.js'
 
-import Button from '../../components/common/Button'
-import TextField from '../../components/common/TextField'
+import Button from '../../components/common/Button/Button'
+import TextField from '../../components/common/TextField/TextField'
 
 import {
   clearPendingCoupleRoom,
