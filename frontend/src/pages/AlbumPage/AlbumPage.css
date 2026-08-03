@@ -842,10 +842,15 @@
   }
 }
 
-/* 공용 Button(primary)과 동일한 눌림 피드백 — 앱 전체에서 버튼 반응이 같게 */
-.album-add-button:not(:disabled):active {
-  transform: scale(0.98);
-}
+/*
+ * 공용 Button(primary)과 동일한 눌림 피드백 — 앱 전체에서 버튼 반응이 같게.
+ *
+ * '사진 추가' 버튼에는 걸지 않는다. 이 버튼은 transform: translateY(-50%) 로
+ * 세로 가운데를 맞추고 있어서, 여기에 scale 을 덮어쓰면 그 -50% 가 사라진다.
+ * 누를 때마다 버튼이 자기 높이의 절반만큼 아래로 뚝 떨어져 보였다.
+ * (같이 쓰려면 transform: translateY(-50%) scale(0.98) 처럼 합쳐 써야 하는데,
+ *  가운데 정렬 값이 바뀌면 이 규칙도 따라 고쳐야 해서 그냥 두지 않는다)
+ */
 .album-upload-submit:not(:disabled):active {
   transform: scale(0.98);
 }
