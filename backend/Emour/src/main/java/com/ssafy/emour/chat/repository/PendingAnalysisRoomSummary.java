@@ -11,7 +11,5 @@ public interface PendingAnalysisRoomSummary {
 
     long getPendingCount();
 
-    long getSenderCount();
-
     LocalDateTime getLastSentAt();
 }

@@ -163,7 +163,7 @@
   flex-direction: column;
   gap: 10px;
   /* 컨트롤이 많아 화면을 넘칠 수 있으므로 스크롤 허용 */
-  max-height: 46dvh;
+  max-height: 46%;
   overflow-y: auto;
   flex-shrink: 0;
 }

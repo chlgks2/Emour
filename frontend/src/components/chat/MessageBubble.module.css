@@ -99,6 +99,27 @@
   text-align: left;
 }
 
+.imageGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  overflow: hidden;
+  width: min(240px, 58vw);
+  border-radius: calc(var(--radius-md) - 3px);
+}
+
+.imageGrid:has(.chatImage:only-child) {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.chatImage {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  background: var(--color-sub-bg);
+}
+
 /* 상대 말풍선만 롱프레스/더블탭 대상이다 */
 .bubbleInteractive {
   /* 롱프레스 시 텍스트가 선택/드래그되지 않도록 방지 */

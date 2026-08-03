@@ -4,9 +4,10 @@ import {
   Routes,
 } from 'react-router-dom'
 
-import MobileLayout from './layouts/MobileLayout/MobileLayout.jsx'
+import AppViewport from './layouts/AppViewport/AppViewport.jsx'
 import BottomNavigation from './components/common/BottomNavigation/BottomNavigation.jsx'
 import MoodNotificationPrompt from './components/mood/MoodNotificationPrompt.jsx'
+import CoupleRouteGuard from './components/routing/CoupleRouteGuard.jsx'
 import { AuthProvider } from './context/AuthContext.jsx'
 import { ToastProvider } from './context/ToastProvider.jsx'
 
@@ -41,7 +42,7 @@ function App() {
   return (
     <AuthProvider>
       <ToastProvider>
-        <MobileLayout>
+        <AppViewport>
           <Routes>
         <Route
           path="/"
@@ -66,33 +67,43 @@ function App() {
         <Route
           path="/dashboard"
           element={
-            <PageWithNavigation>
-              <HomeDashboardScreen />
-            </PageWithNavigation>
+            <CoupleRouteGuard>
+              <PageWithNavigation>
+                <HomeDashboardScreen />
+              </PageWithNavigation>
+            </CoupleRouteGuard>
           }
         />
 
         <Route
           path="/chat"
           element={
-            <PageWithNavigation>
-              <ChatRoomPage />
-            </PageWithNavigation>
+            <CoupleRouteGuard>
+              <PageWithNavigation>
+                <ChatRoomPage />
+              </PageWithNavigation>
+            </CoupleRouteGuard>
           }
         />
 
         <Route
           path="/bookmarks"
           element={
-            <PageWithNavigation>
-              <BookmarkListPage />
-            </PageWithNavigation>
+            <CoupleRouteGuard>
+              <PageWithNavigation>
+                <BookmarkListPage />
+              </PageWithNavigation>
+            </CoupleRouteGuard>
           }
         />
 
         <Route
           path="/calendar"
-          element={<CalendarPage />}
+          element={
+            <CoupleRouteGuard>
+              <CalendarPage />
+            </CoupleRouteGuard>
+          }
         />
 
         <Route
@@ -102,7 +113,11 @@ function App() {
 
         <Route
           path="/album"
-          element={<AlbumPage />}
+          element={
+            <CoupleRouteGuard>
+              <AlbumPage />
+            </CoupleRouteGuard>
+          }
         />
 
         <Route
@@ -144,7 +159,7 @@ function App() {
         />
           </Routes>
           <MoodNotificationPrompt />
-        </MobileLayout>
+        </AppViewport>
       </ToastProvider>
     </AuthProvider>
   )

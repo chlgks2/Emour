@@ -18,6 +18,9 @@ import org.springframework.test.util.ReflectionTestUtils;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.List;
+
+import org.springframework.data.domain.PageRequest;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -75,8 +78,28 @@ class CoupleStartDateServiceTest {
         CoupleRoom room = activeRoom();
         room.updateDatingStartDate(startDate);
         given(memberRepository.existsById(USER_ID)).willReturn(true);
-        given(coupleRoomRepository.findActiveRoomByUserId(USER_ID))
-                .willReturn(Optional.of(room));
+        given(coupleRoomRepository.findReadableRoomsByUserId(
+                USER_ID,
+                PageRequest.of(0, 1)
+        )).willReturn(List.of(room));
+
+        var response = coupleService.getStartDate(USER_ID);
+
+        assertThat(response.roomId()).isEqualTo(ROOM_ID);
+        assertThat(response.datingStartDate()).isEqualTo(startDate);
+    }
+
+    @Test
+    void 상대방이_나간_뒤에도_남은_사용자는_만난_날을_조회한다() {
+        LocalDate startDate = LocalDate.of(2025, 8, 1);
+        CoupleRoom room = activeRoom();
+        room.updateDatingStartDate(startDate);
+        room.deactivate();
+        given(memberRepository.existsById(USER_ID)).willReturn(true);
+        given(coupleRoomRepository.findReadableRoomsByUserId(
+                USER_ID,
+                PageRequest.of(0, 1)
+        )).willReturn(List.of(room));
 
         var response = coupleService.getStartDate(USER_ID);
 

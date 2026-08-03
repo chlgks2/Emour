@@ -72,6 +72,14 @@ public class CoupleRoom {
         this.roomCodeExpiresAt = expiresAt;
     }
 
+    public void refreshReconnectInvitation(String roomCode, LocalDateTime expiresAt) {
+        if (status != CoupleRoomStatus.INACTIVE) {
+            throw new IllegalStateException("비활성 커플방만 재결합 코드를 갱신할 수 있습니다.");
+        }
+        this.roomCode = roomCode;
+        this.roomCodeExpiresAt = expiresAt;
+    }
+
     public boolean hasValidInvitationAt(LocalDateTime currentTime) {
         return status == CoupleRoomStatus.WAITING
                 && roomCodeExpiresAt != null
