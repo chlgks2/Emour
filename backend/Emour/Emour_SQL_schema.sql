@@ -1,5 +1,7 @@
 -- MySQL 8.4.7
 -- DATABASE 생성
+# DROP DATABASE IF EXISTS `emour`;
+
 CREATE DATABASE IF NOT EXISTS `emour`
     DEFAULT CHARACTER SET utf8mb4
     DEFAULT COLLATE utf8mb4_unicode_ci;
@@ -25,7 +27,7 @@ CREATE TABLE `app_user` (
 CREATE TABLE `social_login` (
     `social_id` BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     `user_id` BIGINT NOT NULL UNIQUE,
-    -- GOOGLE / KAKAO
+    -- 소셜 로그인 제공자 코드 (예: GOOGLE, KAKAO, NAVER)
     `provider` VARCHAR(30) NOT NULL,
     `provider_id` VARCHAR(255) NOT NULL,
     `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
@@ -239,7 +241,7 @@ CREATE TABLE `chat_message_image` (
     `image_id` BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     `message_id` BIGINT NOT NULL,
     `image_url` VARCHAR(2048) NOT NULL,
-    -- '메시지 안에서 이미지가 보이는 순서'
+    -- 메시지 안에서 이미지가 표시되는 순서
     `display_order` INT NOT NULL DEFAULT 1,
     `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
 
