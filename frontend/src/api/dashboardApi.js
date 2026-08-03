@@ -383,8 +383,8 @@ export async function fetchDashboardPeriod({
 
   const [mainEmotions, conversationFlow, dailyMessages] =
     await Promise.all([
-      getMainEmotions(roomId, dateKey, period),
-      getConversationFlow(roomId, dateKey, period),
+      safe(getMainEmotions(roomId, dateKey, period), null),
+      safe(getConversationFlow(roomId, dateKey, period), null),
       period === "DAY" ? safe(fetchTodayMessages(roomId, dateKey), []) : [],
     ]);
 
@@ -407,7 +407,10 @@ export async function fetchDashboardPeriod({
     emotionSummary: mainEmotions?.emotions ?? [],
     dominantEmotion: mainEmotions?.dominantEmotion ?? null,
     analyzedMessageCount: mainEmotions?.analyzedMessageCount ?? 0,
-    messageCount: conversationFlow?.totalMessageCount ?? 0,
+    // 일간 집계 API가 배포 환경에서 실패해도 원본 메시지로 기록 카드를 유지한다.
+    messageCount:
+      conversationFlow?.totalMessageCount ??
+      (period === "DAY" ? dailyMessages.length : 0),
     imageCount: period === "DAY" ? coupleImageCount : null,
     reactionCount: period === "DAY" ? coupleReactionCount : null,
     busiestHour: conversationFlow?.busiestHour ?? null,
