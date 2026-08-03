@@ -27,6 +27,9 @@ class DashboardSnapshotSchedulerTest {
     @Mock
     private DashboardSnapshotService dashboardSnapshotService;
 
+    @Mock
+    private CoupleDashboardSnapshotService coupleDashboardSnapshotService;
+
     // 13시 5분에는 13시 직전까지의 데이터를 최종 확정합니다.
     @Test
     void finalizesPreviousHour() {
@@ -38,6 +41,7 @@ class DashboardSnapshotSchedulerTest {
                 new DashboardSnapshotScheduler(
                         coupleMemberRepository,
                         dashboardSnapshotService,
+                        coupleDashboardSnapshotService,
                         clock
                 );
         when(coupleMemberRepository.findAllByStatus(
@@ -49,6 +53,12 @@ class DashboardSnapshotSchedulerTest {
         verify(dashboardSnapshotService).refreshSnapshot(
                 1L,
                 10L,
+                LocalDate.of(2026, 7, 31),
+                LocalDateTime.of(2026, 7, 31, 13, 0),
+                true
+        );
+        verify(coupleDashboardSnapshotService).refreshSnapshot(
+                1L,
                 LocalDate.of(2026, 7, 31),
                 LocalDateTime.of(2026, 7, 31, 13, 0),
                 true

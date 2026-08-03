@@ -157,41 +157,59 @@ CREATE TABLE `couple_schedule` (
         ON DELETE CASCADE
 );
 
-CREATE TABLE `dashboard` (
-    `dashboard_id` BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+CREATE TABLE `member_dashboard` (
+    `member_dashboard_id` BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     `room_id` BIGINT NOT NULL,
     `user_id` BIGINT NOT NULL,
     `summary_date` DATE NOT NULL,
-    -- 하루 동안 이 사용자가 보낸 메시지 개수
-    `message_count` INT NOT NULL DEFAULT 0,
-    -- 하루 동안 이 사용자가 보낸 이미지 개수
-    `image_count` INT NOT NULL DEFAULT 0,
-    -- 하루 동안 이 사용자가 메시지에 남긴 공감 및 반응 개수
-    `reaction_count` INT NOT NULL DEFAULT 0,
-    -- 하루 동안 이 사용자가 저장한 북마크 메시지 개수
+    -- 해당 날짜에 사용자가 저장한 북마크 메시지 개수
     `bookmark_count` INT NOT NULL DEFAULT 0,
-    `average_response_seconds` DECIMAL(12, 2) NULL,
-    -- 대화가 가장 활발했던 시간 (0 ~ 23)
-    `busiest_hour` TINYINT UNSIGNED NULL,
-    -- 날짜별 커플 전체 메시지 개수
-    `conversation_frequency` JSON NULL,
-    -- '{"JOY":3,"NEUTRAL":5} 형식'
-    `emotion_summary` JSON NULL,
-    -- '2시간 단위 감정 흐름 결과'
+    -- 사용자가 보낸 메시지의 2시간 단위 감정 흐름
     `emotion_flow` JSON NULL,
-    -- '[{"word":"사랑","count":5}] 형식'
-    `frequent_words` JSON NULL,
-    -- 이 시각 직전까지 1차 집계가 완료됨
+    -- 이 시각 이전 데이터까지 시간 단위 집계 완료
     `aggregated_until` DATETIME(6) NULL,
-    -- 이 시각 직전까지 5분 후 최종 집계가 완료됨
+    -- 이 시각 이전 데이터까지 5분 지연 확정 집계 완료
     `finalized_until` DATETIME(6) NULL,
     `calculated_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     `updated_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
         ON UPDATE CURRENT_TIMESTAMP(6),
 
     UNIQUE (`room_id`, `user_id`, `summary_date`),
-    CHECK (`busiest_hour` IS NULL OR `busiest_hour` BETWEEN 0 AND 23),
     FOREIGN KEY (`room_id`, `user_id`) REFERENCES `couple_member` (`room_id`, `user_id`)
+        ON DELETE CASCADE
+);
+
+CREATE TABLE `couple_dashboard` (
+    `couple_dashboard_id` BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    `room_id` BIGINT NOT NULL,
+    `summary_date` DATE NOT NULL,
+    -- 해당 날짜에 커플이 주고받은 메시지 개수
+    `message_count` INT NOT NULL DEFAULT 0,
+    -- 채팅 메시지에 첨부된 이미지 개수
+    `image_count` INT NOT NULL DEFAULT 0,
+    -- 커플이 메시지에 남긴 반응 개수
+    `reaction_count` INT NOT NULL DEFAULT 0,
+    -- 발신자가 바뀐 연속 메시지 사이의 평균 응답 시간(초)
+    `average_response_seconds` DECIMAL(12, 2) NULL,
+    -- 메시지가 가장 많았던 시간대(0~23)
+    `busiest_hour` TINYINT UNSIGNED NULL,
+    -- 날짜별 커플 전체 메시지 개수
+    `conversation_frequency` JSON NULL,
+    -- 감정 코드별 메시지 개수 (예: {"JOY":3,"NEUTRAL":5})
+    `emotion_summary` JSON NULL,
+    -- 자주 사용한 단어와 횟수 (예: [{"word":"사랑","count":5}])
+    `frequent_words` JSON NULL,
+    -- 이 시각 이전 데이터까지 시간 단위 집계 완료
+    `aggregated_until` DATETIME(6) NULL,
+    -- 이 시각 이전 데이터까지 5분 지연 확정 집계 완료
+    `finalized_until` DATETIME(6) NULL,
+    `calculated_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    `updated_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
+        ON UPDATE CURRENT_TIMESTAMP(6),
+
+    UNIQUE (`room_id`, `summary_date`),
+    CHECK (`busiest_hour` IS NULL OR `busiest_hour` BETWEEN 0 AND 23),
+    FOREIGN KEY (`room_id`) REFERENCES `couple_room` (`room_id`)
         ON DELETE CASCADE
 );
 
@@ -208,6 +226,8 @@ CREATE TABLE `chat_message` (
 
     UNIQUE (`sender_id`, `client_message_id`),
     UNIQUE (`message_id`, `room_id`),
+    INDEX `idx_chat_message_room_sent` (`room_id`, `sent_at`),
+    INDEX `idx_chat_message_room_sender_sent` (`room_id`, `sender_id`, `sent_at`),
     FOREIGN KEY (`room_id`, `sender_id`) REFERENCES `couple_member` (`room_id`, `user_id`)
         ON DELETE CASCADE
 );
@@ -247,6 +267,8 @@ CREATE TABLE `chat_bookmark` (
     `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
 
     UNIQUE (`user_id`, `message_id`),
+    INDEX `idx_chat_bookmark_room_user_created` (`room_id`, `user_id`, `created_at`),
+    INDEX `idx_chat_bookmark_room_created` (`room_id`, `created_at`),
     FOREIGN KEY (`room_id`, `user_id`) REFERENCES `couple_member` (`room_id`, `user_id`)
         ON DELETE CASCADE,
     FOREIGN KEY (`message_id`, `room_id`) REFERENCES `chat_message` (`message_id`, `room_id`)
@@ -263,6 +285,8 @@ CREATE TABLE `chat_reaction` (
     `updated_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
         ON UPDATE CURRENT_TIMESTAMP(6),
     UNIQUE (`user_id`, `message_id`),
+    INDEX `idx_chat_reaction_room_created` (`room_id`, `created_at`),
+    INDEX `idx_chat_reaction_room_user_created` (`room_id`, `user_id`, `created_at`),
     FOREIGN KEY (`room_id`, `user_id`) REFERENCES `couple_member` (`room_id`, `user_id`)
         ON DELETE CASCADE,
     FOREIGN KEY (`message_id`, `room_id`) REFERENCES `chat_message` (`message_id`, `room_id`)
@@ -301,5 +325,6 @@ CREATE TABLE `chat_analysis` (
     `analyzed_at` DATETIME(6) NULL,
     `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
 
+    INDEX `idx_chat_analysis_status_message` (`analysis_status`, `message_id`),
     FOREIGN KEY (`message_id`) REFERENCES `chat_message` (`message_id`) ON DELETE CASCADE
 );

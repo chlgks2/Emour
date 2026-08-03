@@ -1,11 +1,12 @@
 package com.ssafy.emour.dashboard.controller;
 
 import com.ssafy.emour.dashboard.dto.DashboardConversationFlowResponse;
+import com.ssafy.emour.dashboard.dto.DashboardCoupleEmotionFlowResponse;
 import com.ssafy.emour.dashboard.dto.DashboardCountResponse;
-import com.ssafy.emour.dashboard.dto.DashboardEmotionFlowResponse;
 import com.ssafy.emour.dashboard.dto.DashboardFrequentWordsResponse;
 import com.ssafy.emour.dashboard.dto.DashboardMainEmotionResponse;
 import com.ssafy.emour.dashboard.dto.DashboardPeriod;
+import com.ssafy.emour.dashboard.dto.MemberDashboardCountResponse;
 import com.ssafy.emour.dashboard.service.DashboardConversationService;
 import com.ssafy.emour.dashboard.service.DashboardEmotionService;
 import com.ssafy.emour.dashboard.service.DashboardMainEmotionService;
@@ -29,7 +30,7 @@ import java.time.LocalDate;
 @RequestMapping("/dashboards")
 @RequiredArgsConstructor
 @SecurityRequirement(name = "bearerAuth")
-@Tag(name = "대시보드 API", description = "커플방의 기간별 통계를 조회합니다.")
+@Tag(name = "대시보드 API", description = "개인 및 커플 기간별 통계를 조회합니다.")
 public class DashboardController {
 
     private final DashboardService dashboardService;
@@ -38,19 +39,14 @@ public class DashboardController {
     private final DashboardMainEmotionService dashboardMainEmotionService;
     private final DashboardConversationService dashboardConversationService;
 
-    @GetMapping({"/counts", "/daily"})
+    @GetMapping("/couple/counts")
     @Operation(
-            summary = "기간별 정량 기록 조회",
-            description = "커플 두 사람의 메시지, 이미지, 공감, 북마크 개수를 합산합니다."
+            summary = "기간별 커플 정량 기록 조회",
+            description = "커플 전체의 메시지, 이미지, 공감 개수를 합산합니다."
     )
     public DashboardCountResponse getCounts(
-            @Parameter(description = "커플방 번호", example = "1")
             @RequestParam Long roomId,
-
-            @Parameter(description = "조회 단위: DAY, MONTH, YEAR", example = "MONTH")
             @RequestParam(defaultValue = "DAY") DashboardPeriod period,
-
-            @Parameter(description = "기준 날짜", example = "2026-07-31")
             @RequestParam
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
             LocalDate date
@@ -63,24 +59,19 @@ public class DashboardController {
         );
     }
 
-    @GetMapping("/emotion-flow")
+    @GetMapping("/me/counts")
     @Operation(
-            summary = "기간별 감정 흐름 조회",
-            description = "분석이 완료된 내 메시지 감정을 조회 기간의 2시간대별로 합산합니다."
+            summary = "기간별 개인 기록 조회",
+            description = "로그인 사용자가 저장한 북마크 개수를 조회합니다."
     )
-    public DashboardEmotionFlowResponse getEmotionFlow(
-            @Parameter(description = "커플방 번호", example = "1")
+    public MemberDashboardCountResponse getMemberCounts(
             @RequestParam Long roomId,
-
-            @Parameter(description = "조회 단위: DAY, MONTH, YEAR", example = "MONTH")
             @RequestParam(defaultValue = "DAY") DashboardPeriod period,
-
-            @Parameter(description = "기준 날짜", example = "2026-07-31")
             @RequestParam
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
             LocalDate date
     ) {
-        return dashboardEmotionService.getEmotionFlow(
+        return dashboardService.getMemberCounts(
                 roomId,
                 SecurityUtil.getCurrentUserId(),
                 period,
@@ -88,24 +79,38 @@ public class DashboardController {
         );
     }
 
-    @GetMapping("/frequent-words")
+    @GetMapping("/couple/emotion-flow")
     @Operation(
-            summary = "기간별 자주 사용하는 단어 조회",
-            description = "내가 보낸 텍스트 메시지에서 자주 사용한 단어를 조회합니다."
+            summary = "기간별 커플 감정 흐름 조회",
+            description = "로그인 사용자와 연인의 감정 흐름을 각각 집계해 함께 반환합니다."
+    )
+    public DashboardCoupleEmotionFlowResponse getCoupleEmotionFlow(
+            @RequestParam Long roomId,
+            @RequestParam(defaultValue = "DAY") DashboardPeriod period,
+            @RequestParam
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate date
+    ) {
+        return dashboardEmotionService.getCoupleEmotionFlow(
+                roomId,
+                SecurityUtil.getCurrentUserId(),
+                period,
+                date
+        );
+    }
+
+    @GetMapping("/couple/frequent-words")
+    @Operation(
+            summary = "기간별 커플 자주 쓰는 단어 조회",
+            description = "커플 두 사람이 보낸 텍스트에서 자주 사용한 단어를 조회합니다."
     )
     public DashboardFrequentWordsResponse getFrequentWords(
-            @Parameter(description = "커플방 번호", example = "1")
             @RequestParam Long roomId,
-
-            @Parameter(description = "조회 단위: DAY, MONTH, YEAR", example = "MONTH")
             @RequestParam(defaultValue = "DAY") DashboardPeriod period,
-
-            @Parameter(description = "기준 날짜", example = "2026-07-31")
             @RequestParam
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
             LocalDate date,
-
-            @Parameter(description = "가져올 단어 개수. 기본 10개, 최대 50개", example = "10")
+            @Parameter(description = "기본 10개, 최대 50개", example = "10")
             @RequestParam(required = false) Integer limit
     ) {
         return dashboardWordService.getFrequentWords(
@@ -117,19 +122,14 @@ public class DashboardController {
         );
     }
 
-    @GetMapping("/main-emotions")
+    @GetMapping("/couple/main-emotions")
     @Operation(
-            summary = "기간별 주요 감정 조회",
-            description = "분석이 완료된 내 메시지를 감정별로 집계합니다."
+            summary = "기간별 커플 주요 감정 조회",
+            description = "커플 두 사람의 분석 완료 메시지를 감정별로 합산합니다."
     )
     public DashboardMainEmotionResponse getMainEmotions(
-            @Parameter(description = "커플방 번호", example = "1")
             @RequestParam Long roomId,
-
-            @Parameter(description = "조회 단위: DAY, MONTH, YEAR", example = "MONTH")
-            @RequestParam DashboardPeriod period,
-
-            @Parameter(description = "기준 날짜", example = "2026-07-31")
+            @RequestParam(defaultValue = "DAY") DashboardPeriod period,
             @RequestParam
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
             LocalDate date
@@ -142,19 +142,14 @@ public class DashboardController {
         );
     }
 
-    @GetMapping("/conversation-flow")
+    @GetMapping("/couple/conversation-flow")
     @Operation(
             summary = "기간별 커플 대화 흐름 조회",
-            description = "커플 전체의 활발한 시간, 평균 응답 시간, 날짜별 메시지 개수를 조회합니다."
+            description = "커플 전체의 활발한 시간, 평균 응답시간, 날짜별 대화량을 조회합니다."
     )
     public DashboardConversationFlowResponse getConversationFlow(
-            @Parameter(description = "커플방 번호", example = "1")
             @RequestParam Long roomId,
-
-            @Parameter(description = "조회 단위: DAY, MONTH, YEAR", example = "MONTH")
-            @RequestParam DashboardPeriod period,
-
-            @Parameter(description = "기준 날짜", example = "2026-07-31")
+            @RequestParam(defaultValue = "DAY") DashboardPeriod period,
             @RequestParam
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
             LocalDate date

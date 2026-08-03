@@ -10,9 +10,11 @@ import com.ssafy.emour.chat.repository.ChatAnalysisRepository;
 import com.ssafy.emour.couple.entity.CoupleMemberId;
 import com.ssafy.emour.couple.entity.CoupleMemberStatus;
 import com.ssafy.emour.couple.repository.CoupleMemberRepository;
+import com.ssafy.emour.dashboard.dto.DashboardCoupleEmotionFlowResponse;
 import com.ssafy.emour.dashboard.dto.DashboardEmotionFlowResponse;
 import com.ssafy.emour.dashboard.dto.DashboardPeriod;
 import com.ssafy.emour.dashboard.dto.EmotionFlowSlot;
+import com.ssafy.emour.dashboard.dto.MemberEmotionFlow;
 import com.ssafy.emour.dashboard.entity.Dashboard;
 import com.ssafy.emour.global.exception.CustomException;
 import com.ssafy.emour.global.exception.ErrorCode;
@@ -82,18 +84,51 @@ public class DashboardEmotionService {
         );
     }
 
-    // 기존 호출 코드는 일 단위로 그대로 동작합니다.
     @Transactional
-    public DashboardEmotionFlowResponse getDailyEmotionFlow(
+    public DashboardCoupleEmotionFlowResponse getCoupleEmotionFlow(
             Long roomId,
             Long userId,
+            DashboardPeriod period,
             LocalDate date
     ) {
-        return getEmotionFlow(
+        validateRequest(roomId, userId, period, date);
+        Long partnerUserId = coupleMemberRepository
+                .findAllByIdRoomId(roomId)
+                .stream()
+                .filter(member -> member.getStatus()
+                        == CoupleMemberStatus.ACTIVE)
+                .map(member -> member.getId().getUserId())
+                .filter(memberUserId -> !memberUserId.equals(userId))
+                .findFirst()
+                .orElseThrow(() -> new CustomException(
+                        ErrorCode.ACTIVE_COUPLE_NOT_FOUND
+                ));
+
+        DashboardEmotionFlowResponse myResponse = getEmotionFlow(
                 roomId,
                 userId,
-                DashboardPeriod.DAY,
+                period,
                 date
+        );
+        DashboardEmotionFlowResponse partnerResponse = getEmotionFlow(
+                roomId,
+                partnerUserId,
+                period,
+                date
+        );
+        LocalDateTime calculatedAt = myResponse.calculatedAt()
+                .isAfter(partnerResponse.calculatedAt())
+                ? myResponse.calculatedAt()
+                : partnerResponse.calculatedAt();
+
+        return new DashboardCoupleEmotionFlowResponse(
+                roomId,
+                period,
+                myResponse.startDate(),
+                myResponse.endDate(),
+                MemberEmotionFlow.from(myResponse),
+                MemberEmotionFlow.from(partnerResponse),
+                calculatedAt
         );
     }
 

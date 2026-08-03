@@ -6,7 +6,7 @@ import com.ssafy.emour.couple.entity.CoupleMemberStatus;
 import com.ssafy.emour.couple.repository.CoupleMemberRepository;
 import com.ssafy.emour.dashboard.dto.DashboardFrequentWordsResponse;
 import com.ssafy.emour.dashboard.dto.DashboardPeriod;
-import com.ssafy.emour.dashboard.entity.Dashboard;
+import com.ssafy.emour.dashboard.entity.CoupleDashboard;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -26,7 +26,7 @@ import static org.mockito.Mockito.when;
 class DashboardWordServiceTest {
 
     @Mock
-    private DashboardSnapshotService dashboardSnapshotService;
+    private CoupleDashboardSnapshotService coupleDashboardSnapshotService;
     @Mock
     private ChatMessageRepository chatMessageRepository;
     @Mock
@@ -41,7 +41,7 @@ class DashboardWordServiceTest {
                 ZoneId.of("Asia/Seoul")
         );
         dashboardWordService = new DashboardWordService(
-                dashboardSnapshotService,
+                coupleDashboardSnapshotService,
                 chatMessageRepository,
                 coupleMemberRepository,
                 clock
@@ -56,7 +56,7 @@ class DashboardWordServiceTest {
     @Test
     void returnsDailyFrequentWords() {
         LocalDate date = LocalDate.of(2026, 8, 3);
-        Dashboard dashboard = Dashboard.create(1L, 10L, date);
+        CoupleDashboard dashboard = CoupleDashboard.create(1L, date);
         dashboard.updateFrequentWords("""
                 [
                   {"word": "사랑해", "count": 2},
@@ -64,7 +64,7 @@ class DashboardWordServiceTest {
                   {"word": "좋아", "count": 1}
                 ]
                 """);
-        when(dashboardSnapshotService.ensureSnapshot(1L, 10L, date))
+        when(coupleDashboardSnapshotService.ensureSnapshot(1L, 10L, date))
                 .thenReturn(dashboard);
 
         DashboardFrequentWordsResponse response =
@@ -85,9 +85,8 @@ class DashboardWordServiceTest {
     // 연 조회는 해당 연도의 모든 텍스트를 합산합니다.
     @Test
     void returnsYearlyFrequentWords() {
-        when(chatMessageRepository.findDailyTextContents(
+        when(chatMessageRepository.findRoomTextContents(
                 1L,
-                10L,
                 LocalDate.of(2026, 1, 1).atStartOfDay(),
                 LocalDate.of(2027, 1, 1).atStartOfDay()
         )).thenReturn(List.of(
