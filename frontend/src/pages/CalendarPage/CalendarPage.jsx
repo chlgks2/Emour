@@ -6,10 +6,10 @@ import {
 } from 'react'
 
 import {
-  CalendarPlus,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
-  Heart,
+  ChevronUp,
   Pencil,
 } from 'lucide-react'
 
@@ -273,6 +273,12 @@ function CalendarPage() {
 
   const [isDiaryEditing, setIsDiaryEditing] =
     useState(false)
+
+  // 무드트래커는 접은 채로 시작한다. (대시보드와 같은 기준)
+  const [
+    isMoodTrackerOpen,
+    setIsMoodTrackerOpen,
+  ] = useState(false)
 
   const [diaryDraft, setDiaryDraft] =
     useState('')
@@ -939,7 +945,7 @@ function CalendarPage() {
     } catch (error) {
       window.alert(
         error.message ||
-          '한줄 일기 저장에 실패했습니다.',
+          '한 줄 일기 저장에 실패했습니다.',
       )
     } finally {
       setIsProcessing(false)
@@ -1109,8 +1115,8 @@ function CalendarPage() {
 
         {/*
           '일정 추가' / '기념일 관리' 큰 버튼 두 개를 달력 아래 따로 두던 것을
-          각 섹션 제목 줄 안으로 옮겼다. (한줄 일기의 '수정'과 같은 자리)
-          무엇에 대한 추가인지 제목 옆에서 바로 읽히고, 달력과 상세 사이를
+          각 섹션 제목 줄 안의 '편집' 버튼으로 옮겼다.
+          무엇을 고치는 버튼인지 제목 옆에서 바로 읽히고, 달력과 상세 사이를
           가로막던 덩어리가 사라져 화면이 한 흐름으로 이어진다.
         */}
         <section className="selected-day-card">
@@ -1136,31 +1142,63 @@ function CalendarPage() {
           */}
           <div className="selected-day-section">
             <div className="selected-day-section-title">
-              <h3>
-                무드트래커
+              <h3>무드트래커</h3>
 
+              {/*
+                개수 뱃지 자리를 펼치기/접기가 대신한다.
+                시간대가 하루 8칸이라 늘 펼쳐두면 이 섹션 하나가 상세 카드를
+                거의 다 차지해서 아래 일정·기념일·일기가 화면 밖으로 밀렸다.
+                개수는 펼치면 목록에서 그대로 보인다.
+              */}
+              <button
+                type="button"
+                className="section-action-button"
+                aria-expanded={
+                  isMoodTrackerOpen
+                }
+                onClick={() =>
+                  setIsMoodTrackerOpen(
+                    (previous) => !previous,
+                  )
+                }
+              >
                 <span>
-                  {
-                    selectedDayMood.mySlots
-                      .length
-                  }
+                  {isMoodTrackerOpen
+                    ? '접기'
+                    : '펼치기'}
                 </span>
-              </h3>
+
+                {isMoodTrackerOpen ? (
+                  <ChevronUp
+                    size={13}
+                    strokeWidth={2}
+                    aria-hidden="true"
+                  />
+                ) : (
+                  <ChevronDown
+                    size={13}
+                    strokeWidth={2}
+                    aria-hidden="true"
+                  />
+                )}
+              </button>
             </div>
 
-            <MoodSlotList
-              mySlots={
-                selectedDayMood.mySlots
-              }
-              partnerSlots={
-                selectedDayMood.partnerSlots
-              }
-              window={moodWindow}
-              nowMinutes={
-                selectedDayNowMinutes
-              }
-              onEditSlot={openMoodModal}
-            />
+            {isMoodTrackerOpen && (
+              <MoodSlotList
+                mySlots={
+                  selectedDayMood.mySlots
+                }
+                partnerSlots={
+                  selectedDayMood.partnerSlots
+                }
+                window={moodWindow}
+                nowMinutes={
+                  selectedDayNowMinutes
+                }
+                onEditSlot={openMoodModal}
+              />
+            )}
           </div>
 
           <div className="selected-day-section">
@@ -1186,13 +1224,13 @@ function CalendarPage() {
                   openCreateScheduleModal
                 }
               >
-                <CalendarPlus
+                <Pencil
                   size={13}
                   strokeWidth={2}
                   aria-hidden="true"
                 />
 
-                <span>추가</span>
+                <span>편집</span>
               </button>
             </div>
 
@@ -1262,13 +1300,13 @@ function CalendarPage() {
                   openAnniversaryManager
                 }
               >
-                <Heart
+                <Pencil
                   size={13}
                   strokeWidth={2}
                   aria-hidden="true"
                 />
 
-                <span>관리</span>
+                <span>편집</span>
               </button>
             </div>
 
@@ -1330,7 +1368,7 @@ function CalendarPage() {
 
           <div className="diary-section">
             <div className="selected-day-section-title">
-              <h3>한줄 일기</h3>
+              <h3>한 줄 일기</h3>
 
               {/*
                 편집은 시트에서 하므로 이 버튼은 늘 자리를 지킨다.
@@ -1354,18 +1392,7 @@ function CalendarPage() {
                   aria-hidden="true"
                 />
 
-                {/*
-                  아직 아무것도 안 썼는데 '수정'이라고 하면 고칠 것이 있는 줄
-                  알게 된다. 일정·기념일이 없을 때 '추가'라고 하는 것과 같은
-                  말을 쓴다. 이 페이지에서 '추가'는 새로 만들기,
-                  '수정'은 있는 것 고치기로 뜻을 고정한다.
-                */}
-                <span>
-                  {selectedDayData.diary
-                    ?.content?.trim()
-                    ? '수정'
-                    : '추가'}
-                </span>
+                <span>편집</span>
               </button>
             </div>
 
@@ -1384,7 +1411,7 @@ function CalendarPage() {
             >
               {selectedDayData.diary
                 .content ||
-                '작성된 한줄 일기가 없어요.'}
+                '작성된 한 줄 일기가 없어요.'}
             </p>
           </div>
         </section>

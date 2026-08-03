@@ -8,6 +8,7 @@ import DateDivider from "../components/chat/DateDivider";
 import SuggestionChips from "../components/chat/SuggestionChips";
 import ChatInputBar from "../components/chat/ChatInputBar";
 import MessageActionPopover from "../components/chat/MessageActionPopover";
+import ImageViewer from "../components/chat/ImageViewer";
 import { useInfiniteScroll } from "../hooks/useInfiniteScroll";
 import {
   fetchChatPartner,
@@ -85,6 +86,28 @@ export default function ChatRoomPage() {
   const [partnerLastReadMessageId, setPartnerLastReadMessageId] = useState(null);
   // 롱프레스로 선택된 메시지 + 메뉴를 붙일 말풍선 좌표 { message, anchorRect }
   const [actionTarget, setActionTarget] = useState(null);
+  // 사진 크게 보기 { images, startIndex }. null 이면 닫힘.
+  const [imageViewer, setImageViewer] = useState(null);
+
+  const openImageViewer = useCallback((images, startIndex) => {
+    setImageViewer({ images, startIndex });
+  }, []);
+
+  /**
+   * 상대방이 읽은 지점은 뒤로 가지 않는다.
+   *
+   * 예전에는 서버가 보내주는 값으로 그대로 덮어썼다. 그래서 뒤늦게 도착한
+   * 예전 읽음 이벤트(또는 값이 빈 이벤트) 하나가 지금까지의 '읽음'을 통째로
+   * 지웠다. 답장까지 받은 메시지에서 읽음 표시가 사라지던 게 이것이다.
+   * 읽은 지점은 커지기만 하는 값이므로 더 큰 값일 때만 옮긴다.
+   */
+  const advancePartnerLastReadMessageId = useCallback((messageId) => {
+    if (messageId == null) return;
+
+    setPartnerLastReadMessageId((previous) =>
+      previous == null ? messageId : Math.max(previous, messageId)
+    );
+  }, []);
 
   const hasMore = nextBeforeMessageId !== null;
   const justPrependedRef = useRef(false);
@@ -188,6 +211,20 @@ export default function ChatRoomPage() {
         setBookmarkedMessageIds(myBookmarkedMessageIds);
         setReactions(allReactions);
         setPartnerLastReadMessageId(partnerReadState.lastReadMessageId);
+        /*
+         * 첫 로딩 때도 같은 추론을 적용한다. 서버의 read-status 가 아직 밀려
+         * 있어도, 화면에 상대 메시지가 있으면 그 앞은 읽힌 것이다.
+         */
+        const lastPartnerMessageId = page.messages
+          .filter((m) => Number(m.senderId) !== Number(myUserId))
+          .reduce((max, m) => Math.max(max, m.messageId ?? 0), 0);
+        if (lastPartnerMessageId > 0) {
+          setPartnerLastReadMessageId((previous) =>
+            previous == null
+              ? lastPartnerMessageId
+              : Math.max(previous, lastPartnerMessageId)
+          );
+        }
       } catch {
         if (!cancelled) setLoadFailed(true);
       } finally {
@@ -259,6 +296,15 @@ export default function ChatRoomPage() {
           latestPartnerMessageIdRef.current =
             normalizedMessage.messageId;
           markLatestPartnerMessageAsRead();
+
+          /*
+           * 상대가 답장을 보냈다는 건 그 앞의 내 메시지를 봤다는 뜻이다.
+           * 읽음 이벤트가 늦게 오거나 유실돼도 답장이 도착한 시점에는
+           * 읽음이 떠 있어야 한다. (읽음보다 답장이 먼저 보이면 이상하다)
+           */
+          advancePartnerLastReadMessageId(
+            normalizedMessage.messageId,
+          );
         }
 
         requestAnimationFrame(() => {
@@ -320,7 +366,7 @@ export default function ChatRoomPage() {
           return;
         }
 
-        setPartnerLastReadMessageId(
+        advancePartnerLastReadMessageId(
           readState.lastReadMessageId,
         );
       },
@@ -347,6 +393,7 @@ export default function ChatRoomPage() {
       socket?.disconnect();
     };
   }, [
+    advancePartnerLastReadMessageId,
     containerRef,
     markLatestPartnerMessageAsRead,
     myUserId,
@@ -841,6 +888,7 @@ export default function ChatRoomPage() {
                 isReadByPartner={isReadByPartner}
                 onLongPressMessage={handleLongPressMessage}
                 onDoubleTapMessage={handleDoubleTapMessage}
+                onOpenImages={openImageViewer}
               />
             </div>
           );
@@ -884,6 +932,14 @@ export default function ChatRoomPage() {
           onClose={closeActionMenu}
           onSelectReaction={handleSelectReaction}
           onToggleBookmark={handleToggleBookmark}
+        />
+      )}
+
+      {imageViewer && (
+        <ImageViewer
+          images={imageViewer.images}
+          startIndex={imageViewer.startIndex}
+          onClose={() => setImageViewer(null)}
         />
       )}
     </div>

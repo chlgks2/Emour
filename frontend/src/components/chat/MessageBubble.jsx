@@ -18,6 +18,8 @@ import styles from "./MessageBubble.module.css";
  *   꾹 눌렀을 때 액션 메뉴를 열기 위한 콜백. 메뉴를 말풍선 옆에 붙이기 위해 말풍선 좌표도 넘긴다.
  * @param {(message: object) => void} [onDoubleTapMessage]
  *   더블클릭/더블탭 시 하트를 바로 남기기 위한 콜백. (내 메시지에는 붙이지 않는다)
+ * @param {(imageUrls: string[], startIndex: number) => void} [onOpenImages]
+ *   사진을 눌렀을 때 크게 보기. 한 메시지의 사진 묶음을 통째로 넘겨 뷰어에서 넘겨볼 수 있게 한다.
  */
 export default function MessageBubble({
   message,
@@ -27,6 +29,7 @@ export default function MessageBubble({
   isReadByPartner,
   onLongPressMessage,
   onDoubleTapMessage,
+  onOpenImages,
 }) {
   const isMine = message.senderId === myUserId;
   const emotionStyle = message.emotionType ? getEmotionStyle(message.emotionType) : null;
@@ -127,6 +130,8 @@ export default function MessageBubble({
             className={[
               styles.bubble,
               isMine ? styles.bubbleMine : styles.bubblePartner,
+              // 사진만 있는 메시지는 말풍선 배경·여백을 걷어낸다
+              !isTextMessage && imageUrls.length > 0 ? styles.bubbleMedia : "",
               // 눌림 피드백·선택 방지는 실제로 눌리는 말풍선에만 건다
               isMine ? "" : styles.bubbleInteractive,
             ]
@@ -137,13 +142,21 @@ export default function MessageBubble({
             {isTextMessage && message.content}
             {!isTextMessage && imageUrls.length > 0 && (
               <div className={styles.imageGrid}>
-                {imageUrls.map((imageUrl) => (
+                {imageUrls.map((imageUrl, imageIndex) => (
                   <img
                     key={imageUrl}
                     className={styles.chatImage}
                     src={imageUrl}
                     alt="채팅으로 보낸 사진"
                     loading="lazy"
+                    /*
+                      말풍선의 롱프레스(리액션·북마크)와 겹치지 않게
+                      클릭이 위로 올라가는 것을 막는다.
+                    */
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onOpenImages?.(imageUrls, imageIndex);
+                    }}
                   />
                 ))}
               </div>

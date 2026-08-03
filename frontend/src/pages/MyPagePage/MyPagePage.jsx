@@ -88,10 +88,14 @@ const COUPLE_STATUS_POLL_INTERVAL = 2000
  *   WAITING  : 아직 아무도 안 들어온 방과 초대 코드를 지운다
  *   INACTIVE : 상대가 이미 나간 방을 정리한다 (되돌릴 수 없다)
  *   ACTIVE   : 연결을 끊는다
+ *
+ * 사용자를 부를 때는 닉네임을 쓴다. 화면이 '~해요' 로 사용자에게 말을 걸면서
+ * 정작 그 사람을 '나' 라고 부르면 한 문장 안에서 1인칭과 2인칭이 섞인다.
  */
 function buildConfirmInformation({
   confirmAction,
   roomStatus,
+  nickname,
 }) {
   if (!confirmAction) {
     return null
@@ -118,8 +122,7 @@ function buildConfirmInformation({
     return {
       ...baseInformation,
       title: '이 방을 없앨까요?',
-      description:
-        '연인은 아직 방 코드로 이 방에 돌아올 수 있습니다. 나까지 나가면 방이 사라져 되돌릴 수 없습니다.',
+      description: `연인은 아직 방 코드로 이 방에 돌아올 수 있습니다. ${nickname}님까지 나가면 방이 사라져 되돌릴 수 없습니다.`,
       confirmLabel: '방 나가기',
     }
   }
@@ -669,6 +672,7 @@ function MyPagePage() {
     buildConfirmInformation({
       confirmAction,
       roomStatus: profile?.roomStatus,
+      nickname: profile?.nickname ?? '회원',
     })
 
   return (
@@ -936,8 +940,9 @@ function MyPagePage() {
 
                         <p>
                           위 &lsquo;재연결 코드 복사&rsquo;를 눌러 코드를 연인에게 다시
-                          전달하면 이 방으로 돌아올 수 있어요. 나까지 방을 나가면
-                          방이 사라져서 되돌릴 수 없어요.
+                          전달하면 이 방으로 돌아올 수 있어요.{' '}
+                          {profile.nickname}님까지 방을 나가면 방이 사라져서
+                          되돌릴 수 없어요.
                         </p>
                       </div>
                     </div>

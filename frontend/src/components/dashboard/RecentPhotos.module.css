@@ -1,16 +1,18 @@
 /*
- * 사진은 흰 카드 안에 가두지 않고 화면 끝까지 흘린다(full-bleed).
- * 사진을 액자에 넣으면 사진이 아니라 액자가 먼저 보이고, 카드가 줄줄이
- * 이어지는 화면에서 가장 눈에 띄어야 할 영역이 오히려 묻힌다.
- * 제목만 본문 기준선(--page-gutter)에 맞춘다.
+ * 사진을 화면 끝까지 흘리던(full-bleed) 것을 카드 안으로 되돌렸다.
+ *
+ * 액자를 없애면 사진이 주인공이 될 거라고 봤는데, 실제로는 232px 짜리 사진이
+ * 좌우 여백 없이 붙으면서 화면을 가로막는 벽처럼 보였다. 위아래 섹션이 모두
+ * 본문 기준선(--page-gutter) 안에 있어서 이 블록만 밖으로 튀어나온 것처럼
+ * 읽히기도 했다. 세로 리듬을 지키는 쪽이 낫다.
  */
 .section {
-  margin-top: var(--section-gap);
+  margin: var(--section-gap) var(--page-gutter) 0;
 }
 
 .head {
-  margin-right: var(--page-gutter);
-  margin-left: var(--page-gutter);
+  margin-right: 0;
+  margin-left: 0;
 }
 
 /* 서식은 공용 .empty-note 가 정한다. */
@@ -20,6 +22,8 @@
 
 .viewport {
   overflow: hidden;
+  /* 캘린더 카드·감정 리포트 패널과 같은 모서리 */
+  border-radius: var(--card-radius);
   touch-action: pan-y;
   cursor: grab;
   user-select: none;
@@ -40,14 +44,13 @@
 
 .slide {
   flex-shrink: 0;
-  /* 화면 끝까지 흐르므로 슬라이드 사이 간격을 두지 않는다 */
   padding: 0;
 }
 
 .photo {
   width: 100%;
-  /* 카드 안 썸네일(180px)보다 키워 사진이 주인공이 되게 한다 */
-  height: 232px;
+  /* 화면을 가로막지 않으면서 사진이 충분히 보이는 높이 */
+  height: 200px;
   object-fit: cover;
   pointer-events: none;
   transform: translateZ(0);

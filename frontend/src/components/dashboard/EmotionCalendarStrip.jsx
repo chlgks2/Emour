@@ -1,4 +1,5 @@
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useState } from "react";
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp } from "lucide-react";
 import MoodSlotList from "./MoodSlotList";
 import { buildDayGradient, getMoodLabel } from "../../utils/moodEmotion";
 import styles from "./EmotionCalendarStrip.module.css";
@@ -42,6 +43,14 @@ export default function EmotionCalendarStrip({
   onEditSlot,
 }) {
   const selectedDay = weekDays.find((d) => d.moodDate === selectedMoodDate) ?? null;
+
+  /*
+   * 시간대 목록은 접은 채로 시작한다.
+   * 하루 8칸(3시간 간격 기준)이 늘 펼쳐져 있으면 이 카드만 화면 절반을 먹고,
+   * 정작 위의 주간 감정 원과 아래 섹션들이 밀려 내려간다.
+   * 그날의 대략적인 기분은 이미 감정 원 색으로 보이므로, 자세히 볼 때만 편다.
+   */
+  const [isSlotListOpen, setIsSlotListOpen] = useState(false);
 
   return (
     <div className={styles.card}>
@@ -90,17 +99,31 @@ export default function EmotionCalendarStrip({
       */}
       {selectedDay && (
         <div className={styles.detail}>
-          <p className={styles.detailLabel}>
-            {monthLabel} {selectedDay.dayOfMonth}일
-          </p>
+          <div className={styles.detailHead}>
+            <p className={styles.detailLabel}>
+              {monthLabel} {selectedDay.dayOfMonth}일
+            </p>
 
-          <MoodSlotList
-            mySlots={detailMood.mySlots}
-            partnerSlots={detailMood.partnerSlots}
-            window={moodWindow}
-            nowMinutes={detailNowMinutes}
-            onEditSlot={onEditSlot}
-          />
+            <button
+              type="button"
+              className={styles.toggleButton}
+              aria-expanded={isSlotListOpen}
+              onClick={() => setIsSlotListOpen((previous) => !previous)}
+            >
+              <span>{isSlotListOpen ? "접기" : "펼치기"}</span>
+              {isSlotListOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+            </button>
+          </div>
+
+          {isSlotListOpen && (
+            <MoodSlotList
+              mySlots={detailMood.mySlots}
+              partnerSlots={detailMood.partnerSlots}
+              window={moodWindow}
+              nowMinutes={detailNowMinutes}
+              onEditSlot={onEditSlot}
+            />
+          )}
         </div>
       )}
     </div>
