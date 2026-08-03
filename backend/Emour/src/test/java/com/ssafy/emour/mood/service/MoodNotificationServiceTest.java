@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class MoodNotificationServiceTest {
@@ -109,6 +110,23 @@ class MoodNotificationServiceTest {
         assertThat(response.startTime()).isEqualTo(LocalTime.of(8, 0));
         assertThat(response.endTime()).isEqualTo(LocalTime.of(20, 0));
         assertThat(response.intervalHours()).isEqualTo(2);
+    }
+
+    @Test
+    void createsDefaultSettingWhenActiveRoomHasNoSetting() {
+        givenActiveRoom();
+        given(moodNotificationRepository.findById(ROOM_ID))
+                .willReturn(Optional.empty());
+        given(moodNotificationRepository.save(any(MoodNotification.class)))
+                .willAnswer(invocation -> invocation.getArgument(0));
+
+        var response = moodNotificationService.get(USER_ID);
+
+        assertThat(response.startTime()).isEqualTo(LocalTime.of(8, 0));
+        assertThat(response.endTime()).isEqualTo(LocalTime.of(22, 0));
+        assertThat(response.intervalHours()).isEqualTo(2);
+        assertThat(response.isEnabled()).isTrue();
+        verify(moodNotificationRepository).save(any(MoodNotification.class));
     }
 
     private MoodNotificationUpdateRequest request(

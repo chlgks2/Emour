@@ -38,6 +38,9 @@ public class Mood {
     @Column(name = "mood_type", nullable = false, length = 20)
     private MoodType moodType;
 
+    @Column(name = "reason", length = 100)
+    private String reason;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -49,6 +52,7 @@ public class Mood {
             Long userId,
             LocalDateTime moodDatetime,
             MoodType moodType,
+            String reason,
             LocalDateTime createdAt
     ) {
         Mood mood = new Mood();
@@ -56,16 +60,43 @@ public class Mood {
         mood.userId = userId;
         mood.moodDatetime = moodDatetime;
         mood.moodType = moodType;
+        mood.reason = reason;
         mood.createdAt = createdAt;
         mood.updatedAt = createdAt;
         return mood;
+    }
+
+    public static Mood create(
+            Long roomId,
+            Long userId,
+            LocalDateTime moodDatetime,
+            MoodType moodType,
+            LocalDateTime createdAt
+    ) {
+        return create(
+                roomId,
+                userId,
+                moodDatetime,
+                moodType,
+                null,
+                createdAt
+        );
     }
 
     public void updateMoodType(
             MoodType moodType,
             LocalDateTime updatedAt
     ) {
+        update(moodType, reason, updatedAt);
+    }
+
+    public void update(
+            MoodType moodType,
+            String reason,
+            LocalDateTime updatedAt
+    ) {
         this.moodType = moodType;
+        this.reason = reason;
         this.updatedAt = updatedAt;
     }
 }
