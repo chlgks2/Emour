@@ -12,6 +12,28 @@ const PLOT_HEIGHT = VIEW_HEIGHT - PADDING.top - PADDING.bottom;
 const GRID_LINE_COUNT = 5;
 
 /**
+ * 차트를 감싸는 껍데기.
+ * 단독 섹션으로 놓일 때는 제목과 바깥 여백을 갖고,
+ * 이미 상자 안(감정 리포트 패널)에 들어갈 때는 아무것도 두르지 않는다.
+ */
+function ChartFrame({ bare, titleId, title, children }) {
+  if (bare) {
+    return <div>{children}</div>;
+  }
+
+  return (
+    <section className="surface-plain" aria-labelledby={titleId}>
+      <header className="section-head">
+        <h2 id={titleId} className="section-title">
+          {title}
+        </h2>
+      </header>
+      {children}
+    </section>
+  );
+}
+
+/**
  * 시간대별 감정 변화 꺾은선. **데이터 소스를 모른다.**
  *
  * 지금은 무드트래커 슬롯을 받지만(utils/moodTrendSeries.buildMoodTrendSeries),
@@ -24,26 +46,25 @@ const GRID_LINE_COUNT = 5;
  * @param {Array} series  utils/moodTrendSeries 참고
  * @param {object} axis   { min, max, minLabel, maxLabel, formatX }
  * @param {string} title
+ * @param {boolean} bare  제목·바깥 여백 없이 차트만. 이미 상자 안에 놓을 때 쓴다.
  */
 export default function MoodTrendChart({
   series = [],
   axis = MOOD_AXIS,
   title = "시간대별 감정 변화",
   emptyText = "아직 기록된 감정이 없어요.\n기분을 기록하면 하루의 흐름이 그려져요.",
+  bare = false,
 }) {
   const gradientId = useId();
 
   const drawable = series.filter((s) => s.points?.length > 0);
   const allPoints = drawable.flatMap((s) => s.points);
 
+  const frameProps = { bare, titleId: `${gradientId}-title`, title };
+
   if (allPoints.length === 0) {
     return (
-      <section className="surface-plain" aria-labelledby={`${gradientId}-title`}>
-        <header className="section-head">
-          <h2 id={`${gradientId}-title`} className="section-title">
-            {title}
-          </h2>
-        </header>
+      <ChartFrame {...frameProps}>
         <p className={`empty-note ${styles.emptyText}`}>
           {emptyText.split("\n").map((line, i) => (
             <span key={line}>
@@ -52,7 +73,7 @@ export default function MoodTrendChart({
             </span>
           ))}
         </p>
-      </section>
+      </ChartFrame>
     );
   }
 
@@ -80,13 +101,7 @@ export default function MoodTrendChart({
   const [primary] = projected;
 
   return (
-    <section className="surface-plain" aria-labelledby={`${gradientId}-title`}>
-      <header className="section-head">
-        <h2 id={`${gradientId}-title`} className="section-title">
-          {title}
-        </h2>
-      </header>
-
+    <ChartFrame {...frameProps}>
       <svg
         className={styles.chart}
         viewBox={`0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}`}
@@ -179,7 +194,7 @@ export default function MoodTrendChart({
           </li>
         ))}
       </ul>
-    </section>
+    </ChartFrame>
   );
 }
 

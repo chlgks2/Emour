@@ -453,7 +453,7 @@ export async function saveDiary({
 
   if (!trimmedContent) {
     throw new Error(
-      '한줄 일기 내용을 입력해주세요.',
+      '한 줄 일기 내용을 입력해주세요.',
     )
   }
 
@@ -467,7 +467,7 @@ export async function saveDiary({
 
   if (!existingDiary && date !== today) {
     throw new Error(
-      '한줄 일기는 오늘 날짜에만 새로 작성할 수 있습니다.',
+      '한 줄 일기는 오늘 날짜에만 새로 작성할 수 있습니다.',
     )
   }
 

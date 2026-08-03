@@ -132,7 +132,7 @@
 }
 
 .detailLabel {
-  margin-bottom: 8px;
+  margin: 0 0 8px;
   color: var(--color-text-accent);
   font-size: var(--font-micro);
   font-weight: 800;

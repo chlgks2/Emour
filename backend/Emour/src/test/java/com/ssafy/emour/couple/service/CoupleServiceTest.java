@@ -214,21 +214,29 @@ class CoupleServiceTest {
     }
 
     @Test
-    void retainedInactiveRoomBlocksCreatingAnotherInvitation() {
+    void retainedInactiveRoomReturnsItsFixedReconnectCode() {
+        CoupleRoom inactiveRoom = CoupleRoom.waiting(
+                "KEEP-CODE",
+                LocalDateTime.now().minusDays(1)
+        );
+        inactiveRoom.activate();
+        inactiveRoom.deactivate();
+        ReflectionTestUtils.setField(inactiveRoom, "id", ROOM_ID);
+
         givenLockedMember();
-        given(coupleMemberRepository.existsActiveCoupleByUserId(USER_ID))
-                .willReturn(false);
-        given(coupleMemberRepository.existsRetainedInactiveRoomByUserId(USER_ID))
-                .willReturn(true);
+        given(coupleRoomRepository.findRetainedInactiveRoomsByUserIdForUpdate(
+                any(Long.class),
+                any(Pageable.class)
+        )).willReturn(List.of(inactiveRoom));
 
-        assertThatThrownBy(() -> coupleService.createInvitation(USER_ID))
-                .isInstanceOf(CustomException.class)
-                .satisfies(exception -> assertThat(
-                        ((CustomException) exception).getErrorCode()
-                ).isEqualTo(ErrorCode.ALREADY_COUPLED));
+        CoupleInvitationResponse response = coupleService.createInvitation(USER_ID);
 
+        assertThat(response.roomId()).isEqualTo(ROOM_ID);
+        assertThat(response.invitationCode()).isEqualTo("KEEP-CODE");
+        assertThat(response.expiresAt()).isNull();
         verify(invitationCodeGenerator, never()).generate();
         verify(coupleRoomRepository, never()).save(any(CoupleRoom.class));
+        verify(coupleMemberRepository, never()).save(any(CoupleMember.class));
     }
 
     private void givenLockedMember() {

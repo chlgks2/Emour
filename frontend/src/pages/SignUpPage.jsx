@@ -163,7 +163,7 @@ export default function SignUpPage() {
             value={form.nickname}
             onChange={updateField("nickname")}
             error={errors.nickname}
-            hint="상대방에게 보여지는 이름이에요."
+            hint="상대방에게 보이는 이름이에요."
           />
         </div>
 

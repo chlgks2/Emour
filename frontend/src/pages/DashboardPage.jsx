@@ -16,7 +16,9 @@ import MoodTrendChart from "../components/dashboard/MoodTrendChart";
 import { fetchMoodRecordsForMonth, saveMyMood } from "../api/moodApi";
 import {
   CONVERSATION_AXIS,
+  MOOD_AXIS,
   buildConversationTrendSeries,
+  buildMoodTrendSeries,
 } from "../utils/moodTrendSeries";
 import { DEFAULT_MOOD_WINDOW } from "../utils/moodSlotGrid";
 import { getMoodNotificationSetting } from "../api/notificationSettingApi";
@@ -235,6 +237,29 @@ export default function DashboardPage() {
       ? periodDashboard
       : null;
 
+  const conversationTrendSeries = buildConversationTrendSeries(
+    visiblePeriodDashboard?.emotionFlow ?? [],
+  );
+
+  const reportPeriodName = {
+    DAY: "일간",
+    MONTH: "월간",
+    YEAR: "연간",
+  }[reportPeriod];
+
+  const isTodayReport =
+    reportPeriod === "DAY" &&
+    formatDateKey(reportDate) === formatDateKey(new Date());
+
+  // 오늘 일간은 채팅 원본 폴백이 반영된 실시간 값을 우선하고,
+  // 과거 일간·월간·연간은 선택한 기간의 서버 집계를 그대로 표시한다.
+  const conversationDashboard = isTodayReport
+    ? {
+        ...visiblePeriodDashboard,
+        ...dashboardData?.dashboard,
+      }
+    : visiblePeriodDashboard;
+
   const handlePrevWeek = () => {
     setSelectedMoodDate(null);
     setWeekStart((w) => {
@@ -350,12 +375,23 @@ export default function DashboardPage() {
           onEditSlot={openMoodForm}
         />
 
-        {/* 선택한 기간에 분석된 대화 감정을 2시간대별로 합산한다. */}
+        {/*
+          선택한 날짜에 두 사람이 남긴 기분 기록을 시간 순으로 잇는다.
+
+          예전에는 대화 감정(/dashboards/emotion-flow)을 그렸는데 두 가지가 걸렸다.
+            · 그 응답은 "로그인한 사용자 본인"의 메시지만 집계해서 상대방 선을 그릴 수 없다
+            · 감정 분석 배치가 돌기 전에는 전 구간이 0이라 그래프가 통째로 비었다
+          무드트래커는 두 사람 것이 이미 화면에 올라와 있고(detailMood),
+          기록하는 즉시 값이 생긴다.
+
+          대화 감정 쪽은 도넛(감정 리포트 / 오늘의 채팅 감정 분포)이 맡는다.
+        */}
         <MoodTrendChart
-          series={buildConversationTrendSeries(
-            visiblePeriodDashboard?.emotionFlow ?? [],
+          series={buildMoodTrendSeries(
+            detailMood.mySlots,
+            detailMood.partnerSlots,
           )}
-          axis={CONVERSATION_AXIS}
+          axis={MOOD_AXIS}
         />
 
         {/*
@@ -413,21 +449,62 @@ export default function DashboardPage() {
               </button>
             </div>
 
-            <EmotionReport
-              emotionSummary={visiblePeriodDashboard?.emotionSummary ?? []}
-            />
+            {/*
+              한 상자 안에 그래프가 둘이다. 같은 기간의 같은 감정을 보는데
+              담고 있는 정보가 다르므로 제목이 그 차이를 말해야 한다.
+                비율 — 어떤 감정이 얼마만큼이었나 (합이 100%)
+                흐름 — 그 감정이 하루 중 언제였나 (시간 축)
+              '감정 분포 / 감정 변화' 처럼 뭉뚱그리면 둘 다 같은 말로 읽힌다.
+            */}
+            <div className={styles.reportBlock}>
+              <p className={styles.reportBlockTitle}>
+                감정 비율
+                <span>어떤 감정이 얼마나</span>
+              </p>
+
+              <EmotionReport
+                emotionSummary={visiblePeriodDashboard?.emotionSummary ?? []}
+              />
+            </div>
+
+            {/*
+              분석된 대화 감정의 흐름.
+              도넛은 "무엇이 얼마나"를 말하고 이 선은 "언제"를 말한다.
+              둘 다 같은 기간(GET /dashboards/main-emotions, /emotion-flow)을 본다.
+
+              그릴 점이 없으면 이 자리를 통째로 비운다.
+              두 그래프의 출처가 달라서(main-emotions / emotion-flow) 도넛에는
+              값이 있는데 흐름만 비는 경우가 생기는데, 그때 '아직 분석된 대화가
+              없어요' 가 도넛 바로 아래에 남아 앞말과 모순됐다.
+              둘 다 비었을 때의 안내는 도넛(EmotionReport)이 이미 하고 있다.
+
+              ⚠️ emotion-flow 는 로그인한 사용자 본인의 메시지만 집계한다.
+                 두 사람을 나란히 그리려면 백엔드 응답이 상대/커플 기준으로 나뉘어야 한다.
+                 (backend .../dashboard/service/DashboardEmotionService.java)
+            */}
+            {conversationTrendSeries.some(
+              (series) => series.points.length > 0,
+            ) && (
+              <div className={styles.reportBlock}>
+                <p className={styles.reportBlockTitle}>
+                  감정 흐름
+                  <span>어느 시간대에</span>
+                </p>
+
+                <MoodTrendChart
+                  bare
+                  series={conversationTrendSeries}
+                  axis={CONVERSATION_AXIS}
+                />
+              </div>
+            )}
           </div>
         </section>
 
-        {/*
-          대화 기록은 항상 오늘 기준이다.
-          위 감정 리포트의 기간 전환은 리포트에만 적용된다.
-          (예전에는 같은 기간을 따라가서, 리포트를 연간으로 보면 대화 기록까지
-           연간으로 바뀌고 사진·공감 개수가 사라졌다)
-        */}
         <DashboardStats
-          dashboard={dashboardData.dashboard}
-          title="일간 대화 기록"
+          dashboard={conversationDashboard}
+          title={`${reportPeriodName} 대화 기록`}
+          emotionLabel={`${reportPeriodName} 채팅 감정 분포`}
         />
 
         <BookmarkPreview />

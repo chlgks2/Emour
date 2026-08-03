@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import MoodSlotList from "./MoodSlotList";
 import { buildDayGradient, getMoodLabel } from "../../utils/moodEmotion";
@@ -43,6 +44,29 @@ export default function EmotionCalendarStrip({
 }) {
   const selectedDay = weekDays.find((d) => d.moodDate === selectedMoodDate) ?? null;
 
+  /*
+   * 시간대 목록은 접은 채로 시작한다.
+   * 하루 8칸(3시간 간격 기준)이 늘 펼쳐져 있으면 이 카드만 화면 절반을 먹고,
+   * 정작 위의 주간 감정 원과 아래 섹션들이 밀려 내려간다.
+   * 그날의 대략적인 기분은 이미 감정 원 색으로 보이므로, 자세히 볼 때만 편다.
+   *
+   * 펼치는 수단은 감정 원 자체다. 따로 '펼치기' 버튼을 두면 같은 일을 하는
+   * 조작이 둘이 되고, 날짜를 고르는 동작과 펼치는 동작이 따로 노는 것처럼 보인다.
+   *   · 다른 날짜를 누르면  -> 그 날짜로 옮기고 편다
+   *   · 지금 날짜를 다시 누르면 -> 접는다
+   */
+  const [isSlotListOpen, setIsSlotListOpen] = useState(false);
+
+  const handleSelectDate = (moodDate) => {
+    if (moodDate === selectedMoodDate) {
+      setIsSlotListOpen((previous) => !previous);
+      return;
+    }
+
+    onSelectDate(moodDate);
+    setIsSlotListOpen(true);
+  };
+
   return (
     <div className={styles.card}>
       <div className={styles.monthRow}>
@@ -64,14 +88,20 @@ export default function EmotionCalendarStrip({
 
       <div className={styles.dayRow}>
         {weekDays.map((day) => {
-          const isSelected = day.moodDate === selectedMoodDate;
+          /*
+           * 로즈 링은 "지금 펼쳐서 보고 있는 날" 표시다.
+           * 선택 여부만으로 그렸더니, 접어 둔 상태에서도 링이 남아
+           * 눌린 것처럼 보이는데 아래에는 아무것도 없는 상태가 됐다.
+           */
+          const isSelected =
+            day.moodDate === selectedMoodDate && isSlotListOpen;
           return (
             <button
               type="button"
               key={day.moodDate}
               className={styles.dayItem}
-              onClick={() => onSelectDate(day.moodDate)}
-              aria-pressed={isSelected}
+              onClick={() => handleSelectDate(day.moodDate)}
+              aria-expanded={isSelected}
               aria-label={buildDayAriaLabel(day)}
             >
               <span
@@ -88,7 +118,7 @@ export default function EmotionCalendarStrip({
         위 감정 원이 이미 그날의 최근 기분 색을 보여주므로 '최근 기분' 요약란은 두지 않는다.
         날짜를 고르면 그날의 시간대별 기분이 이 카드 안에서 펼쳐진다.
       */}
-      {selectedDay && (
+      {selectedDay && isSlotListOpen && (
         <div className={styles.detail}>
           <p className={styles.detailLabel}>
             {monthLabel} {selectedDay.dayOfMonth}일

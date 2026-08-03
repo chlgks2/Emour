@@ -6,6 +6,39 @@
  * 시간 순서라는 형태는 세로선이 이미 만들어주므로 면이 따로 필요하지 않다.
  */
 
+/*
+ * 기념일 — 타임라인 위, 세로선 바깥.
+ * 시각이 없는 하루 전체의 일이라 시간 축에 얹지 않는다.
+ */
+.anniversaryList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  background: var(--color-primary-faint);
+  list-style: none;
+}
+
+.anniversaryItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  color: var(--color-primary);
+}
+
+.anniversaryName {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--color-text-accent);
+  font-size: 13px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .timeline {
   position: relative;
   display: flex;
@@ -52,14 +85,24 @@
   box-shadow: 0 0 0 3px var(--color-background);
 }
 
-/* 이미 시간이 지난 일정: "완료"가 아니므로 취소선 없이 흐리게만 */
+/*
+ * 이미 시간이 지난 일정: "완료"가 아니므로 취소선 없이 흐리게만.
+ *
+ * opacity 로 항목 전체를 흐리게 하면 점과 그 배경색 링까지 반투명해져서
+ * 뒤를 지나는 세로선이 점을 통과해 비쳤다. 점만 동강 난 것처럼 보인다.
+ * 글자 색만 낮추고, 점과 링은 불투명한 색으로 둔다.
+ */
 .item.past .dot {
   background: var(--color-border-strong);
-  box-shadow: 0 0 0 3px var(--color-background);
 }
 
-.item.past {
-  opacity: 0.5;
+.item.past .time,
+.item.past .name {
+  color: var(--color-text-placeholder);
+}
+
+.item.past .name {
+  font-weight: 500;
 }
 
 .time {
