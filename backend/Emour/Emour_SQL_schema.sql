@@ -101,7 +101,7 @@ CREATE TABLE `album_photo` (
     `room_id` BIGINT NOT NULL,
     `uploader_id` BIGINT NOT NULL,
     `image_url` VARCHAR(2048) NOT NULL,
-    `memo` VARCHAR(500) NULL,
+    `memo` VARCHAR(100) NULL,
     `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
 
     FOREIGN KEY (`room_id`, `uploader_id`) REFERENCES `couple_member` (`room_id`, `user_id`)
