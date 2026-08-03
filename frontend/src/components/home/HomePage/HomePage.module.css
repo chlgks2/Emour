@@ -1,0 +1,262 @@
+.home {
+  position: relative;
+  width: 100%;
+  max-width: var(--app-max-width);
+  height: 100%;
+  color: #fff;
+}
+
+.loadingText {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.bgPhoto {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/*
+ * 배경 사진은 무엇이 올지 알 수 없다. 하늘처럼 밝은 사진에서도
+ * 상단의 D+일수·수정 버튼이 읽히도록 위쪽에도 옅은 스크림을 깐다.
+ */
+.overlayGradient {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(40, 33, 31, 0.46) 0%,
+    rgba(40, 33, 31, 0.12) 22%,
+    rgba(0, 0, 0, 0.12) 46%,
+    rgba(0, 0, 0, 0.82) 100%
+  );
+}
+
+.editBtn {
+  position: absolute;
+  top: calc(20px + var(--safe-top));
+  right: 12px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--tap-target);
+  min-height: var(--tap-target);
+  padding: 0 8px;
+  border-radius: var(--radius-pill);
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+}
+
+.editBtn:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.headerInfo {
+  position: absolute;
+  top: calc(24px + var(--safe-top));
+  left: 24px;
+  z-index: 2;
+}
+
+/* "from 260715" — 'from' 은 한 단계 눌러두고 날짜 숫자를 주인공으로 세운다. */
+/*
+ * 'from' 은 날짜를 가리키는 말일 뿐이라 날짜만큼 굵을 이유가 없다.
+ * 둘이 같은 무게(800)로 붙어 있으니 한 덩어리로 읽혀서 날짜가 안 도드라졌다.
+ * 여기(감싸는 p)를 얇고 작게 두고, 날짜(span)만 크고 굵게 올린다.
+ */
+.days {
+  margin: 4px 0 0;
+  font-size: 17px;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.4);
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.days span {
+  color: #fff;
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+
+.daysRow {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.dateEditButton {
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 4px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+}
+
+.registerDateButton {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 14px;
+  border: 1px solid rgba(255, 255, 255, 0.48);
+  border-radius: var(--radius-pill);
+  background: rgba(20, 20, 20, 0.3);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  backdrop-filter: blur(8px);
+}
+
+.dateEditButton:hover,
+.registerDateButton:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.profiles {
+  margin-top: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.profileCircle {
+  flex: none;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.35);
+  border: 2px solid var(--color-primary);
+  overflow: hidden;
+}
+
+.profileCircle img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* 사진이 없을 때 보이는 닉네임 첫 글자 / 사람 아이콘 */
+.profileFallback {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  background: rgba(20, 20, 20, 0.28);
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1;
+  color: #fff;
+}
+
+.heart {
+  flex: none;
+  color: var(--color-primary);
+}
+
+/*
+ * 문구 상자.
+ *
+ * 82% 였을 때는 한 줄에 들어갈 만한 문구도 두세 줄로 접혀, 사진 가운데에
+ * 세로로 긴 덩어리가 생겼다. 좌우로 조금 더 열어 문구가 자연스러운 길이로
+ * 끊기게 한다. 사진 가장자리와는 여전히 여백을 남긴다.
+ */
+.captionBox {
+  position: absolute;
+  z-index: 2;
+  transform: translate(-50%, -50%);
+  max-width: 88%;
+  padding: 16px 20px;
+  border-radius: 12px;
+}
+
+.captionBoxDim {
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.captionBoxSolid {
+  background: rgba(20, 20, 20, 0.8);
+}
+
+.captionBoxNone {
+  background: transparent;
+}
+
+.quoteMark {
+  display: block;
+  font-size: 20px;
+  opacity: 0.8;
+  margin-bottom: 4px;
+}
+
+.captionText {
+  font-weight: 700;
+  line-height: 1.4;
+  word-break: keep-all;
+}
+
+.captionSm .captionText {
+  font-size: 15px;
+}
+
+.captionMd .captionText {
+  font-size: 19px;
+}
+
+.captionLg .captionText {
+  font-size: 24px;
+}
+
+.viewDashboardBtn {
+  position: absolute;
+  bottom: calc(28px + var(--safe-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: var(--tap-target);
+  padding: 0 16px;
+  border-radius: var(--radius-pill);
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+}
+
+/* 아래로 내려가라는 힌트를 은은한 상하 움직임으로 표현 */
+.viewDashboardBtn svg {
+  animation: nudgeDown 1.8s var(--ease-out) infinite;
+}
+
+@keyframes nudgeDown {
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.75;
+  }
+  50% {
+    transform: translateY(4px);
+    opacity: 1;
+  }
+}

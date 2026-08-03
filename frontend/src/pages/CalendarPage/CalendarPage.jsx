@@ -34,11 +34,11 @@ import {
   fetchMoodSlots,
   saveMyMood,
 } from '../../api/moodApi.js'
-import MoodSlotList from '../../components/dashboard/MoodSlotList.jsx'
+import MoodSlotList from '../../components/dashboard/MoodSlotList/MoodSlotList.jsx'
 import { formatSlotTime } from '../../utils/moodSlotFormat.js'
 import { DEFAULT_MOOD_WINDOW } from '../../utils/moodSlotGrid.js'
 import { getMoodNotificationSetting } from '../../api/notificationSettingApi.js'
-import MoodFormModal from '../../components/dashboard/MoodFormModal.jsx'
+import MoodFormModal from '../../components/dashboard/MoodFormModal/MoodFormModal.jsx'
 import { useLiveSync } from '../../hooks/useLiveSync.js'
 
 import {

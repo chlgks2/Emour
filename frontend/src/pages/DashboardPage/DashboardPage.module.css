@@ -1,0 +1,158 @@
+.centered {
+  align-items: center;
+  justify-content: center;
+}
+
+.scrollArea {
+  flex: 1;
+  overflow-y: auto;
+  /* 하단 네비 + 홈 인디케이터 높이만큼 여유를 둬서 마지막 카드가 가리지 않게 */
+  padding-bottom: calc(var(--bottom-nav-height) + var(--safe-bottom) + 26px);
+  min-height: 0;
+  /*
+   * 맨 위에서 한 번 더 위로 굴리면 홈으로 올라가야 한다.
+   * contain 은 그 전파를 막아서, 대시보드 최상단에서 위로 굴려도 아무 일도
+   * 일어나지 않았다. (홈으로 가려면 상단의 작은 버튼을 찾아 눌러야 했다)
+   *
+   * 아래쪽 전파는 신경 쓰지 않아도 된다. 대시보드가 스냅 컨테이너의 마지막
+   * 섹션이라 더 내려갈 곳이 없다.
+   */
+  overscroll-behavior-y: auto;
+  overscroll-behavior-x: contain;
+}
+
+/*
+ * 무드트래커 리포트 본문.
+ *
+ * 상자를 두르지 않는다. 아래 대화 기록 섹션과 같은 방식이다.
+ * 흰 카드로 감쌌더니 그 안에 또 도넛 상자와 구분선이 들어가 테두리가 두 겹
+ * 세 겹으로 쌓였고, 대시보드에서 이 섹션만 유독 무겁게 떠 보였다.
+ * 제목 아래 내용이 페이지 배경 위에 그대로 놓이고, 묶음은 구분선이 만든다.
+ *
+ * --donut-hole 은 도넛 구멍 색이다. 이제 배경 위에 바로 놓이므로 배경색으로
+ * 맞춰야 구멍으로 보인다. (흰 카드 안이던 시절 값은 --color-surface 였다)
+ */
+.reportPanel {
+  --donut-hole: var(--color-background);
+}
+
+/*
+ * 기간 선택 — 세그먼티드 컨트롤.
+ * 트랙(회색 홈) 안에서 선택된 칸 하나만 움직이는 구조다.
+ * 흰 면 위로 올라오면서 반투명 흰색 트랙은 보이지 않게 되므로 회색으로 판다.
+ */
+.periodTabs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  padding: 3px;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-sunken);
+}
+
+.periodTabs button {
+  min-height: 34px;
+  border-radius: var(--radius-pill);
+  color: var(--color-text-tertiary);
+  font-size: 13px;
+  font-weight: 700;
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
+}
+
+/*
+ * 선택된 칸은 브랜드 색으로 채운다. 흰 칸 + 로즈 글씨였을 때는 흰 면 위의
+ * 흰 칸이라 어느 기간을 보고 있는지가 흐렸다.
+ *
+ * --color-primary(#d1748d) 가 아니라 --color-action(#c14a67) 을 쓴다.
+ * 흰 글씨를 얹는 면은 이 토큰이라고 tokens.css 가 정해 두었다.
+ * (primary 위 흰 글씨는 대비가 2.7:1 뿐이라 13px 글자에 못 쓴다)
+ */
+.periodTabs .periodTabActive {
+  background: var(--color-action);
+  color: var(--color-text-on-primary);
+}
+
+.periodNavigator {
+  display: grid;
+  grid-template-columns: 36px 1fr 36px;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.periodNavigator button {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  color: var(--color-text-secondary);
+}
+
+.periodNavigator button:disabled {
+  opacity: 0.3;
+}
+
+.periodNavigator strong {
+  text-align: center;
+  color: var(--color-text-primary);
+  font-size: 14px;
+}
+
+/*
+ * 리포트 본문의 한 덩어리(제목 + 그래프) = 카드 하나.
+ *
+ * 구분선으로만 나누다가 카드로 바꿨다. 아래 대화 기록의 감정 분포 상자와
+ * 같은 층의 같은 성격 블록인데 한쪽만 선이고 한쪽만 상자여서, 스크롤하며
+ * 내려오면 두 섹션의 짜임이 어긋나 보였다. 상자 규격도 그쪽에 맞춘다.
+ * (흰 면 + 중성 회색 헤어라인. 색은 강조에만 쓴다)
+ */
+.reportBlock {
+  /* 흰 면 위이므로 도넛 구멍도 흰색 (바깥 .reportPanel 은 배경색 기준) */
+  --donut-hole: var(--color-surface);
+
+  margin-top: 10px;
+  padding: 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+/*
+ * 나 / 상대방 각각의 기분 비율.
+ * 두 도넛을 좌우로 나눠 놓으면 각 도넛과 범례가 폭의 절반씩만 갖게 되어
+ * '매우 안 좋음 12%' 같은 항목이 줄줄이 접힌다. 위아래로 쌓고 누구 것인지만
+ * 짧게 밝힌다.
+ */
+.sideBlock + .sideBlock {
+  margin-top: 12px;
+}
+
+.sideLabel {
+  margin-bottom: 6px;
+  color: var(--color-text-secondary);
+  font-size: var(--font-micro);
+  font-weight: 700;
+}
+
+/*
+ * 집계 기준 각주. 다 읽고 난 뒤 눈에 들어오면 되는 정보라 맨 아래 작게.
+ * 구분선은 두지 않는다. 위 카드들이 이미 각자 테두리를 갖고 있어서
+ * 선을 하나 더 그으면 마지막 카드에 뚜껑이 하나 더 덮인 것처럼 보인다.
+ */
+.reportNote {
+  margin-top: 12px;
+  color: var(--color-text-placeholder);
+  font-size: var(--font-micro);
+  line-height: 1.5;
+}
+
+/*
+ * 대화 기록의 기간 선택.
+ * 기분 리포트는 색 면(.reportPanel) 안에 조작과 결과를 함께 담지만,
+ * 이쪽은 섹션 자체가 이미 카드라 트랙만 제목 아래에 놓는다.
+ */
+.chatPeriod {
+  margin-bottom: 12px;
+}
