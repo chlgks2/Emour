@@ -16,12 +16,4 @@ public record CoupleInvitationResponse(
                 room.getRoomCodeExpiresAt()
         );
     }
-
-    public static CoupleInvitationResponse forReconnect(CoupleRoom room) {
-        return new CoupleInvitationResponse(
-                room.getId(),
-                room.getRoomCode(),
-                null
-        );
-    }
 }

@@ -82,23 +82,30 @@ class CoupleReconnectServiceTest {
     }
 
     @Test
-    void 만료된_기존_초대코드도_재결합에는_사용할_수_있다() {
+    void 만료된_초대코드로는_재결합할_수_없다() {
         CoupleRoom room = inactiveRoom();
         CoupleMember leaver = leftMember();
-        givenReconnectLookup(room, leaver);
-        given(coupleMemberRepository.countByIdRoomIdAndStatus(
-                ROOM_ID,
-                CoupleMemberStatus.ACTIVE
-        )).willReturn(1L);
+        ReflectionTestUtils.setField(
+                room,
+                "roomCodeExpiresAt",
+                LocalDateTime.now().minusDays(1)
+        );
+        givenLockedUser();
+        given(coupleMemberRepository.existsActiveCoupleByUserId(USER_ID))
+                .willReturn(false);
+        given(coupleRoomRepository.findByRoomCodeForUpdate(INVITATION_CODE))
+                .willReturn(Optional.of(room));
 
-        var response = coupleService.reconnect(
-                USER_ID,
-                new CoupleReconnectRequest(INVITATION_CODE)
+        assertError(
+                () -> coupleService.reconnect(
+                        USER_ID,
+                        new CoupleReconnectRequest(INVITATION_CODE)
+                ),
+                ErrorCode.INVITATION_CODE_EXPIRED
         );
 
-        assertThat(room.getRoomCodeExpiresAt())
-                .isBefore(LocalDateTime.now());
-        assertThat(response.status()).isEqualTo(CoupleRoomStatus.ACTIVE);
+        assertThat(leaver.getStatus()).isEqualTo(CoupleMemberStatus.LEFT);
+        assertThat(room.getStatus()).isEqualTo(CoupleRoomStatus.INACTIVE);
     }
 
     @Test
@@ -164,7 +171,7 @@ class CoupleReconnectServiceTest {
     private CoupleRoom inactiveRoom() {
         CoupleRoom room = CoupleRoom.waiting(
                 INVITATION_CODE,
-                LocalDateTime.now().minusDays(1)
+                LocalDateTime.now().plusHours(1)
         );
         ReflectionTestUtils.setField(room, "id", ROOM_ID);
         room.activate();
