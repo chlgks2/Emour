@@ -237,6 +237,25 @@ export default function DashboardPage() {
       ? periodDashboard
       : null;
 
+  const reportPeriodName = {
+    DAY: "일간",
+    MONTH: "월간",
+    YEAR: "연간",
+  }[reportPeriod];
+
+  const isTodayReport =
+    reportPeriod === "DAY" &&
+    formatDateKey(reportDate) === formatDateKey(new Date());
+
+  // 오늘 일간은 채팅 원본 폴백이 반영된 실시간 값을 우선하고,
+  // 과거 일간·월간·연간은 선택한 기간의 서버 집계를 그대로 표시한다.
+  const conversationDashboard = isTodayReport
+    ? {
+        ...visiblePeriodDashboard,
+        ...dashboardData?.dashboard,
+      }
+    : visiblePeriodDashboard;
+
   const handlePrevWeek = () => {
     setSelectedMoodDate(null);
     setWeekStart((w) => {
@@ -450,15 +469,10 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        {/*
-          대화 기록은 항상 오늘 기준이다.
-          위 감정 리포트의 기간 전환은 리포트에만 적용된다.
-          (예전에는 같은 기간을 따라가서, 리포트를 연간으로 보면 대화 기록까지
-           연간으로 바뀌고 사진·공감 개수가 사라졌다)
-        */}
         <DashboardStats
-          dashboard={dashboardData.dashboard}
-          title="일간 대화 기록"
+          dashboard={conversationDashboard}
+          title={`${reportPeriodName} 대화 기록`}
+          emotionLabel={`${reportPeriodName} 채팅 감정 분포`}
         />
 
         <BookmarkPreview />

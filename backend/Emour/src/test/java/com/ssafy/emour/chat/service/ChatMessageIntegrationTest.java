@@ -1,5 +1,6 @@
 package com.ssafy.emour.chat.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ssafy.emour.chat.dto.ChatBookmarkListResponse;
 import com.ssafy.emour.chat.dto.ChatHistoryResponse;
 import com.ssafy.emour.chat.dto.ChatMessageRequest;
@@ -335,7 +336,7 @@ class ChatMessageIntegrationTest {
 
     // 완료된 감정 분석 결과를 실제 DB에서 읽어 대시보드 JSON으로 저장합니다.
     @Test
-    void savesEmotionFlow() {
+    void savesEmotionFlow() throws Exception {
         java.time.LocalDateTime snapshotUntil =
                 java.time.LocalDateTime.now()
                         .truncatedTo(java.time.temporal.ChronoUnit.HOURS);
@@ -382,21 +383,22 @@ class ChatMessageIntegrationTest {
                 true
         );
         DashboardEmotionFlowResponse response =
-                dashboardEmotionService.getDailyEmotionFlow(
+                dashboardEmotionService.getEmotionFlow(
                         1L,
                         10L,
+                        com.ssafy.emour.dashboard.dto.DashboardPeriod.DAY,
                         summaryDate
                 );
 
-        Integer jsonSlotCount = jdbcTemplate.queryForObject(
+        String emotionFlowJson = jdbcTemplate.queryForObject(
                 """
-                SELECT JSON_LENGTH(emotion_flow)
-                FROM dashboard
+                SELECT emotion_flow
+                FROM member_dashboard
                 WHERE room_id = 1
                   AND user_id = 10
                   AND summary_date = ?
                 """,
-                Integer.class,
+                String.class,
                 summaryDate
         );
 
@@ -405,7 +407,12 @@ class ChatMessageIntegrationTest {
         assertThat(response.flow().stream()
                 .mapToInt(slot -> slot.positiveCount())
                 .sum()).isGreaterThanOrEqualTo(1);
-        assertThat(jsonSlotCount).isEqualTo(12);
+        ObjectMapper objectMapper = new ObjectMapper();
+        var storedFlow = objectMapper.readTree(emotionFlowJson);
+        if (storedFlow.isTextual()) {
+            storedFlow = objectMapper.readTree(storedFlow.asText());
+        }
+        assertThat(storedFlow.size()).isEqualTo(12);
     }
 
     private ChatMessageRequest textRequest(
@@ -428,8 +435,10 @@ class ChatMessageIntegrationTest {
         jdbcTemplate.update(
                 """
                 INSERT IGNORE INTO app_user
-                    (user_id, email, nickname, status, is_email_verified)
-                VALUES (?, ?, ?, 'ACTIVE', TRUE)
+                    (user_id, email, nickname, status, is_email_verified,
+                     created_at, updated_at)
+                VALUES (?, ?, ?, 'ACTIVE', TRUE,
+                        CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
                 """,
                 userId,
                 email,
@@ -440,8 +449,10 @@ class ChatMessageIntegrationTest {
     private void insertRoomIfMissing() {
         jdbcTemplate.update(
                 """
-                INSERT IGNORE INTO couple_room (room_id, room_code, status)
-                VALUES (1, 'CHAT_TEST_ROOM', 'ACTIVE')
+                INSERT IGNORE INTO couple_room
+                    (room_id, room_code, status, created_at, updated_at)
+                VALUES (1, 'CHAT_TEST_ROOM', 'ACTIVE',
+                        CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
                 """
         );
     }

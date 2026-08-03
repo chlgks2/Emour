@@ -8,6 +8,8 @@ import com.ssafy.emour.couple.entity.CoupleMemberStatus;
 import com.ssafy.emour.couple.repository.CoupleMemberRepository;
 import com.ssafy.emour.dashboard.dto.DashboardCountResponse;
 import com.ssafy.emour.dashboard.dto.DashboardPeriod;
+import com.ssafy.emour.dashboard.dto.MemberDashboardCountResponse;
+import com.ssafy.emour.dashboard.entity.CoupleDashboard;
 import com.ssafy.emour.dashboard.entity.Dashboard;
 import com.ssafy.emour.global.exception.CustomException;
 import com.ssafy.emour.global.exception.ErrorCode;
@@ -23,7 +25,8 @@ import java.time.LocalDateTime;
 @RequiredArgsConstructor
 public class DashboardService {
 
-    private final DashboardSnapshotService dashboardSnapshotService;
+    private final CoupleDashboardSnapshotService coupleDashboardSnapshotService;
+    private final DashboardSnapshotService memberDashboardSnapshotService;
     private final ChatMessageRepository chatMessageRepository;
     private final ChatReactionRepository chatReactionRepository;
     private final ChatBookmarkRepository chatBookmarkRepository;
@@ -41,7 +44,7 @@ public class DashboardService {
         DateRange range = createRange(period, date);
 
         if (period == DashboardPeriod.DAY) {
-            Dashboard dashboard = dashboardSnapshotService.ensureSnapshot(
+            CoupleDashboard dashboard = coupleDashboardSnapshotService.ensureSnapshot(
                     roomId,
                     userId,
                     date
@@ -49,7 +52,6 @@ public class DashboardService {
             return new DashboardCountResponse(
                     dashboard.getDashboardId(),
                     dashboard.getRoomId(),
-                    dashboard.getUserId(),
                     period,
                     range.startDate(),
                     range.endDate(),
@@ -57,7 +59,6 @@ public class DashboardService {
                     dashboard.getMessageCount(),
                     dashboard.getImageCount(),
                     dashboard.getReactionCount(),
-                    dashboard.getBookmarkCount(),
                     dashboard.getCalculatedAt(),
                     dashboard.getUpdatedAt()
             );
@@ -69,7 +70,6 @@ public class DashboardService {
         return new DashboardCountResponse(
                 null,
                 roomId,
-                userId,
                 period,
                 range.startDate(),
                 range.endDate(),
@@ -91,25 +91,54 @@ public class DashboardService {
                                 start,
                                 end
                         )),
-                toInt(chatBookmarkRepository
-                        .countByRoomIdAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
-                                roomId,
-                                start,
-                                end
-                        )),
                 calculatedAt,
                 calculatedAt
         );
     }
 
-    // 기존 호출 코드는 일 단위로 그대로 동작합니다.
     @Transactional
-    public DashboardCountResponse getDailyCounts(
+    public MemberDashboardCountResponse getMemberCounts(
             Long roomId,
             Long userId,
+            DashboardPeriod period,
             LocalDate date
     ) {
-        return getCounts(roomId, userId, DashboardPeriod.DAY, date);
+        validateRequest(roomId, userId, period, date);
+        DateRange range = createRange(period, date);
+        if (period == DashboardPeriod.DAY) {
+            Dashboard dashboard = memberDashboardSnapshotService.ensureSnapshot(
+                    roomId,
+                    userId,
+                    date
+            );
+            return new MemberDashboardCountResponse(
+                    roomId,
+                    userId,
+                    period,
+                    range.startDate(),
+                    range.endDate(),
+                    dashboard.getBookmarkCount(),
+                    dashboard.getCalculatedAt()
+            );
+        }
+
+        LocalDateTime start = range.startDate().atStartOfDay();
+        LocalDateTime end = range.endExclusive().atStartOfDay();
+        return new MemberDashboardCountResponse(
+                roomId,
+                userId,
+                period,
+                range.startDate(),
+                range.endDate(),
+                toInt(chatBookmarkRepository
+                        .countByRoomIdAndUserIdAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
+                                roomId,
+                                userId,
+                                start,
+                                end
+                        )),
+                LocalDateTime.now(dashboardClock)
+        );
     }
 
     private DateRange createRange(

@@ -10,7 +10,12 @@ import java.time.LocalDate;
 public record AnniversaryCreateRequest(
         @Schema(example = "첫 데이트 기념일")
         @NotBlank @Size(max = 100) String name,
+        @Schema(example = "처음 만난 날")
+        @Size(max = 1000) String description,
         @Schema(example = "2025-08-15")
         @NotNull LocalDate scheduleDate
 ) {
+    public AnniversaryCreateRequest(String name, LocalDate scheduleDate) {
+        this(name, null, scheduleDate);
+    }
 }

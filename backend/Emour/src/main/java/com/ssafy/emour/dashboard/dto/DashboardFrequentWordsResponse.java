@@ -6,13 +6,10 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
-@Schema(description = "사용자의 기간별 자주 사용하는 단어")
+@Schema(description = "커플방의 기간별 자주 사용하는 단어")
 public record DashboardFrequentWordsResponse(
         @Schema(description = "커플방 번호", example = "1")
         Long roomId,
-
-        @Schema(description = "로그인한 사용자 번호", example = "10")
-        Long userId,
 
         @Schema(description = "조회 단위", example = "MONTH")
         DashboardPeriod period,

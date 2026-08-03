@@ -2,8 +2,6 @@ package com.ssafy.emour.dashboard.service;
 
 import com.ssafy.emour.chat.repository.ChatAnalysisRepository;
 import com.ssafy.emour.chat.repository.ChatBookmarkRepository;
-import com.ssafy.emour.chat.repository.ChatMessageRepository;
-import com.ssafy.emour.chat.repository.ChatReactionRepository;
 import com.ssafy.emour.couple.entity.CoupleMemberId;
 import com.ssafy.emour.couple.entity.CoupleMemberStatus;
 import com.ssafy.emour.couple.repository.CoupleMemberRepository;
@@ -35,12 +33,6 @@ class DashboardSnapshotServiceTest {
     private DashboardRepository dashboardRepository;
 
     @Mock
-    private ChatMessageRepository chatMessageRepository;
-
-    @Mock
-    private ChatReactionRepository chatReactionRepository;
-
-    @Mock
     private ChatBookmarkRepository chatBookmarkRepository;
 
     @Mock
@@ -70,8 +62,8 @@ class DashboardSnapshotServiceTest {
 
         assertThat(result.getAggregatedUntil()).isEqualTo(boundary);
         assertThat(result.getFinalizedUntil()).isNull();
-        verify(chatMessageRepository, never())
-                .findDailyTextContents(any(), any(), any(), any());
+        verify(chatAnalysisRepository, never())
+                .findCompletedDailyAnalyses(any(), any(), any(), any());
     }
 
     // 다음 시간 5분 이후에는 같은 종료 시각으로 다시 계산하고 최종 확정합니다.
@@ -96,12 +88,6 @@ class DashboardSnapshotServiceTest {
                 date.atStartOfDay(),
                 boundary
         )).thenReturn(List.of());
-        when(chatMessageRepository.findDailyTextContents(
-                1L,
-                10L,
-                date.atStartOfDay(),
-                boundary
-        )).thenReturn(List.of());
         when(dashboardRepository.save(any(Dashboard.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -109,9 +95,10 @@ class DashboardSnapshotServiceTest {
 
         assertThat(result.getAggregatedUntil()).isEqualTo(boundary);
         assertThat(result.getFinalizedUntil()).isEqualTo(boundary);
-        verify(chatMessageRepository)
-                .countByRoomIdAndSentAtGreaterThanEqualAndSentAtLessThan(
+        verify(chatBookmarkRepository)
+                .countByRoomIdAndUserIdAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
                         1L,
+                        10L,
                         date.atStartOfDay(),
                         boundary
                 );
@@ -124,12 +111,9 @@ class DashboardSnapshotServiceTest {
         );
         return new DashboardSnapshotService(
                 dashboardRepository,
-                chatMessageRepository,
-                chatReactionRepository,
                 chatBookmarkRepository,
                 chatAnalysisRepository,
                 coupleMemberRepository,
-                new ConversationFlowCalculator(),
                 clock
         );
     }
@@ -142,14 +126,6 @@ class DashboardSnapshotServiceTest {
         Dashboard dashboard = Dashboard.create(1L, 10L, date);
         dashboard.applyHourlySnapshot(
                 0,
-                0,
-                0,
-                0,
-                "{}",
-                "[]",
-                "[]",
-                null,
-                null,
                 "[]",
                 boundary,
                 finalized,

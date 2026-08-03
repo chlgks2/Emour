@@ -74,7 +74,7 @@ class AlbumPhotoServiceTest {
 
     @Test
     void 같은_커플방의_사진을_함께_조회한다() {
-        givenActiveRoom(USER_ID);
+        givenReadableRoom(USER_ID);
         AlbumPhoto firstPhoto = photo(USER_ID, "first.jpg");
         AlbumPhoto partnerPhoto = photo(2L, "partner.jpg");
         given(albumPhotoRepository.findByRoomIdOrderByCreatedAtDesc(ROOM_ID))
@@ -117,8 +117,32 @@ class AlbumPhotoServiceTest {
         verify(albumPhotoRepository, never()).save(any());
     }
 
+    @Test
+    void 사진_메모는_100자를_초과할_수_없다() {
+        String tooLongMemo = "가".repeat(101);
+
+        assertThatThrownBy(() -> albumPhotoService.upload(
+                USER_ID,
+                file,
+                tooLongMemo
+        ))
+                .isInstanceOf(CustomException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.INVALID_INPUT);
+
+        verify(fileStorage, never()).store(any());
+        verify(albumPhotoRepository, never()).save(any());
+    }
+
     private void givenActiveRoom(Long userId) {
         given(coupleRoomRepository.findCurrentRoomsByUserId(
+                userId,
+                PageRequest.of(0, 1)
+        )).willReturn(List.of(activeRoom()));
+    }
+
+    private void givenReadableRoom(Long userId) {
+        given(coupleRoomRepository.findReadableRoomsByUserId(
                 userId,
                 PageRequest.of(0, 1)
         )).willReturn(List.of(activeRoom()));

@@ -14,6 +14,7 @@ const FREQUENT_WORD_DISPLAY_COUNT = 5;
 export default function DashboardStats({
   dashboard,
   title = "오늘의 대화 기록",
+  emotionLabel = "오늘의 채팅 감정 분포",
 }) {
   if (!dashboard) return null;
 
@@ -92,7 +93,7 @@ export default function DashboardStats({
       */}
       <section className={styles.emotionPanel} aria-labelledby="dashboard-emotion-mix">
         <p id="dashboard-emotion-mix" className={styles.cellLabel}>
-          오늘의 채팅 감정 분포
+          {emotionLabel}
         </p>
 
         <EmotionReport emotionSummary={emotionSummary} />
@@ -115,7 +116,9 @@ export default function DashboardStats({
               {frequentWords.slice(0, FREQUENT_WORD_DISPLAY_COUNT).map(({ word, count }) => (
                 <li key={word} className={styles.wordChip}>
                   {word}
-                  <span className={styles.wordCount}>{count}</span>
+                  <span className={styles.wordCount}>
+                    {Number(count).toLocaleString("ko-KR")}회
+                  </span>
                 </li>
               ))}
             </ul>

@@ -30,9 +30,6 @@ class DashboardConversationServiceTest {
     @Mock
     private CoupleMemberRepository coupleMemberRepository;
 
-    @Mock
-    private DashboardSnapshotService dashboardSnapshotService;
-
     private DashboardConversationService service;
 
     @BeforeEach
@@ -44,7 +41,6 @@ class DashboardConversationServiceTest {
         service = new DashboardConversationService(
                 chatMessageRepository,
                 coupleMemberRepository,
-                dashboardSnapshotService,
                 new ConversationFlowCalculator(),
                 clock
         );

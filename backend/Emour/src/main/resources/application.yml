@@ -1,5 +1,10 @@
 # ===== 공통 설정 (모든 환경 공유) =====
 spring:
+  config:
+    # IntelliJ 로컬 실행에서는 프로젝트 루트의 .env를 선택적으로 읽습니다.
+    # 배포 환경에는 파일이 없어도 실제 환경변수를 그대로 사용합니다.
+    import: optional:file:.env[.properties]
+
   datasource:
     url: ${DB_URL}
     username: ${DB_USERNAME}
@@ -15,7 +20,7 @@ spring:
   application:
     name: Emour
   profiles:
-    active: local   # 로컬 실행 시 application-local.yml 을 함께 적용
+    active: ${SPRING_PROFILES_ACTIVE:local}
   servlet:
     multipart:
       max-file-size: 10MB      # 파일 1개 최대 크기

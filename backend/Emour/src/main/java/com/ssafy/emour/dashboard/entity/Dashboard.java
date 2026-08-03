@@ -8,15 +8,15 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+/** 회원별 북마크 수와 감정 흐름 스냅샷입니다. */
 @Entity
 @Table(
-        name = "dashboard",
+        name = "member_dashboard",
         uniqueConstraints = @UniqueConstraint(
-                name = "uq_dashboard_daily_user",
+                name = "uq_member_dashboard_daily_user",
                 columnNames = {"room_id", "user_id", "summary_date"}
         )
 )
@@ -24,7 +24,7 @@ public class Dashboard {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "dashboard_id")
+    @Column(name = "member_dashboard_id")
     private Long dashboardId;
 
     @Column(name = "room_id", nullable = false)
@@ -36,35 +36,11 @@ public class Dashboard {
     @Column(name = "summary_date", nullable = false)
     private LocalDate summaryDate;
 
-    @Column(name = "message_count", nullable = false)
-    private int messageCount;
-
-    @Column(name = "image_count", nullable = false)
-    private int imageCount;
-
-    @Column(name = "reaction_count", nullable = false)
-    private int reactionCount;
-
     @Column(name = "bookmark_count", nullable = false)
     private int bookmarkCount;
 
-    @Column(name = "emotion_summary", columnDefinition = "json")
-    private String emotionSummary;
-
     @Column(name = "emotion_flow", columnDefinition = "json")
     private String emotionFlow;
-
-    @Column(name = "frequent_words", columnDefinition = "json")
-    private String frequentWords;
-
-    @Column(name = "average_response_seconds", precision = 12, scale = 2)
-    private BigDecimal averageResponseSeconds;
-
-    @Column(name = "busiest_hour")
-    private Integer busiestHour;
-
-    @Column(name = "conversation_frequency", columnDefinition = "json")
-    private String conversationFrequency;
 
     @Column(name = "aggregated_until")
     private LocalDateTime aggregatedUntil;
@@ -95,74 +71,36 @@ public class Dashboard {
         return dashboard;
     }
 
-    public void updateCounts(
-            int messageCount,
-            int imageCount,
-            int reactionCount,
-            int bookmarkCount
-    ) {
-        // 원본 데이터를 다시 세어 저장하므로 메시지 삭제 등의 변화도 반영됩니다.
-        this.messageCount = messageCount;
-        this.imageCount = imageCount;
-        this.reactionCount = reactionCount;
-        this.bookmarkCount = bookmarkCount;
-        this.calculatedAt = LocalDateTime.now();
-        this.updatedAt = this.calculatedAt;
-    }
-
-    public void updateEmotionSummary(String emotionSummary) {
-        // 감정별 개수를 도넛 그래프용 JSON으로 보관합니다.
-        this.emotionSummary = emotionSummary;
-        this.calculatedAt = LocalDateTime.now();
-        this.updatedAt = this.calculatedAt;
-    }
-
-    public void updateEmotionFlow(String emotionFlow) {
-        // 프런트가 바로 사용할 수 있는 2시간 단위 배열을 JSON으로 보관합니다.
-        this.emotionFlow = emotionFlow;
-        this.calculatedAt = LocalDateTime.now();
-        this.updatedAt = this.calculatedAt;
-    }
-
-    public void updateFrequentWords(String frequentWords) {
-        // 단어와 사용 횟수 목록을 JSON으로 보관합니다.
-        this.frequentWords = frequentWords;
-        this.calculatedAt = LocalDateTime.now();
-        this.updatedAt = this.calculatedAt;
-    }
-
     public void applyHourlySnapshot(
-            int messageCount,
-            int imageCount,
-            int reactionCount,
             int bookmarkCount,
-            String emotionSummary,
             String emotionFlow,
-            String frequentWords,
-            BigDecimal averageResponseSeconds,
-            Integer busiestHour,
-            String conversationFrequency,
             LocalDateTime snapshotUntil,
             boolean finalized,
             LocalDateTime calculatedAt
     ) {
-        // 모든 대시보드 항목을 먼저 바꾼 다음 마지막에 집계 경계를 기록합니다.
-        this.messageCount = messageCount;
-        this.imageCount = imageCount;
-        this.reactionCount = reactionCount;
         this.bookmarkCount = bookmarkCount;
-        this.emotionSummary = emotionSummary;
         this.emotionFlow = emotionFlow;
-        this.frequentWords = frequentWords;
-        this.averageResponseSeconds = averageResponseSeconds;
-        this.busiestHour = busiestHour;
-        this.conversationFrequency = conversationFrequency;
         this.aggregatedUntil = snapshotUntil;
         if (finalized) {
             this.finalizedUntil = snapshotUntil;
         }
         this.calculatedAt = calculatedAt;
         this.updatedAt = calculatedAt;
+    }
+
+    public void updateBookmarkCount(int bookmarkCount) {
+        this.bookmarkCount = bookmarkCount;
+        touch();
+    }
+
+    public void updateEmotionFlow(String emotionFlow) {
+        this.emotionFlow = emotionFlow;
+        touch();
+    }
+
+    private void touch() {
+        this.calculatedAt = LocalDateTime.now();
+        this.updatedAt = this.calculatedAt;
     }
 
     public Long getDashboardId() {
@@ -181,44 +119,12 @@ public class Dashboard {
         return summaryDate;
     }
 
-    public int getMessageCount() {
-        return messageCount;
-    }
-
-    public int getImageCount() {
-        return imageCount;
-    }
-
-    public int getReactionCount() {
-        return reactionCount;
-    }
-
     public int getBookmarkCount() {
         return bookmarkCount;
     }
 
-    public String getEmotionSummary() {
-        return emotionSummary;
-    }
-
     public String getEmotionFlow() {
         return emotionFlow;
-    }
-
-    public String getFrequentWords() {
-        return frequentWords;
-    }
-
-    public BigDecimal getAverageResponseSeconds() {
-        return averageResponseSeconds;
-    }
-
-    public Integer getBusiestHour() {
-        return busiestHour;
-    }
-
-    public String getConversationFrequency() {
-        return conversationFrequency;
     }
 
     public LocalDateTime getAggregatedUntil() {
