@@ -1,6 +1,5 @@
 package com.ssafy.emour.chat.messaging;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.redis.connection.Message;
@@ -37,7 +36,7 @@ class ChatRedisSubscriberTest {
 
         verify(messagingTemplate).convertAndSend(
                 eq("/sub/chat/rooms/2/messages"),
-                any(JsonNode.class)
+                eq("{\"messageId\":101}")
         );
     }
 
