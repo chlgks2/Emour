@@ -15,13 +15,14 @@ import {
   fetchPartnerReadState,
   normalizeChatMessage,
   sendMessage,
+  uploadChatImages,
   fetchSuggestions,
 } from "../api/chatApi";
 import { connectChatSocket } from "../api/chatSocket.js";
 import { fetchBookmarkedMessageIds, toggleBookmark } from "../api/bookmarkApi";
 import { clearMyReaction, fetchReactions, setMyReaction } from "../api/reactionApi";
-import { createClientMessageId, MY_USER_ID } from "../api/mock/db";
-import { getCurrentCoupleRoom } from "../utils/pendingCoupleRoom.js";
+import { createClientMessageId } from "../utils/clientMessageId.js";
+import { resolveRoomId } from "../api/coupleRoomContext.js";
 import { useAuth } from "../hooks/useAuth";
 import { useToast } from "../hooks/useToast";
 import { ANALYSIS_STATUS, MESSAGE_TYPE, REACTION_TYPE } from "../constants/enums";
@@ -34,15 +35,33 @@ export default function ChatRoomPage() {
   const { user } = useAuth();
   const { showToast } = useToast();
   const navigate = useNavigate();
-  // 내 메시지 판별은 senderId === 내 userId 로 한다. (기존 목업의 sender: "me" | "partner" 대체)
-  // 목업 상수는 세션이 비어있을 때의 폴백이며, 연동 후에는 user 값만 쓰면 된다.
-  const myUserId = user?.userId ?? MY_USER_ID;
-  const currentRoom =
-    getCurrentCoupleRoom();
-  const roomId =
-    user?.roomId ??
-    currentRoom?.roomId ??
-    null;
+  // 내 메시지 판별은 senderId === 내 userId 로 한다.
+  // 목업 상수(MY_USER_ID = 1)로 폴백하던 코드가 있었는데, 세션이 비어 있으면
+  // 남의 메시지가 내 것으로 보이는 문제가 있어 없앴다. 로그인 값만 쓴다.
+  const myUserId = user?.userId ?? null;
+
+  /*
+   * roomId 는 localStorage 가 아니라 서버에서 받아온다.
+   * 처음 한 프레임은 null 이므로 아래 로딩 이펙트들은 roomResolved 를 기다린다.
+   */
+  const [roomId, setRoomId] = useState(null);
+  const [roomResolved, setRoomResolved] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    resolveRoomId()
+      .catch(() => null)
+      .then((resolvedRoomId) => {
+        if (cancelled) return;
+        setRoomId(resolvedRoomId);
+        setRoomResolved(true);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [myUserId]);
 
   const [partner, setPartner] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -129,9 +148,15 @@ export default function ChatRoomPage() {
 
   // 최초 진입 시 최신 메시지 페이지 로드 + 상대방 정보/읽음 상태 + 북마크/리액션 조회
   useEffect(() => {
+    // 방을 아직 못 정했으면 기다린다.
+    if (!roomResolved) return undefined;
+
     let cancelled = false;
     (async () => {
       try {
+        // 방을 정했는데 없으면 부를 게 없다. (아래 finally 가 로딩을 끝낸다)
+        if (!roomId) return;
+
         const [partnerInfo, page, myBookmarkedMessageIds, allReactions, partnerReadState] =
           await Promise.all([
             fetchChatPartner(),
@@ -169,7 +194,7 @@ export default function ChatRoomPage() {
     return () => {
       cancelled = true;
     };
-  }, [myUserId, roomId]);
+  }, [myUserId, roomId, roomResolved]);
 
   // 같은 커플방의 메시지·읽음·공감 이벤트를 실시간으로 구독한다.
   useEffect(() => {
@@ -542,6 +567,88 @@ export default function ChatRoomPage() {
     }
   };
 
+  const handleImagesSelect = async (files) => {
+    if (sending || !files.length) return;
+
+    if (files.length > 10) {
+      showToast("사진은 한 번에 최대 10장까지 보낼 수 있어요.", {
+        tone: "error",
+      });
+      return;
+    }
+
+    const invalidFile = files.find(
+      (file) => !file.type.startsWith("image/"),
+    );
+    if (invalidFile) {
+      showToast("이미지 파일만 전송할 수 있어요.", { tone: "error" });
+      return;
+    }
+
+    setSending(true);
+    const clientMessageId = createClientMessageId();
+
+    try {
+      const imageUrls = await uploadChatImages({ roomId, files });
+      const optimisticMessage = {
+        messageId: null,
+        roomId,
+        senderId: myUserId,
+        clientMessageId,
+        messageType: MESSAGE_TYPE.IMAGE,
+        content: null,
+        sentAt: new Date().toISOString(),
+        images: imageUrls.map((imageUrl, index) => ({
+          imageUrl,
+          imageOrder: index + 1,
+        })),
+        emotionType: null,
+        analysisStatus: null,
+      };
+
+      setMessages((previous) => [
+        ...previous,
+        optimisticMessage,
+      ]);
+
+      requestAnimationFrame(() => {
+        if (containerRef.current) {
+          containerRef.current.scrollTop =
+            containerRef.current.scrollHeight;
+        }
+      });
+
+      const savedMessage = await sendMessage({
+        roomId,
+        content: null,
+        messageType: MESSAGE_TYPE.IMAGE,
+        imageUrls,
+        clientMessageId,
+      });
+
+      setMessages((previous) =>
+        previous.map((message) =>
+          message.clientMessageId === clientMessageId ||
+          message.messageId === savedMessage.messageId
+            ? { ...message, ...savedMessage }
+            : message,
+        ),
+      );
+    } catch (error) {
+      setMessages((previous) =>
+        previous.filter(
+          (message) => message.clientMessageId !== clientMessageId,
+        ),
+      );
+      showToast(
+        error.message || "사진을 보내지 못했어요. 다시 시도해주세요.",
+        { tone: "error" },
+      );
+    } finally {
+      setSending(false);
+    }
+  };
+
   // ─────────────────────────────────────────────────────────
   // 스크롤 감지 및 맨 아래로 이동
   // ─────────────────────────────────────────────────────────
@@ -756,6 +863,7 @@ export default function ChatRoomPage() {
         value={inputValue}
         onChange={handleInputChange}
         onSend={handleSend}
+        onImagesSelect={handleImagesSelect}
         disabled={sending}
       />
 

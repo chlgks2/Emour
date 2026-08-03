@@ -16,15 +16,23 @@ import {
 
 import {
   logout,
+  updateCurrentUserCache,
 } from './authApi.js'
 
 import {
-  getPartnerNickname,
   getMyProfile,
-  savePartnerNickname,
   updateMyProfile,
+  uploadMyProfileImage,
   withdrawMyAccount,
 } from './memberApi.js'
+
+import {
+  invalidateCoupleRoom,
+} from './coupleRoomContext.js'
+
+import {
+  resolveProtectedImageUrl,
+} from '../utils/protectedImageUrl.js'
 
 import {
   clearPendingCoupleRoom,
@@ -169,6 +177,22 @@ export async function getMyPageProfile() {
 
   let serverRoom = fetchedServerRoom
 
+  // 상대방이 나간 뒤에도 남은 사용자는 기존 INACTIVE 방을 유지하며
+  // 같은 방으로 돌아올 수 있는 재결합 초대 코드를 받는다.
+  if (serverRoom?.status === 'INACTIVE') {
+    const invitation =
+      await createCoupleInvitation()
+
+    serverRoom = {
+      ...serverRoom,
+      ...savePendingCoupleRoom(
+        invitation,
+        userResponse.userId,
+      ),
+      status: 'INACTIVE',
+    }
+  }
+
   /*
    * 연결된 두 사람 중 상대방이 나가면 백엔드는 기존 방을 INACTIVE로
    * 전환하여 room-id/status 조회에서 제외합니다. 남은 사용자는 기존
@@ -204,13 +228,7 @@ export async function getMyPageProfile() {
       )
     : null
 
-  // 사용자 지정 애칭이 없으면 백엔드가 상대방의 회원 닉네임을 반환한다.
-  const partnerNicknameResponse =
-    currentRoom?.roomStatus === 'ACTIVE'
-      ? await getPartnerNickname()
-      : null
-
-  return mapMyPageResponse({
+  const profile = mapMyPageResponse({
     userResponse,
     roomResponse: currentRoom,
     memberResponse: currentRoom
@@ -218,12 +236,21 @@ export async function getMyPageProfile() {
           roomId: currentRoom.roomId,
           userId: userResponse.userId,
           status: 'ACTIVE',
-          partnerNickname:
-            partnerNicknameResponse
-              ?.partnerNickname ?? '',
         }
       : null,
   })
+
+  /*
+   * user.profile_image_url 은 인증이 필요한 /uploads/... 경로다.
+   * <img src> 에 그대로 걸면 401 이 나므로 화면에 걸 수 있는 형태로 바꿔서 넘긴다.
+   */
+  return {
+    ...profile,
+    profileImageUrl:
+      (await resolveProtectedImageUrl(
+        profile.profileImageUrl,
+      )) ?? '',
+  }
 }
 
 export async function updateMyPageProfile({
@@ -270,16 +297,32 @@ export async function updateMyPageProfile({
     return createMappedMockResponse()
   }
 
+  /*
+   * 사진은 POST /users/profile-img 로 올려 user.profile_image_url 에 저장한다.
+   * 예전에는 이 자리에서 막아두고 목업만 data URL 을 들고 있어서,
+   * 바꾼 사진이 이 브라우저 밖으로 나가지 않았다.
+   */
   if (profileImageFile) {
-    throw new Error(
-      '프로필 이미지 업로드 API는 아직 제공되지 않습니다.',
-    )
+    await uploadMyProfileImage(profileImageFile)
   }
 
-  await updateMyProfile({
+  const updatedProfile = await updateMyProfile({
     nickname: trimmedNickname,
     statusMessage:
       trimmedStatusMessage,
+  })
+
+  // 로그인할 때 저장해 둔 세션 캐시도 같이 갱신한다. (안 하면 옛 닉네임이 남는다)
+  updateCurrentUserCache({
+    nickname:
+      updatedProfile?.nickname ??
+      trimmedNickname,
+    statusMessage:
+      updatedProfile?.statusMessage ??
+      trimmedStatusMessage,
+    profileImageUrl:
+      updatedProfile?.profileImageUrl ??
+      null,
   })
 
   return getMyPageProfile()
@@ -329,11 +372,9 @@ export async function updatePartnerNickname({
     return createMappedMockResponse()
   }
 
-  await savePartnerNickname(
-    trimmedPartnerNickname,
+  throw new Error(
+    '연인 애칭 수정 API는 아직 제공되지 않습니다.',
   )
-
-  return getMyPageProfile()
 }
 
 export async function regenerateRoomCode() {
@@ -373,10 +414,18 @@ export async function regenerateRoomCode() {
     return createMappedMockResponse()
   }
 
-  const invitation =
-    await createCoupleInvitation()
+  const [invitation, profile] =
+    await Promise.all([
+      createCoupleInvitation(),
+      getMyProfile(),
+    ])
 
-  savePendingCoupleRoom(invitation)
+  // ownerUserId 를 같이 남겨야 다른 계정으로 로그인했을 때 이 방을 걸러낼 수 있다.
+  savePendingCoupleRoom(
+    invitation,
+    profile?.userId ?? null,
+  )
+  invalidateCoupleRoom()
 
   return getMyPageProfile()
 }
@@ -415,6 +464,8 @@ export async function leaveCoupleRoom() {
 
   await disconnectCouple()
   clearPendingCoupleRoom()
+  // 방이 바뀌었으니 캐시해 둔 roomId 를 버린다. (안 그러면 끝난 방을 계속 조회한다)
+  invalidateCoupleRoom()
 
   return null
 }
@@ -464,6 +515,7 @@ export async function withdrawCurrentUser() {
 
   await withdrawMyAccount()
   clearPendingCoupleRoom()
+  invalidateCoupleRoom()
 
   return null
 }

@@ -19,6 +19,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageRequest;
 
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -329,8 +330,9 @@ class MoodServiceTest {
         );
 
         given(memberRepository.existsById(userId)).willReturn(true);
-        given(coupleRoomRepository.findActiveRoomByUserId(userId))
-                .willReturn(Optional.of(room));
+        given(coupleRoomRepository.findReadableRoomsByUserId(
+                userId, PageRequest.of(0, 1)
+        )).willReturn(List.of(room));
         given(room.getId()).willReturn(roomId);
         given(moodRepository.findAllByRoomIdOrderByMoodDatetimeDescUserIdAsc(
                 roomId
@@ -351,11 +353,12 @@ class MoodServiceTest {
     }
 
     @Test
-    void 활성_커플방이_없으면_기분을_조회할_수_없다() {
+    void 조회_가능한_커플방이_없으면_기분을_조회할_수_없다() {
         Long userId = 1L;
         given(memberRepository.existsById(userId)).willReturn(true);
-        given(coupleRoomRepository.findActiveRoomByUserId(userId))
-                .willReturn(Optional.empty());
+        given(coupleRoomRepository.findReadableRoomsByUserId(
+                userId, PageRequest.of(0, 1)
+        )).willReturn(List.of());
 
         assertThatThrownBy(() -> moodService.getAll(userId))
                 .isInstanceOf(CustomException.class)

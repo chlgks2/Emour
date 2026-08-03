@@ -21,9 +21,75 @@
   align-items: start;
 }
 
+.gridRowSingle {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.periodPanel {
+  margin: 14px 20px 0;
+  padding: 12px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-lg);
+  background: var(--color-white);
+}
+
+.periodTabs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  padding: 3px;
+  border-radius: var(--radius-pill);
+  background: var(--color-sub-bg);
+}
+
+.periodTabs button {
+  min-height: 34px;
+  border-radius: var(--radius-pill);
+  color: var(--color-text-tertiary);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.periodTabs .periodTabActive {
+  background: var(--color-white);
+  color: var(--color-primary-strong);
+  box-shadow: var(--shadow-sm);
+}
+
+.periodNavigator {
+  display: grid;
+  grid-template-columns: 36px 1fr 36px;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.periodNavigator button {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  color: var(--color-text-secondary);
+}
+
+.periodNavigator button:disabled {
+  opacity: 0.3;
+}
+
+.periodNavigator strong {
+  text-align: center;
+  color: var(--color-text-primary);
+  font-size: 14px;
+}
+
 @media (max-width: 420px) {
   .gridRow {
     gap: 10px;
+    margin-right: 16px;
+    margin-left: 16px;
+  }
+
+  .periodPanel {
     margin-right: 16px;
     margin-left: 16px;
   }

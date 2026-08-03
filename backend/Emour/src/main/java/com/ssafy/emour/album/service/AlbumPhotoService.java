@@ -50,7 +50,7 @@ public class AlbumPhotoService {
     /** 현재 커플방의 사진 전체 조회 (최신순) */
     @Transactional(readOnly = true)
     public List<AlbumPhotoResponse> getRoomPhotos(Long userId) {
-        Long roomId = getActiveRoomId(userId);
+        Long roomId = getReadableRoomId(userId);
         return albumPhotoRepository.findByRoomIdOrderByCreatedAtDesc(roomId)
                 .stream()
                 .map(AlbumPhotoResponse::of)
@@ -94,6 +94,19 @@ public class AlbumPhotoService {
         );
 
         if (rooms.isEmpty() || rooms.get(0).getStatus() != CoupleRoomStatus.ACTIVE) {
+            throw new CustomException(ErrorCode.ACTIVE_COUPLE_NOT_FOUND);
+        }
+
+        return rooms.get(0).getId();
+    }
+
+    private Long getReadableRoomId(Long userId) {
+        List<CoupleRoom> rooms = coupleRoomRepository.findReadableRoomsByUserId(
+                userId,
+                PageRequest.of(0, 1)
+        );
+
+        if (rooms.isEmpty()) {
             throw new CustomException(ErrorCode.ACTIVE_COUPLE_NOT_FOUND);
         }
 

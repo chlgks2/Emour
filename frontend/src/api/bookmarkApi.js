@@ -4,15 +4,15 @@ import {
   removeChatBookmark,
 } from './chatApi.js'
 import {
-  getCurrentCoupleRoom,
-} from '../utils/pendingCoupleRoom.js'
+  resolveRoomId,
+} from './coupleRoomContext.js'
 
-function getRoomId(roomId) {
-  return (
-    roomId ??
-    getCurrentCoupleRoom()?.roomId ??
-    null
-  )
+/*
+ * 예전에는 localStorage 에 저장된 방만 봤다. 그래서 저장된 값이 없거나
+ * 서버 쪽 방이 바뀐 뒤에는 북마크를 통째로 못 불러왔다.
+ */
+async function getRoomId(roomId) {
+  return roomId ?? (await resolveRoomId())
 }
 
 function mapBookmark(bookmark) {
@@ -34,7 +34,7 @@ export async function fetchBookmarks({
   size = 20,
   roomId,
 } = {}) {
-  const currentRoomId = getRoomId(roomId)
+  const currentRoomId = await getRoomId(roomId)
 
   if (!currentRoomId) {
     return {

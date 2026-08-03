@@ -15,6 +15,7 @@ import com.ssafy.emour.mood.entity.MoodNotification;
 import com.ssafy.emour.mood.repository.MoodNotificationRepository;
 import com.ssafy.emour.mood.repository.MoodRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -127,7 +128,10 @@ public class MoodService {
             throw new CustomException(ErrorCode.USER_NOT_FOUND);
         }
 
-        CoupleRoom room = coupleRoomRepository.findActiveRoomByUserId(userId)
+        CoupleRoom room = coupleRoomRepository
+                .findReadableRoomsByUserId(userId, PageRequest.of(0, 1))
+                .stream()
+                .findFirst()
                 .orElseThrow(() -> new CustomException(
                         ErrorCode.ACTIVE_COUPLE_NOT_FOUND
                 ));
