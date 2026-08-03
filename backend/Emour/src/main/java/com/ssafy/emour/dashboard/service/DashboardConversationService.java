@@ -1,17 +1,12 @@
 package com.ssafy.emour.dashboard.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ssafy.emour.chat.entity.ChatMessage;
 import com.ssafy.emour.chat.repository.ChatMessageRepository;
 import com.ssafy.emour.couple.entity.CoupleMemberId;
 import com.ssafy.emour.couple.entity.CoupleMemberStatus;
 import com.ssafy.emour.couple.repository.CoupleMemberRepository;
-import com.ssafy.emour.dashboard.dto.ConversationFrequencyItem;
 import com.ssafy.emour.dashboard.dto.DashboardConversationFlowResponse;
 import com.ssafy.emour.dashboard.dto.DashboardPeriod;
-import com.ssafy.emour.dashboard.entity.Dashboard;
 import com.ssafy.emour.global.exception.CustomException;
 import com.ssafy.emour.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -29,11 +24,10 @@ public class DashboardConversationService {
 
     private final ChatMessageRepository chatMessageRepository;
     private final CoupleMemberRepository coupleMemberRepository;
+    // 기존 생성자 호환성을 유지하며, 조회는 원본 데이터 직접 집계를 사용한다.
     private final DashboardSnapshotService dashboardSnapshotService;
     private final ConversationFlowCalculator conversationFlowCalculator;
     private final Clock dashboardClock;
-    private final ObjectMapper objectMapper =
-            new ObjectMapper().findAndRegisterModules();
 
     @Transactional
     public DashboardConversationFlowResponse getConversationFlow(
@@ -44,26 +38,6 @@ public class DashboardConversationService {
     ) {
         validateRequest(roomId, userId, period, date);
         DateRange range = createRange(period, date);
-
-        if (period == DashboardPeriod.DAY) {
-            Dashboard dashboard = dashboardSnapshotService
-                    .ensureSnapshot(roomId, userId, date);
-            List<ConversationFrequencyItem> frequency =
-                    readFrequency(dashboard.getConversationFrequency());
-            return new DashboardConversationFlowResponse(
-                    roomId,
-                    period,
-                    range.startDate(),
-                    range.endExclusive().minusDays(1),
-                    frequency.stream()
-                            .mapToInt(ConversationFrequencyItem::messageCount)
-                            .sum(),
-                    dashboard.getBusiestHour(),
-                    dashboard.getAverageResponseSeconds(),
-                    frequency,
-                    dashboard.getCalculatedAt()
-            );
-        }
 
         List<ChatMessage> messages =
                 chatMessageRepository.findConversationMessages(
@@ -88,21 +62,6 @@ public class DashboardConversationService {
                 metrics.dailyFrequency(),
                 LocalDateTime.now(dashboardClock)
         );
-    }
-
-    private List<ConversationFrequencyItem> readFrequency(String json) {
-        if (json == null) {
-            throw new CustomException(ErrorCode.INTERNAL_ERROR);
-        }
-        try {
-            return objectMapper.readValue(
-                    json,
-                    new TypeReference<List<ConversationFrequencyItem>>() {
-                    }
-            );
-        } catch (JsonProcessingException exception) {
-            throw new CustomException(ErrorCode.INTERNAL_ERROR);
-        }
     }
 
     private DateRange createRange(

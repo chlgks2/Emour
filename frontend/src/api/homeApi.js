@@ -27,7 +27,11 @@ import {
   updateRelationshipStartDate,
 } from "./calendarApi.js";
 import { getCurrentUser } from "./authApi.js";
-import { getMyProfile, getProfileImages } from "./memberApi.js";
+import {
+  getMyProfile,
+  getPartnerNickname,
+  getProfileImages,
+} from "./memberApi.js";
 
 const STORAGE_KEY = "emour_home_customization_v1";
 // 사용자 구분 없이 쓰던 예전 키. 계정을 바꿔도 남의 설정이 그대로 보였다.
@@ -72,10 +76,11 @@ function readSaved() {
 }
 
 export async function fetchHomeScreen() {
-  const [datingStartDate, me, profileImages] = await Promise.all([
+  const [datingStartDate, me, profileImages, partner] = await Promise.all([
     getRelationshipStartDate(),
     fetchMe(),
     fetchProfileImages(),
+    fetchPartnerNickname(),
   ]);
 
   // 프로필은 브라우저에 저장된 커스터마이징이 아니라 각자의 user 레코드에서 오므로
@@ -88,7 +93,7 @@ export async function fetchHomeScreen() {
     myNickname: me?.nickname ?? "",
     myProfileImageUrl:
       profileImages?.myProfileImageUrl ?? me?.profileImageUrl ?? "",
-    partnerNickname: "",
+    partnerNickname: partner?.partnerNickname ?? "",
     partnerProfileImageUrl: profileImages?.partnerProfileImageUrl ?? "",
   };
 }
@@ -109,6 +114,14 @@ async function fetchMe() {
 async function fetchProfileImages() {
   try {
     return await getProfileImages();
+  } catch {
+    return null;
+  }
+}
+
+async function fetchPartnerNickname() {
+  try {
+    return await getPartnerNickname();
   } catch {
     return null;
   }

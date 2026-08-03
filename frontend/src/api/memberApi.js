@@ -7,6 +7,25 @@ const MEMBER_ENDPOINTS = {
   // MemberController 가 제공하는 프로필 이미지 엔드포인트
   profileImages: '/users/profile-img',
   partnerProfileImage: '/users/partner/profile-img',
+  partnerNickname: '/users/partner-nickname',
+}
+
+export async function getPartnerNickname() {
+  const response = await apiRequest(
+    MEMBER_ENDPOINTS.partnerNickname,
+  )
+  return response?.data ?? response ?? null
+}
+
+export async function updatePartnerNickname(partnerNickname) {
+  const response = await apiRequest(
+    MEMBER_ENDPOINTS.partnerNickname,
+    {
+      method: 'PATCH',
+      body: { partnerNickname },
+    },
+  )
+  return response?.data ?? response ?? null
 }
 
 export async function getMyProfile() {

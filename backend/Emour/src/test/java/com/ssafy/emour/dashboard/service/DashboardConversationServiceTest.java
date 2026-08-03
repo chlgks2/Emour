@@ -6,18 +6,17 @@ import com.ssafy.emour.couple.entity.CoupleMemberStatus;
 import com.ssafy.emour.couple.repository.CoupleMemberRepository;
 import com.ssafy.emour.dashboard.dto.DashboardConversationFlowResponse;
 import com.ssafy.emour.dashboard.dto.DashboardPeriod;
-import com.ssafy.emour.dashboard.entity.Dashboard;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
@@ -51,35 +50,19 @@ class DashboardConversationServiceTest {
         );
     }
 
-    // 일 단위 조회는 같은 시간 구간에 저장된 커플 대화 흐름을 재사용합니다.
+    // 일 단위 조회도 원본 메시지를 현재 시점까지 직접 집계합니다.
     @Test
     void returnsDailySnapshot() {
         LocalDate date = LocalDate.of(2026, 7, 31);
-        Dashboard dashboard = Dashboard.create(1L, 10L, date);
-        dashboard.applyHourlySnapshot(
-                2,
-                0,
-                0,
-                0,
-                "{}",
-                "[]",
-                "[]",
-                new BigDecimal("75.50"),
-                21,
-                """
-                        [{"date":"2026-07-31","messageCount":7}]
-                        """,
-                date.atTime(12, 0),
-                false,
-                date.atTime(12, 0)
-        );
-
         when(coupleMemberRepository.existsByIdAndStatus(
                 new CoupleMemberId(10L, 1L),
                 CoupleMemberStatus.ACTIVE
         )).thenReturn(true);
-        when(dashboardSnapshotService.ensureSnapshot(1L, 10L, date))
-                .thenReturn(dashboard);
+        when(chatMessageRepository.findConversationMessages(
+                1L,
+                date.atStartOfDay(),
+                date.plusDays(1).atStartOfDay()
+        )).thenReturn(List.of());
 
         DashboardConversationFlowResponse response =
                 service.getConversationFlow(
@@ -89,10 +72,9 @@ class DashboardConversationServiceTest {
                         date
                 );
 
-        assertThat(response.totalMessageCount()).isEqualTo(7);
-        assertThat(response.busiestHour()).isEqualTo(21);
-        assertThat(response.averageResponseSeconds())
-                .isEqualByComparingTo("75.50");
+        assertThat(response.totalMessageCount()).isZero();
+        assertThat(response.busiestHour()).isNull();
+        assertThat(response.averageResponseSeconds()).isNull();
         assertThat(response.dailyFrequency()).hasSize(1);
     }
 }
