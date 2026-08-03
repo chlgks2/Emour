@@ -57,6 +57,15 @@ public class CoupleService {
         memberRepository.findByIdForUpdate(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
+        List<CoupleRoom> inactiveRooms =
+                coupleRoomRepository.findRetainedInactiveRoomsByUserIdForUpdate(
+                        userId,
+                        PageRequest.of(0, 1)
+                );
+        if (!inactiveRooms.isEmpty()) {
+            return CoupleInvitationResponse.forReconnect(inactiveRooms.get(0));
+        }
+
         validateCanStartNewRelationship(userId);
 
         List<CoupleRoom> waitingRooms = coupleMemberRepository.findWaitingRoomsByUserId(
@@ -76,23 +85,6 @@ public class CoupleService {
                     currentTime.plusHours(invitationValidityHours)
             );
             return CoupleInvitationResponse.from(waitingRoom);
-        }
-
-        List<CoupleRoom> inactiveRooms =
-                coupleRoomRepository.findRetainedInactiveRoomsByUserIdForUpdate(
-                        userId,
-                        PageRequest.of(0, 1)
-                );
-        if (!inactiveRooms.isEmpty()) {
-            CoupleRoom inactiveRoom = inactiveRooms.get(0);
-            if (inactiveRoom.getRoomCodeExpiresAt() == null
-                    || !inactiveRoom.getRoomCodeExpiresAt().isAfter(currentTime)) {
-                inactiveRoom.refreshReconnectInvitation(
-                        generateUniqueCode(),
-                        currentTime.plusHours(invitationValidityHours)
-                );
-            }
-            return CoupleInvitationResponse.from(inactiveRoom);
         }
 
         CoupleRoom waitingRoom = createWaitingRoom(
