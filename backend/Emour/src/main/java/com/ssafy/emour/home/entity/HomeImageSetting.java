@@ -90,4 +90,8 @@ public class HomeImageSetting {
         this.backgroundStyle = backgroundStyle;
         this.textColor = textColor;
     }
+
+    public void updateImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
+    }
 }
