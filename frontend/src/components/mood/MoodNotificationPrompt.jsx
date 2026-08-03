@@ -61,6 +61,20 @@ function getCurrentSlot(setting, now) {
     return null
   }
 
+  /*
+   * 실제로 설정이 있는지 확인한다.
+   *
+   * 매퍼(mapNotificationSettingResponse)는 빠진 값을 기본값으로 채운다.
+   * isEnabled 는 true, 시간대는 09:00~21:00 이다. 그래서 응답이 비었거나
+   * 예상과 다른 모양이면(개발 서버에서 프록시가 index.html 을 돌려주는 경우 등)
+   * "매일 09시부터 켜져 있는 알림" 으로 읽혀서, 설정한 적도 없는 알림이 떴다.
+   *
+   * settingId 는 서버가 만든 레코드에만 있으므로 진짜 설정인지 가려낼 수 있다.
+   */
+  if (setting.settingId == null) {
+    return null
+  }
+
   const start =
     timeToMinutes(setting.startTime)
   const end =
