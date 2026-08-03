@@ -42,4 +42,28 @@ class ChatRealtimePublisherTest {
         assertThat(event.get("payload").get("messageId").asLong())
                 .isEqualTo(101L);
     }
+
+    @Test
+    void publishesImageDeletionToRedis() throws Exception {
+        ChatRealtimePublisher publisher = new ChatRealtimePublisher(
+                redisTemplate,
+                objectMapper,
+                "emour:chat:events"
+        );
+
+        publisher.publishImageDeletion(2L, Map.of("imageId", 10L));
+
+        ArgumentCaptor<String> jsonCaptor =
+                ArgumentCaptor.forClass(String.class);
+        verify(redisTemplate).convertAndSend(
+                org.mockito.ArgumentMatchers.eq("emour:chat:events"),
+                jsonCaptor.capture()
+        );
+
+        JsonNode event = objectMapper.readTree(jsonCaptor.getValue());
+        assertThat(event.get("destination").asText())
+                .isEqualTo("/sub/chat/rooms/2/image-deletions");
+        assertThat(event.get("payload").get("imageId").asLong())
+                .isEqualTo(10L);
+    }
 }

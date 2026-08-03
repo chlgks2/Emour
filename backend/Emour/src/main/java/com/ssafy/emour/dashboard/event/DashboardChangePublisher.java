@@ -18,6 +18,10 @@ public class DashboardChangePublisher {
         publish(message, false);
     }
 
+    public void messageChanged(ChatMessage message) {
+        publish(message, false);
+    }
+
     public void reactionChanged(
             Long roomId,
             LocalDateTime changedAt
