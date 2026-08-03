@@ -3,11 +3,12 @@ import { buildEmotionReport } from "../../utils/emotions";
 import styles from "./EmotionReport.module.css";
 
 /**
- * @param {Record<string, number>} emotionSummary
- *   dashboard.emotion_summary JSON. 예: { "JOY": 3, "NEUTRAL": 5 }
+ * @param {Array|Record<string, number>} emotionSummary
+ *   GET /dashboards/main-emotions 의 emotions 배열 [{ emotionType, label, count }]
+ *   또는 레거시 JSON 맵 { "JOY": 3, "NEUTRAL": 5 }.
  *   개수(count)로 내려오므로 비율/색상은 buildEmotionReport 에서 계산한다.
  */
-export default function EmotionReport({ emotionSummary }) {
+export default function EmotionReport({ emotionSummary, title = "오늘의 감정 리포트" }) {
   const report = buildEmotionReport(emotionSummary);
 
   if (report.length === 0) {
@@ -15,7 +16,7 @@ export default function EmotionReport({ emotionSummary }) {
       <section className={styles.card} aria-labelledby="emotion-report-title">
         <p id="emotion-report-title" className={styles.title}>
           <ChartPie size={14} aria-hidden="true" />
-          오늘의 감정 리포트
+          {title}
         </p>
         <p className={styles.emptyText}>
           아직 분석된 대화가 없어요.
@@ -38,7 +39,7 @@ export default function EmotionReport({ emotionSummary }) {
     <section className={styles.card} aria-labelledby="emotion-report-title">
       <p id="emotion-report-title" className={styles.title}>
         <ChartPie size={14} aria-hidden="true" />
-        오늘의 감정 리포트
+        {title}
       </p>
       <div className={styles.body}>
         <div

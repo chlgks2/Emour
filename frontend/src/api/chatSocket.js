@@ -5,6 +5,31 @@ const API_BASE_URL = (
   import.meta.env.VITE_API_BASE_URL ?? ''
 ).replace(/\/$/, '')
 
+const WS_BASE_URL = (
+  import.meta.env.VITE_WS_BASE_URL ?? ''
+).replace(/\/$/, '')
+
+function getWebSocketUrl() {
+  if (WS_BASE_URL) {
+    return new URL(
+      WS_BASE_URL,
+      window.location.origin,
+    ).toString()
+  }
+
+  if (
+    API_BASE_URL &&
+    /^https?:\/\//i.test(API_BASE_URL)
+  ) {
+    return `${API_BASE_URL}/ws`
+  }
+
+  return new URL(
+    '/ws',
+    window.location.origin,
+  ).toString()
+}
+
 function parseFrame(frame) {
   try {
     return JSON.parse(frame.body)
@@ -36,7 +61,7 @@ export function connectChatSocket({
   const client = new Client({
     webSocketFactory: () =>
       new SockJS(
-        `${API_BASE_URL || window.location.origin}/ws`,
+        getWebSocketUrl(),
       ),
     reconnectDelay: 3000,
     connectHeaders: {

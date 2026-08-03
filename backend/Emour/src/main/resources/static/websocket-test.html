@@ -206,6 +206,10 @@
             이미지 주소 (한 줄에 하나씩, 이미지 메시지일 때만)
             <textarea id="imageUrls" placeholder="https://example.com/image-1.jpg&#10;https://example.com/image-2.jpg"></textarea>
         </label>
+        <label class="full">
+            업로드할 이미지 파일 (최대 10장)
+            <input id="imageFiles" type="file" accept="image/*" multiple>
+        </label>
     </div>
     <div class="buttons">
         <button id="sendButton" type="button" disabled>메시지 보내기</button>
@@ -224,6 +228,7 @@
     const messageTypeInput = document.getElementById("messageType");
     const contentInput = document.getElementById("content");
     const imageUrlsInput = document.getElementById("imageUrls");
+    const imageFilesInput = document.getElementById("imageFiles");
     const connectButton = document.getElementById("connectButton");
     const disconnectButton = document.getElementById("disconnectButton");
     const sendButton = document.getElementById("sendButton");
@@ -298,6 +303,10 @@
                 frame => receiveReadNotice(JSON.parse(frame.body))
             );
             stompClient.subscribe(
+                `/sub/chat/rooms/${roomId}/analysis`,
+                frame => receiveAnalysis(JSON.parse(frame.body))
+            );
+            stompClient.subscribe(
                 "/user/queue/errors",
                 frame => addMessage(frame.body, "error", "서버 오류")
             );
@@ -330,22 +339,77 @@
         addMessage("연결을 끊었습니다.");
     }
 
-    // 입력한 글 또는 이미지 주소를 서버로 보냅니다.
-    function sendMessage() {
+    // 선택한 파일을 HTTP로 먼저 업로드하고 채팅에 넣을 URL을 받습니다.
+    async function uploadSelectedImages() {
+        const files = Array.from(imageFilesInput.files || []);
+        if (files.length === 0) {
+            return [];
+        }
+
+        const formData = new FormData();
+        files.forEach(file => formData.append("files", file));
+
+        const response = await fetch(
+            `/chats/images?roomId=${getRoomId()}`,
+            {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${accessTokenInput.value.trim()}`
+                },
+                body: formData
+            }
+        );
+        const body = await response.json();
+        if (!response.ok) {
+            throw new Error(body.message || "이미지 업로드에 실패했습니다.");
+        }
+        return body.imageUrls || [];
+    }
+
+    // 이미지는 파일 업로드로 URL을 만든 다음 WebSocket 메시지로 보냅니다.
+    async function sendMessage() {
         if (!stompClient || !stompClient.connected) {
             addMessage("먼저 연결하기를 눌러 주세요.", "error");
             return;
         }
 
-        const imageUrls = imageUrlsInput.value
+        const directImageUrls = imageUrlsInput.value
             .split("\n")
             .map(url => url.trim())
             .filter(url => url.length > 0);
+        const messageType = messageTypeInput.value;
+        const selectedFileCount = (imageFilesInput.files || []).length;
+
+        if (messageType === "TEXT"
+            && (directImageUrls.length > 0 || selectedFileCount > 0)) {
+            addMessage("이미지를 보내려면 메시지 종류를 IMAGE로 선택해 주세요.", "error");
+            return;
+        }
+        if (directImageUrls.length + selectedFileCount > 10) {
+            addMessage("이미지는 한 번에 최대 10장까지 보낼 수 있습니다.", "error");
+            return;
+        }
+
+        let uploadedImageUrls = [];
+        try {
+            uploadedImageUrls = await uploadSelectedImages();
+        } catch (error) {
+            addMessage(error.message, "error", "이미지 업로드 오류");
+            return;
+        }
+
+        const imageUrls = [...directImageUrls, ...uploadedImageUrls];
+        if (messageType === "IMAGE" && imageUrls.length === 0) {
+            addMessage("이미지 파일 또는 이미지 주소를 입력해 주세요.", "error");
+            return;
+        }
 
         const request = {
             clientMessageId: crypto.randomUUID(),
-            messageType: messageTypeInput.value,
-            content: contentInput.value.trim() || null,
+            messageType: messageType,
+            content: messageType === "IMAGE"
+                ? null
+                : contentInput.value.trim() || null,
             imageUrls: imageUrls
         };
 
@@ -357,6 +421,7 @@
 
         contentInput.value = "";
         imageUrlsInput.value = "";
+        imageFilesInput.value = "";
     }
 
     function receiveChatMessage(message) {
@@ -395,6 +460,19 @@
             `${notice.userId}번 사용자가 ${notice.lastReadMessageId}번 메시지까지 읽었습니다.`,
             "system",
             "읽음 알림"
+        );
+    }
+
+    // AI 분석이 DB에 저장된 뒤 서버가 보내 준 메시지별 감정을 표시합니다.
+    function receiveAnalysis(result) {
+        const emotions = Object.entries(result.emotions || {})
+            .map(([messageId, emotion]) => `${messageId}번: ${emotion}`)
+            .join("\n");
+
+        addMessage(
+            emotions || "분석된 메시지가 없습니다.",
+            "system",
+            `감정 분석 완료 · ${result.analyzedCount}개`
         );
     }
 

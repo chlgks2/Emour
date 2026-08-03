@@ -11,6 +11,7 @@ import com.ssafy.emour.chat.dto.ChatReadResponse;
 import com.ssafy.emour.chat.dto.ChatReadStatusResponse;
 import com.ssafy.emour.chat.dto.ChatRestMessageRequest;
 import com.ssafy.emour.chat.dto.ChatUnreadCountResponse;
+import com.ssafy.emour.chat.messaging.ChatRealtimePublisher;
 import com.ssafy.emour.chat.service.ChatBookmarkService;
 import com.ssafy.emour.chat.service.ChatMessageService;
 import com.ssafy.emour.chat.service.ChatReactionService;
@@ -27,7 +28,6 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -52,7 +52,7 @@ public class ChatRestController {
     private final ChatReadService chatReadService;
     private final ChatBookmarkService chatBookmarkService;
     private final ChatReactionService chatReactionService;
-    private final SimpMessagingTemplate messagingTemplate;
+    private final ChatRealtimePublisher realtimePublisher;
 
     /**
      * 채팅방에 처음 들어오거나 위로 스크롤할 때 이전 메시지를 가져옵니다.
@@ -153,10 +153,12 @@ public class ChatRestController {
             @Parameter(description = "마지막으로 읽은 메시지 번호", example = "100")
             @PathVariable Long messageId
     ) {
-        return chatReadService.markMessageAsRead(
+        ChatReadResponse response = chatReadService.markMessageAsRead(
                 messageId,
                 SecurityUtil.getCurrentUserId()
         );
+        realtimePublisher.publishRead(response.roomId(), response);
+        return response;
     }
 
     /**
@@ -321,10 +323,7 @@ public class ChatRestController {
         );
 
         // REST로 보낸 메시지도 현재 방을 보고 있는 사용자에게 실시간 전달합니다.
-        messagingTemplate.convertAndSend(
-                "/sub/chat/rooms/" + request.roomId() + "/messages",
-                response
-        );
+        realtimePublisher.publishMessage(request.roomId(), response);
 
         return response;
     }
@@ -334,8 +333,8 @@ public class ChatRestController {
             ChatReactionResponse reaction
     ) {
         // 같은 방을 구독하는 사용자에게 공감 추가·변경·취소를 즉시 알려줍니다.
-        messagingTemplate.convertAndSend(
-                "/sub/chat/rooms/" + reaction.roomId() + "/reactions",
+        realtimePublisher.publishReaction(
+                reaction.roomId(),
                 new ChatReactionEventResponse(action, reaction)
         );
     }

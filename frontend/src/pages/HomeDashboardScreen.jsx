@@ -12,6 +12,7 @@ import {
 } from "../api/homeApi";
 import { HOME_SECTION } from "../constants/navigation";
 import { useToast } from "../hooks/useToast";
+import { useLiveSync } from "../hooks/useLiveSync";
 import styles from "./HomeDashboardScreen.module.css";
 
 export default function HomeDashboardScreen() {
@@ -37,7 +38,7 @@ export default function HomeDashboardScreen() {
    * 스냅 컨테이너 "하나만" 스크롤한다.
    *
    * section.scrollIntoView() 를 쓰면 브라우저가 스크롤 가능한 조상을 전부 함께 굴리기
-   * 때문에, 폰 목업(.mobile-layout) 처럼 overflow: hidden 인 바깥 요소까지 밀려 올라간다.
+   * 때문에, 앱 뷰포트(.app-viewport) 처럼 overflow: hidden 인 바깥 요소까지 밀려 올라간다.
    * 컨테이너의 scrollTop 을 직접 지정하면 그런 전파가 일어나지 않는다.
    */
   const scrollToSection = useCallback((sectionRef, behavior) => {
@@ -51,19 +52,20 @@ export default function HomeDashboardScreen() {
   // 다른 화면이 navigate state 로 시작 섹션을 지정했는지 (constants/navigation.js 참고)
   const requestedSection = location.state?.section ?? null;
 
-  useEffect(() => {
-    let cancelled = false;
-    fetchHomeScreen()
-      .then((data) => {
-        if (!cancelled) setHome(data);
-      })
-      .catch(() => {
-        if (!cancelled) showToast("홈 화면 설정을 불러오지 못했어요.", { tone: "error" });
-      });
-    return () => {
-      cancelled = true;
-    };
+  const loadHome = useCallback(async () => {
+    try {
+      const data = await fetchHomeScreen();
+      setHome(data);
+    } catch {
+      showToast("홈 화면 설정을 불러오지 못했어요.", { tone: "error" });
+    }
   }, [showToast]);
+
+  useEffect(() => {
+    Promise.resolve().then(loadHome);
+  }, [loadHome]);
+
+  useLiveSync(loadHome);
 
   /**
    * 지정된 섹션에서 시작해야 하면 애니메이션 없이 바로 그 자리로 옮긴다.

@@ -1,26 +1,27 @@
-import { ChartColumn, MessageSquare, Image, Bookmark, Clock, Timer } from "lucide-react";
+import { ChartColumn, MessageSquare, Image, Heart, Clock, Timer } from "lucide-react";
 import styles from "./DashboardStats.module.css";
 
+// 카드가 길어지지 않도록 상위 5개만 노출한다.
+const FREQUENT_WORD_DISPLAY_COUNT = 5;
+
 /**
- * dashboard 테이블(최종본)의 집계 값을 보여주는 카드.
- * 컬럼 -> 화면 매핑
- *   message_count            -> 메시지
- *   image_count              -> 사진
- *   bookmark_count           -> 북마크
- *   (reaction_count 는 화면에 노출하지 않는다)
- *   busiest_hour             -> 가장 활발했던 시간
- *   average_response_seconds -> 평균 답장 시간
- *   frequent_words           -> 자주 쓴 말
+ * 오늘의 대화 기록 카드. **커플 합산** 기준이다.
+ *   메시지 / 사진 / 가장 활발했던 시간 / 평균 답장 시간 / 자주 쓴 말 : 두 사람 합산
+ *   사진 / 공감 : 커플방에서 두 사람이 주고받은 합산 개수
  *
  * @param {object} dashboard - dashboardApi.fetchDashboard().dashboard
  */
-export default function DashboardStats({ dashboard }) {
+export default function DashboardStats({
+  dashboard,
+  title = "오늘의 대화 기록",
+  showDailyCounts = true,
+}) {
   if (!dashboard) return null;
 
   const {
     messageCount = 0,
     imageCount = 0,
-    bookmarkCount = 0,
+    reactionCount = 0,
     busiestHour,
     averageResponseSeconds,
     frequentWords = [],
@@ -28,9 +29,14 @@ export default function DashboardStats({ dashboard }) {
 
   const counts = [
     { key: "message", label: "메시지", value: messageCount, Icon: MessageSquare },
-    { key: "image", label: "사진", value: imageCount, Icon: Image },
-    { key: "bookmark", label: "북마크", value: bookmarkCount, Icon: Bookmark },
-  ];
+    showDailyCounts && { key: "image", label: "사진", value: imageCount, Icon: Image },
+    showDailyCounts && {
+      key: "reaction",
+      label: "공감",
+      value: reactionCount,
+      Icon: Heart,
+    },
+  ].filter(Boolean);
 
   const highlights = [
     busiestHour != null && {
@@ -51,7 +57,7 @@ export default function DashboardStats({ dashboard }) {
     <section className={styles.card} aria-labelledby="dashboard-stats-title">
       <p id="dashboard-stats-title" className={styles.title}>
         <ChartColumn size={14} aria-hidden="true" />
-        오늘의 대화 기록
+        {title}
       </p>
 
       <ul className={styles.countRow}>
@@ -60,7 +66,9 @@ export default function DashboardStats({ dashboard }) {
             <span className={styles.countIcon} aria-hidden="true">
               <Icon size={15} />
             </span>
-            <span className={styles.countValue}>{value.toLocaleString("ko-KR")}</span>
+            <span className={styles.countValue}>
+              {(Number(value) || 0).toLocaleString("ko-KR")}
+            </span>
             <span className={styles.countLabel}>{label}</span>
           </li>
         ))}
@@ -82,7 +90,7 @@ export default function DashboardStats({ dashboard }) {
         <div className={styles.wordSection}>
           <p className={styles.wordTitle}>자주 쓴 말</p>
           <ul className={styles.wordRow}>
-            {frequentWords.slice(0, 5).map(({ word, count }) => (
+            {frequentWords.slice(0, FREQUENT_WORD_DISPLAY_COUNT).map(({ word, count }) => (
               <li key={word} className={styles.wordChip}>
                 {word}
                 <span className={styles.wordCount}>{count}</span>
@@ -95,9 +103,11 @@ export default function DashboardStats({ dashboard }) {
   );
 }
 
-// busiest_hour(0~23) -> "밤 10시~11시"
+// busiest_hour(0~23) -> "오후 2시~오후 3시"
 function formatHourRange(hour) {
-  return `${formatHourLabel(hour)}~${(hour + 1) % 24}시`;
+  return `${formatHourLabel(hour)}~${formatHourLabel(
+    (hour + 1) % 24,
+  )}`;
 }
 
 function formatHourLabel(hour) {

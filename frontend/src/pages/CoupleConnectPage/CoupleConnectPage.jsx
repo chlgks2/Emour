@@ -1,16 +1,23 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Heart, Plus } from 'lucide-react'
 
 import {
-  connectCouple,
   createCoupleInvitation,
+  joinOrReconnectCouple,
 } from '../../api/coupleApi.js'
+
+import Button from '../../components/common/Button'
+import TextField from '../../components/common/TextField'
 
 import {
   clearPendingCoupleRoom,
   saveCurrentCoupleRoom,
   savePendingCoupleRoom,
 } from '../../utils/pendingCoupleRoom.js'
+import {
+  invalidateCoupleRoom,
+} from '../../api/coupleRoomContext.js'
 import { useAuth } from '../../hooks/useAuth.js'
 
 import './CoupleConnectPage.css'
@@ -60,8 +67,10 @@ function CoupleConnectPage() {
         invitation,
         user?.userId,
       )
+      // 방이 새로 생겼으니 캐시해 둔 roomId 를 버린다.
+      invalidateCoupleRoom()
 
-      navigate('/dashboard', {
+      navigate('/mypage', {
         replace: true,
       })
     } catch (error) {
@@ -98,7 +107,7 @@ function CoupleConnectPage() {
       })
 
       const connectedRoom =
-        await connectCouple(
+        await joinOrReconnectCouple(
           trimmedRoomCode,
         )
 
@@ -107,6 +116,7 @@ function CoupleConnectPage() {
         connectedRoom,
         user?.userId,
       )
+      invalidateCoupleRoom()
 
       setFeedback({
         type: 'success',
@@ -129,21 +139,21 @@ function CoupleConnectPage() {
   }
 
   return (
-    <main className="couple-connect-page">
-      <section className="couple-connect-content">
-        <div
-          className="couple-heart-symbol"
-          aria-hidden="true"
-        >
-          <span className="couple-heart-icon">♥</span>
-        </div>
+    <div className="app-shell">
+      <main className="couple-connect-page">
+        <div className="couple-connect-content">
+          <div
+            className="couple-heart-symbol"
+            aria-hidden="true"
+          >
+            <Heart size={28} />
+          </div>
 
-        <div className="couple-connect-heading">
           <p className="couple-connect-eyebrow">
             TOGETHER, FROM NOW ON
           </p>
 
-          <h1>
+          <h1 className="couple-connect-title">
             우리만의 공간을
             <br />
             시작해볼까요?
@@ -154,88 +164,71 @@ function CoupleConnectPage() {
             <br />
             전달받은 코드로 연인과 연결해보세요.
           </p>
-        </div>
 
-        {feedback.message && (
-          <p
-            className={`connect-feedback connect-feedback-${feedback.type}`}
-            role="status"
-            aria-live="polite"
+          {feedback.message && (
+            <p
+              className={`connect-feedback connect-feedback-${feedback.type}`}
+              role="status"
+              aria-live="polite"
+            >
+              {feedback.message}
+            </p>
+          )}
+
+          <Button
+            onClick={handleCreateRoom}
+            loading={isLoading}
+            className="couple-connect-cta"
           >
-            {feedback.message}
-          </p>
-        )}
+            <Plus size={18} aria-hidden="true" />
+            방 생성하기
+          </Button>
 
-        <button
-          type="button"
-          className="create-room-button"
-          onClick={handleCreateRoom}
-          disabled={isLoading}
-        >
-          <span
-            className="create-room-icon"
+          <div
+            className="connect-divider"
             aria-hidden="true"
           >
-            ＋
-          </span>
-
-          {isLoading
-            ? '처리 중...'
-            : '방 생성하기'}
-        </button>
-
-        <div
-          className="connect-divider"
-          aria-hidden="true"
-        >
-          <span>또는</span>
-        </div>
-
-        <form
-          className="room-code-form"
-          onSubmit={handleJoinRoom}
-        >
-          <div className="room-code-heading">
-            <h2>방 코드로 참여하기</h2>
-
-            <p>
-              연인에게 전달받은 방 코드를 입력해주세요.
-            </p>
+            <span />
+            또는
+            <span />
           </div>
 
-          <label htmlFor="roomCode">
-            방 코드
-          </label>
+          <form
+            className="room-code-form"
+            onSubmit={handleJoinRoom}
+          >
+            <h2 className="room-code-title">
+              방 코드로 참여하기
+            </h2>
 
-          <div className="room-code-input-wrapper">
-            <input
-              id="roomCode"
+            <p className="room-code-description">
+              연인에게 전달받은 방 코드를 입력해주세요.
+            </p>
+
+            <TextField
+              label="방 코드"
               name="roomCode"
-              type="text"
               value={roomCode}
               placeholder="XXXX-XXXX"
               autoComplete="off"
               disabled={isLoading}
               onChange={handleRoomCodeChange}
             />
-          </div>
 
-          <button
-            type="submit"
-            className="join-room-button"
-            disabled={
-              !roomCode.trim() ||
-              isLoading
-            }
-          >
-            {isLoading
-              ? '처리 중...'
-              : '연결하기'}
-          </button>
-        </form>
-
-      </section>
-    </main>
+            <Button
+              type="submit"
+              variant="outline"
+              disabled={
+                !roomCode.trim() || isLoading
+              }
+              className="room-code-submit"
+            >
+              연결하기
+            </Button>
+          </form>
+        </div>
+      </main>
+    </div>
   )
 }
 

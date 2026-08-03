@@ -1,11 +1,14 @@
 package com.ssafy.emour.couple.controller;
 
 import com.ssafy.emour.couple.dto.request.CoupleConnectRequest;
+import com.ssafy.emour.couple.dto.request.CoupleReconnectRequest;
+import com.ssafy.emour.couple.dto.request.CoupleStartDateRequest;
 import com.ssafy.emour.couple.dto.response.CoupleConnectResponse;
 import com.ssafy.emour.couple.dto.response.CoupleDisconnectResponse;
 import com.ssafy.emour.couple.dto.response.CoupleInvitationResponse;
 import com.ssafy.emour.couple.dto.response.CoupleRoomIdResponse;
 import com.ssafy.emour.couple.dto.response.CoupleStatusResponse;
+import com.ssafy.emour.couple.dto.response.CoupleStartDateResponse;
 import com.ssafy.emour.couple.service.CoupleService;
 import com.ssafy.emour.global.response.ApiResponse;
 import com.ssafy.emour.global.util.SecurityUtil;
@@ -62,6 +65,42 @@ public class CoupleController {
         );
         return ResponseEntity.ok(
                 ApiResponse.success("커플 연결이 완료되었습니다.", response)
+        );
+    }
+
+    @PostMapping("/reconnect")
+    public ResponseEntity<ApiResponse<CoupleConnectResponse>> reconnect(
+            @Valid @RequestBody CoupleReconnectRequest request
+    ) {
+        CoupleConnectResponse response = coupleService.reconnect(
+                SecurityUtil.getCurrentUserId(),
+                request
+        );
+        return ResponseEntity.ok(
+                ApiResponse.success("커플 재결합이 완료되었습니다.", response)
+        );
+    }
+
+    @PostMapping("/startDate")
+    public ResponseEntity<ApiResponse<CoupleStartDateResponse>> updateStartDate(
+            @Valid @RequestBody CoupleStartDateRequest request
+    ) {
+        CoupleStartDateResponse response = coupleService.updateStartDate(
+                SecurityUtil.getCurrentUserId(),
+                request
+        );
+        return ResponseEntity.ok(
+                ApiResponse.success("커플이 만난 날을 저장했습니다.", response)
+        );
+    }
+
+    @GetMapping("/startDate")
+    public ResponseEntity<ApiResponse<CoupleStartDateResponse>> getStartDate() {
+        CoupleStartDateResponse response = coupleService.getStartDate(
+                SecurityUtil.getCurrentUserId()
+        );
+        return ResponseEntity.ok(
+                ApiResponse.success("커플이 만난 날을 조회했습니다.", response)
         );
     }
 

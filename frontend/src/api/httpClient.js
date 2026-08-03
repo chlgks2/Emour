@@ -1,3 +1,7 @@
+import {
+  notifyLiveSync,
+} from '../utils/liveSync.js'
+
 const API_BASE_URL = (
   import.meta.env.VITE_API_BASE_URL ?? ''
 ).replace(/\/$/, '')
@@ -171,6 +175,18 @@ export async function apiRequest(
     requestError.response = responseData
 
     throw requestError
+  }
+
+  if (
+    ![
+      'GET',
+      'HEAD',
+      'OPTIONS',
+    ].includes(method.toUpperCase())
+  ) {
+    window.setTimeout(() => {
+      notifyLiveSync(path)
+    }, 0)
   }
 
   return responseData

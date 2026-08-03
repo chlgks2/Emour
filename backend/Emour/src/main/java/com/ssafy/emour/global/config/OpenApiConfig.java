@@ -35,6 +35,7 @@ public class OpenApiConfig {
                                 - 연결: `/ws`
                                 - 메시지 전송: `/pub/chat/rooms/{roomId}/messages`
                                 - 메시지 구독: `/sub/chat/rooms/{roomId}/messages`
+                                - 감정 분석 결과 구독: `/sub/chat/rooms/{roomId}/analysis`
                                 - 읽음 전송: `/pub/chat/rooms/{roomId}/read`
                                 - 읽음 구독: `/sub/chat/rooms/{roomId}/read`
                                 - 개인 오류 구독: `/user/queue/errors`

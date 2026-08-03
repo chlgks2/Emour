@@ -72,6 +72,14 @@ public class CoupleRoom {
         this.roomCodeExpiresAt = expiresAt;
     }
 
+    public void refreshReconnectInvitation(String roomCode, LocalDateTime expiresAt) {
+        if (status != CoupleRoomStatus.INACTIVE) {
+            throw new IllegalStateException("비활성 커플방만 재결합 코드를 갱신할 수 있습니다.");
+        }
+        this.roomCode = roomCode;
+        this.roomCodeExpiresAt = expiresAt;
+    }
+
     public boolean hasValidInvitationAt(LocalDateTime currentTime) {
         return status == CoupleRoomStatus.WAITING
                 && roomCodeExpiresAt != null
@@ -90,5 +98,23 @@ public class CoupleRoom {
             throw new IllegalStateException("활성 상태의 커플방만 연결을 해제할 수 있습니다.");
         }
         this.status = CoupleRoomStatus.INACTIVE;
+    }
+
+    public void reconnect() {
+        if (status != CoupleRoomStatus.INACTIVE) {
+            throw new IllegalStateException(
+                    "비활성 상태의 커플방만 재결합할 수 있습니다."
+            );
+        }
+        this.status = CoupleRoomStatus.ACTIVE;
+    }
+
+    public void updateDatingStartDate(LocalDate datingStartDate) {
+        if (status != CoupleRoomStatus.ACTIVE) {
+            throw new IllegalStateException(
+                    "활성 상태의 커플방만 만난 날을 설정할 수 있습니다."
+            );
+        }
+        this.datingStartDate = datingStartDate;
     }
 }

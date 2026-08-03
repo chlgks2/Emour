@@ -14,6 +14,7 @@ public enum ErrorCode {
 
     // ===== 공통 =====
     INVALID_INPUT(HttpStatus.BAD_REQUEST, "잘못된 입력값입니다."),
+    INVALID_IMAGE_FILE(HttpStatus.BAD_REQUEST, "이미지 파일만 업로드할 수 있습니다."),
     INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 오류가 발생했습니다."),
 
     // ===== 인증 / 회원 =====
@@ -40,6 +41,41 @@ public enum ErrorCode {
     INVITATION_CODE_GENERATION_FAILED(
             HttpStatus.INTERNAL_SERVER_ERROR,
             "초대 코드를 생성하지 못했습니다. 잠시 후 다시 시도해 주세요."
+    ),
+    RECONNECT_NOT_AVAILABLE(
+            HttpStatus.CONFLICT,
+            "재결합할 수 없는 커플방이거나 재결합 대상이 아닙니다."
+    ),
+
+    // ===== MOOD =====
+    MOOD_NOTIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "MOOD 알림 설정을 찾을 수 없습니다."),
+    MOOD_REGISTRATION_NOT_ALLOWED(
+            HttpStatus.BAD_REQUEST,
+            "현재는 MOOD를 등록할 수 있는 알림 시간대가 아닙니다."
+    ),
+    MOOD_ALREADY_REGISTERED(HttpStatus.CONFLICT, "현재 알림 시간대의 MOOD가 이미 등록되었습니다."),
+    MOOD_NOT_FOUND(HttpStatus.NOT_FOUND, "MOOD 기록을 찾을 수 없습니다."),
+    MOOD_UPDATE_NOT_ALLOWED(
+            HttpStatus.BAD_REQUEST,
+            "현재 알림 시간대의 MOOD만 수정할 수 있습니다."
+    ),
+
+    // ===== CALENDAR =====
+    SCHEDULE_NOT_FOUND(HttpStatus.NOT_FOUND, "일정을 찾을 수 없습니다."),
+    SCHEDULE_TYPE_MISMATCH(
+            HttpStatus.BAD_REQUEST,
+            "일정 API에서는 일반 일정만 처리할 수 있습니다."
+    ),
+    ANNIVERSARY_TYPE_MISMATCH(
+            HttpStatus.BAD_REQUEST,
+            "기념일 API에서는 기념일만 처리할 수 있습니다."
+    ),
+
+    // ===== DIARY =====
+    DIARY_NOT_FOUND(HttpStatus.NOT_FOUND, "한줄 일기를 찾을 수 없습니다."),
+    DIARY_ALREADY_EXISTS(
+            HttpStatus.CONFLICT,
+            "해당 날짜의 한줄 일기가 이미 존재합니다."
     ),
     ;
 

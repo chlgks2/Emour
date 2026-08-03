@@ -57,6 +57,8 @@ export function mapMoodResponse(response) {
     coupleRoomId: getFirstValue(
       response.coupleRoomId,
       response.couple_room_id,
+      response.roomId,
+      response.room_id,
     ),
 
     moodType: getFirstValue(
@@ -103,11 +105,15 @@ export function mapScheduleResponse(response) {
     userId: getFirstValue(
       response.userId,
       response.user_id,
+      response.creatorId,
+      response.creator_id,
     ),
 
     coupleRoomId: getFirstValue(
       response.coupleRoomId,
       response.couple_room_id,
+      response.roomId,
+      response.room_id,
     ),
 
     name: getFirstValue(
@@ -285,7 +291,11 @@ export function buildCalendarMonthData({
     .map(mapDiaryResponse)
     .filter(
       (diary) =>
-        diary.userId === currentUserId &&
+        (
+          currentUserId === null ||
+          currentUserId === undefined ||
+          diary.userId === currentUserId
+        ) &&
         !diary.deletedAt,
     )
     .forEach((diary) => {

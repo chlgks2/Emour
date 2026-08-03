@@ -1,10 +1,13 @@
 package com.ssafy.emour.couple.service;
 
 import com.ssafy.emour.couple.dto.request.CoupleConnectRequest;
+import com.ssafy.emour.couple.dto.request.CoupleReconnectRequest;
+import com.ssafy.emour.couple.dto.request.CoupleStartDateRequest;
 import com.ssafy.emour.couple.dto.response.CoupleConnectResponse;
 import com.ssafy.emour.couple.dto.response.CoupleDisconnectResponse;
 import com.ssafy.emour.couple.dto.response.CoupleInvitationResponse;
 import com.ssafy.emour.couple.dto.response.CoupleStatusResponse;
+import com.ssafy.emour.couple.dto.response.CoupleStartDateResponse;
 import com.ssafy.emour.couple.entity.CoupleMember;
 import com.ssafy.emour.couple.entity.CoupleMemberId;
 import com.ssafy.emour.couple.entity.CoupleMemberStatus;
@@ -54,9 +57,7 @@ public class CoupleService {
         memberRepository.findByIdForUpdate(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
-        if (coupleMemberRepository.existsActiveCoupleByUserId(userId)) {
-            throw new CustomException(ErrorCode.ALREADY_COUPLED);
-        }
+        validateCanStartNewRelationship(userId);
 
         List<CoupleRoom> waitingRooms = coupleMemberRepository.findWaitingRoomsByUserId(
                 userId,
@@ -77,6 +78,23 @@ public class CoupleService {
             return CoupleInvitationResponse.from(waitingRoom);
         }
 
+        List<CoupleRoom> inactiveRooms =
+                coupleRoomRepository.findRetainedInactiveRoomsByUserIdForUpdate(
+                        userId,
+                        PageRequest.of(0, 1)
+                );
+        if (!inactiveRooms.isEmpty()) {
+            CoupleRoom inactiveRoom = inactiveRooms.get(0);
+            if (inactiveRoom.getRoomCodeExpiresAt() == null
+                    || !inactiveRoom.getRoomCodeExpiresAt().isAfter(currentTime)) {
+                inactiveRoom.refreshReconnectInvitation(
+                        generateUniqueCode(),
+                        currentTime.plusHours(invitationValidityHours)
+                );
+            }
+            return CoupleInvitationResponse.from(inactiveRoom);
+        }
+
         CoupleRoom waitingRoom = createWaitingRoom(
                 userId,
                 generateUniqueCode(),
@@ -90,9 +108,7 @@ public class CoupleService {
         memberRepository.findByIdForUpdate(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
-        if (coupleMemberRepository.existsActiveCoupleByUserId(userId)) {
-            throw new CustomException(ErrorCode.ALREADY_COUPLED);
-        }
+        validateCanStartNewRelationship(userId);
 
         String invitationCode = normalizeInvitationCode(request.invitationCode());
         CoupleRoom room = coupleRoomRepository.findByRoomCodeForUpdate(invitationCode)
@@ -104,6 +120,89 @@ public class CoupleService {
         room.activate();
 
         return CoupleConnectResponse.from(room);
+    }
+
+    @Transactional
+    public CoupleConnectResponse reconnect(
+            Long userId,
+            CoupleReconnectRequest request
+    ) {
+        memberRepository.findByIdForUpdate(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        validateCanStartNewRelationship(userId);
+
+        String invitationCode = normalizeInvitationCode(
+                request.invitationCode()
+        );
+        CoupleRoom room = coupleRoomRepository
+                .findByRoomCodeForUpdate(invitationCode)
+                .orElseThrow(() -> new CustomException(
+                        ErrorCode.INVITATION_CODE_NOT_FOUND
+                ));
+
+        if (room.getStatus() != CoupleRoomStatus.INACTIVE) {
+            throw new CustomException(ErrorCode.RECONNECT_NOT_AVAILABLE);
+        }
+
+        CoupleMember member = coupleMemberRepository.findById(
+                        new CoupleMemberId(userId, room.getId())
+                )
+                .orElseThrow(() -> new CustomException(
+                        ErrorCode.RECONNECT_NOT_AVAILABLE
+                ));
+        if (member.getStatus() != CoupleMemberStatus.LEFT) {
+            throw new CustomException(ErrorCode.RECONNECT_NOT_AVAILABLE);
+        }
+
+        long remainingMemberCount =
+                coupleMemberRepository.countByIdRoomIdAndStatus(
+                        room.getId(),
+                        CoupleMemberStatus.ACTIVE
+                );
+        if (remainingMemberCount != 1) {
+            throw new CustomException(ErrorCode.RECONNECT_NOT_AVAILABLE);
+        }
+
+        member.reconnect();
+        room.reconnect();
+        return CoupleConnectResponse.from(room);
+    }
+
+    @Transactional
+    public CoupleStartDateResponse updateStartDate(
+            Long userId,
+            CoupleStartDateRequest request
+    ) {
+        memberRepository.findByIdForUpdate(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        CoupleRoom room = coupleRoomRepository
+                .findActiveRoomByUserIdForUpdate(userId)
+                .orElseThrow(() -> new CustomException(
+                        ErrorCode.ACTIVE_COUPLE_NOT_FOUND
+                ));
+
+        room.updateDatingStartDate(request.startDate());
+        return CoupleStartDateResponse.from(room);
+    }
+
+    @Transactional(readOnly = true)
+    public CoupleStartDateResponse getStartDate(Long userId) {
+        if (!memberRepository.existsById(userId)) {
+            throw new CustomException(ErrorCode.USER_NOT_FOUND);
+        }
+
+        List<CoupleRoom> readableRooms =
+                coupleRoomRepository.findReadableRoomsByUserId(
+                        userId,
+                        PageRequest.of(0, 1)
+                );
+        if (readableRooms.isEmpty()) {
+            throw new CustomException(ErrorCode.ACTIVE_COUPLE_NOT_FOUND);
+        }
+        CoupleRoom room = readableRooms.get(0);
+        return CoupleStartDateResponse.from(room);
     }
 
     @Transactional(readOnly = true)
@@ -218,6 +317,17 @@ public class CoupleService {
 
     private String normalizeInvitationCode(String invitationCode) {
         return invitationCode.trim().toUpperCase(Locale.ROOT);
+    }
+
+    private void validateCanStartNewRelationship(Long userId) {
+        boolean hasActiveCouple =
+                coupleMemberRepository.existsActiveCoupleByUserId(userId);
+        boolean retainsInactiveRoom =
+                coupleMemberRepository.existsRetainedInactiveRoomByUserId(userId);
+
+        if (hasActiveCouple || retainsInactiveRoom) {
+            throw new CustomException(ErrorCode.ALREADY_COUPLED);
+        }
     }
 
     private void validateInvitation(CoupleRoom room, Long userId) {

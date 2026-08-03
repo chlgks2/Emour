@@ -77,6 +77,50 @@ class SwaggerDocumentationTest {
                 ).exists());
     }
 
+    @Test
+    void exposesProfileImagesApi() throws Exception {
+        mockMvc.perform(get("/v3/api-docs"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath(
+                        "$.paths['/users/profile-img'].get"
+                ).exists())
+                .andExpect(jsonPath(
+                        "$.paths['/users/profile-img'].post"
+                ).exists())
+                .andExpect(jsonPath(
+                        "$.paths['/users/me/profile-img'].get"
+                ).exists())
+                .andExpect(jsonPath(
+                        "$.paths['/users/partner/profile-img'].get"
+                ).exists())
+                .andExpect(jsonPath(
+                        "$.paths['/users/partner-nickname'].get"
+                ).exists())
+                .andExpect(jsonPath(
+                        "$.paths['/users/partner-nickname'].patch"
+                ).exists());
+    }
+
+    @Test
+    void exposesMoodApisWithBearerAuth() throws Exception {
+        mockMvc.perform(get("/v3/api-docs"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.paths['/moods'].post").exists())
+                .andExpect(jsonPath("$.paths['/moods'].get").exists())
+                .andExpect(jsonPath(
+                        "$.paths['/moods/{moodId}'].patch"
+                ).exists())
+                .andExpect(jsonPath(
+                        "$.paths['/moods'].post.security[0].bearerAuth"
+                ).exists())
+                .andExpect(jsonPath(
+                        "$.paths['/moods'].get.security[0].bearerAuth"
+                ).exists())
+                .andExpect(jsonPath(
+                        "$.paths['/moods/{moodId}'].patch.security[0].bearerAuth"
+                ).exists());
+    }
+
     // 로그인 화면에서 이메일과 비밀번호를 입력할 수 있는지 확인합니다.
     @Test
     void exposesLoginInputSchema() throws Exception {

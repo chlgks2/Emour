@@ -8,8 +8,8 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.util.Optional;
 import java.util.List;
+import java.util.Optional;
 
 public interface CoupleRoomRepository extends JpaRepository<CoupleRoom, Long> {
 
@@ -27,7 +27,47 @@ public interface CoupleRoomRepository extends JpaRepository<CoupleRoom, Long> {
               and cm.status = com.ssafy.emour.couple.entity.CoupleMemberStatus.ACTIVE
               and cr.status in (
                   com.ssafy.emour.couple.entity.CoupleRoomStatus.WAITING,
-                  com.ssafy.emour.couple.entity.CoupleRoomStatus.ACTIVE
+                  com.ssafy.emour.couple.entity.CoupleRoomStatus.ACTIVE,
+                  com.ssafy.emour.couple.entity.CoupleRoomStatus.INACTIVE
+              )
+            order by
+              case
+                when cr.status = com.ssafy.emour.couple.entity.CoupleRoomStatus.ACTIVE
+                then 0
+                when cr.status = com.ssafy.emour.couple.entity.CoupleRoomStatus.WAITING
+                then 1
+                else 2
+              end,
+              cr.createdAt desc
+            """)
+    List<CoupleRoom> findCurrentRoomsByUserId(
+            @Param("userId") Long userId,
+            Pageable pageable
+    );
+
+    @Query("""
+            select cr
+            from CoupleMember cm
+            join CoupleRoom cr on cr.id = cm.id.roomId
+            where cm.id.userId = :userId
+              and cm.status = com.ssafy.emour.couple.entity.CoupleMemberStatus.ACTIVE
+              and cr.status = com.ssafy.emour.couple.entity.CoupleRoomStatus.ACTIVE
+            """)
+    Optional<CoupleRoom> findActiveRoomByUserId(@Param("userId") Long userId);
+
+    /**
+     * 현재 남아 있는 사용자가 기존 커플 데이터를 조회할 수 있는 방.
+     * 상대방이 나간 INACTIVE 방도 읽기 전용 화면에서는 접근을 허용한다.
+     */
+    @Query("""
+            select cr
+            from CoupleMember cm
+            join CoupleRoom cr on cr.id = cm.id.roomId
+            where cm.id.userId = :userId
+              and cm.status = com.ssafy.emour.couple.entity.CoupleMemberStatus.ACTIVE
+              and cr.status in (
+                  com.ssafy.emour.couple.entity.CoupleRoomStatus.ACTIVE,
+                  com.ssafy.emour.couple.entity.CoupleRoomStatus.INACTIVE
               )
             order by
               case
@@ -35,9 +75,9 @@ public interface CoupleRoomRepository extends JpaRepository<CoupleRoom, Long> {
                 then 0
                 else 1
               end,
-              cr.createdAt desc
+              cr.updatedAt desc
             """)
-    List<CoupleRoom> findCurrentRoomsByUserId(
+    List<CoupleRoom> findReadableRoomsByUserId(
             @Param("userId") Long userId,
             Pageable pageable
     );

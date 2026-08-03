@@ -8,6 +8,7 @@ import { useInfiniteScroll } from "../hooks/useInfiniteScroll";
 import { fetchBookmarks, removeBookmark } from "../api/bookmarkApi";
 import { formatDate, formatTime } from "../utils/emotions";
 import { useToast } from "../hooks/useToast";
+import { useLiveSync } from "../hooks/useLiveSync";
 import styles from "./BookmarkListPage.module.css";
 
 /**
@@ -84,6 +85,26 @@ export default function BookmarkListPage() {
       cancelled = true;
     };
   }, [loadPage]);
+
+  const refreshBookmarks = useCallback(async () => {
+    if (pendingRemoveMessageId !== null) return;
+
+    try {
+      const { bookmarks: latest, nextCursorBookmarkId } =
+        await fetchBookmarks({
+          cursorBookmarkId: null,
+          size: PAGE_SIZE,
+        });
+      cursorRef.current = nextCursorBookmarkId;
+      setBookmarks(latest);
+      setHasMore(nextCursorBookmarkId !== null);
+      setLoadError(false);
+    } catch {
+      // 백그라운드 동기화 실패는 현재 목록을 유지한다.
+    }
+  }, [pendingRemoveMessageId]);
+
+  useLiveSync(refreshBookmarks);
 
   const handleRetry = () => {
     setHasMore(true);

@@ -31,21 +31,22 @@
   font: inherit;
   text-decoration: none;
   cursor: pointer;
-  transition:
-    color var(--duration-fast) var(--ease-out),
-    background-color var(--duration-fast) var(--ease-out);
+  transition: color var(--duration-fast) var(--ease-out);
 }
 
-.bottom-navigation-item:hover:not(:disabled) {
-  color: var(--color-text-secondary);
-  background: var(--color-surface-tint);
+/*
+ * hover 는 색만 바꾼다. (배경을 깔면 활성 탭의 알약 배경(::before)과 겹쳐
+ * 어느 탭이 현재인지 흐려진다)
+ * 아이콘은 stroke="currentColor" 라서 아이템 색을 주면 라벨과 함께 반응한다.
+ * 활성 탭은 이미 자기 색이 있으므로 제외해 현재 위치 표시가 흔들리지 않게 한다.
+ */
+.bottom-navigation-item:hover:not(:disabled):not(.bottom-navigation-item-active) {
+  color: var(--color-primary);
 }
 
 /* 활성 탭: 아이콘 뒤에 알약 모양 배경을 깔아 현재 위치를 분명히 한다 */
-.bottom-navigation-item-active,
-.bottom-navigation-item-active:hover {
+.bottom-navigation-item-active {
   color: var(--color-primary-strong);
-  background: transparent;
 }
 
 .bottom-navigation-item-active .bottom-navigation-icon {
@@ -68,15 +69,13 @@
   opacity: 0.5;
 }
 
-.bottom-navigation-item:disabled:hover {
-  background: transparent;
-}
-
 .bottom-navigation-icon {
   position: relative;
   z-index: 1;
   flex-shrink: 0;
-  transition: transform var(--duration-base) var(--ease-spring);
+  transition:
+    transform var(--duration-base) var(--ease-spring),
+    color var(--duration-fast) var(--ease-out);
 }
 
 .bottom-navigation-label {

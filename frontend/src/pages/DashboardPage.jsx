@@ -1,5 +1,5 @@
 ﻿import { useCallback, useEffect, useMemo, useState } from "react";
-import { CloudOff } from "lucide-react";
+import { ChevronLeft, ChevronRight, CloudOff } from "lucide-react";
 import DashboardTopBar from "../components/dashboard/DashboardTopBar";
 import DashboardSkeleton from "../components/dashboard/DashboardSkeleton";
 import DashboardStats from "../components/dashboard/DashboardStats";
@@ -11,10 +11,16 @@ import EmotionReport from "../components/dashboard/EmotionReport";
 import RecentPhotos from "../components/dashboard/RecentPhotos";
 import BookmarkPreview from "../components/dashboard/BookmarkPreview";
 import EmptyState from "../components/common/EmptyState";
-import { fetchDashboard } from "../api/dashboardApi";
-import { fetchMoodRecordsForMonth, saveMyMood, deleteMyMood } from "../api/moodApi";
+import { fetchDashboard, fetchDashboardPeriod } from "../api/dashboardApi";
+import MoodTrendChart from "../components/dashboard/MoodTrendChart";
+import { fetchMoodRecordsForMonth, saveMyMood } from "../api/moodApi";
+import { MOOD_AXIS, buildMoodTrendSeries } from "../utils/moodTrendSeries";
+import { DEFAULT_MOOD_WINDOW } from "../utils/moodSlotGrid";
+import { getMoodNotificationSetting } from "../api/notificationSettingApi";
+import { formatSlotTime } from "../utils/moodSlotFormat";
 import { addDays, formatDateKey, getWeekStart, parseDateKey } from "../utils/moodEmotion";
 import { useToast } from "../hooks/useToast";
+import { useLiveSync } from "../hooks/useLiveSync";
 import styles from "./DashboardPage.module.css";
 
 export default function DashboardPage() {
@@ -23,14 +29,26 @@ export default function DashboardPage() {
   // { room, daysTogether, dashboard, todaySchedules, recentPhotos } — dashboardApi.fetchDashboard 참고
   const [dashboardData, setDashboardData] = useState(null);
   const [dashboardError, setDashboardError] = useState(false);
+  const [reportPeriod, setReportPeriod] = useState("DAY");
+  const [reportDate, setReportDate] = useState(() => new Date());
+  const [periodDashboard, setPeriodDashboard] = useState(null);
+  const [periodLoading, setPeriodLoading] = useState(false);
 
   // 감정 캘린더 상태
   const [weekStart, setWeekStart] = useState(() => getWeekStart(new Date()));
   const [monthCursor, setMonthCursor] = useState(() => new Date());
   const [moodRecords, setMoodRecords] = useState({}); // moodDate('YYYY-MM-DD') -> { myMood, partnerMood }
-  const [selectedMoodDate, setSelectedMoodDate] = useState(null); // 스트립에서 펼쳐진 날짜
+  /*
+   * 스트립에서 펼쳐진 날짜.
+   * 오늘로 시작한다. null 로 두면 날짜 원을 한 번 눌러야 시간대 목록이 나와서,
+   * 대시보드를 열었을 때 기분을 기록할 버튼이 아예 안 보인다.
+   */
+  const [selectedMoodDate, setSelectedMoodDate] = useState(() =>
+    formatDateKey(new Date())
+  );
   const [monthModalOpen, setMonthModalOpen] = useState(false);
-  const [moodFormModal, setMoodFormModal] = useState(null); // { mode, moodDate, initialMoodType, initialReason }
+  // { mode, slot, initialMoodType, initialReason } — slot 이 없으면 지금 시간대에 새로 등록
+  const [moodFormModal, setMoodFormModal] = useState(null);
 
   const loadDashboard = useCallback(async () => {
     try {
@@ -41,6 +59,35 @@ export default function DashboardPage() {
       setDashboardError(true);
     }
   }, []);
+
+  const loadPeriodDashboard = useCallback(async () => {
+    try {
+      setPeriodLoading(true);
+      const data = await fetchDashboardPeriod({
+        period: reportPeriod,
+        date: reportDate,
+      });
+      setPeriodDashboard(data);
+    } catch {
+      showToast("기간별 대시보드를 불러오지 못했어요.", { tone: "error" });
+    } finally {
+      setPeriodLoading(false);
+    }
+  }, [reportDate, reportPeriod, showToast]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      await Promise.resolve();
+      if (!cancelled) {
+        loadPeriodDashboard();
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [loadPeriodDashboard]);
 
   // effect 안에서 곧바로 setState 하지 않도록 await 를 한 번 끼워 호출한다.
   useEffect(() => {
@@ -55,7 +102,7 @@ export default function DashboardPage() {
   }, [loadDashboard]);
 
   const loadMonth = useCallback((cursor) => {
-    fetchMoodRecordsForMonth(cursor.getFullYear(), cursor.getMonth())
+    return fetchMoodRecordsForMonth(cursor.getFullYear(), cursor.getMonth())
       .then((records) => {
         setMoodRecords((prev) => ({ ...prev, ...records }));
       })
@@ -75,6 +122,22 @@ export default function DashboardPage() {
     loadMonth(addDays(weekStart, 6));
   }, [weekStart, loadMonth]);
 
+  const refreshDashboard = useCallback(async () => {
+    await Promise.allSettled([
+      loadDashboard(),
+      loadPeriodDashboard(),
+      loadMonth(monthCursor),
+      loadMonth(weekStart),
+      loadMonth(addDays(weekStart, 6)),
+    ]);
+  }, [loadDashboard, loadMonth, loadPeriodDashboard, monthCursor, weekStart]);
+
+  // 상대방이 다른 브라우저에서 무드를 등록해도 주기적으로 GET /moods를
+  // 다시 호출해 내 화면에 반영한다.
+  useLiveSync(refreshDashboard, {
+    intervalMs: 3000,
+  });
+
   const weekDays = useMemo(() => {
     return Array.from({ length: 7 }, (_, i) => {
       const d = addDays(weekStart, i);
@@ -89,8 +152,99 @@ export default function DashboardPage() {
     });
   }, [weekStart, moodRecords]);
 
+  // 오늘의 무드 슬롯 (미리보기 + 꺾은선 그래프가 함께 쓴다)
+  const todayMood = useMemo(() => {
+    const todayKey = formatDateKey(new Date());
+    return (
+      moodRecords[todayKey] ?? { mySlots: [], partnerSlots: [], myMood: null, partnerMood: null }
+    );
+  }, [moodRecords]);
+
+  // 슬롯 경계(시작~종료, 간격). 못 불러오면 기본값으로 그린다.
+  const [moodWindow, setMoodWindow] = useState(DEFAULT_MOOD_WINDOW);
+
+  useEffect(() => {
+    getMoodNotificationSetting()
+      .then((setting) => {
+        if (setting?.startTime) setMoodWindow(setting);
+      })
+      .catch(() => {
+        // 설정 조회 실패는 화면을 막지 않는다. 기본 슬롯으로 동작한다.
+      });
+  }, []);
+
+  // 선택한 날짜의 슬롯
+  const detailMood = useMemo(
+    () => moodRecords[selectedMoodDate] ?? { mySlots: [], partnerSlots: [] },
+    [moodRecords, selectedMoodDate]
+  );
+
+  // 오늘을 고른 경우에만 미래 시간대를 잠근다.
+  const detailNowMinutes = useMemo(() => {
+    if (selectedMoodDate !== formatDateKey(new Date())) return null;
+    const now = new Date();
+    return now.getHours() * 60 + now.getMinutes();
+  }, [selectedMoodDate]);
+
   // 주의 대표 월(주 시작일 기준)을 라벨로 사용
   const stripMonthLabel = `${weekStart.getMonth() + 1}월`;
+
+  const periodLabel = useMemo(() => {
+    const year = reportDate.getFullYear();
+    const month = reportDate.getMonth() + 1;
+    const day = reportDate.getDate();
+
+    if (reportPeriod === "YEAR") return `${year}년`;
+    if (reportPeriod === "MONTH") return `${year}년 ${month}월`;
+    return `${year}년 ${month}월 ${day}일`;
+  }, [reportDate, reportPeriod]);
+
+  const isCurrentPeriod = useMemo(() => {
+    const now = new Date();
+    if (reportPeriod === "YEAR") {
+      return reportDate.getFullYear() >= now.getFullYear();
+    }
+    if (reportPeriod === "MONTH") {
+      return (
+        reportDate.getFullYear() === now.getFullYear() &&
+        reportDate.getMonth() >= now.getMonth()
+      );
+    }
+    return formatDateKey(reportDate) >= formatDateKey(now);
+  }, [reportDate, reportPeriod]);
+
+  const moveReportDate = (direction) => {
+    setReportDate((current) => {
+      const next = new Date(current);
+      if (reportPeriod === "YEAR") {
+        next.setFullYear(next.getFullYear() + direction);
+      } else if (reportPeriod === "MONTH") {
+        next.setMonth(next.getMonth() + direction, 1);
+      } else {
+        next.setDate(next.getDate() + direction);
+      }
+      return next;
+    });
+  };
+
+  const changeReportPeriod = (period) => {
+    setPeriodDashboard(null);
+    setReportPeriod(period);
+    setReportDate(new Date());
+  };
+
+  const reportTitle =
+    reportPeriod === "DAY"
+      ? "일간"
+      : reportPeriod === "MONTH"
+        ? "월간"
+        : "연간";
+  const showTodaySchedule =
+    reportPeriod === "DAY" && isCurrentPeriod;
+  const visiblePeriodDashboard =
+    periodDashboard?.period === reportPeriod
+      ? periodDashboard
+      : null;
 
   const handlePrevWeek = () => {
     setSelectedMoodDate(null);
@@ -114,48 +268,52 @@ export default function DashboardPage() {
     setSelectedMoodDate((cur) => (cur === moodDate ? null : moodDate));
   };
 
-  const openMoodFormFor = (moodDate) => {
-    const existingMyMood = moodRecords[moodDate]?.myMood ?? null;
+  /**
+   * 무드 모달 열기.
+   * @param {object|null} slot 슬롯이 있으면 그 기록을 수정, null 이면 새로 등록
+   */
+  const openMoodForm = ({ slot, minutesOfDay }) => {
     setMoodFormModal({
-      mode: existingMyMood ? "edit" : "create",
-      moodDate,
-      initialMoodType: existingMyMood?.moodType ?? null,
-      initialReason: existingMyMood?.reason ?? "",
+      mode: slot ? "edit" : "create",
+      slot: slot ?? null,
+      dateKey: selectedMoodDate,
+      // 모달 제목에 "몇 시 기분인지" 적기 위한 값. 저장 시각은 서버가 정한다.
+      minutesOfDay: slot?.minutesOfDay ?? minutesOfDay,
+      initialMoodType: slot?.moodType ?? null,
+      initialReason: slot?.reason ?? "",
     });
   };
 
-  const handleRegisterClick = () => {
-    openMoodFormFor(formatDateKey(new Date()));
-  };
-
+  // 스트립/월달력에서 날짜를 고르면 그날의 마지막 기록을 수정 대상으로 삼는다.
   const handleEditMyMood = (moodDate) => {
-    openMoodFormFor(moodDate);
+    // 월간 달력에서는 그날을 선택 상태로 만들고 스트립 상세에서 시간대를 고르게 한다.
+    setSelectedMoodDate(moodDate);
+    setMonthModalOpen(false);
   };
 
   const handleMoodFormSubmit = async ({ moodType, reason }) => {
-    const { moodDate, mode } = moodFormModal;
+    const { mode, slot } = moodFormModal;
     try {
-      const { record } = await saveMyMood(moodDate, { moodType, reason });
-      setMoodRecords((prev) => ({ ...prev, [moodDate]: record }));
+      // 슬롯이 있으면 그 기록을 수정하고, 없으면 지금 시간대에 새로 등록한다.
+      // (시각은 서버가 정한다. minutesOfDay 는 모달 제목에만 쓴다)
+      await saveMyMood({
+        moodId: slot?.moodId ?? null,
+        moodType,
+        reason,
+        dateKey: moodFormModal.dateKey,
+      });
       setMoodFormModal(null);
-      showToast(mode === "edit" ? "감정을 수정했어요." : "오늘의 감정을 기록했어요.", {
+      // 저장한 날짜가 속한 달을 다시 불러온다. (주가 달을 걸칠 때 monthCursor 만 보면 누락된다)
+      loadMonth(moodFormModal.dateKey ? parseDateKey(moodFormModal.dateKey) : monthCursor);
+      showToast(mode === "edit" ? "기분을 수정했어요." : "지금 기분을 기록했어요.", {
         tone: "success",
       });
-    } catch {
+    } catch (error) {
       // 모달은 닫지 않아서 입력값을 잃지 않고 바로 다시 시도할 수 있다.
-      showToast("감정을 저장하지 못했어요. 다시 시도해주세요.", { tone: "error" });
-    }
-  };
-
-  const handleMoodFormDelete = async () => {
-    const { moodDate } = moodFormModal;
-    try {
-      const { record } = await deleteMyMood(moodDate);
-      setMoodRecords((prev) => ({ ...prev, [moodDate]: record }));
-      setMoodFormModal(null);
-      showToast("감정 기록을 삭제했어요.");
-    } catch {
-      showToast("삭제하지 못했어요. 다시 시도해주세요.", { tone: "error" });
+      // 서버가 알려준 이유가 있으면 그대로 보여준다. (지난 날짜, 검증 실패 등)
+      showToast(error.message || "기분을 저장하지 못했어요. 다시 시도해주세요.", {
+        tone: "error",
+      });
     }
   };
 
@@ -188,24 +346,87 @@ export default function DashboardPage() {
 
       {/* data-scroll-container: 모달이 열리면 global.css 가 이 영역의 스크롤을 잠근다 */}
       <div className={styles.scrollArea} data-scroll-container>
+        {/* 기분 상세는 이 분홍 카드 안에 함께 들어간다 (별도 카드로 분리하지 않는다) */}
         <EmotionCalendarStrip
           monthLabel={stripMonthLabel}
           weekDays={weekDays}
           onPrevWeek={handlePrevWeek}
           onNextWeek={handleNextWeek}
           onMonthClick={() => setMonthModalOpen(true)}
-          onRegisterClick={handleRegisterClick}
           selectedMoodDate={selectedMoodDate}
           onSelectDate={handleSelectDate}
-          onEditMyMood={handleEditMyMood}
+          detailMood={detailMood}
+          moodWindow={moodWindow}
+          detailNowMinutes={detailNowMinutes}
+          onEditSlot={openMoodForm}
         />
 
-        <div className={styles.gridRow}>
-          <TodaySchedule schedules={dashboardData.todaySchedules} />
-          <EmotionReport emotionSummary={dashboardData.dashboard.emotionSummary} />
+        {/*
+          시간대별 감정 변화.
+          지금은 무드트래커 기반이고, 대화 감정 기반으로 바꾸려면 아래 두 줄만
+          buildConversationTrendSeries(dashboardData.dashboard.emotionFlow) / CONVERSATION_AXIS
+          로 교체하면 된다. (utils/moodTrendSeries.js 참고)
+        */}
+        <MoodTrendChart
+          series={buildMoodTrendSeries(todayMood.mySlots, todayMood.partnerSlots)}
+          axis={MOOD_AXIS}
+        />
+
+        <section className={styles.periodPanel} aria-label="대시보드 조회 기간">
+          <div className={styles.periodTabs}>
+            {[
+              ["DAY", "일간"],
+              ["MONTH", "월간"],
+              ["YEAR", "연간"],
+            ].map(([period, label]) => (
+              <button
+                key={period}
+                type="button"
+                className={reportPeriod === period ? styles.periodTabActive : ""}
+                aria-pressed={reportPeriod === period}
+                onClick={() => changeReportPeriod(period)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <div className={styles.periodNavigator}>
+            <button type="button" onClick={() => moveReportDate(-1)} aria-label="이전 기간">
+              <ChevronLeft size={18} />
+            </button>
+            <strong>{periodLabel}</strong>
+            <button
+              type="button"
+              onClick={() => moveReportDate(1)}
+              disabled={isCurrentPeriod}
+              aria-label="다음 기간"
+            >
+              <ChevronRight size={18} />
+            </button>
+          </div>
+        </section>
+
+        <div
+          className={`${styles.gridRow} ${
+            showTodaySchedule ? "" : styles.gridRowSingle
+          }`}
+        >
+          {showTodaySchedule && (
+            <TodaySchedule schedules={dashboardData.todaySchedules} />
+          )}
+          <EmotionReport
+            emotionSummary={visiblePeriodDashboard?.emotionSummary ?? []}
+            title={`${reportTitle} 감정 리포트`}
+          />
         </div>
 
-        <DashboardStats dashboard={dashboardData.dashboard} />
+        <div aria-busy={periodLoading}>
+          <DashboardStats
+            dashboard={visiblePeriodDashboard}
+            title={`${reportTitle} 대화 기록`}
+            showDailyCounts={reportPeriod === "DAY"}
+          />
+        </div>
 
         <BookmarkPreview />
 
@@ -227,19 +448,16 @@ export default function DashboardPage() {
           open
           onClose={() => setMoodFormModal(null)}
           mode={moodFormModal.mode}
-          dateLabel={formatMoodDateLabel(moodFormModal.moodDate)}
+          dateLabel={
+            moodFormModal.minutesOfDay != null
+              ? formatSlotTime(moodFormModal.minutesOfDay)
+              : "지금 시간대"
+          }
           initialMoodType={moodFormModal.initialMoodType}
           initialReason={moodFormModal.initialReason}
           onSubmit={handleMoodFormSubmit}
-          onDelete={moodFormModal.mode === "edit" ? handleMoodFormDelete : undefined}
         />
       )}
     </div>
   );
-}
-
-// 'YYYY-MM-DD' -> "7월 30일" (UTC 파싱으로 하루 밀리지 않도록 parseDateKey 사용)
-function formatMoodDateLabel(moodDate) {
-  const d = parseDateKey(moodDate);
-  return `${d.getMonth() + 1}월 ${d.getDate()}일`;
 }

@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useEffect,
   useMemo,
   useState,
@@ -26,9 +27,19 @@ import AnniversaryManager from '../../components/calendar/AnniversaryManager/Ann
 import BottomNavigation from '../../components/common/BottomNavigation/BottomNavigation.jsx'
 
 import {
-  EMPTY_MOOD_COLOR,
-  MOOD_META,
-} from '../../constants/moodMeta.js'
+  buildDayGradient,
+  formatDateKey,
+} from '../../utils/moodEmotion.js'
+import {
+  fetchMoodSlots,
+  saveMyMood,
+} from '../../api/moodApi.js'
+import MoodSlotList from '../../components/dashboard/MoodSlotList.jsx'
+import { formatSlotTime } from '../../utils/moodSlotFormat.js'
+import { DEFAULT_MOOD_WINDOW } from '../../utils/moodSlotGrid.js'
+import { getMoodNotificationSetting } from '../../api/notificationSettingApi.js'
+import MoodFormModal from '../../components/dashboard/MoodFormModal.jsx'
+import { useLiveSync } from '../../hooks/useLiveSync.js'
 
 import {
   createEmptyCalendarDay,
@@ -162,20 +173,6 @@ function createMonthCells(monthDate) {
   )
 }
 
-function getMoodInformation(moodCode) {
-  if (
-    !moodCode ||
-    !MOOD_META[moodCode]
-  ) {
-    return {
-      label: '기록 없음',
-      color: EMPTY_MOOD_COLOR,
-    }
-  }
-
-  return MOOD_META[moodCode]
-}
-
 function formatSelectedDate(dateKey) {
   const [year, month, day] = dateKey
     .split('-')
@@ -213,14 +210,56 @@ function formatAnniversaryRepeat(
 }
 
 function CalendarPage() {
+  /*
+   * 캘린더는 오늘을 보여주면서 열린다.
+   * (2026년 7월로 고정돼 있던 값이라 실제 날짜와 상관없이 7월 21일이 선택돼 있었다)
+   */
   const [currentMonth, setCurrentMonth] =
-    useState(new Date(2026, 6, 1))
+    useState(() => {
+      const now = new Date()
+      return new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        1,
+      )
+    })
 
   const [selectedDate, setSelectedDate] =
-    useState('2026-07-21')
+    useState(() =>
+      formatDateKey(new Date()),
+    )
 
   const [calendarData, setCalendarData] =
     useState({})
+
+  /*
+   * 무드트래커는 하루 1건이 아니라 시간대(슬롯) 단위라서 캘린더 월 조회와
+   * 별도로 불러온다. { 'YYYY-MM-DD': { mySlots, partnerSlots, myMood, partnerMood } }
+   */
+  const [moodSlots, setMoodSlots] =
+    useState({})
+
+  /*
+   * 무드 모달 상태.
+   *   null      -> 닫힘
+   *   { slot }  -> slot 이 있으면 수정, null 이면 '지금 기분 기록'(새로 등록)
+   * ('닫힘'과 '새로 등록'을 같은 null 로 두면 구분이 안 되므로 한 겹 감쌌다.)
+   */
+  const [moodModal, setMoodModal] =
+    useState(null)
+
+  const openMoodModal = ({
+    slot,
+    minutesOfDay,
+  }) =>
+    setMoodModal({
+      slot: slot ?? null,
+      minutesOfDay:
+        slot?.minutesOfDay ?? minutesOfDay,
+    })
+
+  const closeMoodModal = () =>
+    setMoodModal(null)
 
   const [isLoading, setIsLoading] =
     useState(true)
@@ -271,18 +310,90 @@ function CalendarPage() {
     calendarData[selectedDate] ??
     createEmptyCalendarDay(selectedDate)
 
+  const selectedDayMood =
+    moodSlots[selectedDate] ?? {
+      mySlots: [],
+      partnerSlots: [],
+      myMood: null,
+      partnerMood: null,
+    }
+
+  const [moodWindow, setMoodWindow] =
+    useState(DEFAULT_MOOD_WINDOW)
+
+  useEffect(() => {
+    getMoodNotificationSetting()
+      .then((setting) => {
+        if (setting?.startTime) {
+          setMoodWindow(setting)
+        }
+      })
+      .catch(() => {
+        // 설정 조회가 실패해도 기본 슬롯으로 동작한다.
+      })
+  }, [])
+
+  // 오늘을 보고 있을 때만 미래 시간대를 잠근다.
+  const selectedDayNowMinutes = useMemo(() => {
+    const now = new Date()
+
+    if (selectedDate !== formatDateKey(now)) {
+      return null
+    }
+
+    return (
+      now.getHours() * 60 + now.getMinutes()
+    )
+  }, [selectedDate])
+
+  const loadMoodSlots = useCallback(() => {
+    fetchMoodSlots()
+      .then(setMoodSlots)
+      .catch(() => {
+        // 기분 기록만 실패한 경우 캘린더 전체를 막지 않는다.
+        setMoodSlots({})
+      })
+  }, [])
+
+  useEffect(() => {
+    loadMoodSlots()
+  }, [loadMoodSlots])
+
+  const handleSaveMood = async ({
+    moodType,
+    reason,
+  }) => {
+    /*
+     * 저장은 서버에 바로 반영된다. 실패하면 알려야 한다.
+     * (예전에는 실패해도 조용히 이 브라우저에만 남아서, 상대 화면에는 없는
+     *  기록이 내 화면에만 저장된 것처럼 보였다)
+     * 기록 시각은 서버가 정하므로 슬롯 위치는 보내지 않는다.
+     */
+    try {
+      await saveMyMood({
+        moodId:
+          moodModal?.slot?.moodId ?? null,
+        moodType,
+        reason,
+        dateKey: selectedDate,
+      })
+    } catch (error) {
+      // 모달은 닫지 않는다. 입력값을 잃지 않고 바로 다시 시도할 수 있어야 한다.
+      setErrorMessage(
+        error.message ||
+          '기분을 저장하지 못했습니다.',
+      )
+
+      return
+    }
+
+    setErrorMessage('')
+    closeMoodModal()
+    loadMoodSlots()
+  }
+
   const currentMonthLabel =
     `${currentYear}년 ${currentMonthNumber}월`
-
-  const myMoodInformation =
-    getMoodInformation(
-      selectedDayData.myMood,
-    )
-
-  const partnerMoodInformation =
-    getMoodInformation(
-      selectedDayData.partnerMood,
-    )
 
   useEffect(() => {
     let isCancelled = false
@@ -318,6 +429,47 @@ function CalendarPage() {
       isCancelled = true
     }
   }, [currentMonthNumber, currentYear])
+
+  const refreshCalendar =
+    useCallback(async () => {
+      const results =
+        await Promise.allSettled([
+          getMonthlyCalendar(
+            TEMP_COUPLE_ROOM_ID,
+            currentYear,
+            currentMonthNumber,
+          ),
+          fetchMoodSlots(),
+        ])
+
+      if (
+        results[0].status ===
+        'fulfilled'
+      ) {
+        setCalendarData(
+          results[0].value,
+        )
+        setErrorMessage('')
+      }
+
+      if (
+        results[1].status ===
+        'fulfilled'
+      ) {
+        setMoodSlots(
+          results[1].value,
+        )
+      }
+    }, [
+      currentMonthNumber,
+      currentYear,
+    ])
+
+  // 상대방 무드 등록은 같은 브라우저 이벤트에 의존하지 않고,
+  // 주기적인 GET /moods 재조회로 반영한다.
+  useLiveSync(refreshCalendar, {
+    intervalMs: 3000,
+  })
 
   const changeCurrentMonth = (
     nextMonth,
@@ -667,6 +819,7 @@ function CalendarPage() {
         await deleteSchedule(
           scheduleModal.schedule
             .scheduleId,
+          scheduleModal.schedule.type,
         )
 
         if (
@@ -873,16 +1026,6 @@ function CalendarPage() {
                   cell.dateKey,
                 )
 
-              const myMood =
-                getMoodInformation(
-                  dayData.myMood,
-                )
-
-              const partnerMood =
-                getMoodInformation(
-                  dayData.partnerMood,
-                )
-
               const isSelected =
                 selectedDate ===
                 cell.dateKey
@@ -920,10 +1063,18 @@ function CalendarPage() {
                   }
                   disabled={isLoading}
                   style={{
-                    '--my-mood-color':
-                      myMood.color,
-                    '--partner-mood-color':
-                      partnerMood.color,
+                    // 대시보드 감정 원과 같은 그라데이션 (반반 분할 대신).
+                    // 그날의 대표색은 무드트래커에서 가장 많이 입력된 무드를 쓴다.
+                    // 입력 횟수가 같으면 가장 최근 무드를 사용한다.
+                    '--day-mood-gradient':
+                      buildDayGradient(
+                        moodSlots[cell.dateKey]
+                          ?.myMood ??
+                          dayData.myMood,
+                        moodSlots[cell.dateKey]
+                          ?.partnerMood ??
+                          dayData.partnerMood,
+                      ),
                   }}
                   onClick={() =>
                     handleDateSelect(cell)
@@ -1025,43 +1176,37 @@ function CalendarPage() {
 
           </div>
 
-          <div className="mood-summary">
-            <div className="mood-summary-item">
-              <span>나의 감정</span>
+          {/*
+            무드트래커 상세 — 대시보드와 같은 MoodSlotList 를 쓴다.
+            캘린더는 limit 없이 그날의 시간대를 전부 보여준다.
+          */}
+          <div className="selected-day-section">
+            <div className="selected-day-section-title">
+              <h3>
+                무드트래커
 
-              <div>
-                <i
-                  style={{
-                    background:
-                      myMoodInformation.color,
-                  }}
-                />
-
-                <strong>
-                  {myMoodInformation.label}
-                </strong>
-              </div>
-            </div>
-
-            <div className="mood-summary-item">
-              <span>상대방 감정</span>
-
-              <div>
-                <i
-                  style={{
-                    background:
-                      partnerMoodInformation
-                        .color,
-                  }}
-                />
-
-                <strong>
+                <span>
                   {
-                    partnerMoodInformation.label
+                    selectedDayMood.mySlots
+                      .length
                   }
-                </strong>
-              </div>
+                </span>
+              </h3>
             </div>
+
+            <MoodSlotList
+              mySlots={
+                selectedDayMood.mySlots
+              }
+              partnerSlots={
+                selectedDayMood.partnerSlots
+              }
+              window={moodWindow}
+              nowMinutes={
+                selectedDayNowMinutes
+              }
+              onEditSlot={openMoodModal}
+            />
           </div>
 
           <div className="selected-day-section">
@@ -1308,6 +1453,31 @@ function CalendarPage() {
           onDelete={
             handleScheduleDelete
           }
+        />
+      )}
+
+      {/*
+        무드트래커 등록/수정. 대시보드와 같은 모달을 쓰므로
+        어느 화면에서 수정하든 동작이 같다.
+      */}
+      {moodModal && (
+        <MoodFormModal
+          open
+          mode={
+            moodModal.slot
+              ? 'edit'
+              : 'create'
+          }
+          dateLabel={`${formatSelectedDate(selectedDate)} ${formatSlotTime(moodModal.minutesOfDay)}`}
+          initialMoodType={
+            moodModal.slot?.moodType ??
+            null
+          }
+          initialReason={
+            moodModal.slot?.reason ?? ''
+          }
+          onClose={closeMoodModal}
+          onSubmit={handleSaveMood}
         />
       )}
     </div>

@@ -27,6 +27,43 @@ public interface CoupleMemberRepository extends JpaRepository<CoupleMember, Coup
     List<CoupleMember> findAllByStatus(CoupleMemberStatus status);
 
     @Query("""
+            select partner.id.userId
+            from CoupleMember member
+            join CoupleRoom room on room.id = member.id.roomId
+            join CoupleMember partner
+              on partner.id.roomId = member.id.roomId
+            where member.id.userId = :userId
+              and member.status =
+                  com.ssafy.emour.couple.entity.CoupleMemberStatus.ACTIVE
+              and partner.id.userId <> :userId
+              and partner.status =
+                  com.ssafy.emour.couple.entity.CoupleMemberStatus.ACTIVE
+              and room.status =
+                  com.ssafy.emour.couple.entity.CoupleRoomStatus.ACTIVE
+            order by room.updatedAt desc
+            """)
+    List<Long> findActivePartnerUserIds(
+            @Param("userId") Long userId,
+            Pageable pageable
+    );
+
+    @Query("""
+            select member
+            from CoupleMember member
+            join CoupleRoom room on room.id = member.id.roomId
+            where member.id.userId = :userId
+              and member.status =
+                  com.ssafy.emour.couple.entity.CoupleMemberStatus.ACTIVE
+              and room.status =
+                  com.ssafy.emour.couple.entity.CoupleRoomStatus.ACTIVE
+            order by room.updatedAt desc
+            """)
+    List<CoupleMember> findActiveMembershipsByUserId(
+            @Param("userId") Long userId,
+            Pageable pageable
+    );
+
+    @Query("""
             select (count(cm) > 0)
             from CoupleMember cm
             join CoupleRoom cr on cr.id = cm.id.roomId
@@ -37,6 +74,16 @@ public interface CoupleMemberRepository extends JpaRepository<CoupleMember, Coup
     boolean existsActiveCoupleByUserId(@Param("userId") Long userId);
 
     @Query("""
+            select (count(cm) > 0)
+            from CoupleMember cm
+            join CoupleRoom cr on cr.id = cm.id.roomId
+            where cm.id.userId = :userId
+              and cm.status = com.ssafy.emour.couple.entity.CoupleMemberStatus.ACTIVE
+              and cr.status = com.ssafy.emour.couple.entity.CoupleRoomStatus.INACTIVE
+            """)
+    boolean existsRetainedInactiveRoomByUserId(@Param("userId") Long userId);
+
+    @Query("""
             select cm.id.roomId
             from CoupleMember cm
             join CoupleRoom cr on cr.id = cm.id.roomId
@@ -44,6 +91,7 @@ public interface CoupleMemberRepository extends JpaRepository<CoupleMember, Coup
               and cm.status = com.ssafy.emour.couple.entity.CoupleMemberStatus.ACTIVE
               and (
                     cr.status = com.ssafy.emour.couple.entity.CoupleRoomStatus.ACTIVE
+                    or cr.status = com.ssafy.emour.couple.entity.CoupleRoomStatus.INACTIVE
                     or (
                         cr.status = com.ssafy.emour.couple.entity.CoupleRoomStatus.WAITING
                         and cr.roomCodeExpiresAt > :currentTime
@@ -53,7 +101,9 @@ public interface CoupleMemberRepository extends JpaRepository<CoupleMember, Coup
               case
                   when cr.status = com.ssafy.emour.couple.entity.CoupleRoomStatus.ACTIVE
                   then 0
-                  else 1
+                  when cr.status = com.ssafy.emour.couple.entity.CoupleRoomStatus.WAITING
+                  then 1
+                  else 2
               end,
               cr.createdAt desc
             """)

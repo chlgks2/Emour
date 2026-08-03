@@ -1,8 +1,4 @@
-import {
-  MOCK_DIARY_RESPONSES,
-  MOCK_MOOD_RESPONSES,
-  MOCK_SCHEDULE_RESPONSES,
-} from '../data/calendarMockData.js'
+import { apiRequest } from './httpClient.js'
 
 import {
   buildCalendarMonthData,
@@ -12,28 +8,34 @@ import {
   SCHEDULE_TYPE,
 } from '../mappers/calendarMapper.js'
 
-const MOCK_DELAY = 250
-const MOCK_CURRENT_USER_ID = 1
-const RELATIONSHIP_START_DATE_KEY =
-  'emour_relationship_start_date'
+function unwrap(response, fallback = null) {
+  return response?.data ?? response ?? fallback
+}
 
-let mockSchedules = [
-  ...MOCK_SCHEDULE_RESPONSES,
-]
+function normalizeCollection(
+  response,
+  candidateKeys = [],
+) {
+  const data = unwrap(response, [])
 
-let mockDiaries = [
-  ...MOCK_DIARY_RESPONSES,
-]
+  if (Array.isArray(data)) {
+    return data
+  }
 
-let mockRelationshipStartDate =
-  localStorage.getItem(
-    RELATIONSHIP_START_DATE_KEY,
-  ) ?? ''
+  const keys = [
+    ...candidateKeys,
+    'content',
+    'items',
+    'list',
+  ]
 
-function wait(milliseconds = MOCK_DELAY) {
-  return new Promise((resolve) => {
-    setTimeout(resolve, milliseconds)
-  })
+  for (const key of keys) {
+    if (Array.isArray(data?.[key])) {
+      return data[key]
+    }
+  }
+
+  return []
 }
 
 function createMonthPrefix(year, month) {
@@ -60,16 +62,11 @@ function createAnniversaryOccurrences(
   year,
   month,
 ) {
+  const mappedAnniversary =
+    mapScheduleResponse(anniversary)
   const startDate = createLocalDate(
-    anniversary.start_date ??
-      anniversary.date,
+    mappedAnniversary.startDate,
   )
-
-  const monthStart =
-    new Date(year, month - 1, 1)
-  const monthEnd =
-    new Date(year, month, 0)
-
   const occurrenceDate = new Date(
     year,
     startDate.getMonth(),
@@ -77,8 +74,7 @@ function createAnniversaryOccurrences(
   )
 
   if (
-    occurrenceDate < monthStart ||
-    occurrenceDate > monthEnd ||
+    occurrenceDate.getMonth() !== month - 1 ||
     occurrenceDate < startDate
   ) {
     return []
@@ -86,25 +82,26 @@ function createAnniversaryOccurrences(
 
   return [{
     ...anniversary,
-    occurrence_date:
+    occurrenceDate:
       createDateKey(occurrenceDate),
-    occurrence_number: null,
-    repeat_type:
+    occurrenceNumber: null,
+    repeatType:
       ANNIVERSARY_REPEAT_TYPE.YEARLY,
-    yearly_recurring: true,
+    yearlyRecurring: true,
   }]
 }
 
 function createRelationshipMilestones(
   year,
   month,
+  relationshipStartDate,
 ) {
-  if (!mockRelationshipStartDate) {
+  if (!relationshipStartDate) {
     return []
   }
 
   const startDate = createLocalDate(
-    mockRelationshipStartDate,
+    relationshipStartDate,
   )
   const monthStart =
     new Date(year, month - 1, 1)
@@ -127,9 +124,8 @@ function createRelationshipMilestones(
   const occurrences = []
 
   while (true) {
-    const occurrenceDate = new Date(
-      startDate,
-    )
+    const occurrenceDate =
+      new Date(startDate)
 
     occurrenceDate.setDate(
       occurrenceDate.getDate() +
@@ -143,24 +139,22 @@ function createRelationshipMilestones(
 
     if (occurrenceDate >= monthStart) {
       occurrences.push({
-        schedule_id:
+        scheduleId:
           `RELATIONSHIP-${milestone}`,
-        user_id: MOCK_CURRENT_USER_ID,
-        couple_room_id: 1,
         name: `우리의 ${milestone}일`,
-        date: mockRelationshipStartDate,
-        start_date:
-          mockRelationshipStartDate,
-        occurrence_date:
+        date: relationshipStartDate,
+        startDate:
+          relationshipStartDate,
+        occurrenceDate:
           createDateKey(occurrenceDate),
-        occurrence_number: milestone,
+        occurrenceNumber: milestone,
         time: '',
         type:
           SCHEDULE_TYPE.ANNIVERSARY,
-        repeat_type:
+        repeatType:
           ANNIVERSARY_REPEAT_TYPE.EVERY_100_DAYS,
-        yearly_recurring: false,
-        automatic_anniversary: true,
+        yearlyRecurring: false,
+        isAutomaticAnniversary: true,
       })
     }
 
@@ -170,90 +164,129 @@ function createRelationshipMilestones(
   return occurrences
 }
 
+async function fetchSchedules(year, month) {
+  const query = new URLSearchParams({
+    year: String(year),
+    month: String(month),
+  })
+  const response = await apiRequest(
+    `/schedules?${query.toString()}`,
+  )
+
+  return normalizeCollection(response, [
+    'schedules',
+    'scheduleList',
+  ])
+}
+
+async function fetchAnniversaries() {
+  const response =
+    await apiRequest('/anniversaries')
+
+  return normalizeCollection(response, [
+    'anniversaries',
+    'anniversaryList',
+  ])
+}
+
+async function fetchDiaries() {
+  const response =
+    await apiRequest('/diaries')
+
+  return normalizeCollection(response, [
+    'diaries',
+    'diaryList',
+  ])
+}
+
 export async function getMonthlyCalendar(
-  coupleRoomId,
+  _coupleRoomId,
   year,
   month,
 ) {
-  await wait()
-
   const monthPrefix = createMonthPrefix(
     year,
     month,
   )
-
-  const moodResponses =
-    MOCK_MOOD_RESPONSES.filter(
-      (mood) =>
-        mood.couple_room_id === coupleRoomId &&
-        mood.created_at.startsWith(
-          monthPrefix,
-        ),
-    )
-
-  const roomSchedules =
-    mockSchedules.filter(
-      (schedule) =>
-        schedule.couple_room_id ===
-        coupleRoomId,
-    )
+  const [
+    schedules,
+    anniversaries,
+    diaries,
+    relationshipStartDate,
+  ] = await Promise.all([
+    fetchSchedules(year, month),
+    fetchAnniversaries(),
+    fetchDiaries(),
+    getRelationshipStartDate(),
+  ])
 
   const scheduleResponses = [
-    ...roomSchedules.filter(
-      (schedule) =>
-        schedule.type ===
-          SCHEDULE_TYPE.SCHEDULE &&
-        schedule.date.startsWith(
-          monthPrefix,
-        ),
-    ),
-    ...roomSchedules
-      .filter(
-        (schedule) =>
-          schedule.type ===
-          SCHEDULE_TYPE.ANNIVERSARY,
-      )
-      .flatMap((anniversary) =>
+    ...schedules,
+    ...anniversaries.flatMap(
+      (anniversary) =>
         createAnniversaryOccurrences(
           anniversary,
           year,
           month,
         ),
-      ),
+    ),
     ...createRelationshipMilestones(
       year,
       month,
+      relationshipStartDate,
     ),
   ]
-
-  const diaryResponses = mockDiaries.filter(
+  const diaryResponses = diaries.filter(
     (diary) =>
-      diary.couple_room_id === coupleRoomId &&
-      diary.date.startsWith(monthPrefix) &&
-      diary.deleted_at === null,
+      String(diary.date ?? '').startsWith(
+        monthPrefix,
+      ),
   )
 
   return buildCalendarMonthData({
-    moodResponses,
     scheduleResponses,
     diaryResponses,
-    currentUserId: MOCK_CURRENT_USER_ID,
+    currentUserId: null,
   })
 }
 
-export async function getAnniversaries(
-  coupleRoomId,
+export async function getTodaySchedules(
+  dateKey,
 ) {
-  await wait()
-
-  return mockSchedules
-    .filter(
-      (schedule) =>
-        schedule.couple_room_id ===
-          coupleRoomId &&
-        schedule.type ===
-          SCHEDULE_TYPE.ANNIVERSARY,
+  const [year, month] = dateKey
+    .split('-')
+    .map(Number)
+  const monthData =
+    await getMonthlyCalendar(
+      null,
+      year,
+      month,
     )
+  const day = monthData?.[dateKey]
+  const schedules = [
+    ...(day?.schedules ?? []),
+    ...(day?.anniversaries ?? []),
+  ]
+
+  return schedules.map((schedule) => ({
+    scheduleId: schedule.scheduleId,
+    name: schedule.name,
+    description:
+      schedule.description ?? '',
+    scheduleDate: schedule.date,
+    scheduleTime:
+      schedule.time || null,
+    scheduleType: schedule.type,
+    yearlyRecurring:
+      schedule.yearlyRecurring,
+  }))
+}
+
+export async function getAnniversaries() {
+  const anniversaries =
+    await fetchAnniversaries()
+
+  return anniversaries
     .map(mapScheduleResponse)
     .sort((first, second) =>
       first.startDate.localeCompare(
@@ -263,68 +296,108 @@ export async function getAnniversaries(
 }
 
 export async function getRelationshipStartDate() {
-  await wait()
-
-  return mockRelationshipStartDate
+  const response = await apiRequest(
+    '/couples/startDate',
+  )
+  return unwrap(response)?.datingStartDate ?? ''
 }
 
 export async function updateRelationshipStartDate(
   startDate,
 ) {
-  await wait()
-
   if (!startDate) {
     throw new Error(
       '연애 시작일을 선택해주세요.',
     )
   }
 
-  mockRelationshipStartDate = startDate
-  localStorage.setItem(
-    RELATIONSHIP_START_DATE_KEY,
-    startDate,
+  const response = await apiRequest(
+    '/couples/startDate',
+    {
+      method: 'POST',
+      body: { startDate },
+    },
   )
+  return unwrap(response)?.datingStartDate ?? ''
+}
 
-  return mockRelationshipStartDate
+function validateScheduleInput({
+  name,
+  date,
+  time,
+  type,
+}) {
+  if (!name?.trim() || !date) {
+    throw new Error(
+      '이름과 날짜를 입력해주세요.',
+    )
+  }
+
+  if (
+    type === SCHEDULE_TYPE.SCHEDULE &&
+    !time
+  ) {
+    throw new Error(
+      '일정 시간을 입력해주세요.',
+    )
+  }
+}
+
+function createScheduleRequestBody({
+  name,
+  date,
+  time,
+  type,
+}) {
+  validateScheduleInput({
+    name,
+    date,
+    time,
+    type,
+  })
+
+  if (
+    type === SCHEDULE_TYPE.ANNIVERSARY
+  ) {
+    return {
+      name: name.trim(),
+      scheduleDate: date,
+    }
+  }
+
+  return {
+    name: name.trim(),
+    scheduleDate: date,
+    scheduleTime: time,
+  }
 }
 
 export async function createSchedule({
-  coupleRoomId,
   name,
   date,
   time = '',
   type = SCHEDULE_TYPE.SCHEDULE,
 }) {
-  await wait()
+  const endpoint =
+    type === SCHEDULE_TYPE.ANNIVERSARY
+      ? '/anniversaries'
+      : '/schedules'
+  const response = await apiRequest(
+    endpoint,
+    {
+      method: 'POST',
+      body: createScheduleRequestBody({
+        name,
+        date,
+        time,
+        type,
+      }),
+    },
+  )
 
-  const now = new Date().toISOString()
-
-  const response = {
-    schedule_id: Date.now(),
-    user_id: MOCK_CURRENT_USER_ID,
-    couple_room_id: coupleRoomId,
-    name: name.trim(),
-    date,
-    start_date: date,
-    time,
-    type,
-    repeat_type:
-      type === SCHEDULE_TYPE.ANNIVERSARY
-        ? ANNIVERSARY_REPEAT_TYPE.YEARLY
-        : ANNIVERSARY_REPEAT_TYPE.NONE,
-    yearly_recurring:
-      type ===
-      SCHEDULE_TYPE.ANNIVERSARY,
-    created_at: now,
-    updated_at: now,
-  }
-
-  mockSchedules = [
-    ...mockSchedules,
-    response,
-  ]
-
-  return mapScheduleResponse(response)
+  return mapScheduleResponse(
+    unwrap(response),
+  )
 }
 
 export async function updateSchedule(
@@ -336,120 +409,87 @@ export async function updateSchedule(
     type = SCHEDULE_TYPE.SCHEDULE,
   },
 ) {
-  await wait()
-
-  let updatedResponse = null
-
-  mockSchedules = mockSchedules.map(
-    (schedule) => {
-      if (
-        schedule.schedule_id !== scheduleId
-      ) {
-        return schedule
-      }
-
-      updatedResponse = {
-        ...schedule,
-        name: name.trim(),
+  const endpoint =
+    type === SCHEDULE_TYPE.ANNIVERSARY
+      ? `/anniversaries/${scheduleId}`
+      : `/schedules/${scheduleId}`
+  const response = await apiRequest(
+    endpoint,
+    {
+      method: 'PATCH',
+      body: createScheduleRequestBody({
+        name,
         date,
-        start_date: date,
         time,
         type,
-        repeat_type:
-          type ===
-          SCHEDULE_TYPE.ANNIVERSARY
-            ? ANNIVERSARY_REPEAT_TYPE.YEARLY
-            : ANNIVERSARY_REPEAT_TYPE.NONE,
-        yearly_recurring:
-          type ===
-          SCHEDULE_TYPE.ANNIVERSARY,
-        updated_at: new Date().toISOString(),
-      }
-
-      return updatedResponse
+      }),
     },
   )
 
-  if (!updatedResponse) {
-    throw new Error(
-      '수정할 일정을 찾을 수 없습니다.',
-    )
-  }
-
-  return mapScheduleResponse(updatedResponse)
+  return mapScheduleResponse(
+    unwrap(response),
+  )
 }
 
 export async function deleteSchedule(
   scheduleId,
+  type = SCHEDULE_TYPE.SCHEDULE,
 ) {
-  await wait()
+  const endpoint =
+    type === SCHEDULE_TYPE.ANNIVERSARY
+      ? `/anniversaries/${scheduleId}`
+      : `/schedules/${scheduleId}`
 
-  const hasSchedule = mockSchedules.some(
-    (schedule) =>
-      schedule.schedule_id === scheduleId,
-  )
-
-  if (!hasSchedule) {
-    throw new Error(
-      '삭제할 일정을 찾을 수 없습니다.',
-    )
-  }
-
-  mockSchedules = mockSchedules.filter(
-    (schedule) =>
-      schedule.schedule_id !== scheduleId,
-  )
+  await apiRequest(endpoint, {
+    method: 'DELETE',
+  })
 }
 
 export async function saveDiary({
-  coupleRoomId,
   date,
   content,
 }) {
-  await wait()
+  const trimmedContent = content.trim()
 
-  const now = new Date().toISOString()
-
-  const existingDiary = mockDiaries.find(
-    (diary) =>
-      diary.user_id === MOCK_CURRENT_USER_ID &&
-      diary.couple_room_id === coupleRoomId &&
-      diary.date === date &&
-      diary.deleted_at === null,
-  )
-
-  let savedResponse
-
-  if (existingDiary) {
-    savedResponse = {
-      ...existingDiary,
-      content: content.trim(),
-      updated_at: now,
-    }
-
-    mockDiaries = mockDiaries.map((diary) =>
-      diary.diary_id ===
-      existingDiary.diary_id
-        ? savedResponse
-        : diary,
+  if (!trimmedContent) {
+    throw new Error(
+      '한줄 일기 내용을 입력해주세요.',
     )
-  } else {
-    savedResponse = {
-      diary_id: Date.now(),
-      user_id: MOCK_CURRENT_USER_ID,
-      couple_room_id: coupleRoomId,
-      date,
-      content: content.trim(),
-      created_at: now,
-      updated_at: now,
-      deleted_at: null,
-    }
-
-    mockDiaries = [
-      ...mockDiaries,
-      savedResponse,
-    ]
   }
 
-  return mapDiaryResponse(savedResponse)
+  const diaries = await fetchDiaries()
+  const existingDiary = diaries.find(
+    (diary) =>
+      String(diary.date).slice(0, 10) ===
+      date,
+  )
+  const today = createDateKey(new Date())
+
+  if (!existingDiary && date !== today) {
+    throw new Error(
+      '한줄 일기는 오늘 날짜에만 새로 작성할 수 있습니다.',
+    )
+  }
+
+  const endpoint = existingDiary
+    ? `/diaries/${
+        existingDiary.diaryId ??
+        existingDiary.diary_id
+      }`
+    : '/diaries'
+  const response = await apiRequest(
+    endpoint,
+    {
+      method: existingDiary
+        ? 'PATCH'
+        : 'POST',
+      body: {
+        content: trimmedContent,
+      },
+    },
+  )
+
+  return mapDiaryResponse(
+    unwrap(response),
+  )
 }

@@ -1,4 +1,5 @@
 import { apiRequest } from './httpClient.js'
+import { getPartnerProfileImage } from './memberApi.js'
 
 const CHAT_ENDPOINTS = {
   messages: '/chats',
@@ -6,6 +7,7 @@ const CHAT_ENDPOINTS = {
   readStatus: '/chats/read-status',
   search: '/chats/search',
   bookmarks: '/chats/bookmarks',
+  images: '/chats/images',
   read: (messageId) =>
     `/chats/${messageId}/read`,
   bookmark: (messageId) =>
@@ -71,6 +73,34 @@ export async function sendChatMessage({
   )
 }
 
+export async function uploadChatImages({
+  roomId,
+  files,
+}) {
+  if (!roomId || !files?.length) {
+    throw new Error('업로드할 사진이 없습니다.')
+  }
+
+  if (files.length > 10) {
+    throw new Error('사진은 한 번에 최대 10장까지 보낼 수 있습니다.')
+  }
+
+  const formData = new FormData()
+  files.forEach((file) => {
+    formData.append('files', file)
+  })
+
+  const response = await apiRequest(
+    `${CHAT_ENDPOINTS.images}?roomId=${encodeURIComponent(roomId)}`,
+    {
+      method: 'POST',
+      body: formData,
+    },
+  )
+
+  return response?.imageUrls ?? []
+}
+
 export async function getUnreadChatCount(
   roomId,
 ) {
@@ -79,6 +109,24 @@ export async function getUnreadChatCount(
   return apiRequest(
     `${CHAT_ENDPOINTS.unreadCount}?${query}`,
   )
+}
+
+export function normalizeChatMessage(
+  message,
+) {
+  if (!message) {
+    return message
+  }
+
+  return {
+    ...message,
+    emotionType:
+      message.emotionType ??
+      message.emotion ??
+      null,
+    analysisStatus:
+      message.analysisStatus ?? null,
+  }
 }
 
 export async function getPartnerReadStatus(
@@ -196,11 +244,27 @@ export async function removeChatReaction(
  * feature/frontend-minhee의 채팅 화면이 사용하는 호환 API입니다.
  * 기존 Spring 연동 함수는 위에 그대로 유지합니다.
  */
+/**
+ * 채팅 헤더에 쓰는 상대방 정보.
+ *
+ * 프로필 사진은 GET /users/partner/profile-img 에서 받아온다.
+ * 별명(couple_member.partner_nickname)은 아직 어떤 응답 DTO 에도 실려오지 않아
+ * 기본 문구를 쓴다. 백엔드가 노출하면 nickname 만 갈아 끼우면 된다.
+ */
 export async function fetchChatPartner() {
+  let partner
+
+  try {
+    partner = await getPartnerProfileImage()
+  } catch {
+    partner = null
+  }
+
   return {
+    userId: partner?.userId ?? null,
     nickname: '연인',
     statusMessage: '',
-    profileImageUrl: null,
+    profileImageUrl: partner?.profileImageUrl ?? null,
   }
 }
 
@@ -238,7 +302,9 @@ export async function fetchMessages({
   })
 
   return {
-    messages: response?.messages ?? [],
+    messages: (
+      response?.messages ?? []
+    ).map(normalizeChatMessage),
     nextBeforeMessageId:
       response?.nextCursor ?? null,
   }
@@ -247,6 +313,8 @@ export async function fetchMessages({
 export async function sendMessage({
   roomId,
   content,
+  messageType = 'TEXT',
+  imageUrls = [],
   clientMessageId = crypto.randomUUID(),
 }) {
   if (!roomId) {
@@ -255,11 +323,15 @@ export async function sendMessage({
     )
   }
 
-  return sendChatMessage({
+  const message = await sendChatMessage({
     roomId,
     content,
+    messageType,
+    imageUrls,
     clientMessageId,
   })
+
+  return normalizeChatMessage(message)
 }
 
 export async function fetchSuggestions() {

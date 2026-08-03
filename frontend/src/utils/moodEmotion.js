@@ -1,7 +1,7 @@
 import { MOOD_TYPE } from "../constants/enums";
 
 // 기록이 없는 날의 색 (CI 배경 계열의 중립 톤)
-export const EMPTY_MOOD_COLOR = "#ECE5E3";
+export const EMPTY_MOOD_COLOR = "#EBE6E4";
 
 /**
  * mood.mood_type ENUM('VERY_HAPPY','HAPPY','NEUTRAL','SAD','VERY_SAD') 과 1:1 대응.
@@ -10,16 +10,16 @@ export const EMPTY_MOOD_COLOR = "#ECE5E3";
  * 배열 순서 = 슬라이더 왼쪽(안 좋음) → 오른쪽(좋음)
  */
 /*
- * 색상은 CI 가이드의 "감정 요소" 5색을 그대로 쓴다.
- * 팔레트 색 수와 무드 단계 수가 같아 1:1로 대응시켰고,
+ * 색상은 CI 가이드의 "감정 요소" 5색 hue 를 유지하되 채도를 올렸다.
+ * 원래 파스텔은 캘린더 셀처럼 작은 면적에서 서로 구분되지 않고 배경에 묻혔다.
  * 왼쪽(차갑고 가라앉음) → 오른쪽(따뜻하고 밝음) 순으로 배열했다.
  */
 export const MOOD_TYPES = [
-  { moodType: MOOD_TYPE.VERY_SAD, level: 1, label: "매우 안 좋음", color: "#B1A6D6" },
-  { moodType: MOOD_TYPE.SAD, level: 2, label: "안 좋음", color: "#9ECCE6" },
-  { moodType: MOOD_TYPE.NEUTRAL, level: 3, label: "보통", color: "#BED399" },
-  { moodType: MOOD_TYPE.HAPPY, level: 4, label: "좋음", color: "#F6E192" },
-  { moodType: MOOD_TYPE.VERY_HAPPY, level: 5, label: "매우 좋음", color: "#F7C291" },
+  { moodType: MOOD_TYPE.VERY_SAD, level: 1, label: "매우 안 좋음", color: "#9587C7" },
+  { moodType: MOOD_TYPE.SAD, level: 2, label: "안 좋음", color: "#78B9DB" },
+  { moodType: MOOD_TYPE.NEUTRAL, level: 3, label: "보통", color: "#9CC272" },
+  { moodType: MOOD_TYPE.HAPPY, level: 4, label: "좋음", color: "#F0CE5C" },
+  { moodType: MOOD_TYPE.VERY_HAPPY, level: 5, label: "매우 좋음", color: "#F2A968" },
 ];
 
 export function getMoodMeta(moodType) {
@@ -39,11 +39,24 @@ export function getMoodLabel(moodType) {
   return getMoodMeta(moodType)?.label ?? "";
 }
 
-// 두 사람의 감정을 좌상단(나) / 우하단(상대방) 대각선으로 채우는 원형 그라데이션
+/**
+ * mood 인자를 유연하게 받는다.
+ * 대시보드는 mood 레코드 객체를, 캘린더는 mood_type 코드 문자열을 넘긴다.
+ */
+function toMoodType(mood) {
+  if (!mood) return null;
+  return typeof mood === "string" ? mood : (mood.moodType ?? null);
+}
+
+// 두 사람의 감정을 좌상단(나) / 우하단(상대방) 대각선으로 채우는 그라데이션.
+// 캘린더 셀과 대시보드 감정 원이 같은 함수를 써서 톤이 어긋나지 않게 한다.
 // 한쪽만 등록된 경우 나머지 영역은 흰색으로 채움, 둘 다 없으면 연회색
 export function buildDayGradient(myMood, partnerMood) {
-  const myColor = myMood ? getMoodColor(myMood.moodType) : null;
-  const partnerColor = partnerMood ? getMoodColor(partnerMood.moodType) : null;
+  const myType = toMoodType(myMood);
+  const partnerType = toMoodType(partnerMood);
+
+  const myColor = myType ? getMoodColor(myType) : null;
+  const partnerColor = partnerType ? getMoodColor(partnerType) : null;
 
   if (!myColor && !partnerColor) return EMPTY_MOOD_COLOR;
 

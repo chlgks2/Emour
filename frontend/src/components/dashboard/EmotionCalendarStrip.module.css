@@ -48,10 +48,15 @@
   background: rgba(0, 0, 0, 0.05);
 }
 
+/*
+  space-between 은 7개를 양끝 정렬해서 칸 폭이 제각각이 됐다.
+  1fr 격자로 바꿔 각 날짜가 같은 폭을 갖게 하고, 선택 링이 들어갈 여유를 확보한다.
+*/
 .dayRow {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 14px;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  margin-bottom: 4px;
 }
 
 .dayItem {
@@ -60,19 +65,25 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-  /* 원(40px) + 날짜 텍스트를 감싸는 최소 터치 영역 */
+  /* 원 + 날짜 텍스트를 감싸는 최소 터치 영역 */
   min-height: var(--tap-target);
-  padding: 2px 0;
+  padding: 4px 0;
   border-radius: var(--radius-sm);
 }
 
+/*
+  원을 34px 로 줄여 7칸 사이에 여백을 만든다.
+  (40px + scale(1.08) + outline-offset 조합은 이웃 칸을 침범했다)
+*/
 .moodCircle {
   position: relative;
-  width: 40px;
-  height: 40px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   box-shadow: var(--shadow-card);
-  transition: transform var(--duration-base) var(--ease-spring);
+  transition:
+    transform var(--duration-base) var(--ease-spring),
+    box-shadow var(--duration-fast) var(--ease-out);
 }
 
 .moodCircle::before {
@@ -83,10 +94,15 @@
   background: inherit; /* JS에서 준 gradient를 그대로 상속 */
 }
 
+/*
+  선택 표시는 outline 대신 box-shadow 링으로 그린다.
+  카드 배경색으로 한 겹 띄운 뒤 프라이머리 링을 둘러서, 확대 없이도 또렷하고
+  링이 원 바로 바깥 4px 안에서 끝나 옆 칸을 침범하지 않는다.
+*/
 .moodCircleSelected {
-  outline: 2px solid var(--color-primary); /* border 대신 outline */
-  outline-offset: 2px;
-  transform: scale(1.08);
+  box-shadow:
+    0 0 0 2px var(--color-sub-bg),
+    0 0 0 4px var(--color-primary);
 }
 
 .dayNumber {
@@ -97,4 +113,26 @@
 .registerBtn {
   background: var(--color-white);
   color: var(--color-primary);
+}
+
+/* 분홍 카드 안에 녹인 기분 상세 — 위 스트립과 구분되도록 옅은 divider 만 둔다 */
+.detail {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid color-mix(in srgb, var(--color-primary) 18%, transparent);
+}
+
+.detailLabel {
+  margin-bottom: 8px;
+  color: var(--color-text-accent);
+  font-size: var(--font-micro);
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+@media (max-width: 420px) {
+  .card {
+    margin-right: 16px;
+    margin-left: 16px;
+  }
 }

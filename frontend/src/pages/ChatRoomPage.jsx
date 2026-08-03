@@ -13,17 +13,19 @@ import {
   fetchChatPartner,
   fetchMessages,
   fetchPartnerReadState,
+  normalizeChatMessage,
   sendMessage,
+  uploadChatImages,
   fetchSuggestions,
 } from "../api/chatApi";
 import { connectChatSocket } from "../api/chatSocket.js";
 import { fetchBookmarkedMessageIds, toggleBookmark } from "../api/bookmarkApi";
-import { fetchReactions, setMyReaction } from "../api/reactionApi";
-import { createClientMessageId, MY_USER_ID } from "../api/mock/db";
-import { getCurrentCoupleRoom } from "../utils/pendingCoupleRoom.js";
+import { clearMyReaction, fetchReactions, setMyReaction } from "../api/reactionApi";
+import { createClientMessageId } from "../utils/clientMessageId.js";
+import { resolveRoomId } from "../api/coupleRoomContext.js";
 import { useAuth } from "../hooks/useAuth";
 import { useToast } from "../hooks/useToast";
-import { ANALYSIS_STATUS, MESSAGE_TYPE } from "../constants/enums";
+import { ANALYSIS_STATUS, MESSAGE_TYPE, REACTION_TYPE } from "../constants/enums";
 import { HOME_SECTION } from "../constants/navigation";
 import { isSameDay } from "../utils/emotions";
 import ChatSkeleton from "../components/chat/ChatSkeleton";
@@ -33,15 +35,33 @@ export default function ChatRoomPage() {
   const { user } = useAuth();
   const { showToast } = useToast();
   const navigate = useNavigate();
-  // 내 메시지 판별은 senderId === 내 userId 로 한다. (기존 목업의 sender: "me" | "partner" 대체)
-  // 목업 상수는 세션이 비어있을 때의 폴백이며, 연동 후에는 user 값만 쓰면 된다.
-  const myUserId = user?.userId ?? MY_USER_ID;
-  const currentRoom =
-    getCurrentCoupleRoom();
-  const roomId =
-    user?.roomId ??
-    currentRoom?.roomId ??
-    null;
+  // 내 메시지 판별은 senderId === 내 userId 로 한다.
+  // 목업 상수(MY_USER_ID = 1)로 폴백하던 코드가 있었는데, 세션이 비어 있으면
+  // 남의 메시지가 내 것으로 보이는 문제가 있어 없앴다. 로그인 값만 쓴다.
+  const myUserId = user?.userId ?? null;
+
+  /*
+   * roomId 는 localStorage 가 아니라 서버에서 받아온다.
+   * 처음 한 프레임은 null 이므로 아래 로딩 이펙트들은 roomResolved 를 기다린다.
+   */
+  const [roomId, setRoomId] = useState(null);
+  const [roomResolved, setRoomResolved] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    resolveRoomId()
+      .catch(() => null)
+      .then((resolvedRoomId) => {
+        if (cancelled) return;
+        setRoomId(resolvedRoomId);
+        setRoomResolved(true);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [myUserId]);
 
   const [partner, setPartner] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -128,9 +148,15 @@ export default function ChatRoomPage() {
 
   // 최초 진입 시 최신 메시지 페이지 로드 + 상대방 정보/읽음 상태 + 북마크/리액션 조회
   useEffect(() => {
+    // 방을 아직 못 정했으면 기다린다.
+    if (!roomResolved) return undefined;
+
     let cancelled = false;
     (async () => {
       try {
+        // 방을 정했는데 없으면 부를 게 없다. (아래 finally 가 로딩을 끝낸다)
+        if (!roomId) return;
+
         const [partnerInfo, page, myBookmarkedMessageIds, allReactions, partnerReadState] =
           await Promise.all([
             fetchChatPartner(),
@@ -168,7 +194,7 @@ export default function ChatRoomPage() {
     return () => {
       cancelled = true;
     };
-  }, [myUserId, roomId]);
+  }, [myUserId, roomId, roomResolved]);
 
   // 같은 커플방의 메시지·읽음·공감 이벤트를 실시간으로 구독한다.
   useEffect(() => {
@@ -181,38 +207,52 @@ export default function ChatRoomPage() {
       onMessage: (incomingMessage) => {
         if (!isActive) return;
 
+        const normalizedMessage =
+          normalizeChatMessage(
+            incomingMessage,
+          );
+
         setMessages((previous) => {
           const existingIndex =
             previous.findIndex(
               (message) =>
                 message.messageId ===
-                  incomingMessage.messageId ||
+                  normalizedMessage.messageId ||
                 (message.clientMessageId &&
                   message.clientMessageId ===
-                    incomingMessage.clientMessageId),
+                    normalizedMessage.clientMessageId),
             );
 
           if (existingIndex >= 0) {
             return previous.map(
               (message, index) =>
                 index === existingIndex
-                  ? incomingMessage
+                  ? {
+                      ...message,
+                      ...normalizedMessage,
+                      analysisStatus:
+                        normalizedMessage.analysisStatus ??
+                        message.analysisStatus,
+                      emotionType:
+                        normalizedMessage.emotionType ??
+                        message.emotionType,
+                    }
                   : message,
             );
           }
 
           return [
             ...previous,
-            incomingMessage,
+            normalizedMessage,
           ];
         });
 
         if (
-          Number(incomingMessage.senderId) !==
+          Number(normalizedMessage.senderId) !==
           Number(myUserId)
         ) {
           latestPartnerMessageIdRef.current =
-            incomingMessage.messageId;
+            normalizedMessage.messageId;
           markLatestPartnerMessageAsRead();
         }
 
@@ -307,6 +347,100 @@ export default function ChatRoomPage() {
     myUserId,
     roomId,
   ]);
+
+  const hasPendingAnalysis =
+    messages.some(
+      (message) =>
+        message.messageType ===
+          MESSAGE_TYPE.TEXT &&
+        (message.analysisStatus ===
+          ANALYSIS_STATUS.PENDING ||
+          message.analysisStatus ===
+            ANALYSIS_STATUS.PROCESSING),
+    );
+
+  // AI 분석은 서버 스케줄러에서 비동기로 끝나므로
+  // 대기 중인 메시지가 있을 때 최신 결과를 갱신한다.
+  useEffect(() => {
+    if (
+      !roomId ||
+      !hasPendingAnalysis
+    ) {
+      return undefined;
+    }
+
+    let cancelled = false;
+    let isRefreshing = false;
+
+    const refreshAnalysisResults =
+      async () => {
+        if (isRefreshing) return;
+
+        isRefreshing = true;
+
+        try {
+          const { messages: latest } =
+            await fetchMessages({
+              roomId,
+              beforeMessageId: null,
+              size: 50,
+            });
+
+          if (cancelled) return;
+
+          const latestById = new Map(
+            latest
+              .filter(
+                (message) =>
+                  message.messageId !==
+                  null,
+              )
+              .map((message) => [
+                message.messageId,
+                message,
+              ]),
+          );
+
+          setMessages((previous) =>
+            previous.map((message) => {
+              const updated =
+                latestById.get(
+                  message.messageId,
+                );
+
+              return updated
+                ? {
+                    ...message,
+                    ...updated,
+                    analysisStatus:
+                      updated.analysisStatus ??
+                      message.analysisStatus,
+                    emotionType:
+                      updated.emotionType ??
+                      message.emotionType,
+                  }
+                : message;
+            }),
+          );
+        } catch {
+          // 채팅 화면을 유지하고 다음 주기에 재시도한다.
+        } finally {
+          isRefreshing = false;
+        }
+      };
+
+    const timerId = window.setInterval(
+      refreshAnalysisResults,
+      3000,
+    );
+
+    refreshAnalysisResults();
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(timerId);
+    };
+  }, [hasPendingAnalysis, roomId]);
 
   // 최초 로드 완료 시 기존 상대방 메시지를 읽음 처리하고 맨 아래로 스크롤
   useEffect(() => {
@@ -409,7 +543,16 @@ export default function ChatRoomPage() {
         prev.map((m) =>
           m.clientMessageId === clientMessageId ||
           m.messageId === savedMessage.messageId
-            ? savedMessage
+            ? {
+                ...m,
+                ...savedMessage,
+                analysisStatus:
+                  savedMessage.analysisStatus ??
+                  m.analysisStatus,
+                emotionType:
+                  savedMessage.emotionType ??
+                  m.emotionType,
+              }
             : m
         )
       );
@@ -419,6 +562,88 @@ export default function ChatRoomPage() {
       setMessages((prev) => prev.filter((m) => m.clientMessageId !== clientMessageId));
       setInputValue((cur) => (cur ? cur : content));
       showToast("메시지를 보내지 못했어요. 다시 시도해주세요.", { tone: "error" });
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleImagesSelect = async (files) => {
+    if (sending || !files.length) return;
+
+    if (files.length > 10) {
+      showToast("사진은 한 번에 최대 10장까지 보낼 수 있어요.", {
+        tone: "error",
+      });
+      return;
+    }
+
+    const invalidFile = files.find(
+      (file) => !file.type.startsWith("image/"),
+    );
+    if (invalidFile) {
+      showToast("이미지 파일만 전송할 수 있어요.", { tone: "error" });
+      return;
+    }
+
+    setSending(true);
+    const clientMessageId = createClientMessageId();
+
+    try {
+      const imageUrls = await uploadChatImages({ roomId, files });
+      const optimisticMessage = {
+        messageId: null,
+        roomId,
+        senderId: myUserId,
+        clientMessageId,
+        messageType: MESSAGE_TYPE.IMAGE,
+        content: null,
+        sentAt: new Date().toISOString(),
+        images: imageUrls.map((imageUrl, index) => ({
+          imageUrl,
+          imageOrder: index + 1,
+        })),
+        emotionType: null,
+        analysisStatus: null,
+      };
+
+      setMessages((previous) => [
+        ...previous,
+        optimisticMessage,
+      ]);
+
+      requestAnimationFrame(() => {
+        if (containerRef.current) {
+          containerRef.current.scrollTop =
+            containerRef.current.scrollHeight;
+        }
+      });
+
+      const savedMessage = await sendMessage({
+        roomId,
+        content: null,
+        messageType: MESSAGE_TYPE.IMAGE,
+        imageUrls,
+        clientMessageId,
+      });
+
+      setMessages((previous) =>
+        previous.map((message) =>
+          message.clientMessageId === clientMessageId ||
+          message.messageId === savedMessage.messageId
+            ? { ...message, ...savedMessage }
+            : message,
+        ),
+      );
+    } catch (error) {
+      setMessages((previous) =>
+        previous.filter(
+          (message) => message.clientMessageId !== clientMessageId,
+        ),
+      );
+      showToast(
+        error.message || "사진을 보내지 못했어요. 다시 시도해주세요.",
+        { tone: "error" },
+      );
     } finally {
       setSending(false);
     }
@@ -448,17 +673,35 @@ export default function ChatRoomPage() {
   const handleLongPressMessage = (message, anchorRect) => {
     // 아직 서버에 저장되지 않은(messageId 없는) 메시지는 리액션/북마크를 걸 수 없다.
     if (message.messageId === null) return;
+    // 내 메시지에는 반응도 북마크도 하지 않는다.
+    if (Number(message.senderId) === Number(myUserId)) return;
     setActionTarget({ message, anchorRect });
   };
 
   const closeActionMenu = () => setActionTarget(null);
 
-  const handleSelectReaction = async (reactionType) => {
-    const target = actionTarget?.message;
-    if (!target) return;
-    closeActionMenu();
+  /**
+   * 반응 남기기 / 취소.
+   * 이미 같은 반응을 눌러둔 상태에서 다시 누르면 취소한다.
+   */
+  const applyReaction = async (target, reactionType) => {
+    if (!target || target.messageId === null) return;
+
+    // 내 메시지에는 반응할 수 없다.
+    if (Number(target.senderId) === Number(myUserId)) return;
+
+    const myCurrentType =
+      reactions[target.messageId]?.find(
+        (reaction) => Number(reaction.userId) === Number(myUserId),
+      )?.reactionType ?? null;
+
+    const isSameReaction = myCurrentType === reactionType;
+
     try {
-      const updatedReactions = await setMyReaction(target.messageId, reactionType);
+      const updatedReactions = isSameReaction
+        ? await clearMyReaction(target.messageId)
+        : await setMyReaction(target.messageId, reactionType);
+
       setReactions((prev) => {
         const existingReactions =
           prev[target.messageId] ?? [];
@@ -482,13 +725,29 @@ export default function ChatRoomPage() {
         return next;
       });
     } catch {
-      showToast("반응을 남기지 못했어요.", { tone: "error" });
+      showToast(
+        isSameReaction ? "반응을 취소하지 못했어요." : "반응을 남기지 못했어요.",
+        { tone: "error" },
+      );
     }
+  };
+
+  const handleSelectReaction = (reactionType) => {
+    const target = actionTarget?.message;
+    closeActionMenu();
+    applyReaction(target, reactionType);
+  };
+
+  // 상대 말풍선을 더블클릭/더블탭하면 하트를 바로 남긴다. (이미 하트면 취소)
+  const handleDoubleTapMessage = (message) => {
+    applyReaction(message, REACTION_TYPE.HEART);
   };
 
   const handleToggleBookmark = async () => {
     const target = actionTarget?.message;
     if (!target) return;
+    // 내 메시지는 북마크하지 않는다. (메뉴가 열리지 않지만 방어적으로 한 번 더)
+    if (Number(target.senderId) === Number(myUserId)) return;
     closeActionMenu();
     const isCurrentlyBookmarked = bookmarkedMessageIds.has(target.messageId);
     try {
@@ -556,7 +815,7 @@ export default function ChatRoomPage() {
           </div>
         )}
         {!hasMore && !initialLoading && !loadFailed && messages.length > 0 && (
-          <p className={styles.chatStartText}>대화의 시작이에요 💬</p>
+          <p className={styles.chatStartText}>대화의 시작이에요</p>
         )}
 
         {messages.map((message, idx) => {
@@ -576,6 +835,7 @@ export default function ChatRoomPage() {
                 reactions={reactions[message.messageId] ?? []}
                 isReadByPartner={isReadByPartner}
                 onLongPressMessage={handleLongPressMessage}
+                onDoubleTapMessage={handleDoubleTapMessage}
               />
             </div>
           );
@@ -603,6 +863,7 @@ export default function ChatRoomPage() {
         value={inputValue}
         onChange={handleInputChange}
         onSend={handleSend}
+        onImagesSelect={handleImagesSelect}
         disabled={sending}
       />
 
