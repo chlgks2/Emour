@@ -75,7 +75,6 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
             join message.images image
             where message.roomId = :roomId
               and message.senderId = :userId
-              and image.deletedAt is null
               and message.sentAt >= :start
               and message.sentAt < :end
             """)
@@ -91,7 +90,6 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
             from ChatMessage message
             join message.images image
             where message.roomId = :roomId
-              and image.deletedAt is null
               and message.sentAt >= :start
               and message.sentAt < :end
             """)
