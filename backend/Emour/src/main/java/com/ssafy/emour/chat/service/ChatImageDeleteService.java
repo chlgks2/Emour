@@ -41,7 +41,7 @@ public class ChatImageDeleteService {
         }
 
         ChatMessageImage image = imageRepository
-                .findActiveById(imageId)
+                .findWithMessageById(imageId)
                 .orElseThrow(() -> new ChatException(
                         "삭제할 채팅 이미지를 찾을 수 없습니다."
                 ));
@@ -54,11 +54,8 @@ public class ChatImageDeleteService {
         }
 
         LocalDateTime deletedAt = LocalDateTime.now(dashboardClock);
-        image.delete(deletedAt);
-
-        int remainingImageCount = (int) message.getImages().stream()
-                .filter(found -> !found.isDeleted())
-                .count();
+        message.removeImage(image);
+        int remainingImageCount = message.getImages().size();
 
         // 마지막 이미지까지 삭제했다면 빈 이미지 말풍선이 남지 않게
         // 메시지도 함께 삭제합니다. 관련 북마크와 공감은 DB CASCADE로 정리됩니다.

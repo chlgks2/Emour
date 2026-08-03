@@ -79,7 +79,7 @@ class ChatImageDeleteServiceTest {
         ChatMessage message = imageMessage(100L, 2);
         ChatMessageImage target = message.getImages().get(0);
         allowActiveMember(USER_ID);
-        when(imageRepository.findActiveById(target.getImageId()))
+        when(imageRepository.findWithMessageById(target.getImageId()))
                 .thenReturn(Optional.of(target));
 
         ChatImageDeleteResponse response = service.deleteImage(
@@ -87,7 +87,7 @@ class ChatImageDeleteServiceTest {
                 USER_ID
         );
 
-        assertThat(target.getDeletedAt()).isEqualTo(NOW);
+        assertThat(message.getImages()).doesNotContain(target);
         assertThat(response.remainingImageCount()).isEqualTo(1);
         assertThat(response.messageHidden()).isFalse();
         verify(eventPublisher).publishEvent(
@@ -102,7 +102,7 @@ class ChatImageDeleteServiceTest {
         ChatMessage message = imageMessage(101L, 1);
         ChatMessageImage target = message.getImages().get(0);
         allowActiveMember(USER_ID);
-        when(imageRepository.findActiveById(target.getImageId()))
+        when(imageRepository.findWithMessageById(target.getImageId()))
                 .thenReturn(Optional.of(target));
 
         ChatImageDeleteResponse response = service.deleteImage(
@@ -120,7 +120,7 @@ class ChatImageDeleteServiceTest {
         ChatMessage message = imageMessage(102L, 1);
         ChatMessageImage target = message.getImages().get(0);
         allowActiveMember(20L);
-        when(imageRepository.findActiveById(target.getImageId()))
+        when(imageRepository.findWithMessageById(target.getImageId()))
                 .thenReturn(Optional.of(target));
 
         assertThatThrownBy(() -> service.deleteImage(

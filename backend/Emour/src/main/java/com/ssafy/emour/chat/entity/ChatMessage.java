@@ -102,6 +102,10 @@ public class ChatMessage {
         images.add(ChatMessageImage.create(this, imageUrl, displayOrder));
     }
 
+    public void removeImage(ChatMessageImage image) {
+        images.remove(image);
+    }
+
     void addReaction(ChatReaction reaction) {
         reactions.add(reaction);
     }

@@ -269,7 +269,6 @@ public class ChatMessageService {
             ChatAnalysis analysis
     ) {
         List<ChatImageResponse> images = message.getImages().stream()
-                .filter(image -> !image.isDeleted())
                 .map(image -> new ChatImageResponse(
                         image.getImageId(),
                         image.getImageUrl(),
