@@ -435,8 +435,10 @@ class ChatMessageIntegrationTest {
         jdbcTemplate.update(
                 """
                 INSERT IGNORE INTO app_user
-                    (user_id, email, nickname, status, is_email_verified)
-                VALUES (?, ?, ?, 'ACTIVE', TRUE)
+                    (user_id, email, nickname, status, is_email_verified,
+                     created_at, updated_at)
+                VALUES (?, ?, ?, 'ACTIVE', TRUE,
+                        CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
                 """,
                 userId,
                 email,
@@ -447,8 +449,10 @@ class ChatMessageIntegrationTest {
     private void insertRoomIfMissing() {
         jdbcTemplate.update(
                 """
-                INSERT IGNORE INTO couple_room (room_id, room_code, status)
-                VALUES (1, 'CHAT_TEST_ROOM', 'ACTIVE')
+                INSERT IGNORE INTO couple_room
+                    (room_id, room_code, status, created_at, updated_at)
+                VALUES (1, 'CHAT_TEST_ROOM', 'ACTIVE',
+                        CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
                 """
         );
     }
