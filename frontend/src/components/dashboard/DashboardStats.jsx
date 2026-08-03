@@ -116,7 +116,9 @@ export default function DashboardStats({
               {frequentWords.slice(0, FREQUENT_WORD_DISPLAY_COUNT).map(({ word, count }) => (
                 <li key={word} className={styles.wordChip}>
                   {word}
-                  <span className={styles.wordCount}>{count}</span>
+                  <span className={styles.wordCount}>
+                    {Number(count).toLocaleString("ko-KR")}회
+                  </span>
                 </li>
               ))}
             </ul>

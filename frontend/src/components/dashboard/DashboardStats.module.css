@@ -117,8 +117,8 @@
 }
 
 .wordCount {
-  color: var(--color-text-tertiary);
-  font-size: 11px;
+  color: var(--color-primary);
+  font-size: 12px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
