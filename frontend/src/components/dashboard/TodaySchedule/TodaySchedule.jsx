@@ -64,6 +64,7 @@ export default function TodaySchedule({ schedules = [] }) {
           <ul className={styles.anniversaryList}>
             {anniversaries.map((anniversary) => (
               <li key={anniversary.scheduleId} className={styles.anniversaryItem}>
+                <span className={styles.dot} aria-hidden="true" />
                 {anniversary.name}
               </li>
             ))}
