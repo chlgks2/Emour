@@ -135,6 +135,7 @@ function normalizeEmotionEntries(emotionSummary) {
 // DATETIME(6) 컬럼(sent_at, created_at ...)의 ISO 문자열을 "오후 7:30" 형태로
 export function formatTime(dateTime) {
   const date = new Date(dateTime);
+  if (!Number.isFinite(date.getTime())) return "";
   const hours = date.getHours();
   const minutes = String(date.getMinutes()).padStart(2, "0");
   const period = hours < 12 ? "오전" : "오후";
@@ -144,6 +145,7 @@ export function formatTime(dateTime) {
 
 export function formatDate(dateTime) {
   const date = new Date(dateTime);
+  if (!Number.isFinite(date.getTime())) return "";
   const days = ["일", "월", "화", "수", "목", "금", "토"];
   return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일 ${days[date.getDay()]}요일`;
 }
@@ -151,5 +153,8 @@ export function formatDate(dateTime) {
 export function isSameDay(dateTimeA, dateTimeB) {
   const a = new Date(dateTimeA);
   const b = new Date(dateTimeB);
+  if (!Number.isFinite(a.getTime()) || !Number.isFinite(b.getTime())) {
+    return false;
+  }
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 }

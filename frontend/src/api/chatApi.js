@@ -112,14 +112,44 @@ export async function getUnreadChatCount(
 }
 
 export function normalizeChatMessage(
-  message,
+  payload,
 ) {
-  if (!message) {
-    return message
+  const message =
+    payload?.data?.message ??
+    payload?.data ??
+    payload?.message ??
+    payload
+
+  if (!message || typeof message !== 'object') {
+    return null
+  }
+
+  const sentAt = message.sentAt ?? message.sent_at
+  const sentTime = new Date(sentAt).getTime()
+  const messageId = message.messageId ?? message.message_id ?? null
+  const clientMessageId =
+    message.clientMessageId ?? message.client_message_id ?? null
+  const senderId = message.senderId ?? message.sender_id ?? null
+  const images = Array.isArray(message.images) ? message.images : []
+  const content = typeof message.content === 'string' ? message.content : ''
+
+  if (
+    (!messageId && !clientMessageId) ||
+    senderId == null ||
+    !Number.isFinite(sentTime) ||
+    (!content.trim() && images.length === 0)
+  ) {
+    return null
   }
 
   return {
     ...message,
+    messageId,
+    clientMessageId,
+    senderId,
+    sentAt,
+    content,
+    images,
     emotionType:
       message.emotionType ??
       message.emotion ??
@@ -127,6 +157,31 @@ export function normalizeChatMessage(
     analysisStatus:
       message.analysisStatus ?? null,
   }
+}
+
+export function dedupeChatMessages(messages) {
+  const seenMessageIds = new Set()
+  const seenClientIds = new Set()
+
+  return messages.filter((message) => {
+    if (!message) return false
+
+    const messageKey = message.messageId == null
+      ? null
+      : String(message.messageId)
+    const clientKey = message.clientMessageId || null
+
+    if (
+      (messageKey && seenMessageIds.has(messageKey)) ||
+      (clientKey && seenClientIds.has(clientKey))
+    ) {
+      return false
+    }
+
+    if (messageKey) seenMessageIds.add(messageKey)
+    if (clientKey) seenClientIds.add(clientKey)
+    return true
+  })
 }
 
 export async function getPartnerReadStatus(
@@ -302,9 +357,11 @@ export async function fetchMessages({
   })
 
   return {
-    messages: (
-      response?.messages ?? []
-    ).map(normalizeChatMessage),
+    messages: dedupeChatMessages(
+      (response?.messages ?? [])
+        .map(normalizeChatMessage)
+        .filter(Boolean),
+    ),
     nextBeforeMessageId:
       response?.nextCursor ?? null,
   }

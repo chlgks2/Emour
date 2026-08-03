@@ -12,6 +12,7 @@ import { useInfiniteScroll } from "../hooks/useInfiniteScroll";
 import {
   fetchChatPartner,
   fetchMessages,
+  dedupeChatMessages,
   fetchPartnerReadState,
   normalizeChatMessage,
   sendMessage,
@@ -128,7 +129,9 @@ export default function ChatRoomPage() {
         beforeMessageId: nextBeforeMessageId,
       });
       justPrependedRef.current = true;
-      setMessages((prev) => [...olderPage, ...prev]);
+      setMessages((prev) =>
+        dedupeChatMessages([...olderPage, ...prev]),
+      );
       setNextBeforeMessageId(nextCursor);
     } catch {
       // 계속 재시도하며 도는 것을 막고 알림만 준다.
@@ -211,6 +214,8 @@ export default function ChatRoomPage() {
           normalizeChatMessage(
             incomingMessage,
           );
+
+        if (!normalizedMessage) return;
 
         setMessages((previous) => {
           const existingIndex =
