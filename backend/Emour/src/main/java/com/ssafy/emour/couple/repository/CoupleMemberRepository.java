@@ -48,6 +48,22 @@ public interface CoupleMemberRepository extends JpaRepository<CoupleMember, Coup
     );
 
     @Query("""
+            select member
+            from CoupleMember member
+            join CoupleRoom room on room.id = member.id.roomId
+            where member.id.userId = :userId
+              and member.status =
+                  com.ssafy.emour.couple.entity.CoupleMemberStatus.ACTIVE
+              and room.status =
+                  com.ssafy.emour.couple.entity.CoupleRoomStatus.ACTIVE
+            order by room.updatedAt desc
+            """)
+    List<CoupleMember> findActiveMembershipsByUserId(
+            @Param("userId") Long userId,
+            Pageable pageable
+    );
+
+    @Query("""
             select (count(cm) > 0)
             from CoupleMember cm
             join CoupleRoom cr on cr.id = cm.id.roomId

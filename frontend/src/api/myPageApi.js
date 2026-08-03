@@ -19,7 +19,9 @@ import {
 } from './authApi.js'
 
 import {
+  getPartnerNickname,
   getMyProfile,
+  savePartnerNickname,
   updateMyProfile,
   withdrawMyAccount,
 } from './memberApi.js'
@@ -202,6 +204,12 @@ export async function getMyPageProfile() {
       )
     : null
 
+  // 사용자 지정 애칭이 없으면 백엔드가 상대방의 회원 닉네임을 반환한다.
+  const partnerNicknameResponse =
+    currentRoom?.roomStatus === 'ACTIVE'
+      ? await getPartnerNickname()
+      : null
+
   return mapMyPageResponse({
     userResponse,
     roomResponse: currentRoom,
@@ -210,6 +218,9 @@ export async function getMyPageProfile() {
           roomId: currentRoom.roomId,
           userId: userResponse.userId,
           status: 'ACTIVE',
+          partnerNickname:
+            partnerNicknameResponse
+              ?.partnerNickname ?? '',
         }
       : null,
   })
@@ -318,9 +329,11 @@ export async function updatePartnerNickname({
     return createMappedMockResponse()
   }
 
-  throw new Error(
-    '연인 애칭 수정 API는 아직 제공되지 않습니다.',
+  await savePartnerNickname(
+    trimmedPartnerNickname,
   )
+
+  return getMyPageProfile()
 }
 
 export async function regenerateRoomCode() {

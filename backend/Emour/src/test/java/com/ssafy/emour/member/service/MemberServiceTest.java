@@ -1,10 +1,13 @@
 package com.ssafy.emour.member.service;
 
 import com.ssafy.emour.auth.service.RefreshTokenService;
+import com.ssafy.emour.couple.entity.CoupleMember;
 import com.ssafy.emour.couple.repository.CoupleMemberRepository;
 import com.ssafy.emour.global.storage.FileStorage;
+import com.ssafy.emour.member.dto.request.PartnerNicknameRequest;
 import com.ssafy.emour.member.dto.response.MemberProfileImageResponse;
 import com.ssafy.emour.member.dto.response.MemberProfileImagesResponse;
+import com.ssafy.emour.member.dto.response.PartnerNicknameResponse;
 import com.ssafy.emour.member.entity.Member;
 import com.ssafy.emour.member.entity.MemberStatus;
 import com.ssafy.emour.member.repository.MemberRepository;
@@ -177,6 +180,66 @@ class MemberServiceTest {
         verify(me).updateProfileImage(
                 "/uploads/2026/08/03/profile.png"
         );
+    }
+
+    // 별도로 정한 애칭이 없으면 상대방의 회원 닉네임을 보여줍니다.
+    @Test
+    void returnsMemberNicknameAsFallback() {
+        Member me = member(21L, null);
+        Member partner = member(22L, null);
+        CoupleMember membership = mock(CoupleMember.class);
+        when(memberRepository.findById(21L))
+                .thenReturn(Optional.of(me));
+        when(coupleMemberRepository.findActiveMembershipsByUserId(
+                eq(21L),
+                any(Pageable.class)
+        )).thenReturn(List.of(membership));
+        when(coupleMemberRepository.findActivePartnerUserIds(
+                eq(21L),
+                any(Pageable.class)
+        )).thenReturn(List.of(22L));
+        when(memberRepository.findById(22L))
+                .thenReturn(Optional.of(partner));
+        when(partner.getNickname()).thenReturn("가입 닉네임");
+        when(membership.getPartnerNickname()).thenReturn(null);
+
+        PartnerNicknameResponse response =
+                memberService.getPartnerNickname(21L);
+
+        assertThat(response.partnerUserId()).isEqualTo(22L);
+        assertThat(response.partnerNickname()).isEqualTo("가입 닉네임");
+        assertThat(response.customized()).isFalse();
+    }
+
+    // 사용자가 입력한 애칭은 자신의 couple_member 행에 저장합니다.
+    @Test
+    void updatesPartnerNickname() {
+        Member me = member(21L, null);
+        Member partner = member(22L, null);
+        CoupleMember membership = mock(CoupleMember.class);
+        when(memberRepository.findById(21L))
+                .thenReturn(Optional.of(me));
+        when(coupleMemberRepository.findActiveMembershipsByUserId(
+                eq(21L),
+                any(Pageable.class)
+        )).thenReturn(List.of(membership));
+        when(coupleMemberRepository.findActivePartnerUserIds(
+                eq(21L),
+                any(Pageable.class)
+        )).thenReturn(List.of(22L));
+        when(memberRepository.findById(22L))
+                .thenReturn(Optional.of(partner));
+
+        PartnerNicknameResponse response =
+                memberService.updatePartnerNickname(
+                        21L,
+                        new PartnerNicknameRequest("  내 사랑  ")
+                );
+
+        verify(membership).updatePartnerNickname("내 사랑");
+        assertThat(response.partnerUserId()).isEqualTo(22L);
+        assertThat(response.partnerNickname()).isEqualTo("내 사랑");
+        assertThat(response.customized()).isTrue();
     }
 
     private Member member(Long userId, String imageUrl) {
