@@ -11,6 +11,7 @@ import EmotionReport from "../../components/dashboard/EmotionReport/EmotionRepor
 import RecentPhotos from "../../components/dashboard/RecentPhotos/RecentPhotos";
 import BookmarkPreview from "../../components/dashboard/BookmarkPreview/BookmarkPreview";
 import EmptyState from "../../components/common/EmptyState/EmptyState";
+import HelpHint from "../../components/common/HelpHint/HelpHint";
 import { fetchDashboard, fetchDashboardPeriod } from "../../api/dashboardApi";
 import MoodTrendChart from "../../components/dashboard/MoodTrendChart/MoodTrendChart";
 import { fetchMoodRecordsForMonth, saveMyMood } from "../../api/moodApi";
@@ -476,10 +477,16 @@ export default function DashboardPage() {
           "둘 다 보통이었다"는 없는 이야기가 만들어진다. (utils/moodReport 주석 참고)
         */}
         <section className="surface-plain" aria-labelledby="dashboard-mood-report-title">
-          <header className="section-head">
+          <header className="section-head section-head-inline">
             <h2 id="dashboard-mood-report-title" className="section-title">
               무드트래커 리포트
             </h2>
+
+            {/*
+              집계 기준은 제목 옆 물음표에 숨긴다.
+              한 번 알면 되는 규칙이라 늘 펼쳐 두면 그래프보다 각주가 길어진다.
+            */}
+            <HelpHint label="무드트래커 리포트 집계 기준">{PERIOD_NOTE}</HelpHint>
           </header>
 
           <div className={styles.reportPanel}>
@@ -555,8 +562,6 @@ export default function DashboardPage() {
                 emptyText={"기분을 기록하면\n두 사람의 흐름이 나란히 그려져요."}
               />
             </div>
-
-            <p className={styles.reportNote}>{PERIOD_NOTE}</p>
           </div>
         </section>
 

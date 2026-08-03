@@ -1,4 +1,5 @@
 import EmotionReport from "../EmotionReport/EmotionReport";
+import HelpHint from "../../common/HelpHint/HelpHint";
 import styles from "./DashboardStats.module.css";
 
 // 카드가 길어지지 않도록 상위 5개만 노출한다.
@@ -71,10 +72,18 @@ export default function DashboardStats({
 
   return (
     <section className="surface-plain" aria-labelledby="dashboard-stats-title">
-      <header className="section-head">
+      <header className="section-head section-head-inline">
         <h2 id="dashboard-stats-title" className="section-title">
           {title}
         </h2>
+
+        {/*
+          집계 기준은 제목 옆 물음표에 숨긴다.
+          한 번 알면 되는 규칙이라 늘 펼쳐 두면 수치보다 각주가 길어진다.
+        */}
+        <HelpHint label="대화 기록 리포트 집계 기준">
+          하루는 한국 시간 0시부터 24시까지를 기준으로 모아요.
+        </HelpHint>
       </header>
 
       {periodControl}
@@ -142,10 +151,6 @@ export default function DashboardStats({
           </div>
         )}
       </div>
-
-      <p className={styles.periodNote}>
-        하루는 한국 시간 0시부터 24시까지를 기준으로 모아요.
-      </p>
     </section>
   );
 }

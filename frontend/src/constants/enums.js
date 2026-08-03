@@ -72,11 +72,10 @@ export const VERIFICATION_PURPOSE = {
 
 /**
  * social_login.provider (VARCHAR(30))
- * ⚠️ ERD 주석에는 GOOGLE / KAKAO 만 적혀 있는데 로그인 화면에는 네이버 버튼도 있다.
- *    NAVER 를 실제로 지원하는지 백엔드 확인 필요.
+ *
+ * 화면에 붙어 있는 것만 남긴다. 네이버·카카오 로그인은 만들지 않기로 했다.
+ * 컬럼 자체는 문자열이라, 나중에 지원하게 되면 여기에 한 줄 더하면 된다.
  */
 export const SOCIAL_PROVIDER = {
   GOOGLE: "GOOGLE",
-  KAKAO: "KAKAO",
-  NAVER: "NAVER",
 };

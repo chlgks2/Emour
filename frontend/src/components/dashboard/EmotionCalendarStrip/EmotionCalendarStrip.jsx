@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import MoodSlotList from "../MoodSlotList/MoodSlotList";
+import HelpHint from "../../common/HelpHint/HelpHint";
 import { buildDayGradient, getMoodLabel } from "../../../utils/moodEmotion";
 import styles from "./EmotionCalendarStrip.module.css";
 
@@ -69,6 +70,20 @@ export default function EmotionCalendarStrip({
 
   return (
     <div className={styles.card}>
+      {/*
+        원의 색이 어떻게 정해지는지.
+        하루에 여러 번 기록하면 "왜 이 색이지?" 가 되는데, 규칙을 모르면
+        앞의 기록이 덮어씌워진 것으로 오해한다. (moodApi.getRepresentativeSlot)
+
+        늘 펼쳐 두지는 않는다. 한 번 알면 되는 규칙이라, 카드 안에 각주로
+        깔아 두니 정작 봐야 할 감정 원보다 글자가 길었다.
+      */}
+      <span className={styles.help}>
+        <HelpHint label="감정 원의 색 기준" align="end" tone="accent">
+          원의 색은 그날 가장 많이 고른 기분이에요. 수가 같으면 더 늦게 기록한 쪽을 따라요.
+        </HelpHint>
+      </span>
+
       <div className={styles.monthRow}>
         <button type="button" aria-label="이전 주" className={styles.arrowBtn} onClick={onPrevWeek}>
           <ChevronLeft size={18} />

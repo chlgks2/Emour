@@ -75,18 +75,6 @@
   margin-top: 10px;
 }
 
-/*
- * 집계 기준 각주.
- * 하루의 경계가 어디인지 모르면 자정 무렵의 수치를 보고 "왜 안 세지?" 가 된다.
- * 수치를 읽고 난 뒤에 눈에 들어오면 되는 정보라 맨 아래에 작게 둔다.
- */
-.periodNote {
-  margin-top: 10px;
-  color: var(--color-text-placeholder);
-  font-size: var(--font-micro);
-  line-height: 1.5;
-}
-
 /* 반칸 셀의 문장형 값 ("오후 2시~오후 3시" 처럼 숫자가 아닌 것) */
 .cellText {
   color: var(--color-text-primary);

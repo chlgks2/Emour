@@ -25,6 +25,7 @@ import ScheduleModal from '../../components/calendar/ScheduleModal/ScheduleModal
 import AnniversaryManager from '../../components/calendar/AnniversaryManager/AnniversaryManager.jsx'
 import DiaryModal from '../../components/calendar/DiaryModal/DiaryModal.jsx'
 import BottomNavigation from '../../components/common/BottomNavigation/BottomNavigation.jsx'
+import HelpHint from '../../components/common/HelpHint/HelpHint.jsx'
 
 import {
   buildDayGradient,
@@ -34,7 +35,7 @@ import {
   fetchMoodSlots,
   saveMyMood,
 } from '../../api/moodApi.js'
-import MoodSlotList from '../../components/dashboard/MoodSlotList/MoodSlotList.jsx'
+import MoodTimeline from '../../components/calendar/MoodTimeline/MoodTimeline.jsx'
 import { formatSlotTime } from '../../utils/moodSlotFormat.js'
 import { DEFAULT_MOOD_WINDOW } from '../../utils/moodSlotGrid.js'
 import { getMoodNotificationSetting } from '../../api/notificationSettingApi.js'
@@ -987,7 +988,21 @@ function CalendarPage() {
               />
             </button>
 
-            <h2>{currentMonthLabel}</h2>
+            <div className="calendar-month-title">
+              <h2>{currentMonthLabel}</h2>
+
+              {/*
+                날짜 칸의 색이 어떻게 정해지는지.
+                하루에 여러 번 기록하면 "왜 이 색이지?" 가 되는데, 규칙을 모르면
+                앞의 기록이 덮어씌워진 것으로 오해한다. (moodApi.getRepresentativeSlot)
+
+                카드 오른쪽 위 모서리에는 이미 '다음 달' 버튼이 서 있어서
+                달 이름 옆에 붙였다. 물음표는 자기가 설명하는 것 옆에 있어야 한다.
+              */}
+              <HelpHint label="날짜 색의 기준" align="center">
+                날짜 색은 그날 가장 많이 고른 기분이에요. 수가 같으면 더 늦게 기록한 쪽을 따라요.
+              </HelpHint>
+            </div>
 
             <button
               type="button"
@@ -1136,8 +1151,9 @@ function CalendarPage() {
           </div>
 
           {/*
-            무드트래커 상세 — 대시보드와 같은 MoodSlotList 를 쓴다.
-            캘린더는 limit 없이 그날의 시간대를 전부 보여준다.
+            무드트래커 상세 — 가운데 축 타임라인(MoodTimeline).
+            대시보드의 감정 원 아래에 붙는 요약(MoodSlotList)과 달리, 여기서는
+            그날의 시간대를 전부 펼쳐 두 사람의 흐름을 나란히 읽는 것이 목적이다.
           */}
           <div className="selected-day-section">
             <div className="selected-day-section-title">
@@ -1185,7 +1201,7 @@ function CalendarPage() {
             </div>
 
             {isMoodTrackerOpen && (
-              <MoodSlotList
+              <MoodTimeline
                 mySlots={
                   selectedDayMood.mySlots
                 }
