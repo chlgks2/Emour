@@ -4,6 +4,7 @@ import com.ssafy.emour.auth.service.RefreshTokenService;
 import com.ssafy.emour.couple.repository.CoupleMemberRepository;
 import com.ssafy.emour.global.exception.CustomException;
 import com.ssafy.emour.global.exception.ErrorCode;
+import com.ssafy.emour.global.storage.FileStorage;
 import com.ssafy.emour.member.dto.request.PasswordChangeRequest;
 import com.ssafy.emour.member.dto.request.ProfileUpdateRequest;
 import com.ssafy.emour.member.dto.response.MemberProfileImageResponse;
@@ -17,8 +18,10 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * 회원(마이페이지) 관련 비즈니스 로직.
@@ -27,10 +30,19 @@ import java.util.List;
 @RequiredArgsConstructor
 public class MemberService {
 
+    private static final String IMAGE_URL_PREFIX = "/uploads/";
+    private static final Set<String> ALLOWED_IMAGE_TYPES = Set.of(
+            "image/jpeg",
+            "image/png",
+            "image/webp",
+            "image/gif"
+    );
+
     private final MemberRepository memberRepository;
     private final CoupleMemberRepository coupleMemberRepository;
     private final PasswordEncoder passwordEncoder;
     private final RefreshTokenService refreshTokenService;
+    private final FileStorage fileStorage;
 
     /** 내 프로필 조회 */
     @Transactional(readOnly = true)
@@ -69,6 +81,38 @@ public class MemberService {
                 partner == null ? null : partner.getId(),
                 partner == null ? null : partner.getProfileImageUrl()
         );
+    }
+
+    /** 로그인한 사용자의 프로필 이미지를 저장하고 DB의 이미지 주소를 변경합니다. */
+    @Transactional
+    public MemberProfileImageResponse uploadProfileImage(
+            Long userId,
+            MultipartFile file
+    ) {
+        Member member = getActiveMember(userId);
+        validateProfileImage(file);
+
+        // 실제 파일을 저장하고 브라우저에서 접근할 수 있는 URL로 바꿉니다.
+        String storedKey = fileStorage.store(file);
+        String imageUrl = toImageUrl(storedKey);
+
+        member.updateProfileImage(imageUrl);
+        return new MemberProfileImageResponse(member.getId(), imageUrl);
+    }
+
+    private void validateProfileImage(MultipartFile file) {
+        if (file == null || file.isEmpty()
+                || !ALLOWED_IMAGE_TYPES.contains(file.getContentType())) {
+            throw new CustomException(ErrorCode.INVALID_IMAGE_FILE);
+        }
+    }
+
+    private String toImageUrl(String key) {
+        String normalizedKey = key.replace('\\', '/');
+        return IMAGE_URL_PREFIX
+                + (normalizedKey.startsWith("/")
+                ? normalizedKey.substring(1)
+                : normalizedKey);
     }
 
     private Member findActivePartner(Long userId) {
