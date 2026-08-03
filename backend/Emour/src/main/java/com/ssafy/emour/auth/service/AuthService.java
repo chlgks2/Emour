@@ -33,6 +33,7 @@ public class AuthService {
     private final RefreshTokenService refreshTokenService;       // Redis 에 refresh 저장
     private final VerificationCodeService verificationCodeService; // 이메일 인증코드 관리
     private final EmailSender emailSender;                       // 이메일 발송
+    private final GoogleTokenVerifier googleTokenVerifier;      // 구글 ID 토큰 검증
 
     /**
      * 이메일 회원가입.
@@ -104,6 +105,55 @@ public class AuthService {
         );
 
         return LoginResponse.of(member, accessToken, refreshToken);
+    }
+
+    /**
+     * 구글 소셜 로그인.
+     * 1) 구글 ID 토큰 검증 → 2) 이메일로 회원 조회(없으면 소셜 계정 생성)
+     * → 3) 우리 서비스 JWT 발급 → 4) refresh 를 Redis 저장
+     *
+     * 소셜로 새로 생성되는 계정은 passwordHash 가 null 이라 이메일/비번 로그인은 불가하며,
+     * 구글이 이미 확인한 이메일이므로 emailVerified 를 true 로 둔다.
+     */
+    @Transactional
+    public LoginResponse loginWithGoogle(String idToken) {
+        GoogleUserInfo info = googleTokenVerifier.verify(idToken);
+
+        Member member = memberRepository.findByEmail(info.email())
+                .orElseGet(() -> registerGoogleMember(info));
+
+        // 탈퇴한 회원은 로그인 불가
+        if (member.getStatus() == MemberStatus.WITHDRAWN) {
+            throw new CustomException(ErrorCode.INVALID_CREDENTIALS);
+        }
+
+        String accessToken = jwtTokenProvider.createAccessToken(member.getId());
+        String refreshToken = jwtTokenProvider.createRefreshToken(member.getId());
+        refreshTokenService.save(
+                member.getId(),
+                refreshToken,
+                jwtTokenProvider.getRefreshTokenValidityMs()
+        );
+
+        return LoginResponse.of(member, accessToken, refreshToken);
+    }
+
+    private Member registerGoogleMember(GoogleUserInfo info) {
+        Member member = Member.builder()
+                .email(info.email())
+                .passwordHash(null)              // 소셜 전용 계정: 이메일/비번 로그인 불가
+                .nickname(resolveGoogleNickname(info))
+                .build();
+        member.verifyEmail();                    // 구글이 이미 검증한 이메일
+        return memberRepository.save(member);
+    }
+
+    private String resolveGoogleNickname(GoogleUserInfo info) {
+        String raw = (info.name() != null && !info.name().isBlank())
+                ? info.name().trim()
+                : info.email().split("@")[0];
+        // 닉네임 컬럼 길이(50) 보호
+        return raw.length() > 50 ? raw.substring(0, 50) : raw;
     }
 
     /**
