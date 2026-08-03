@@ -58,6 +58,16 @@ public interface CoupleMemberRepository extends JpaRepository<CoupleMember, Coup
     boolean existsActiveCoupleByUserId(@Param("userId") Long userId);
 
     @Query("""
+            select (count(cm) > 0)
+            from CoupleMember cm
+            join CoupleRoom cr on cr.id = cm.id.roomId
+            where cm.id.userId = :userId
+              and cm.status = com.ssafy.emour.couple.entity.CoupleMemberStatus.ACTIVE
+              and cr.status = com.ssafy.emour.couple.entity.CoupleRoomStatus.INACTIVE
+            """)
+    boolean existsRetainedInactiveRoomByUserId(@Param("userId") Long userId);
+
+    @Query("""
             select cm.id.roomId
             from CoupleMember cm
             join CoupleRoom cr on cr.id = cm.id.roomId
