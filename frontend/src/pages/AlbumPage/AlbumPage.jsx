@@ -439,12 +439,9 @@ function AlbumPage() {
 
   return (
     <div className="album-page">
+      {/* 캘린더·마이페이지와 같은 상단바: 가운데 제목 하나, 동작 버튼은 오른쪽에 얹는다 */}
       <header className="album-header">
-        <div>
-          <p>OUR MEMORIES</p>
-
-          <h1>앨범</h1>
-        </div>
+        <h1>앨범</h1>
 
         <button
           type="button"
@@ -516,26 +513,19 @@ function AlbumPage() {
           })}
         </nav>
 
+        {/* 섹션 제목은 대시보드와 같은 공용 서식을 쓴다 (styles/surfaces.css) */}
         <section className="album-section">
-          <div className="album-section-header">
-            <div>
-              <h2>
-                {activeTab === 'ALBUM'
-                  ? '앨범에 추가한 사진'
-                  : '채팅에서 보낸 사진'}
-              </h2>
+          <header className="section-head">
+            <h2 className="section-title">
+              {activeTab === 'ALBUM'
+                ? '앨범에 추가한 사진'
+                : '채팅에서 보낸 사진'}
+            </h2>
 
-              <p>
-                {activeTab === 'ALBUM'
-                  ? '두 사람이 함께 보관한 사진이에요.'
-                  : '채팅으로 주고받은 사진을 모아봤어요.'}
-              </p>
-            </div>
-
-            <span>
-              총 {visiblePhotos.length}장
+            <span className="section-meta">
+              {visiblePhotos.length}장
             </span>
-          </div>
+          </header>
 
           {isLoading && (
             <div className="album-status">
@@ -589,7 +579,18 @@ function AlbumPage() {
             !errorMessage &&
             visiblePhotos.length >
               0 && (
-              <div className="album-grid">
+              /*
+                모자이크는 사진이 넉넉할 때만 리듬이 된다.
+                4장 이하에서는 큰 칸 하나가 화면을 다 먹어 오히려 어색하므로
+                균등 격자로 되돌린다.
+              */
+              <div
+                className={`album-grid ${
+                  visiblePhotos.length <= 4
+                    ? 'album-grid-uniform'
+                    : ''
+                }`}
+              >
                 {visiblePhotos.map(
                   (photo) => (
                     <button

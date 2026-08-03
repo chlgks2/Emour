@@ -14,7 +14,10 @@ import EmptyState from "../components/common/EmptyState";
 import { fetchDashboard, fetchDashboardPeriod } from "../api/dashboardApi";
 import MoodTrendChart from "../components/dashboard/MoodTrendChart";
 import { fetchMoodRecordsForMonth, saveMyMood } from "../api/moodApi";
-import { MOOD_AXIS, buildMoodTrendSeries } from "../utils/moodTrendSeries";
+import {
+  CONVERSATION_AXIS,
+  buildConversationTrendSeries,
+} from "../utils/moodTrendSeries";
 import { DEFAULT_MOOD_WINDOW } from "../utils/moodSlotGrid";
 import { getMoodNotificationSetting } from "../api/notificationSettingApi";
 import { formatSlotTime } from "../utils/moodSlotFormat";
@@ -152,14 +155,6 @@ export default function DashboardPage() {
     });
   }, [weekStart, moodRecords]);
 
-  // 오늘의 무드 슬롯 (미리보기 + 꺾은선 그래프가 함께 쓴다)
-  const todayMood = useMemo(() => {
-    const todayKey = formatDateKey(new Date());
-    return (
-      moodRecords[todayKey] ?? { mySlots: [], partnerSlots: [], myMood: null, partnerMood: null }
-    );
-  }, [moodRecords]);
-
   // 슬롯 경계(시작~종료, 간격). 못 불러오면 기본값으로 그린다.
   const [moodWindow, setMoodWindow] = useState(DEFAULT_MOOD_WINDOW);
 
@@ -233,14 +228,8 @@ export default function DashboardPage() {
     setReportDate(new Date());
   };
 
-  const reportTitle =
-    reportPeriod === "DAY"
-      ? "일간"
-      : reportPeriod === "MONTH"
-        ? "월간"
-        : "연간";
-  const showTodaySchedule =
-    reportPeriod === "DAY" && isCurrentPeriod;
+  // (제목은 '감정 리포트' 로 고정한다. 어느 기간인지는 아래 탭과 날짜가 이미 보여준다)
+  // (오늘의 일정은 기간과 무관한 독립 섹션이라 더 이상 조건을 두지 않는다)
   const visiblePeriodDashboard =
     periodDashboard?.period === reportPeriod
       ? periodDashboard
@@ -361,72 +350,85 @@ export default function DashboardPage() {
           onEditSlot={openMoodForm}
         />
 
-        {/*
-          시간대별 감정 변화.
-          지금은 무드트래커 기반이고, 대화 감정 기반으로 바꾸려면 아래 두 줄만
-          buildConversationTrendSeries(dashboardData.dashboard.emotionFlow) / CONVERSATION_AXIS
-          로 교체하면 된다. (utils/moodTrendSeries.js 참고)
-        */}
+        {/* 선택한 기간에 분석된 대화 감정을 2시간대별로 합산한다. */}
         <MoodTrendChart
-          series={buildMoodTrendSeries(todayMood.mySlots, todayMood.partnerSlots)}
-          axis={MOOD_AXIS}
+          series={buildConversationTrendSeries(
+            visiblePeriodDashboard?.emotionFlow ?? [],
+          )}
+          axis={CONVERSATION_AXIS}
         />
 
-        <section className={styles.periodPanel} aria-label="대시보드 조회 기간">
-          <div className={styles.periodTabs}>
-            {[
-              ["DAY", "일간"],
-              ["MONTH", "월간"],
-              ["YEAR", "연간"],
-            ].map(([period, label]) => (
-              <button
-                key={period}
-                type="button"
-                className={reportPeriod === period ? styles.periodTabActive : ""}
-                aria-pressed={reportPeriod === period}
-                onClick={() => changeReportPeriod(period)}
-              >
-                {label}
+        {/*
+          오늘의 일정은 "오늘"에 매인 값이라 일·월·연 전환과 아무 상관이 없다.
+          기간에 따라 사라지지 않는 독립 섹션으로 둔다.
+        */}
+        <TodaySchedule schedules={dashboardData.todaySchedules} />
+
+        {/*
+          감정 리포트. 제목은 다른 섹션들처럼 상자 밖에 두고,
+          기간 선택과 리포트만 색 면 안에 넣는다.
+        */}
+        <section
+          className="surface-plain"
+          aria-labelledby="dashboard-report-title"
+          aria-busy={periodLoading}
+        >
+          <header className="section-head">
+            <h2 id="dashboard-report-title" className="section-title">
+              감정 리포트
+            </h2>
+          </header>
+
+          <div className={styles.reportPanel}>
+            <div className={styles.periodTabs}>
+              {[
+                ["DAY", "일간"],
+                ["MONTH", "월간"],
+                ["YEAR", "연간"],
+              ].map(([period, label]) => (
+                <button
+                  key={period}
+                  type="button"
+                  className={reportPeriod === period ? styles.periodTabActive : ""}
+                  aria-pressed={reportPeriod === period}
+                  onClick={() => changeReportPeriod(period)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            <div className={styles.periodNavigator}>
+              <button type="button" onClick={() => moveReportDate(-1)} aria-label="이전 기간">
+                <ChevronLeft size={18} />
               </button>
-            ))}
-          </div>
-          <div className={styles.periodNavigator}>
-            <button type="button" onClick={() => moveReportDate(-1)} aria-label="이전 기간">
-              <ChevronLeft size={18} />
-            </button>
-            <strong>{periodLabel}</strong>
-            <button
-              type="button"
-              onClick={() => moveReportDate(1)}
-              disabled={isCurrentPeriod}
-              aria-label="다음 기간"
-            >
-              <ChevronRight size={18} />
-            </button>
+              <strong>{periodLabel}</strong>
+              <button
+                type="button"
+                onClick={() => moveReportDate(1)}
+                disabled={isCurrentPeriod}
+                aria-label="다음 기간"
+              >
+                <ChevronRight size={18} />
+              </button>
+            </div>
+
+            <EmotionReport
+              emotionSummary={visiblePeriodDashboard?.emotionSummary ?? []}
+            />
           </div>
         </section>
 
-        <div
-          className={`${styles.gridRow} ${
-            showTodaySchedule ? "" : styles.gridRowSingle
-          }`}
-        >
-          {showTodaySchedule && (
-            <TodaySchedule schedules={dashboardData.todaySchedules} />
-          )}
-          <EmotionReport
-            emotionSummary={visiblePeriodDashboard?.emotionSummary ?? []}
-            title={`${reportTitle} 감정 리포트`}
-          />
-        </div>
-
-        <div aria-busy={periodLoading}>
-          <DashboardStats
-            dashboard={visiblePeriodDashboard}
-            title={`${reportTitle} 대화 기록`}
-            showDailyCounts={reportPeriod === "DAY"}
-          />
-        </div>
+        {/*
+          대화 기록은 항상 오늘 기준이다.
+          위 감정 리포트의 기간 전환은 리포트에만 적용된다.
+          (예전에는 같은 기간을 따라가서, 리포트를 연간으로 보면 대화 기록까지
+           연간으로 바뀌고 사진·공감 개수가 사라졌다)
+        */}
+        <DashboardStats
+          dashboard={dashboardData.dashboard}
+          title="일간 대화 기록"
+        />
 
         <BookmarkPreview />
 

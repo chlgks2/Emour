@@ -43,9 +43,9 @@ public class MoodService {
                 .orElseThrow(() -> new CustomException(ErrorCode.ACTIVE_COUPLE_NOT_FOUND));
 
         MoodNotification notification = moodNotificationRepository
-                .findByRoomIdAndActiveTrue(room.getId())
-                .orElseThrow(() -> new CustomException(
-                        ErrorCode.MOOD_NOTIFICATION_NOT_FOUND
+                .findById(room.getId())
+                .orElseGet(() -> moodNotificationRepository.save(
+                        MoodNotification.createDefault(room.getId())
                 ));
 
         LocalDateTime currentTime = moodTimeProvider.now();
@@ -70,6 +70,7 @@ public class MoodService {
                 userId,
                 moodDatetime,
                 request.moodType(),
+                normalizeReason(request.reason()),
                 currentTime
         );
 
@@ -100,9 +101,9 @@ public class MoodService {
         }
 
         MoodNotification notification = moodNotificationRepository
-                .findByRoomIdAndActiveTrue(room.getId())
-                .orElseThrow(() -> new CustomException(
-                        ErrorCode.MOOD_NOTIFICATION_NOT_FOUND
+                .findById(room.getId())
+                .orElseGet(() -> moodNotificationRepository.save(
+                        MoodNotification.createDefault(room.getId())
                 ));
 
         LocalDateTime currentTime = moodTimeProvider.now();
@@ -118,7 +119,11 @@ public class MoodService {
             throw new CustomException(ErrorCode.MOOD_UPDATE_NOT_ALLOWED);
         }
 
-        mood.updateMoodType(request.moodType(), currentTime);
+        mood.update(
+                request.moodType(),
+                normalizeReason(request.reason()),
+                currentTime
+        );
         return MoodUpdateResponse.from(mood);
     }
 
@@ -141,5 +146,12 @@ public class MoodService {
                 .stream()
                 .map(MoodResponse::from)
                 .toList();
+    }
+
+    private String normalizeReason(String reason) {
+        if (reason == null || reason.isBlank()) {
+            return null;
+        }
+        return reason.trim();
     }
 }

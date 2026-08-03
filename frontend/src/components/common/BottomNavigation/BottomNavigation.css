@@ -49,9 +49,11 @@
   color: var(--color-primary-strong);
 }
 
-.bottom-navigation-item-active .bottom-navigation-icon {
-  transform: translateY(-1px);
-}
+/*
+ * 활성 탭 아이콘을 1px 띄우지 않는다.
+ * 알약 배경이 이미 현재 위치를 말해주는데 아이콘까지 움직이면
+ * 그 탭만 다른 탭들과 줄이 안 맞아서 어긋나 보인다.
+ */
 
 .bottom-navigation-item-active::before {
   content: "";
