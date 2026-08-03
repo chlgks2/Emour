@@ -7,11 +7,6 @@ const SVGS = {
       <path d="M12 3c-4.97 0-9 3.185-9 7.115 0 2.558 1.708 4.8 4.27 6.054-.19.67-.683 2.42-.782 2.782-.124.453.152.447.32.335.132-.088 2.094-1.42 2.924-1.983.41.057.83.087 1.257.087 4.97 0 9-3.185 9-7.115S16.97 3 12 3z" />
     </svg>
   ),
-  naver: (
-    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-      <path d="M16.2 3H21v18h-4.8l-8.4-12V21H3V3h4.8l8.4 12V3z" />
-    </svg>
-  ),
   google: (
     <svg viewBox="0 0 24 24" width="20" height="20">
       <path fill="#EA4335" d="M5.266 9.765A7.077 7.077 0 0112 4.909c1.69 0 3.218.6 4.418 1.582l3.51-3.51C17.817 1.164 15.055 0 12 0 7.34 0 3.32 2.66 1.343 6.549l3.923 3.216z"/>
@@ -26,7 +21,6 @@ const SVGS = {
 // iconKey 는 위 SVGS 조회용 소문자 키
 const PROVIDERS = [
   { provider: SOCIAL_PROVIDER.KAKAO, iconKey: "kakao", label: "카카오", className: "kakao" },
-  { provider: SOCIAL_PROVIDER.NAVER, iconKey: "naver", label: "네이버", className: "naver" },
   { provider: SOCIAL_PROVIDER.GOOGLE, iconKey: "google", label: "구글", className: "google" },
 ];
 
@@ -44,14 +38,13 @@ export default function SocialLoginButtons({ onSelect, disabled, loadingProvider
             )}
             onClick={() => onSelect?.(provider)}
             disabled={disabled}
-            aria-label={`${label}로 로그인`}
             aria-busy={loading}
           >
             <span className={styles.iconWrapper} aria-hidden="true">
               {SVGS[iconKey]}
             </span>
-            {/* 텍스트는 스크린 리더용으로만 남겨두고 시각적으로는 숨깁니다 */}
-            <span className={styles.srOnly}>{label} 로그인</span>
+            {/* 글자를 눈에 보이게 둔다. 아이콘만으로는 눌러서 무엇을 하는지가 흐리다. */}
+            <span>{label}로 로그인하기</span>
           </button>
         );
       })}

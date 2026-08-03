@@ -449,9 +449,23 @@ export default function DashboardPage() {
               </button>
             </div>
 
-            <EmotionReport
-              emotionSummary={visiblePeriodDashboard?.emotionSummary ?? []}
-            />
+            {/*
+              한 상자 안에 그래프가 둘이다. 같은 기간의 같은 감정을 보는데
+              담고 있는 정보가 다르므로 제목이 그 차이를 말해야 한다.
+                비율 — 어떤 감정이 얼마만큼이었나 (합이 100%)
+                흐름 — 그 감정이 하루 중 언제였나 (시간 축)
+              '감정 분포 / 감정 변화' 처럼 뭉뚱그리면 둘 다 같은 말로 읽힌다.
+            */}
+            <div className={styles.reportBlock}>
+              <p className={styles.reportBlockTitle}>
+                감정 비율
+                <span>어떤 감정이 얼마나</span>
+              </p>
+
+              <EmotionReport
+                emotionSummary={visiblePeriodDashboard?.emotionSummary ?? []}
+              />
+            </div>
 
             {/*
               분석된 대화 감정의 흐름.
@@ -471,11 +485,18 @@ export default function DashboardPage() {
             {conversationTrendSeries.some(
               (series) => series.points.length > 0,
             ) && (
-              <MoodTrendChart
-                bare
-                series={conversationTrendSeries}
-                axis={CONVERSATION_AXIS}
-              />
+              <div className={styles.reportBlock}>
+                <p className={styles.reportBlockTitle}>
+                  감정 흐름
+                  <span>어느 시간대에</span>
+                </p>
+
+                <MoodTrendChart
+                  bare
+                  series={conversationTrendSeries}
+                  axis={CONVERSATION_AXIS}
+                />
+              </div>
             )}
           </div>
         </section>
