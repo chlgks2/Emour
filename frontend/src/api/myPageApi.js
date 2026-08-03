@@ -11,6 +11,7 @@ import {
 import {
   createCoupleInvitation,
   disconnectCouple,
+  getCoupleStartDate,
   getMyCoupleRoom,
 } from './coupleApi.js'
 
@@ -179,21 +180,13 @@ export async function getMyPageProfile() {
 
   let serverRoom = fetchedServerRoom
 
-  // 상대방이 나간 뒤에도 남은 사용자는 기존 INACTIVE 방을 유지하며
-  // 같은 방으로 돌아올 수 있는 재결합 초대 코드를 받는다.
-  if (serverRoom?.status === 'INACTIVE') {
-    const invitation =
-      await createCoupleInvitation()
-
-    serverRoom = {
-      ...serverRoom,
-      ...savePendingCoupleRoom(
-        invitation,
-        userResponse.userId,
-      ),
-      status: 'INACTIVE',
-    }
-  }
+  /*
+   * INACTIVE 방을 보유한 사용자는 이미 기존 커플방에 속해 있다.
+   * 여기서 신규 초대 API를 자동 호출하면 백엔드의 중복 커플 방지
+   * 정책에 의해 ALREADY_COUPLED 오류가 발생하므로, 조회된 기존 방을
+   * 그대로 사용한다. 로컬에 보관된 기존 방 정보는 아래 병합 과정에서
+   * 유지된다.
+   */
 
   /*
    * 연결된 두 사람 중 상대방이 나가면 백엔드는 기존 방을 INACTIVE로
@@ -230,9 +223,26 @@ export async function getMyPageProfile() {
       )
     : null
 
+  let coupleStartDate = null
+  if (currentRoom) {
+    try {
+      coupleStartDate =
+        await getCoupleStartDate()
+    } catch {
+      // 시작일 조회 실패만으로 마이페이지 전체를 오류 화면으로 바꾸지 않는다.
+    }
+  }
+
   const profile = mapMyPageResponse({
     userResponse,
-    roomResponse: currentRoom,
+    roomResponse: currentRoom
+      ? {
+          ...currentRoom,
+          datingStartDate:
+            coupleStartDate?.datingStartDate ??
+            null,
+        }
+      : null,
     memberResponse: currentRoom
       ? {
           roomId: currentRoom.roomId,
@@ -243,7 +253,7 @@ export async function getMyPageProfile() {
   })
 
   let partner = null
-  if (currentRoom?.status === 'ACTIVE') {
+  if (profile.isCoupleConnected) {
     try {
       partner = await getPartnerNickname()
     } catch {
