@@ -13,6 +13,7 @@ import com.ssafy.emour.member.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.PageRequest;
 
 import java.util.List;
 
@@ -67,7 +68,7 @@ public class DiaryService {
 
     @Transactional(readOnly = true)
     public List<DiaryResponse> getAll(Long userId) {
-        CoupleRoom room = getActiveRoom(userId);
+        CoupleRoom room = getReadableRoom(userId);
         return diaryRepository
                 .findAllByRoomIdAndUserIdOrderByDiaryDateDesc(
                         room.getId(),
@@ -83,6 +84,21 @@ public class DiaryService {
             throw new CustomException(ErrorCode.USER_NOT_FOUND);
         }
         return coupleRoomRepository.findActiveRoomByUserId(userId)
+                .orElseThrow(() -> new CustomException(
+                        ErrorCode.ACTIVE_COUPLE_NOT_FOUND
+                ));
+    }
+
+    private CoupleRoom getReadableRoom(Long userId) {
+        if (!memberRepository.existsById(userId)) {
+            throw new CustomException(ErrorCode.USER_NOT_FOUND);
+        }
+        return coupleRoomRepository.findReadableRoomsByUserId(
+                        userId,
+                        PageRequest.of(0, 1)
+                )
+                .stream()
+                .findFirst()
                 .orElseThrow(() -> new CustomException(
                         ErrorCode.ACTIVE_COUPLE_NOT_FOUND
                 ));

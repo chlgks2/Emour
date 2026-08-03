@@ -1,4 +1,5 @@
 import { apiRequest } from './httpClient.js'
+import { getProfileImages } from './memberApi.js'
 
 const CHAT_ENDPOINTS = {
   messages: '/chats',
@@ -6,6 +7,7 @@ const CHAT_ENDPOINTS = {
   readStatus: '/chats/read-status',
   search: '/chats/search',
   bookmarks: '/chats/bookmarks',
+  images: '/chats/images',
   read: (messageId) =>
     `/chats/${messageId}/read`,
   bookmark: (messageId) =>
@@ -69,6 +71,34 @@ export async function sendChatMessage({
       },
     },
   )
+}
+
+export async function uploadChatImages({
+  roomId,
+  files,
+}) {
+  if (!roomId || !files?.length) {
+    throw new Error('업로드할 사진이 없습니다.')
+  }
+
+  if (files.length > 10) {
+    throw new Error('사진은 한 번에 최대 10장까지 보낼 수 있습니다.')
+  }
+
+  const formData = new FormData()
+  files.forEach((file) => {
+    formData.append('files', file)
+  })
+
+  const response = await apiRequest(
+    `${CHAT_ENDPOINTS.images}?roomId=${encodeURIComponent(roomId)}`,
+    {
+      method: 'POST',
+      body: formData,
+    },
+  )
+
+  return response?.imageUrls ?? []
 }
 
 export async function getUnreadChatCount(
@@ -215,10 +245,14 @@ export async function removeChatReaction(
  * 기존 Spring 연동 함수는 위에 그대로 유지합니다.
  */
 export async function fetchChatPartner() {
+  const profiles = await getProfileImages()
+
   return {
     nickname: '연인',
     statusMessage: '',
-    profileImageUrl: null,
+    profileImageUrl:
+      profiles?.partnerProfileImageUrl ??
+      null,
   }
 }
 
@@ -267,6 +301,8 @@ export async function fetchMessages({
 export async function sendMessage({
   roomId,
   content,
+  messageType = 'TEXT',
+  imageUrls = [],
   clientMessageId = crypto.randomUUID(),
 }) {
   if (!roomId) {
@@ -278,6 +314,8 @@ export async function sendMessage({
   const message = await sendChatMessage({
     roomId,
     content,
+    messageType,
+    imageUrls,
     clientMessageId,
   })
 

@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { Heart, Plus } from 'lucide-react'
 
 import {
-  connectCouple,
   createCoupleInvitation,
+  joinOrReconnectCouple,
 } from '../../api/coupleApi.js'
 
 import Button from '../../components/common/Button'
@@ -65,7 +65,7 @@ function CoupleConnectPage() {
         user?.userId,
       )
 
-      navigate('/dashboard', {
+      navigate('/mypage', {
         replace: true,
       })
     } catch (error) {
@@ -102,7 +102,7 @@ function CoupleConnectPage() {
       })
 
       const connectedRoom =
-        await connectCouple(
+        await joinOrReconnectCouple(
           trimmedRoomCode,
         )
 

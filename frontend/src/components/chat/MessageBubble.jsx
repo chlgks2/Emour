@@ -32,6 +32,13 @@ export default function MessageBubble({
   const emotionStyle = message.emotionType ? getEmotionStyle(message.emotionType) : null;
   const isTextMessage =
     message.messageType === MESSAGE_TYPE.TEXT;
+  const imageUrls = (message.images ?? [])
+    .map((image) =>
+      typeof image === "string"
+        ? image
+        : image.imageUrl,
+    )
+    .filter(Boolean);
   const isAnalyzing =
     isTextMessage &&
     (message.analysisStatus === ANALYSIS_STATUS.PENDING ||
@@ -58,7 +65,9 @@ export default function MessageBubble({
     : {
         role: "button",
         tabIndex: 0,
-        "aria-label": `상대방 메시지: ${message.content}. 반응 및 북마크 메뉴 열기`,
+        "aria-label": isTextMessage
+          ? `상대방 메시지: ${message.content}. 반응 및 북마크 메뉴 열기`
+          : `상대방 사진 메시지 ${imageUrls.length}장. 반응 및 북마크 메뉴 열기`,
         onKeyDown: (e) => {
           if (e.key === "Enter" || e.key === " ") {
             e.preventDefault();
@@ -125,7 +134,20 @@ export default function MessageBubble({
               .join(" ")}
             {...interactionProps}
           >
-            {message.content}
+            {isTextMessage && message.content}
+            {!isTextMessage && imageUrls.length > 0 && (
+              <div className={styles.imageGrid}>
+                {imageUrls.map((imageUrl) => (
+                  <img
+                    key={imageUrl}
+                    className={styles.chatImage}
+                    src={imageUrl}
+                    alt="채팅으로 보낸 사진"
+                    loading="lazy"
+                  />
+                ))}
+              </div>
+            )}
           </div>
 
           {reactions.length > 0 && (

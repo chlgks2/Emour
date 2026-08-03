@@ -1,5 +1,5 @@
 ﻿import { useCallback, useEffect, useMemo, useState } from "react";
-import { CloudOff } from "lucide-react";
+import { ChevronLeft, ChevronRight, CloudOff } from "lucide-react";
 import DashboardTopBar from "../components/dashboard/DashboardTopBar";
 import DashboardSkeleton from "../components/dashboard/DashboardSkeleton";
 import DashboardStats from "../components/dashboard/DashboardStats";
@@ -11,7 +11,7 @@ import EmotionReport from "../components/dashboard/EmotionReport";
 import RecentPhotos from "../components/dashboard/RecentPhotos";
 import BookmarkPreview from "../components/dashboard/BookmarkPreview";
 import EmptyState from "../components/common/EmptyState";
-import { fetchDashboard } from "../api/dashboardApi";
+import { fetchDashboard, fetchDashboardPeriod } from "../api/dashboardApi";
 import MoodTrendChart from "../components/dashboard/MoodTrendChart";
 import { fetchMoodRecordsForMonth, saveMyMood } from "../api/moodApi";
 import { MOOD_AXIS, buildMoodTrendSeries } from "../utils/moodTrendSeries";
@@ -29,6 +29,10 @@ export default function DashboardPage() {
   // { room, daysTogether, dashboard, todaySchedules, recentPhotos } — dashboardApi.fetchDashboard 참고
   const [dashboardData, setDashboardData] = useState(null);
   const [dashboardError, setDashboardError] = useState(false);
+  const [reportPeriod, setReportPeriod] = useState("DAY");
+  const [reportDate, setReportDate] = useState(() => new Date());
+  const [periodDashboard, setPeriodDashboard] = useState(null);
+  const [periodLoading, setPeriodLoading] = useState(false);
 
   // 감정 캘린더 상태
   const [weekStart, setWeekStart] = useState(() => getWeekStart(new Date()));
@@ -48,6 +52,35 @@ export default function DashboardPage() {
       setDashboardError(true);
     }
   }, []);
+
+  const loadPeriodDashboard = useCallback(async () => {
+    try {
+      setPeriodLoading(true);
+      const data = await fetchDashboardPeriod({
+        period: reportPeriod,
+        date: reportDate,
+      });
+      setPeriodDashboard(data);
+    } catch {
+      showToast("기간별 대시보드를 불러오지 못했어요.", { tone: "error" });
+    } finally {
+      setPeriodLoading(false);
+    }
+  }, [reportDate, reportPeriod, showToast]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      await Promise.resolve();
+      if (!cancelled) {
+        loadPeriodDashboard();
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [loadPeriodDashboard]);
 
   // effect 안에서 곧바로 setState 하지 않도록 await 를 한 번 끼워 호출한다.
   useEffect(() => {
@@ -85,13 +118,18 @@ export default function DashboardPage() {
   const refreshDashboard = useCallback(async () => {
     await Promise.allSettled([
       loadDashboard(),
+      loadPeriodDashboard(),
       loadMonth(monthCursor),
       loadMonth(weekStart),
       loadMonth(addDays(weekStart, 6)),
     ]);
-  }, [loadDashboard, loadMonth, monthCursor, weekStart]);
+  }, [loadDashboard, loadMonth, loadPeriodDashboard, monthCursor, weekStart]);
 
-  useLiveSync(refreshDashboard);
+  // 상대방이 다른 브라우저에서 무드를 등록해도 주기적으로 GET /moods를
+  // 다시 호출해 내 화면에 반영한다.
+  useLiveSync(refreshDashboard, {
+    intervalMs: 3000,
+  });
 
   const weekDays = useMemo(() => {
     return Array.from({ length: 7 }, (_, i) => {
@@ -143,6 +181,63 @@ export default function DashboardPage() {
 
   // 주의 대표 월(주 시작일 기준)을 라벨로 사용
   const stripMonthLabel = `${weekStart.getMonth() + 1}월`;
+
+  const periodLabel = useMemo(() => {
+    const year = reportDate.getFullYear();
+    const month = reportDate.getMonth() + 1;
+    const day = reportDate.getDate();
+
+    if (reportPeriod === "YEAR") return `${year}년`;
+    if (reportPeriod === "MONTH") return `${year}년 ${month}월`;
+    return `${year}년 ${month}월 ${day}일`;
+  }, [reportDate, reportPeriod]);
+
+  const isCurrentPeriod = useMemo(() => {
+    const now = new Date();
+    if (reportPeriod === "YEAR") {
+      return reportDate.getFullYear() >= now.getFullYear();
+    }
+    if (reportPeriod === "MONTH") {
+      return (
+        reportDate.getFullYear() === now.getFullYear() &&
+        reportDate.getMonth() >= now.getMonth()
+      );
+    }
+    return formatDateKey(reportDate) >= formatDateKey(now);
+  }, [reportDate, reportPeriod]);
+
+  const moveReportDate = (direction) => {
+    setReportDate((current) => {
+      const next = new Date(current);
+      if (reportPeriod === "YEAR") {
+        next.setFullYear(next.getFullYear() + direction);
+      } else if (reportPeriod === "MONTH") {
+        next.setMonth(next.getMonth() + direction, 1);
+      } else {
+        next.setDate(next.getDate() + direction);
+      }
+      return next;
+    });
+  };
+
+  const changeReportPeriod = (period) => {
+    setPeriodDashboard(null);
+    setReportPeriod(period);
+    setReportDate(new Date());
+  };
+
+  const reportTitle =
+    reportPeriod === "DAY"
+      ? "일간"
+      : reportPeriod === "MONTH"
+        ? "월간"
+        : "연간";
+  const showTodaySchedule =
+    reportPeriod === "DAY" && isCurrentPeriod;
+  const visiblePeriodDashboard =
+    periodDashboard?.period === reportPeriod
+      ? periodDashboard
+      : null;
 
   const handlePrevWeek = () => {
     setSelectedMoodDate(null);
@@ -267,12 +362,61 @@ export default function DashboardPage() {
           axis={MOOD_AXIS}
         />
 
-        <div className={styles.gridRow}>
-          <TodaySchedule schedules={dashboardData.todaySchedules} />
-          <EmotionReport emotionSummary={dashboardData.dashboard.emotionSummary} />
+        <section className={styles.periodPanel} aria-label="대시보드 조회 기간">
+          <div className={styles.periodTabs}>
+            {[
+              ["DAY", "일간"],
+              ["MONTH", "월간"],
+              ["YEAR", "연간"],
+            ].map(([period, label]) => (
+              <button
+                key={period}
+                type="button"
+                className={reportPeriod === period ? styles.periodTabActive : ""}
+                aria-pressed={reportPeriod === period}
+                onClick={() => changeReportPeriod(period)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <div className={styles.periodNavigator}>
+            <button type="button" onClick={() => moveReportDate(-1)} aria-label="이전 기간">
+              <ChevronLeft size={18} />
+            </button>
+            <strong>{periodLabel}</strong>
+            <button
+              type="button"
+              onClick={() => moveReportDate(1)}
+              disabled={isCurrentPeriod}
+              aria-label="다음 기간"
+            >
+              <ChevronRight size={18} />
+            </button>
+          </div>
+        </section>
+
+        <div
+          className={`${styles.gridRow} ${
+            showTodaySchedule ? "" : styles.gridRowSingle
+          }`}
+        >
+          {showTodaySchedule && (
+            <TodaySchedule schedules={dashboardData.todaySchedules} />
+          )}
+          <EmotionReport
+            emotionSummary={visiblePeriodDashboard?.emotionSummary ?? []}
+            title={`${reportTitle} 감정 리포트`}
+          />
         </div>
 
-        <DashboardStats dashboard={dashboardData.dashboard} />
+        <div aria-busy={periodLoading}>
+          <DashboardStats
+            dashboard={visiblePeriodDashboard}
+            title={`${reportTitle} 대화 기록`}
+            showDailyCounts={reportPeriod === "DAY"}
+          />
+        </div>
 
         <BookmarkPreview />
 
