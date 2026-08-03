@@ -149,6 +149,8 @@ export function mapMyPageResponse({
 
     roomStartedAt: roomResponse
       ? getFirstValue(
+          roomResponse.datingStartDate,
+          roomResponse.dating_start_date,
           roomResponse.startedAt,
           roomResponse.started_at,
           null,
