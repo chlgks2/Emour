@@ -55,23 +55,6 @@ class ChatRedisSubscriberTest {
                 .convertAndSend(any(String.class), any(Object.class));
     }
 
-    @Test
-    void forwardsImageDeletionEvent() {
-        Message message = redisMessage("""
-                {
-                  "destination": "/sub/chat/rooms/2/image-deletions",
-                  "payload": {"imageId": 10}
-                }
-                """);
-
-        subscriber.onMessage(message, null);
-
-        verify(messagingTemplate).convertAndSend(
-                eq("/sub/chat/rooms/2/image-deletions"),
-                eq("{\"imageId\":10}")
-        );
-    }
-
     private Message redisMessage(String json) {
         Message message = mock(Message.class);
         when(message.getBody()).thenReturn(

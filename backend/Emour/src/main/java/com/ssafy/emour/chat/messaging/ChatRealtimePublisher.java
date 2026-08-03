@@ -44,10 +44,6 @@ public class ChatRealtimePublisher {
         publish(roomDestination(roomId, "analysis"), payload);
     }
 
-    public void publishImageDeletion(Long roomId, Object payload) {
-        publish(roomDestination(roomId, "image-deletions"), payload);
-    }
-
     private void publish(String destination, Object payload) {
         if (!enabled) {
             return;
