@@ -6,15 +6,24 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
-@Schema(description = "사용자의 날짜별 자주 사용하는 단어")
+@Schema(description = "사용자의 기간별 자주 사용하는 단어")
 public record DashboardFrequentWordsResponse(
-        @Schema(description = "커플 방 번호", example = "1")
+        @Schema(description = "커플방 번호", example = "1")
         Long roomId,
 
         @Schema(description = "로그인한 사용자 번호", example = "10")
         Long userId,
 
-        @Schema(description = "집계 날짜", example = "2026-07-31")
+        @Schema(description = "조회 단위", example = "MONTH")
+        DashboardPeriod period,
+
+        @Schema(description = "조회 시작 날짜", example = "2026-07-01")
+        LocalDate startDate,
+
+        @Schema(description = "조회 종료 날짜", example = "2026-07-31")
+        LocalDate endDate,
+
+        @Schema(description = "기존 일 단위 응답 호환용 날짜. 조회 시작 날짜와 같습니다.")
         LocalDate summaryDate,
 
         @Schema(description = "분리된 전체 단어 개수", example = "42")
@@ -26,7 +35,7 @@ public record DashboardFrequentWordsResponse(
         @Schema(description = "사용 횟수가 많은 단어 목록")
         List<FrequentWordItem> words,
 
-        @Schema(description = "마지막 계산 시각")
+        @Schema(description = "계산 시각")
         LocalDateTime calculatedAt
 ) {
 }

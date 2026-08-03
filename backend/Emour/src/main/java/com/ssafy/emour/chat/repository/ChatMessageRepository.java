@@ -63,6 +63,12 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
             LocalDateTime end
     );
 
+    long countByRoomIdAndSentAtGreaterThanEqualAndSentAtLessThan(
+            Long roomId,
+            LocalDateTime start,
+            LocalDateTime end
+    );
+
     @Query("""
             select count(image)
             from ChatMessage message
@@ -75,6 +81,20 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
     long countImages(
             @Param("roomId") Long roomId,
             @Param("userId") Long userId,
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end
+    );
+
+    @Query("""
+            select count(image)
+            from ChatMessage message
+            join message.images image
+            where message.roomId = :roomId
+              and message.sentAt >= :start
+              and message.sentAt < :end
+            """)
+    long countRoomImages(
+            @Param("roomId") Long roomId,
             @Param("start") LocalDateTime start,
             @Param("end") LocalDateTime end
     );
