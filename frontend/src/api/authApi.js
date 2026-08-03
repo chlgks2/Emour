@@ -117,6 +117,30 @@ export function getCurrentUser() {
   }
 }
 
+/**
+ * 로그인 시점에 받아둔 세션 캐시를 최신 값으로 덮어쓴다.
+ *
+ * 이 캐시는 로그인할 때 한 번 저장되고 끝이라, 마이페이지에서 닉네임이나
+ * 프로필 사진을 바꿔도 예전 값이 그대로 남아 있었다.
+ * 프로필을 수정한 쪽에서 이 함수를 불러 서버 값과 맞춰준다.
+ */
+export function updateCurrentUserCache(changes) {
+  const currentUser = getCurrentUser()
+
+  if (!currentUser || !changes) {
+    return currentUser
+  }
+
+  const nextUser = { ...currentUser, ...changes }
+
+  localStorage.setItem(
+    'currentUser',
+    JSON.stringify(nextUser),
+  )
+
+  return nextUser
+}
+
 export async function loginWithSocial() {
   throw new Error(
     '소셜 로그인은 아직 지원하지 않습니다.',

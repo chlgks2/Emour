@@ -38,7 +38,14 @@ export default function DashboardPage() {
   const [weekStart, setWeekStart] = useState(() => getWeekStart(new Date()));
   const [monthCursor, setMonthCursor] = useState(() => new Date());
   const [moodRecords, setMoodRecords] = useState({}); // moodDate('YYYY-MM-DD') -> { myMood, partnerMood }
-  const [selectedMoodDate, setSelectedMoodDate] = useState(null); // 스트립에서 펼쳐진 날짜
+  /*
+   * 스트립에서 펼쳐진 날짜.
+   * 오늘로 시작한다. null 로 두면 날짜 원을 한 번 눌러야 시간대 목록이 나와서,
+   * 대시보드를 열었을 때 기분을 기록할 버튼이 아예 안 보인다.
+   */
+  const [selectedMoodDate, setSelectedMoodDate] = useState(() =>
+    formatDateKey(new Date())
+  );
   const [monthModalOpen, setMonthModalOpen] = useState(false);
   // { mode, slot, initialMoodType, initialReason } — slot 이 없으면 지금 시간대에 새로 등록
   const [moodFormModal, setMoodFormModal] = useState(null);
@@ -263,14 +270,14 @@ export default function DashboardPage() {
 
   /**
    * 무드 모달 열기.
-   * @param {object|null} slot 슬롯이 있으면 그 시간대를 수정, null 이면 지금 시간대에 새로 등록
+   * @param {object|null} slot 슬롯이 있으면 그 기록을 수정, null 이면 새로 등록
    */
   const openMoodForm = ({ slot, minutesOfDay }) => {
     setMoodFormModal({
       mode: slot ? "edit" : "create",
       slot: slot ?? null,
-      // 새로 등록할 때 어느 시간대인지 알아야 한다.
       dateKey: selectedMoodDate,
+      // 모달 제목에 "몇 시 기분인지" 적기 위한 값. 저장 시각은 서버가 정한다.
       minutesOfDay: slot?.minutesOfDay ?? minutesOfDay,
       initialMoodType: slot?.moodType ?? null,
       initialReason: slot?.reason ?? "",
@@ -288,12 +295,12 @@ export default function DashboardPage() {
     const { mode, slot } = moodFormModal;
     try {
       // 슬롯이 있으면 그 기록을 수정하고, 없으면 지금 시간대에 새로 등록한다.
+      // (시각은 서버가 정한다. minutesOfDay 는 모달 제목에만 쓴다)
       await saveMyMood({
         moodId: slot?.moodId ?? null,
         moodType,
         reason,
         dateKey: moodFormModal.dateKey,
-        minutesOfDay: moodFormModal.minutesOfDay,
       });
       setMoodFormModal(null);
       // 저장한 날짜가 속한 달을 다시 불러온다. (주가 달을 걸칠 때 monthCursor 만 보면 누락된다)
@@ -301,9 +308,12 @@ export default function DashboardPage() {
       showToast(mode === "edit" ? "기분을 수정했어요." : "지금 기분을 기록했어요.", {
         tone: "success",
       });
-    } catch {
+    } catch (error) {
       // 모달은 닫지 않아서 입력값을 잃지 않고 바로 다시 시도할 수 있다.
-      showToast("기분을 저장하지 못했어요. 다시 시도해주세요.", { tone: "error" });
+      // 서버가 알려준 이유가 있으면 그대로 보여준다. (지난 날짜, 검증 실패 등)
+      showToast(error.message || "기분을 저장하지 못했어요. 다시 시도해주세요.", {
+        tone: "error",
+      });
     }
   };
 

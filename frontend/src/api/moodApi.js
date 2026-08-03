@@ -11,38 +11,83 @@
 //   그래서 이 모듈은 날짜별로 "슬롯 배열"을 돌려주고, 화면이 필요에 따라
 //   최신 1건(대시보드 미리보기)이나 전체(캘린더 상세)를 골라 쓴다.
 //
-// ── 백엔드에 아직 없는 것 ──────────────────────────────────────────
+// ── 기록할 수 있는 건 "지금 진행 중인 시간대" 뿐이다 ──────────────────
+//   지난 시간대 등록·수정은 지원하지 않기로 한 기능이다. 서버가 그렇게 막고 있고
+//   (MoodService.create/update 가 둘 다 MoodSlotCalculator.currentSlot 과 대조한다)
+//   화면도 같은 규칙을 따른다. (moodSlotGrid.isEditable)
+//
+//   한동안은 지난 시간대를 localStorage 에 따로 저장했는데, 그 기록은
+//     · 상대방에게 보이지 않고
+//     · 다른 기기·다른 브라우저에서도 보이지 않고
+//     · 그런데 화면에는 저장된 것처럼 보여서
+//   같은 커플방인데 창마다 다른 기분이 보이는 원인이 됐다. 지금은 만들지 않는다.
+//   기분 기록의 출처는 서버 하나뿐이다.
+//
+// ── 아직 백엔드에 없는 것 ─────────────────────────────────────────
 //   ⚠️ reason(사유) 컬럼이 mood 테이블에 없다. MoodResponse 에도 없다.
-//      화면에는 사유 입력이 이미 있으므로, 서버에 컬럼이 생기기 전까지
-//      moodId 를 키로 localStorage 에 함께 보관한다. (REASON_KEY)
+//      화면에는 사유 입력이 이미 있으므로, 서버에 컬럼이 생기기 전까지만
+//      moodId 를 키로 localStorage 에 보관한다. (이것도 이 기기에서만 보인다)
 //      백엔드에 reason 이 추가되면 readReasons/writeReason 만 지우면 된다.
-//   POST /moods 의 슬롯 판정은 서버의 알림 설정과 현재 시각을 단일 기준으로 사용한다.
-//   프론트는 별도의 60분 판정이나 로컬 무드 폴백을 두지 않는다.
 import { apiRequest } from "./httpClient.js";
 import { getCurrentUser } from "./authApi.js";
 
+// 사용자별 키는 여기에 ':userId' 를 붙여 만든다.
+// 접미사 없는 원래 키는 사용자 구분이 없던 시절의 값이라 정리 대상이다.
 const REASON_KEY = "emour_mood_reasons_v1";
-// 로그인 정보가 없을 때 쓰는 임시 사용자 id. 조회/저장이 같은 값을 써야 한다.
-const DEFAULT_LOCAL_USER_ID = 1;
+const LEGACY_LOCAL_MOODS_KEY = "emour_mood_local_v1";
+
+/** 로그인한 사용자 id. 없으면 null */
+function currentUserId() {
+  return getCurrentUser()?.userId ?? null;
+}
+
+/** 사유 저장소 키는 사용자별로 나눈다. (한 브라우저를 두 계정이 쓸 수 있다) */
+function reasonStorageKey(userId) {
+  return `${REASON_KEY}:${userId}`;
+}
+
+/*
+ * 예전 저장소 정리.
+ *   · 기분 기록(emour_mood_local_v1): 서버에 없는 사본이라 버린다.
+ *   · 사유: moodId 가 키라서 그대로 옮겨도 어긋나지 않는다. 사용자별 키로 옮긴다.
+ */
+function migrateLegacyStorage(userId) {
+  localStorage.removeItem(LEGACY_LOCAL_MOODS_KEY);
+  localStorage.removeItem(`${LEGACY_LOCAL_MOODS_KEY}:${userId}`);
+
+  const legacyReasons = localStorage.getItem(REASON_KEY);
+  if (legacyReasons === null) return;
+
+  if (localStorage.getItem(reasonStorageKey(userId)) === null) {
+    localStorage.setItem(reasonStorageKey(userId), legacyReasons);
+  }
+  localStorage.removeItem(REASON_KEY);
+}
 
 /* ---------------------------------------------------------------- */
 /* 사유(reason) — 백엔드 컬럼이 생기기 전까지의 로컬 보관소            */
 /* ---------------------------------------------------------------- */
 
-function readReasons() {
+function readReasons(userId = currentUserId()) {
+  if (userId == null) return {};
+  migrateLegacyStorage(userId);
+
   try {
-    return JSON.parse(localStorage.getItem(REASON_KEY)) ?? {};
+    return JSON.parse(localStorage.getItem(reasonStorageKey(userId))) ?? {};
   } catch {
     return {};
   }
 }
 
 function writeReason(moodId, reason) {
-  if (moodId === null || moodId === undefined) return;
-  const all = readReasons();
+  const userId = currentUserId();
+  if (userId == null || moodId === null || moodId === undefined) return;
+
+  const all = readReasons(userId);
   if (reason) all[String(moodId)] = reason;
   else delete all[String(moodId)];
-  localStorage.setItem(REASON_KEY, JSON.stringify(all));
+
+  localStorage.setItem(reasonStorageKey(userId), JSON.stringify(all));
 }
 
 /* ---------------------------------------------------------------- */
@@ -89,7 +134,7 @@ function toSlot(mood, reasons) {
  * @returns {Record<string, { mySlots: Array, partnerSlots: Array }>}
  */
 function groupByDate(moods, myUserId) {
-  const reasons = readReasons();
+  const reasons = readReasons(myUserId);
   const byDate = {};
 
   moods.forEach((mood) => {
@@ -181,23 +226,26 @@ function withDaySummary(byDate) {
 
 /**
  * 방 전체 기분 기록을 날짜별 슬롯 묶음으로 조회한다.
+ *
+ * 서버가 유일한 출처다. 조회에 실패하면 빈 값을 돌려주고, 화면은
+ * "기록 없음"을 보여준다. 예전 로컬 사본으로 채워 넣지 않는다.
+ * (그렇게 하면 지워진 기록이 되살아나 상대 화면과 어긋난다)
+ *
  * @returns {Promise<Record<string, {mySlots, partnerSlots, myMood, partnerMood}>>}
  */
 export async function fetchMoodSlots() {
   const myUserId = currentUserId();
-  const serverMoods = unwrap(
-    await apiRequest("/moods"),
+
+  let serverMoods;
+  try {
+    serverMoods = unwrap(await apiRequest("/moods"));
+  } catch {
+    serverMoods = null;
+  }
+
+  return withDaySummary(
+    groupByDate(Array.isArray(serverMoods) ? serverMoods : [], myUserId)
   );
-  const moods = Array.isArray(serverMoods)
-    ? serverMoods
-    : [];
-
-  return withDaySummary(groupByDate(moods, myUserId));
-}
-
-/** 로그인 정보가 없을 때 조회 결과를 분류하기 위한 폴백 사용자 id. */
-function currentUserId() {
-  return getCurrentUser()?.userId ?? DEFAULT_LOCAL_USER_ID;
 }
 
 /**
@@ -221,37 +269,48 @@ export async function fetchMoodRecordsForMonth(year, month) {
 /**
  * 내 기분을 등록한다.
  *
- * 슬롯 판정은 백엔드가 현재 시각과 알림 설정을 기준으로 결정한다.
- * 프론트에서는 등록 위치나 알림 수신 여부와 관계없이 항상 POST /moods를 호출한다.
+ * 기록 시각은 서버가 정한다. POST /moods 의 body 는 { moodType } 뿐이고,
+ * 슬롯은 MoodSlotCalculator 가 "현재 시각"으로 계산한다.
+ * 모달을 열어둔 채 시간대가 넘어갔다면 다시 불러올 때 실제 시각에 나타난다.
+ *
+ * dateKey 는 지난 날짜를 고른 채로 등록이 호출되는 사고를 막는 안전장치다.
+ * 그대로 두면 오늘 지금 시각에 엉뚱하게 기록된다.
+ *
+ * @param {string} [dateKey] 'YYYY-MM-DD' (없으면 오늘)
  */
-export async function createMyMood({ moodType, reason = "" }) {
-  const created = unwrap(
-    await apiRequest("/moods", {
-      method: "POST",
-      body: { moodType },
-    }),
-  );
-
-  if (created?.moodId != null) {
-    writeReason(created.moodId, reason);
+export async function createMyMood({ moodType, reason = "", dateKey }) {
+  if (dateKey && dateKey !== formatDateKey(new Date())) {
+    throw new Error("지난 날짜의 기분은 아직 등록할 수 없어요.");
   }
 
+  const created = unwrap(
+    await apiRequest("/moods", { method: "POST", body: { moodType } })
+  );
+
+  if (created?.moodId == null) {
+    throw new Error("기분을 저장하지 못했습니다.");
+  }
+
+  writeReason(created.moodId, reason);
   return created;
 }
 
-/** 기존 기록 수정. moodId 만 있으면 지난 시간대도 수정할 수 있다. */
+/**
+ * 기존 기록 수정.
+ *
+ * 진행 중인 시간대의 기록만 고칠 수 있다. 지난 시간대를 보내면 서버가
+ * MOOD_UPDATE_NOT_ALLOWED 로 거절한다. 화면도 그 슬롯에는 수정 버튼을 달지 않는다.
+ */
 export async function updateMyMood(moodId, { moodType, reason = "" }) {
   const updated = unwrap(
-    await apiRequest(`/moods/${moodId}`, {
-      method: "PATCH",
-      body: { moodType },
-    }),
+    await apiRequest(`/moods/${moodId}`, { method: "PATCH", body: { moodType } })
   );
 
-  if (updated?.moodId != null) {
-    writeReason(updated.moodId, reason);
+  if (updated?.moodId == null) {
+    throw new Error("기분을 수정하지 못했습니다.");
   }
 
+  writeReason(updated.moodId, reason);
   return updated;
 }
 
@@ -259,8 +318,8 @@ export async function updateMyMood(moodId, { moodType, reason = "" }) {
  * 슬롯이 이미 있으면 수정, 없으면 새로 등록.
  * 화면에서는 "저장" 하나로 처리할 수 있게 이 함수를 쓴다.
  */
-export async function saveMyMood({ moodId, moodType, reason = "", dateKey, minutesOfDay }) {
+export async function saveMyMood({ moodId, moodType, reason = "", dateKey }) {
   return moodId != null
     ? updateMyMood(moodId, { moodType, reason })
-    : createMyMood({ moodType, reason, dateKey, minutesOfDay });
+    : createMyMood({ moodType, reason, dateKey });
 }

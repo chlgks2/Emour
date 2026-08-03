@@ -23,9 +23,8 @@
 import { apiRequest } from "./httpClient.js";
 import { getAlbumPhotos } from "./albumApi.js";
 import { getChatBookmarks, getChatMessages } from "./chatApi.js";
-import { getMyCoupleRoom } from "./coupleApi.js";
 import { getRelationshipStartDate, getTodaySchedules } from "./calendarApi.js";
-import { getCurrentCoupleRoom } from "../utils/pendingCoupleRoom.js";
+import { resolveCoupleRoom } from "./coupleRoomContext.js";
 
 const RECENT_PHOTO_LIMIT = 5;
 const FREQUENT_WORD_LIMIT = 10;
@@ -276,8 +275,8 @@ export function calcDaysTogether(datingStartDate, today = new Date()) {
  * }}
  */
 export async function fetchDashboard() {
-  const storedRoom = getCurrentCoupleRoom();
-  const currentRoom = storedRoom?.roomId ? storedRoom : await safe(getMyCoupleRoom());
+  // 방은 서버 기준으로 잡는다. (localStorage 를 먼저 믿으면 이미 끝난 방을 계속 조회하게 된다)
+  const currentRoom = await safe(resolveCoupleRoom());
   const roomId = currentRoom?.roomId ?? null;
   const todayKey = formatLocalDateKey();
 

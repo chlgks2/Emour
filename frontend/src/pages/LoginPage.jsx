@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import AuthHeader from "../components/layout/AuthHeader";
 import TextField from "../components/common/TextField";
@@ -10,12 +10,11 @@ import logoWordmark from "../assets/logo-wordmark.svg";
 import styles from "./LoginPage.module.css";
 import {
   clearPendingCoupleRoom,
-  getCurrentCoupleRoom,
-  saveCurrentCoupleRoom,
 } from "../utils/pendingCoupleRoom.js";
 import {
-  getMyCoupleRoom,
-} from "../api/coupleApi.js";
+  invalidateCoupleRoom,
+  resolveCoupleRoom,
+} from "../api/coupleRoomContext.js";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -30,29 +29,15 @@ export default function LoginPage() {
   const [socialLoading, setSocialLoading] = useState(null);
 
   const justSignedUp = location.state?.justSignedUp;
-  const getPostLoginPath = async (user) => {
-    const serverRoom =
-      await getMyCoupleRoom();
 
-    if (serverRoom?.roomId) {
-      const storedRoom =
-        getCurrentCoupleRoom();
-
-      saveCurrentCoupleRoom(
-        {
-          ...storedRoom,
-          ...serverRoom,
-        },
-        user.userId,
-      );
-
-      return serverRoom.status === "WAITING"
-        ? "/mypage"
-        : "/dashboard";
+  const getPostLoginPath = async () => {
+    invalidateCoupleRoom();
+    const currentRoom = await resolveCoupleRoom();
+    if (currentRoom?.roomId) {
+      const roomStatus = currentRoom.roomStatus ?? currentRoom.status;
+      return roomStatus === "WAITING" ? "/mypage" : "/dashboard";
     }
-
     clearPendingCoupleRoom();
-
     return "/couple/connect";
   };
 
@@ -68,7 +53,7 @@ export default function LoginPage() {
       const user = await login({ email, password });
       showToast(`${user.nickname}님, 환영해요!`, { tone: "success" });
       const postLoginPath =
-        await getPostLoginPath(user);
+        await getPostLoginPath();
       navigate(postLoginPath, {
         replace: true,
       });
@@ -83,10 +68,9 @@ export default function LoginPage() {
     setSocialLoading(provider);
     setError("");
     try {
-      const user =
-        await loginWithSocial(provider);
+      await loginWithSocial(provider);
       const postLoginPath =
-        await getPostLoginPath(user);
+        await getPostLoginPath();
       navigate(postLoginPath, {
         replace: true,
       });
