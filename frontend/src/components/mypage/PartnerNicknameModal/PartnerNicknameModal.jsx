@@ -95,13 +95,10 @@ function PartnerNicknameModal({
               />
             </span>
 
-            <div>
-              <p>COUPLE NICKNAME</p>
-
-              <h2 id="partner-nickname-title">
-                연인 애칭 수정
-              </h2>
-            </div>
+            {/* 눈썹 문구(COUPLE NICKNAME)는 바로 아래 제목과 같은 말이라 뺐다 */}
+            <h2 id="partner-nickname-title">
+              연인 애칭 수정
+            </h2>
           </div>
 
           <button

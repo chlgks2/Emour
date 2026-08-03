@@ -27,6 +27,24 @@
   justify-content: center;
 }
 
+/*
+ * 섹션 경계의 이음매 덮개.
+ *
+ * 뷰포트가 transform: scale() 로 확대돼 있어서 892px 경계가 기기 픽셀의
+ * 정수 자리에 떨어지지 않는다. scrollTop 을 892 로 정확히 맞춰도 그 줄은
+ * 반투명하게 섞여 홈 화면 마지막 줄이 비친다.
+ *
+ * box-shadow 로 대시보드 배경색 2px 을 자기 위쪽에 덧대서 덮는다.
+ * (::before 는 .snapSection 의 overflow: hidden 에 잘려서 못 쓴다)
+ *
+ * ⚠️ 이 규칙을 상시로 켜면 반대쪽이 깨진다. 홈 화면에서 보면 그 2px 이
+ *    화면 아래에 대시보드 색 띠로 남는다. 그래서 JSX 가 경계 근처에
+ *    있을 때만 이 클래스를 붙인다. (HomeDashboardScreen.jsx 의 updateSeamCover)
+ */
+.seamCovered {
+  box-shadow: 0 -2px 0 0 var(--color-background);
+}
+
 .backToHomeBtn {
   position: absolute;
   top: var(--safe-top);

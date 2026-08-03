@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Bookmark, ChevronRight } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { fetchRecentBookmarks } from "../../api/bookmarkApi";
 import { formatDate, formatTime } from "../../utils/emotions";
 import styles from "./BookmarkPreview.module.css";
@@ -36,12 +36,11 @@ export default function BookmarkPreview() {
   const hasBookmarks = Boolean(bookmarks?.length);
 
   return (
-    <section className={styles.card} aria-labelledby="bookmark-preview-title">
-      <div className={styles.header}>
-        <p id="bookmark-preview-title" className={styles.title}>
-          <Bookmark size={14} aria-hidden="true" />
+    <section className="surface-plain" aria-labelledby="bookmark-preview-title">
+      <header className="section-head">
+        <h2 id="bookmark-preview-title" className="section-title">
           북마크한 대화
-        </p>
+        </h2>
         {/* 볼 것이 없을 때 "더보기"를 눌러 빈 목록으로 이동하게 두지 않는다 */}
         {hasBookmarks && (
           <button
@@ -53,20 +52,20 @@ export default function BookmarkPreview() {
             더보기 <ChevronRight size={14} aria-hidden="true" />
           </button>
         )}
-      </div>
+      </header>
 
       {/*
         로딩 중에는 자리 표시(빈 줄)를 그리지 않는다.
         북마크가 하나도 없는 사용자에게 "내용 없는 항목"이 미리 들어차 있는 것처럼 보였다.
       */}
       {bookmarks === null && (
-        <p className={styles.stateText} aria-busy="true">
+        <p className={`empty-note ${styles.stateText}`} aria-busy="true">
           불러오는 중...
         </p>
       )}
 
       {bookmarks?.length === 0 && (
-        <p className={styles.stateText}>
+        <p className={`empty-note ${styles.stateText}`}>
           {failed
             ? "북마크를 불러오지 못했어요."
             : "채팅방에서 메시지를 꾹 눌러 저장해보세요."}
