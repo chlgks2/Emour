@@ -59,9 +59,9 @@ CREATE TABLE `mood_notification` (
     `room_id` BIGINT NOT NULL PRIMARY KEY,
     `start_time` TIME NOT NULL,
     `end_time` TIME NOT NULL,
-    -- 알람 간격
+    -- 알림 반복 간격(시간 단위)
     `interval_hours` TINYINT UNSIGNED NOT NULL,
-    -- 알람 활성화
+    -- 무드 알림 활성화 여부
     `is_active` BOOLEAN NOT NULL DEFAULT TRUE,
 
     FOREIGN KEY (`room_id`) REFERENCES `couple_room` (`room_id`) ON DELETE CASCADE,
@@ -127,9 +127,12 @@ CREATE TABLE `mood` (
     `mood_id` BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     `room_id` BIGINT NOT NULL,
     `user_id` BIGINT NOT NULL,
+    -- 사용자가 기분을 등록하는 시간 구간의 기준 시각
     `mood_datetime` DATETIME(6) NOT NULL,
     `mood_type` ENUM('VERY_HAPPY', 'HAPPY', 'NEUTRAL', 'SAD', 'VERY_SAD')
         NOT NULL DEFAULT 'NEUTRAL',
+    -- 기분을 선택한 이유
+    `reason` VARCHAR(100) NULL,
     `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     `updated_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
         ON UPDATE CURRENT_TIMESTAMP(6),
