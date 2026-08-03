@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageRequest;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -64,12 +65,14 @@ class AnniversaryServiceTest {
                 userId,
                 new AnniversaryCreateRequest(
                         "첫 데이트 기념일",
+                        "처음 만난 날",
                         LocalDate.of(2025, 8, 15)
                 )
         );
 
         assertThat(response.roomId()).isEqualTo(roomId);
         assertThat(response.creatorId()).isEqualTo(userId);
+        assertThat(response.description()).isEqualTo("처음 만난 날");
         assertThat(response.scheduleType())
                 .isEqualTo(ScheduleType.ANNIVERSARY);
         assertThat(response.yearlyRecurring()).isTrue();
@@ -98,11 +101,13 @@ class AnniversaryServiceTest {
                 anniversaryId,
                 new AnniversaryUpdateRequest(
                         "첫 여행 기념일",
+                        "함께 떠난 첫 여행",
                         LocalDate.of(2025, 9, 1)
                 )
         );
 
         assertThat(response.name()).isEqualTo("첫 여행 기념일");
+        assertThat(response.description()).isEqualTo("함께 떠난 첫 여행");
         assertThat(response.scheduleDate())
                 .isEqualTo(LocalDate.of(2025, 9, 1));
         assertThat(response.yearlyRecurring()).isTrue();
@@ -176,8 +181,10 @@ class AnniversaryServiceTest {
                 LocalDate.of(2025, 9, 1)
         );
         given(memberRepository.existsById(userId)).willReturn(true);
-        given(coupleRoomRepository.findActiveRoomByUserId(userId))
-                .willReturn(Optional.of(room));
+        given(coupleRoomRepository.findReadableRoomsByUserId(
+                userId,
+                PageRequest.of(0, 1)
+        )).willReturn(List.of(room));
         given(room.getId()).willReturn(roomId);
         given(scheduleRepository
                 .findAllByRoomIdAndScheduleTypeOrderByScheduleDateAsc(

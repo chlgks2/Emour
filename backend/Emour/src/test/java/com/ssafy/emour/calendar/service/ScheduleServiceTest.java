@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageRequest;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -59,6 +60,7 @@ class ScheduleServiceTest {
         CoupleRoom room = mock(CoupleRoom.class);
         ScheduleCreateRequest request = new ScheduleCreateRequest(
                 "데이트",
+                "저녁 식사 후 영화 보기",
                 LocalDate.of(2026, 8, 5),
                 LocalTime.of(19, 0)
         );
@@ -74,6 +76,7 @@ class ScheduleServiceTest {
         assertThat(response.roomId()).isEqualTo(roomId);
         assertThat(response.creatorId()).isEqualTo(userId);
         assertThat(response.name()).isEqualTo("데이트");
+        assertThat(response.description()).isEqualTo("저녁 식사 후 영화 보기");
         assertThat(response.scheduleDate())
                 .isEqualTo(LocalDate.of(2026, 8, 5));
         assertThat(response.scheduleTime())
@@ -126,12 +129,14 @@ class ScheduleServiceTest {
                 scheduleId,
                 new ScheduleUpdateRequest(
                         "영화 데이트",
+                        "영화관 변경",
                         LocalDate.of(2026, 8, 6),
                         LocalTime.of(20, 0)
                 )
         );
 
         assertThat(response.name()).isEqualTo("영화 데이트");
+        assertThat(response.description()).isEqualTo("영화관 변경");
         assertThat(response.scheduleDate())
                 .isEqualTo(LocalDate.of(2026, 8, 6));
         assertThat(response.scheduleTime())
@@ -233,8 +238,10 @@ class ScheduleServiceTest {
                 LocalDate.of(2026, 8, 12), LocalTime.of(20, 0)
         );
         given(memberRepository.existsById(userId)).willReturn(true);
-        given(coupleRoomRepository.findActiveRoomByUserId(userId))
-                .willReturn(Optional.of(room));
+        given(coupleRoomRepository.findReadableRoomsByUserId(
+                userId,
+                PageRequest.of(0, 1)
+        )).willReturn(List.of(room));
         given(room.getId()).willReturn(roomId);
         given(scheduleRepository
                 .findAllByRoomIdAndScheduleTypeAndScheduleDateBetweenOrderByScheduleDateAscScheduleTimeAsc(
@@ -262,8 +269,10 @@ class ScheduleServiceTest {
         Long roomId = 10L;
         CoupleRoom room = mock(CoupleRoom.class);
         given(memberRepository.existsById(userId)).willReturn(true);
-        given(coupleRoomRepository.findActiveRoomByUserId(userId))
-                .willReturn(Optional.of(room));
+        given(coupleRoomRepository.findReadableRoomsByUserId(
+                userId,
+                PageRequest.of(0, 1)
+        )).willReturn(List.of(room));
 
         assertThatThrownBy(() -> scheduleService.getMonthly(userId, 2026, 13))
                 .isInstanceOf(CustomException.class)

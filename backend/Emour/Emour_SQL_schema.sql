@@ -113,7 +113,7 @@ CREATE TABLE `diary` (
     `room_id` BIGINT NOT NULL,
     `user_id` BIGINT NOT NULL,
     `diary_date` DATE NOT NULL,
-    `content` VARCHAR(500) NOT NULL,
+    `content` VARCHAR(300) NOT NULL,
     `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     `updated_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
         ON UPDATE CURRENT_TIMESTAMP(6),

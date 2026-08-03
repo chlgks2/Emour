@@ -38,6 +38,7 @@ public class ScheduleService {
                 room.getId(),
                 userId,
                 request.name(),
+                request.description(),
                 request.scheduleDate(),
                 request.scheduleTime()
         );
@@ -59,6 +60,7 @@ public class ScheduleService {
         );
         schedule.updateSchedule(
                 request.name(),
+                request.description(),
                 request.scheduleDate(),
                 request.scheduleTime()
         );
