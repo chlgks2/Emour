@@ -16,7 +16,9 @@ import MoodTrendChart from "../components/dashboard/MoodTrendChart";
 import { fetchMoodRecordsForMonth, saveMyMood } from "../api/moodApi";
 import {
   CONVERSATION_AXIS,
+  MOOD_AXIS,
   buildConversationTrendSeries,
+  buildMoodTrendSeries,
 } from "../utils/moodTrendSeries";
 import { DEFAULT_MOOD_WINDOW } from "../utils/moodSlotGrid";
 import { getMoodNotificationSetting } from "../api/notificationSettingApi";
@@ -350,12 +352,23 @@ export default function DashboardPage() {
           onEditSlot={openMoodForm}
         />
 
-        {/* 선택한 기간에 분석된 대화 감정을 2시간대별로 합산한다. */}
+        {/*
+          선택한 날짜에 두 사람이 남긴 기분 기록을 시간 순으로 잇는다.
+
+          예전에는 대화 감정(/dashboards/emotion-flow)을 그렸는데 두 가지가 걸렸다.
+            · 그 응답은 "로그인한 사용자 본인"의 메시지만 집계해서 상대방 선을 그릴 수 없다
+            · 감정 분석 배치가 돌기 전에는 전 구간이 0이라 그래프가 통째로 비었다
+          무드트래커는 두 사람 것이 이미 화면에 올라와 있고(detailMood),
+          기록하는 즉시 값이 생긴다.
+
+          대화 감정 쪽은 도넛(감정 리포트 / 오늘의 채팅 감정 분포)이 맡는다.
+        */}
         <MoodTrendChart
-          series={buildConversationTrendSeries(
-            visiblePeriodDashboard?.emotionFlow ?? [],
+          series={buildMoodTrendSeries(
+            detailMood.mySlots,
+            detailMood.partnerSlots,
           )}
-          axis={CONVERSATION_AXIS}
+          axis={MOOD_AXIS}
         />
 
         {/*
@@ -415,6 +428,24 @@ export default function DashboardPage() {
 
             <EmotionReport
               emotionSummary={visiblePeriodDashboard?.emotionSummary ?? []}
+            />
+
+            {/*
+              분석된 대화 감정의 흐름.
+              도넛은 "무엇이 얼마나"를 말하고 이 선은 "언제"를 말한다.
+              둘 다 같은 기간(GET /dashboards/main-emotions, /emotion-flow)을 본다.
+
+              ⚠️ emotion-flow 는 로그인한 사용자 본인의 메시지만 집계한다.
+                 두 사람을 나란히 그리려면 백엔드 응답이 상대/커플 기준으로 나뉘어야 한다.
+                 (backend .../dashboard/service/DashboardEmotionService.java)
+            */}
+            <MoodTrendChart
+              bare
+              series={buildConversationTrendSeries(
+                visiblePeriodDashboard?.emotionFlow ?? [],
+              )}
+              axis={CONVERSATION_AXIS}
+              emptyText={"아직 분석된 대화가 없어요.\n대화를 나누면 감정의 흐름이 그려져요."}
             />
           </div>
         </section>

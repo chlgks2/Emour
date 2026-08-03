@@ -44,6 +44,30 @@ const DEFAULT_HOME = {
   captionStyle: { fontSize: "md", align: "left", box: "dim", color: "#ffffff" },
 };
 
+/*
+ * 홈 배경이 바뀌었음을 앱 바깥(AppViewport 무대)에 알린다.
+ *
+ * 무대 배경은 홈 배경 사진을 아주 세게 흐린 것이다. 그래서 사용자가 홈 사진을
+ * 바꾸면 무대도 같이 바뀌어야 하는데, 두 화면은 부모-자식 관계가 아니라 상태를
+ * 그냥 내려줄 수가 없다. 값 자체는 localStorage 에 있으므로 "다시 읽어라"는
+ * 신호만 보낸다.
+ */
+const HOME_BACKGROUND_EVENT = "emour:home-background-changed";
+
+/** 지금 홈 배경으로 쓰이는 사진 주소. 사용자가 바꾼 적 없으면 기본 사진. */
+export function getHomeBackgroundUrl() {
+  return readSaved()?.imageUrl || homeBg;
+}
+
+export function subscribeHomeBackground(listener) {
+  window.addEventListener(HOME_BACKGROUND_EVENT, listener);
+  return () => window.removeEventListener(HOME_BACKGROUND_EVENT, listener);
+}
+
+function notifyHomeBackgroundChanged() {
+  window.dispatchEvent(new CustomEvent(HOME_BACKGROUND_EVENT));
+}
+
 function currentUserId() {
   return getCurrentUser()?.userId ?? null;
 }
@@ -82,6 +106,12 @@ export async function fetchHomeScreen() {
     fetchProfileImages(),
     fetchPartnerNickname(),
   ]);
+
+  /*
+   * 계정이 바뀌면 저장 키가 바뀌므로 홈 배경도 달라진다.
+   * 로그인 직후 이 화면이 열리면서 여기를 지나가므로 이 자리에서 알린다.
+   */
+  notifyHomeBackgroundChanged();
 
   // 프로필은 브라우저에 저장된 커스터마이징이 아니라 각자의 user 레코드에서 오므로
   // readSaved() 뒤에 둬서 저장된 값이 덮어쓰지 않게 한다.
@@ -157,6 +187,8 @@ export async function saveHomeCustomization({
   };
 
   localStorage.setItem(key, JSON.stringify({ ...readSaved(), ...saved }));
+  // 새 사진이 무대 배경에도 바로 반영되도록 (새로고침 없이)
+  notifyHomeBackgroundChanged();
   return saved;
 }
 

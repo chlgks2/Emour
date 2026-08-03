@@ -305,7 +305,14 @@ export async function fetchDashboard() {
     roomId ? safe(getMainEmotions(roomId, todayKey, "DAY")) : null,
     roomId ? safe(getConversationFlow(roomId, todayKey, "DAY")) : null,
     roomId ? safe(getEmotionFlow(roomId, todayKey)) : null,
-    safe(getAlbumPhotos(), { albumPhotos: [] }),
+    /*
+     * 최근 사진은 5장만 쓰므로 채팅은 가장 최근 한 페이지만 훑는다.
+     * (앨범 화면은 전체를 훑는다 — albumApi.getAlbumPhotos 주석 참고)
+     */
+    safe(getAlbumPhotos({ chatPhotoPages: 1 }), {
+      albumPhotos: [],
+      chatPhotos: [],
+    }),
     safe(getRelationshipStartDate(), ""),
     safe(getTodaySchedules(todayKey), []),
     roomId ? safe(fetchTodayMessages(roomId, todayKey), []) : [],
@@ -314,6 +321,20 @@ export async function fetchDashboard() {
 
   const albumPhotos = albumData?.albumPhotos ?? [];
   const messages = todayMessages ?? [];
+
+  /*
+   * '최근에 찍은 사진'은 앨범에 올린 것과 채팅으로 주고받은 것을 함께 본다.
+   * 두 사람이 남긴 사진이라는 점에서 같은 성격인데, 예전에는 앨범 것만 보여서
+   * 방금 채팅으로 보낸 사진이 이 자리에 나타나지 않았다.
+   */
+  const recentPhotos = [
+    ...albumPhotos,
+    ...(albumData?.chatPhotos ?? []),
+  ]
+    .sort(
+      (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+    )
+    .slice(0, RECENT_PHOTO_LIMIT);
 
   // 오늘 올린 사진은 채팅 이미지 개수와 별개로 세어 합친다.
   const todayAlbumPhotoCount = albumPhotos.filter(
@@ -369,7 +390,7 @@ export async function fetchDashboard() {
       frequentWords: calcFrequentWords(messages, null),
     },
     todaySchedules: todaySchedules ?? [],
-    recentPhotos: albumPhotos.slice(0, RECENT_PHOTO_LIMIT),
+    recentPhotos,
   };
 }
 

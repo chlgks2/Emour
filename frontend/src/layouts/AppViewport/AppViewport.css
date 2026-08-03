@@ -14,21 +14,61 @@
   justify-content: center;
   overflow: hidden;
   /*
-   * CI 배경 3색으로 만든 무대 + 바닥의 브랜드 글로우.
-   *
-   * 글로우는 반드시 background 레이어로 그린다.
-   * ::before 를 밖으로 삐져나가게 두면 overflow: hidden 인 이 요소가
-   * "프로그램적으로 스크롤 가능한" 상태가 되어, 자식 쪽에서 scrollIntoView 를
-   * 부를 때 화면 전체가 딸려 올라간다.
+   * 사진이 아직 안 뜬 순간과 사진을 못 읽는 경우의 바탕.
+   * 실제 무대는 이 위에 깔리는 .app-stage-backdrop(홈 배경 사진을 세게 흐린 것)이다.
    */
-  background:
-    radial-gradient(120% 90% at 50% 0%, #f4edec 0%, rgba(244, 237, 236, 0) 62%),
-    radial-gradient(
-      58% 42% at 50% 106%,
-      color-mix(in srgb, var(--color-primary) 26%, transparent) 0%,
-      color-mix(in srgb, var(--color-primary) 0%, transparent) 72%
-    ),
-    linear-gradient(168deg, #e6d5d0 0%, #dac2bc 52%, #d3b9b4 100%);
+  background: linear-gradient(168deg, #e6d5d0 0%, #dac2bc 52%, #d3b9b4 100%);
+}
+
+/*
+ * 무대 배경 = 홈 배경 사진을 아주 세게 흐린 것.
+ *
+ * 형태가 완전히 뭉개져서 사진의 대표색 두어 개만 남는다. 앱 사각형 안쪽에
+ * 보이는 사진과 바깥 무대가 같은 색을 갖게 되어, 앱이 배경 위에 얹힌 것이
+ * 아니라 하나의 장면처럼 보인다.
+ *
+ * 사진은 사용자가 홈에서 바꾼 그 사진이다. (AppViewport.jsx 가 주소를 넣는다)
+ *
+ * ⚠️ 이 요소는 자기 크기(inset: 0)를 지키고 확대된 이미지를 스스로 잘라내야 한다.
+ *    무대 밖으로 삐져나가면 overflow: hidden 인 무대가 "프로그램적으로 스크롤
+ *    가능한" 상태가 되어, 자식 쪽 scrollIntoView 에 화면 전체가 딸려 올라간다.
+ */
+.app-stage-backdrop {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  overflow: hidden;
+}
+
+.app-stage-backdrop-image {
+  position: absolute;
+  inset: 0;
+  background-position: center;
+  background-size: cover;
+  /*
+   * blur 는 가장자리를 투명하게 갉아먹는다. 흐림 반경만큼 키워서 그 부분이
+   * 화면 밖으로 나가게 한다. (바깥 요소가 잘라내므로 넘침은 남지 않는다)
+   *
+   * 채도를 올리는 이유: 세게 흐리면 색들이 서로 섞여 평균값(칙칙한 회색)으로
+   * 수렴한다. 원래 사진의 색이 남으려면 되살려줘야 한다.
+   */
+  filter: blur(72px) saturate(1.5);
+  transform: scale(1.35);
+}
+
+/*
+ * 사진이 어떤 색이든 가운데 앱 사각형이 떠 보이도록 가장자리를 살짝 눌러준다.
+ * (밝은 사진에서는 흰 앱 프레임이 배경에 묻힌다)
+ */
+.app-stage-backdrop::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    120% 80% at 50% 50%,
+    rgba(0, 0, 0, 0) 40%,
+    rgba(40, 30, 30, 0.28) 100%
+  );
 }
 
 /*
@@ -60,6 +100,11 @@
 @media (max-width: 480px) {
   .app-stage {
     background: var(--color-background);
+  }
+
+  /* 앱이 화면을 꽉 채우므로 무대는 보이지 않는다. 흐림 연산을 아낀다. */
+  .app-stage-backdrop {
+    display: none;
   }
 
   .app-viewport {

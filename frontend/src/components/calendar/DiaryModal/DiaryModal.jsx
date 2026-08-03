@@ -3,7 +3,7 @@ import { X } from 'lucide-react'
 import './DiaryModal.css'
 
 /**
- * 한줄 일기 작성·수정 시트.
+ * 한 줄 일기 작성·수정 시트.
  *
  * 예전에는 상세 카드 안에서 자리를 밀어내며 펼쳐지는 인라인 편집기였다.
  * 같은 카드 안의 일정·기념일은 시트로 여는데 일기만 제자리에서 열려서,
@@ -58,14 +58,14 @@ function DiaryModal({
             <p>{dateLabel}</p>
 
             <h2 id="diary-modal-title">
-              한줄 일기
+              한 줄 일기
             </h2>
           </div>
 
           <button
             type="button"
             className="diary-modal-close"
-            aria-label="한줄 일기 닫기"
+            aria-label="한 줄 일기 닫기"
             disabled={isProcessing}
             onClick={onClose}
           >
@@ -87,7 +87,7 @@ function DiaryModal({
             <textarea
               value={value}
               rows={4}
-              placeholder="오늘의 한줄 일기를 작성해주세요"
+              placeholder="오늘의 한 줄 일기를 작성해주세요"
               disabled={isProcessing}
               autoFocus
               onChange={(event) =>
