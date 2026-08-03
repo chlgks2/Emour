@@ -1,3 +1,4 @@
+import { Heart } from "lucide-react";
 import { SCHEDULE_TYPE } from "../../constants/enums";
 import styles from "./TodaySchedule.module.css";
 
@@ -23,6 +24,20 @@ export default function TodaySchedule({ schedules = [] }) {
     return hour * 60 + (minute || 0) < nowMinutes;
   };
 
+  /*
+   * 기념일은 타임라인에서 뺀다.
+   * 타임라인은 "몇 시에 무엇을" 을 시간 순으로 늘어놓는 축인데, 기념일은
+   * 시각이 없는 하루 전체의 일이라 그 축 위에 점으로 찍히면 어긋난다.
+   * ('종일' 로 표시되면서 자정 근처에 놓인 일정처럼 읽혔다)
+   * 오늘이 무슨 날인지가 먼저 읽혀야 하므로 맨 위에 따로 둔다.
+   */
+  const anniversaries = schedules.filter(
+    (schedule) => schedule.scheduleType === SCHEDULE_TYPE.ANNIVERSARY
+  );
+  const timedSchedules = schedules.filter(
+    (schedule) => schedule.scheduleType !== SCHEDULE_TYPE.ANNIVERSARY
+  );
+
   return (
     // 상자 없이 배경 위에 바로. 시간 순서는 왼쪽 세로선이 만들어준다.
     <section className="surface-plain" aria-labelledby="today-schedule-title">
@@ -33,28 +48,38 @@ export default function TodaySchedule({ schedules = [] }) {
         <span className="section-meta">{schedules.length}건</span>
       </header>
 
-      {schedules.length === 0 ? (
-        <p className={`empty-note ${styles.emptyText}`}>오늘은 등록된 일정이 없어요.</p>
-      ) : (
-        <ul className={styles.timeline}>
-          {schedules.map((schedule) => (
-            <li
-              key={schedule.scheduleId}
-              className={`${styles.item} ${isPast(schedule.scheduleTime) ? styles.past : ""}`}
-            >
-              <span className={styles.dot} aria-hidden="true" />
-              <span className={styles.time}>
-                {/* scheduleTime 은 TIME 컬럼이라 'HH:mm:ss' 로 올 수 있어 앞 5자만 사용.
-                    시간 미지정(NULL) 일정은 '종일'로 표시한다. */}
-                {schedule.scheduleTime ? schedule.scheduleTime.slice(0, 5) : "종일"}
-              </span>
-              <span className={styles.name}>{schedule.name}</span>
-              {schedule.scheduleType === SCHEDULE_TYPE.ANNIVERSARY && (
-                <span className={styles.badge}>기념일</span>
-              )}
+      {anniversaries.length > 0 && (
+        <ul className={styles.anniversaryList}>
+          {anniversaries.map((anniversary) => (
+            <li key={anniversary.scheduleId} className={styles.anniversaryItem}>
+              <Heart size={14} fill="currentColor" stroke="none" aria-hidden="true" />
+              <span className={styles.anniversaryName}>{anniversary.name}</span>
             </li>
           ))}
         </ul>
+      )}
+
+      {schedules.length === 0 ? (
+        <p className={`empty-note ${styles.emptyText}`}>오늘은 등록된 일정이 없어요.</p>
+      ) : (
+        timedSchedules.length > 0 && (
+          <ul className={styles.timeline}>
+            {timedSchedules.map((schedule) => (
+              <li
+                key={schedule.scheduleId}
+                className={`${styles.item} ${isPast(schedule.scheduleTime) ? styles.past : ""}`}
+              >
+                <span className={styles.dot} aria-hidden="true" />
+                <span className={styles.time}>
+                  {/* scheduleTime 은 TIME 컬럼이라 'HH:mm:ss' 로 올 수 있어 앞 5자만 사용.
+                      시간 미지정(NULL) 일정은 '종일'로 표시한다. */}
+                  {schedule.scheduleTime ? schedule.scheduleTime.slice(0, 5) : "종일"}
+                </span>
+                <span className={styles.name}>{schedule.name}</span>
+              </li>
+            ))}
+          </ul>
+        )
       )}
     </section>
   );

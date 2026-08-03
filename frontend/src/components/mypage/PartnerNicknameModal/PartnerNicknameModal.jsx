@@ -141,8 +141,13 @@ function PartnerNicknameModal({
           </label>
 
           <div className="partner-nickname-field-footer">
+            {/*
+              '내 화면에서만' 은 화면이 사용자에게 말을 거는 문장 안에서
+              그 사람을 '나' 라고 부르는 꼴이라 1인칭과 2인칭이 섞였다.
+              여기서는 사람을 가리키지 않고 사실만 말하면 더 짧고 분명해진다.
+            */}
             <span>
-              이 이름은 내 화면에서만 표시됩니다.
+              이 이름은 상대방에게는 보이지 않아요.
             </span>
 
             <strong>
