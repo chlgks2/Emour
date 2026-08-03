@@ -64,6 +64,69 @@ POLICY_BLOCK = dedent(
 )
 
 
+# ── 실험 4: 혼동 쌍 표적 few-shot ──────────────────────────────
+# 실험 3 결과에서 상위 혼동이 전부 "X → 평범" 방향이었음:
+#   당황→평범 31 / 화남→평범 27 / 편안→평범 26 / 힘듦→평범 19 / 걱정→평범 17
+#   추가로 화남→서운함 13 (structured output 이후 새로 등장)
+# → 감정 신호가 있는데도 '평범'으로 뭉개는 사례를 교정하는 예시를 넣는다.
+#   동시에 '진짜 평범'도 함께 보여줘야 반대 방향 과교정을 막을 수 있다.
+#
+# USE_FEWSHOT=false 로 끄면 실험 3 상태로 되돌아간다(A/B 비교용).
+FEWSHOT_BLOCK = dedent(
+    """\
+    # 판정 예시 (실제 라벨링 사례)
+
+    맥락) A: "이번 주만 세 번째야"  A: "미안 갑자기 잡혔어"
+    [0] B: "알겠어"  → 서운함
+    (짧은 수긍이지만 직전에 약속이 밀렸으므로 톤이 실림. 평범 아님)
+
+    맥락) A: "9시 넘을 듯"
+    [0] B: "그럼 말고"  → 서운함
+    (섭섭함이 억눌린 표현. 공격적이지 않으므로 화남 아님)
+
+    맥락) A: "또 말 바꾸네"
+    [0] B: "너는 맨날 그런 식이잖아"  → 화남
+    (공격적·직접적 표현이므로 서운함이 아니라 화남)
+
+    맥락) A: "비상 키 조수석에 있어?"
+    [0] B: "비상 키가 왜 차 안에 있어"  → 당황
+    (어이없음·말문 막힘. 평범 아님)
+
+    맥락) A: "택배 박스 뜯겨 있더라"
+    [0] B: "??"  [1] B: "안에 물건 보여?"  → 놀람, 궁금
+    (예상 밖 반응은 놀람, 정보를 묻는 건 궁금. 둘 다 평범 아님)
+
+    맥락) A: "팀장님 퇴사하신대"
+    [0] B: "후임 안 구해주면 죽음임"  → 힘듦
+    (이미 지친 상태. 앞일 근심이면 걱정이지만 여기선 소진에 가까움)
+
+    맥락) A: "입맛 없어서 그냥 자려고"
+    [0] B: "밥은 먹어야지"  → 걱정
+    (상대를 염려하는 신호가 있음. 평범 아님)
+
+    맥락) A: "지금 출발해"
+    [0] B: "응 천천히 와"  → 편안
+    (긴장 풀린 온기가 있음. 단순 정보 호응이 아니므로 평범 아님)
+
+    맥락) A: "회의 끝나고 연락할게"
+    [0] B: "ㅇㅇ"  → 평범
+    (앞 맥락에 불만·거절이 없고 감정 신호도 없음. 억지로 라벨 붙이지 않음)
+
+    맥락) A: "어디서 만나?"
+    [0] B: "3번 출구"  → 평범
+    (순수 정보 전달)
+
+    맥락) A: "차 키 못 찾겠다"
+    [0] A: "아 가방에 있었네 ㅈㅅ"  → 미안함
+    ("ㅈㅅ" 는 사과 신호. 당황보다 미안함 우선)
+
+    맥락) A: "주말에 여행 가기로 한 거"
+    [0] B: "빨리 가고 싶다"  → 설렘
+    (연애적 기대·두근거림. 일반적 좋음이면 기쁨)
+    """
+)
+
+
 def _format_labels() -> str:
     return "\n".join(f"- {name}: {desc}" for name, desc in LABEL_DEFINITIONS.items())
 
@@ -86,6 +149,15 @@ def build_user_prompt(
     target: List[TargetMessage],
 ) -> str:
     n = len(target)
+
+    # 실험 4: USE_FEWSHOT=true 일 때만 예시 블록을 끼워 넣는다.
+    # 실험 5: NO_CONTEXT=true 면 배경 대화를 통째로 비운다(ablation).
+    import os
+
+    fewshot = FEWSHOT_BLOCK if os.getenv("USE_FEWSHOT", "false").lower() in ("1", "true", "yes") else ""
+    if os.getenv("NO_CONTEXT", "false").lower() in ("1", "true", "yes"):
+        context = []
+
     return dedent(
         """\
         아래는 시간 순서대로 정렬된 커플의 대화입니다.
@@ -95,6 +167,7 @@ def build_user_prompt(
 
         {tiebreak}
         {policy}
+        {fewshot}
         # 배경 대화 (context) — 맥락 이해용일 뿐, 감정을 판단하거나 출력하지 마세요
         {context_block}
 
@@ -117,6 +190,7 @@ def build_user_prompt(
         labels=_format_labels(),
         tiebreak=TIEBREAK_BLOCK,
         policy=POLICY_BLOCK,
+        fewshot=fewshot,
         context_block=_format_context(context),
         target_block=_format_target(target),
         n=n,

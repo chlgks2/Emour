@@ -33,3 +33,7 @@ poc/outputs/
 # 골드라벨은 사람이 만든 소중한 자산이라 버전 관리 대상입니다.
 # 만약 민감/대용량이라 제외하려면 아래 주석을 해제하세요.
 # data/eval/
+models/
+data/
+eval/results/
+eval/*.jsonl

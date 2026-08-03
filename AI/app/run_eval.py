@@ -56,6 +56,50 @@ LEDGER = RESULTS_DIR / "ledger.csv"
 # ─────────────────────────────────────────────────────────────
 # 채점
 # ─────────────────────────────────────────────────────────────
+# 대분류 4그룹 — "세부 감정은 틀려도 방향은 맞았는가"를 보는 보조 지표.
+# 골드셋이 작을 때 macro-F1 보다 훨씬 안정적으로 움직입니다.
+COARSE_MAP = {
+    "기쁨": "긍정", "설렘": "긍정", "편안": "긍정",
+    "걱정": "중립", "놀람": "중립", "평범": "중립", "부끄러움": "중립", "궁금": "중립",
+    "슬픔": "부정", "화남": "부정", "당황": "부정", "힘듦": "부정",
+    "고마움": "관계신호", "미안함": "관계신호", "서운함": "관계신호",
+}
+
+
+def coarse_accuracy(pairs: list[tuple[str, str]]) -> float:
+    """대분류 기준 정확도. 라벨을 4그룹으로 묶어 채점."""
+    if not pairs:
+        return 0.0
+    hit = sum(1 for g, p in pairs if COARSE_MAP.get(g) == COARSE_MAP.get(p))
+    return round(hit / len(pairs), 4)
+
+
+def p95(values: list[float]) -> float:
+    """상위 5% 지연. 평균은 못 담는 '가끔 느린 경험'을 보여줍니다."""
+    if not values:
+        return 0.0
+    xs = sorted(values)
+    idx = min(int(len(xs) * 0.95), len(xs) - 1)
+    return round(xs[idx], 1)
+
+
+def subset_accuracy(records: list[dict], key: str, value=True) -> dict:
+    """
+    특정 조건(long_ctx / conf=low / 첫 창)을 만족하는 메시지만 골라
+    그 부분집합의 정확도를 따로 잰다.
+
+    왜 필요한가
+        전체 macro-F1 하나만 보면 "맥락이 실제로 기여하는지"를
+        확인할 방법이 없습니다. long_ctx=True 인 것만 따로 떼어
+        정확도를 재야 실험 5(맥락 제거)와 비교할 수 있습니다.
+    """
+    sub = [r for r in records if r.get(key) == value]
+    if not sub:
+        return {"n": 0, "accuracy": None}
+    hit = sum(1 for r in sub if r["hit"])
+    return {"n": len(sub), "accuracy": round(hit / len(sub), 4)}
+
+
 def score(pairs: list[tuple[str, str]]) -> dict:
     """pairs = [(gold, pred), ...] → 지표 묶음."""
     total = len(pairs)
@@ -135,20 +179,30 @@ async def run(gold_path: Path, limit: int | None) -> dict:
                 {k: v for k, v in m.items() if k != "gold"} for m in case["target"]
             ],
         )
+        case_t0 = time.perf_counter()
         result = await analyze(req, llm=llm)
+        case_latency_ms = (time.perf_counter() - case_t0) * 1000
+
+        # 어댑터가 만든 target 항목에서 서브셋 분석용 플래그를 그대로 가져옵니다.
+        meta_by_id = {str(m["message_id"]): m for m in case["target"]}
+
         for mid, gold in gold_by_id.items():
             pred = result[mid].emotion
             pairs.append((gold, pred))
+            meta = meta_by_id.get(mid, {})
             records.append(
                 {
                     "case_id": case.get("case_id"),
                     "message_id": mid,
-                    "text": next(
-                        m["text"] for m in case["target"] if str(m["message_id"]) == mid
-                    ),
+                    "text": meta.get("text", ""),
                     "gold": gold,
                     "pred": pred,
                     "hit": gold == pred,
+                    # ↓ 서브셋 분석용. 없으면 기본값으로 채움 (구버전 골드셋 호환)
+                    "conf": meta.get("conf", "high"),
+                    "long_ctx": bool(meta.get("long_ctx", False)),
+                    "window_index": case.get("window_index", 0),
+                    "case_latency_ms": case_latency_ms,
                 }
             )
 
@@ -156,6 +210,15 @@ async def run(gold_path: Path, limit: int | None) -> dict:
     metrics = METRICS.snapshot()
     model = os.getenv("LLM_MODEL", "")
     s = score(pairs)
+
+    # ── 서브셋 분리 측정 ──
+    # 전체 macro-F1 하나로는 "맥락이 실제로 기여했는가"를 증명 못 합니다.
+    # 조건별로 따로 떼어 정확도를 재고, 실험 5(맥락 제거)와 비교할 재료로 씁니다.
+    subsets = {
+        "long_ctx_subset": subset_accuracy(records, "long_ctx", True),
+        "low_conf_subset": subset_accuracy(records, "conf", "low"),
+        "first_window_subset": subset_accuracy(records, "window_index", 0),
+    }
 
     return {
         "run_id": datetime.now().strftime("%Y%m%d_%H%M%S"),
@@ -168,6 +231,7 @@ async def run(gold_path: Path, limit: int | None) -> dict:
         "n_cases": len(cases),
         "wall_sec": round(wall_sec, 2),
         "avg_latency_ms": metrics["avg_latency_ms"],
+        "p95_latency_ms": p95([r["case_latency_ms"] for r in records]),
         "fallback_rate": metrics["fallback_rate"],
         "llm_failure_rate": metrics["llm_failure_rate"],
         "prompt_tokens": metrics["prompt_tokens"],
@@ -179,14 +243,18 @@ async def run(gold_path: Path, limit: int | None) -> dict:
             6,
         ),
         **s,
+        "coarse_accuracy": coarse_accuracy(pairs),
+        **subsets,
         "records": records,
     }
 
 
 LEDGER_COLUMNS = [
     "run_id", "exp_name", "provider", "model", "temperature", "structured_output",
-    "gold_file", "n", "accuracy", "macro_f1", "fallback_rate", "llm_failure_rate",
-    "avg_latency_ms", "wall_sec", "prompt_tokens", "completion_tokens", "est_cost_usd",
+    "gold_file", "n", "accuracy", "macro_f1", "coarse_accuracy",
+    "fallback_rate", "llm_failure_rate",
+    "avg_latency_ms", "p95_latency_ms", "wall_sec",
+    "prompt_tokens", "completion_tokens", "est_cost_usd",
     "notes",
 ]
 
@@ -211,11 +279,24 @@ def print_report(res: dict) -> None:
     print(f"  문장 수        : {res['n']}")
     print(f"  정확도         : {res['accuracy']:.3f}")
     print(f"  macro-F1       : {res['macro_f1']:.3f}   ← 주요 지표")
+    print(f"  대분류 정확도  : {res['coarse_accuracy']:.3f}   (긍정/중립/부정/관계신호 4그룹)")
     print(f"  폴백률         : {res['fallback_rate']:.3f}  ('{FALLBACK_LABEL}'으로 때운 비율)")
     print(f"  LLM 실패율     : {res['llm_failure_rate']:.3f}")
-    print(f"  평균 지연      : {res['avg_latency_ms']:.0f} ms")
+    print(f"  평균 지연      : {res['avg_latency_ms']:.0f} ms   /   p95 : {res['p95_latency_ms']:.0f} ms")
     print(f"  토큰(in/out)   : {res['prompt_tokens']} / {res['completion_tokens']}")
     print(f"  추정 비용      : ${res['est_cost_usd']:.6f}")
+
+    print("\n  ── 서브셋 분리 측정 (실험 5 재료) ──")
+    for label, key in [
+        ("창밖맥락(long_ctx)", "long_ctx_subset"),
+        ("저확신(conf=low)  ", "low_conf_subset"),
+        ("첫 창(맥락 없음)  ", "first_window_subset"),
+    ]:
+        sub = res[key]
+        if sub["n"] == 0:
+            print(f"   {label} : n=0 (해당 없음)")
+        else:
+            print(f"   {label} : n={sub['n']:<4} accuracy={sub['accuracy']:.3f}")
 
     print("\n  ── 라벨별 F1 (support>0 만) ──")
     rows = [
