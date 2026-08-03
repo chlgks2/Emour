@@ -115,30 +115,27 @@ public class DashboardSnapshotService {
         validateRange(date, snapshotUntil);
 
         LocalDateTime start = date.atStartOfDay();
+        // 정량 기록은 개인이 아니라 커플방 전체 합계로 저장합니다.
         int messageCount = toInt(chatMessageRepository
-                .countByRoomIdAndSenderIdAndSentAtGreaterThanEqualAndSentAtLessThan(
+                .countByRoomIdAndSentAtGreaterThanEqualAndSentAtLessThan(
                         roomId,
-                        userId,
                         start,
                         snapshotUntil
                 ));
-        int imageCount = toInt(chatMessageRepository.countImages(
+        int imageCount = toInt(chatMessageRepository.countRoomImages(
                 roomId,
-                userId,
                 start,
                 snapshotUntil
         ));
         int reactionCount = toInt(chatReactionRepository
-                .countByRoomIdAndUserIdAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
+                .countByRoomIdAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
                         roomId,
-                        userId,
                         start,
                         snapshotUntil
                 ));
         int bookmarkCount = toInt(chatBookmarkRepository
-                .countByRoomIdAndUserIdAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
+                .countByRoomIdAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
                         roomId,
-                        userId,
                         start,
                         snapshotUntil
                 ));

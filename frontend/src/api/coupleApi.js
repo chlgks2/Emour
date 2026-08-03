@@ -6,6 +6,7 @@ const COUPLE_ENDPOINTS = {
   reconnect: '/couples/reconnect',
   roomId: '/couples/room-id',
   status: '/couples/status',
+  startDate: '/couples/startDate',
   disconnect: '/couples',
 }
 
@@ -59,6 +60,14 @@ export async function joinOrReconnectCouple(invitationCode) {
 export async function getCoupleStatus() {
   const response = await apiRequest(
     COUPLE_ENDPOINTS.status,
+  )
+
+  return response?.data ?? null
+}
+
+export async function getCoupleStartDate() {
+  const response = await apiRequest(
+    COUPLE_ENDPOINTS.startDate,
   )
 
   return response?.data ?? null

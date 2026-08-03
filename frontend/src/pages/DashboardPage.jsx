@@ -14,7 +14,10 @@ import EmptyState from "../components/common/EmptyState";
 import { fetchDashboard, fetchDashboardPeriod } from "../api/dashboardApi";
 import MoodTrendChart from "../components/dashboard/MoodTrendChart";
 import { fetchMoodRecordsForMonth, saveMyMood } from "../api/moodApi";
-import { MOOD_AXIS, buildMoodTrendSeries } from "../utils/moodTrendSeries";
+import {
+  CONVERSATION_AXIS,
+  buildConversationTrendSeries,
+} from "../utils/moodTrendSeries";
 import { DEFAULT_MOOD_WINDOW } from "../utils/moodSlotGrid";
 import { getMoodNotificationSetting } from "../api/notificationSettingApi";
 import { formatSlotTime } from "../utils/moodSlotFormat";
@@ -151,14 +154,6 @@ export default function DashboardPage() {
       };
     });
   }, [weekStart, moodRecords]);
-
-  // 오늘의 무드 슬롯 (미리보기 + 꺾은선 그래프가 함께 쓴다)
-  const todayMood = useMemo(() => {
-    const todayKey = formatDateKey(new Date());
-    return (
-      moodRecords[todayKey] ?? { mySlots: [], partnerSlots: [], myMood: null, partnerMood: null }
-    );
-  }, [moodRecords]);
 
   // 슬롯 경계(시작~종료, 간격). 못 불러오면 기본값으로 그린다.
   const [moodWindow, setMoodWindow] = useState(DEFAULT_MOOD_WINDOW);
@@ -355,15 +350,12 @@ export default function DashboardPage() {
           onEditSlot={openMoodForm}
         />
 
-        {/*
-          시간대별 감정 변화.
-          지금은 무드트래커 기반이고, 대화 감정 기반으로 바꾸려면 아래 두 줄만
-          buildConversationTrendSeries(dashboardData.dashboard.emotionFlow) / CONVERSATION_AXIS
-          로 교체하면 된다. (utils/moodTrendSeries.js 참고)
-        */}
+        {/* 선택한 기간에 분석된 대화 감정을 2시간대별로 합산한다. */}
         <MoodTrendChart
-          series={buildMoodTrendSeries(todayMood.mySlots, todayMood.partnerSlots)}
-          axis={MOOD_AXIS}
+          series={buildConversationTrendSeries(
+            visiblePeriodDashboard?.emotionFlow ?? [],
+          )}
+          axis={CONVERSATION_AXIS}
         />
 
         {/*

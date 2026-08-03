@@ -11,6 +11,7 @@ import {
 import {
   createCoupleInvitation,
   disconnectCouple,
+  getCoupleStartDate,
   getMyCoupleRoom,
 } from './coupleApi.js'
 
@@ -21,8 +22,10 @@ import {
 
 import {
   getMyProfile,
+  getPartnerNickname,
   getProfileImages,
   updateMyProfile,
+  updatePartnerNickname as updatePartnerNicknameOnServer,
   uploadMyProfileImage,
   withdrawMyAccount,
 } from './memberApi.js'
@@ -268,36 +271,19 @@ export async function getMyPageProfile() {
   let serverRoom = fetchedServerRoom
 
   /*
-   * 상대방이 나가면 방은 INACTIVE 로 남고 나는 그 방의 ACTIVE 멤버로 유지된다.
-   * 같은 방으로 돌아올 수 있는 재결합 코드를 받아보되, 못 받아도 화면은 뜬다.
-   * (requestReconnectInvitation 주석 참고 — 지금 백엔드에서는 항상 실패한다)
+   * INACTIVE 방을 보유한 사용자는 이미 기존 커플방에 속해 있다.
+   * 여기서 신규 초대 API를 자동 호출하면 백엔드의 중복 커플 방지
+   * 정책에 의해 ALREADY_COUPLED 오류가 발생하므로, 조회된 기존 방을
+   * 그대로 사용한다. 로컬에 보관된 기존 방 정보는 아래 병합 과정에서
+   * 유지된다.
+   *
+   * 보관 중인 방 코드를 지우지 않는 것이 중요하다.
+   * CoupleRoom.deactivate() 는 room_code 를 건드리지 않아 방이 만들어질 때
+   * 쓰던 코드가 서버에 그대로 남아 있고, 나간 연인은 POST /couples/reconnect
+   * 에 그 코드를 넣어 이 방으로 돌아온다. 이 코드가 재연결 수단이다.
+   * (다른 방의 코드가 남아 있는 경우는 saveCurrentCoupleRoom 이 roomId 를
+   *  비교해서 걸러낸다)
    */
-  if (serverRoom?.status === 'INACTIVE') {
-    const invitation =
-      await requestReconnectInvitation()
-
-    if (invitation) {
-      serverRoom = {
-        ...serverRoom,
-        ...savePendingCoupleRoom(
-          invitation,
-          userResponse.userId,
-        ),
-        status: 'INACTIVE',
-      }
-    }
-
-    /*
-     * 새 코드를 못 받아도 보관 중인 코드를 지우지 않는다.
-     * CoupleRoom.deactivate() 는 room_code 를 건드리지 않으므로, 방이 만들어질
-     * 때 쓰던 그 코드가 서버에 그대로 남아 있다. 나간 연인은 POST /couples/reconnect
-     * 에 그 코드를 넣어 이 방으로 돌아올 수 있다. (그 경로는 만료도 보지 않는다)
-     * 즉 이 코드가 재연결 수단이라 지우면 돌아올 길이 없어진다.
-     *
-     * 다른 방의 코드가 남아 있는 경우는 saveCurrentCoupleRoom 이 roomId 를
-     * 비교해서 걸러낸다.
-     */
-  }
 
   /*
    * 연결된 두 사람 중 상대방이 나가면 백엔드는 기존 방을 INACTIVE로
@@ -336,9 +322,26 @@ export async function getMyPageProfile() {
       )
     : null
 
+  let coupleStartDate = null
+  if (currentRoom) {
+    try {
+      coupleStartDate =
+        await getCoupleStartDate()
+    } catch {
+      // 시작일 조회 실패만으로 마이페이지 전체를 오류 화면으로 바꾸지 않는다.
+    }
+  }
+
   const profile = mapMyPageResponse({
     userResponse,
-    roomResponse: currentRoom,
+    roomResponse: currentRoom
+      ? {
+          ...currentRoom,
+          datingStartDate:
+            coupleStartDate?.datingStartDate ??
+            null,
+        }
+      : null,
     memberResponse: currentRoom
       ? {
           roomId: currentRoom.roomId,
@@ -348,12 +351,24 @@ export async function getMyPageProfile() {
       : null,
   })
 
+  let partner = null
+  if (profile.isCoupleConnected) {
+    try {
+      partner = await getPartnerNickname()
+    } catch {
+      // 상대방 이름만 실패해도 마이페이지의 나머지 정보는 표시한다.
+    }
+  }
+
   /*
    * user.profile_image_url 은 인증이 필요한 /uploads/... 경로다.
    * <img src> 에 그대로 걸면 401 이 나므로 화면에 걸 수 있는 형태로 바꿔서 넘긴다.
    */
   return {
     ...profile,
+    partnerNickname:
+      partner?.partnerNickname ??
+      profile.partnerNickname,
     profileImageUrl:
       profileImages?.myProfileImageUrl ??
       (await resolveProtectedImageUrl(
@@ -485,9 +500,11 @@ export async function updatePartnerNickname({
     return createMappedMockResponse()
   }
 
-  throw new Error(
-    '연인 애칭 수정 API는 아직 제공되지 않습니다.',
+  await updatePartnerNicknameOnServer(
+    trimmedPartnerNickname,
   )
+
+  return getMyPageProfile()
 }
 
 export async function regenerateRoomCode() {

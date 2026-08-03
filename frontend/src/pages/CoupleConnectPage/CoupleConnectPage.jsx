@@ -218,6 +218,7 @@ function CoupleConnectPage() {
       saveCurrentCoupleRoom(
         {
           ...connectedRoom,
+          // 서버는 코드를 대문자로 정규화해서 보관하므로 같은 형태로 맞춘다
           roomCode:
             trimmedRoomCode.toUpperCase(),
         },
