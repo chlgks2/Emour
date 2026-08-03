@@ -228,18 +228,31 @@ export default function DashboardPage() {
     setReportDate(new Date());
   };
 
-  const reportTitle =
-    reportPeriod === "DAY"
-      ? "일간"
-      : reportPeriod === "MONTH"
-        ? "월간"
-        : "연간";
-  const showTodaySchedule =
-    reportPeriod === "DAY" && isCurrentPeriod;
+  // (제목은 '감정 리포트' 로 고정한다. 어느 기간인지는 아래 탭과 날짜가 이미 보여준다)
+  // (오늘의 일정은 기간과 무관한 독립 섹션이라 더 이상 조건을 두지 않는다)
   const visiblePeriodDashboard =
     periodDashboard?.period === reportPeriod
       ? periodDashboard
       : null;
+
+  const reportPeriodName = {
+    DAY: "일간",
+    MONTH: "월간",
+    YEAR: "연간",
+  }[reportPeriod];
+
+  const isTodayReport =
+    reportPeriod === "DAY" &&
+    formatDateKey(reportDate) === formatDateKey(new Date());
+
+  // 오늘 일간은 채팅 원본 폴백이 반영된 실시간 값을 우선하고,
+  // 과거 일간·월간·연간은 선택한 기간의 서버 집계를 그대로 표시한다.
+  const conversationDashboard = isTodayReport
+    ? {
+        ...visiblePeriodDashboard,
+        ...dashboardData?.dashboard,
+      }
+    : visiblePeriodDashboard;
 
   const handlePrevWeek = () => {
     setSelectedMoodDate(null);
@@ -364,61 +377,72 @@ export default function DashboardPage() {
           axis={CONVERSATION_AXIS}
         />
 
-        <section className={styles.periodPanel} aria-label="대시보드 조회 기간">
-          <div className={styles.periodTabs}>
-            {[
-              ["DAY", "일간"],
-              ["MONTH", "월간"],
-              ["YEAR", "연간"],
-            ].map(([period, label]) => (
-              <button
-                key={period}
-                type="button"
-                className={reportPeriod === period ? styles.periodTabActive : ""}
-                aria-pressed={reportPeriod === period}
-                onClick={() => changeReportPeriod(period)}
-              >
-                {label}
+        {/*
+          오늘의 일정은 "오늘"에 매인 값이라 일·월·연 전환과 아무 상관이 없다.
+          기간에 따라 사라지지 않는 독립 섹션으로 둔다.
+        */}
+        <TodaySchedule schedules={dashboardData.todaySchedules} />
+
+        {/*
+          감정 리포트. 제목은 다른 섹션들처럼 상자 밖에 두고,
+          기간 선택과 리포트만 색 면 안에 넣는다.
+        */}
+        <section
+          className="surface-plain"
+          aria-labelledby="dashboard-report-title"
+          aria-busy={periodLoading}
+        >
+          <header className="section-head">
+            <h2 id="dashboard-report-title" className="section-title">
+              감정 리포트
+            </h2>
+          </header>
+
+          <div className={styles.reportPanel}>
+            <div className={styles.periodTabs}>
+              {[
+                ["DAY", "일간"],
+                ["MONTH", "월간"],
+                ["YEAR", "연간"],
+              ].map(([period, label]) => (
+                <button
+                  key={period}
+                  type="button"
+                  className={reportPeriod === period ? styles.periodTabActive : ""}
+                  aria-pressed={reportPeriod === period}
+                  onClick={() => changeReportPeriod(period)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            <div className={styles.periodNavigator}>
+              <button type="button" onClick={() => moveReportDate(-1)} aria-label="이전 기간">
+                <ChevronLeft size={18} />
               </button>
-            ))}
-          </div>
-          <div className={styles.periodNavigator}>
-            <button type="button" onClick={() => moveReportDate(-1)} aria-label="이전 기간">
-              <ChevronLeft size={18} />
-            </button>
-            <strong>{periodLabel}</strong>
-            <button
-              type="button"
-              onClick={() => moveReportDate(1)}
-              disabled={isCurrentPeriod}
-              aria-label="다음 기간"
-            >
-              <ChevronRight size={18} />
-            </button>
+              <strong>{periodLabel}</strong>
+              <button
+                type="button"
+                onClick={() => moveReportDate(1)}
+                disabled={isCurrentPeriod}
+                aria-label="다음 기간"
+              >
+                <ChevronRight size={18} />
+              </button>
+            </div>
+
+            <EmotionReport
+              emotionSummary={visiblePeriodDashboard?.emotionSummary ?? []}
+            />
           </div>
         </section>
 
-        <div
-          className={`${styles.gridRow} ${
-            showTodaySchedule ? "" : styles.gridRowSingle
-          }`}
-        >
-          {showTodaySchedule && (
-            <TodaySchedule schedules={dashboardData.todaySchedules} />
-          )}
-          <EmotionReport
-            emotionSummary={visiblePeriodDashboard?.emotionSummary ?? []}
-            title={`${reportTitle} 감정 리포트`}
-          />
-        </div>
-
-        <div aria-busy={periodLoading}>
-          <DashboardStats
-            dashboard={visiblePeriodDashboard}
-            title={`${reportTitle} 대화 기록`}
-            showDailyCounts
-          />
-        </div>
+        <DashboardStats
+          dashboard={conversationDashboard}
+          title={`${reportPeriodName} 대화 기록`}
+          emotionLabel={`${reportPeriodName} 채팅 감정 분포`}
+        />
 
         <BookmarkPreview />
 

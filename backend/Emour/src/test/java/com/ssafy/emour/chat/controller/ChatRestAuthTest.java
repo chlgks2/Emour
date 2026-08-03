@@ -41,14 +41,18 @@ class ChatRestAuthTest {
         jdbcTemplate.update(
                 """
                 INSERT IGNORE INTO app_user
-                    (user_id, email, nickname, status, is_email_verified)
-                VALUES (10, 'chat-auth-test@ssafy.com', '인증테스터', 'ACTIVE', TRUE)
+                    (user_id, email, nickname, status, is_email_verified,
+                     created_at, updated_at)
+                VALUES (10, 'chat-auth-test@ssafy.com', '인증테스터',
+                        'ACTIVE', TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
                 """
         );
         jdbcTemplate.update(
                 """
-                INSERT IGNORE INTO couple_room (room_id, room_code, status)
-                VALUES (1, 'CHAT_AUTH_TEST_ROOM', 'ACTIVE')
+                INSERT IGNORE INTO couple_room
+                    (room_id, room_code, status, created_at, updated_at)
+                VALUES (1, 'CHAT_AUTH_TEST_ROOM', 'ACTIVE',
+                        CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
                 """
         );
         coupleMemberRepository.save(CoupleMember.active(10L, 1L));

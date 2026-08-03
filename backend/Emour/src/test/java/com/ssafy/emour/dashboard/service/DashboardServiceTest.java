@@ -8,7 +8,7 @@ import com.ssafy.emour.couple.entity.CoupleMemberStatus;
 import com.ssafy.emour.couple.repository.CoupleMemberRepository;
 import com.ssafy.emour.dashboard.dto.DashboardCountResponse;
 import com.ssafy.emour.dashboard.dto.DashboardPeriod;
-import com.ssafy.emour.dashboard.entity.Dashboard;
+import com.ssafy.emour.dashboard.entity.CoupleDashboard;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,7 +27,9 @@ import static org.mockito.Mockito.when;
 class DashboardServiceTest {
 
     @Mock
-    private DashboardSnapshotService dashboardSnapshotService;
+    private CoupleDashboardSnapshotService coupleDashboardSnapshotService;
+    @Mock
+    private DashboardSnapshotService memberDashboardSnapshotService;
     @Mock
     private ChatMessageRepository chatMessageRepository;
     @Mock
@@ -46,7 +48,8 @@ class DashboardServiceTest {
                 ZoneId.of("Asia/Seoul")
         );
         dashboardService = new DashboardService(
-                dashboardSnapshotService,
+                coupleDashboardSnapshotService,
+                memberDashboardSnapshotService,
                 chatMessageRepository,
                 chatReactionRepository,
                 chatBookmarkRepository,
@@ -63,9 +66,9 @@ class DashboardServiceTest {
     @Test
     void returnsDailyCounts() {
         LocalDate date = LocalDate.of(2026, 8, 3);
-        Dashboard dashboard = Dashboard.create(1L, 10L, date);
-        dashboard.updateCounts(5, 3, 2, 1);
-        when(dashboardSnapshotService.ensureSnapshot(1L, 10L, date))
+        CoupleDashboard dashboard = CoupleDashboard.create(1L, date);
+        dashboard.updateCounts(5, 3, 2);
+        when(coupleDashboardSnapshotService.ensureSnapshot(1L, 10L, date))
                 .thenReturn(dashboard);
 
         DashboardCountResponse response = dashboardService.getCounts(
@@ -79,7 +82,6 @@ class DashboardServiceTest {
         assertThat(response.messageCount()).isEqualTo(5);
         assertThat(response.imageCount()).isEqualTo(3);
         assertThat(response.reactionCount()).isEqualTo(2);
-        assertThat(response.bookmarkCount()).isEqualTo(1);
     }
 
     // 월 조회는 방에 속한 두 사람의 기록을 기간 전체에서 합산합니다.
@@ -103,13 +105,6 @@ class DashboardServiceTest {
                         LocalDate.of(2026, 7, 1).atStartOfDay(),
                         LocalDate.of(2026, 8, 1).atStartOfDay()
                 )).thenReturn(6L);
-        when(chatBookmarkRepository
-                .countByRoomIdAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
-                        1L,
-                        LocalDate.of(2026, 7, 1).atStartOfDay(),
-                        LocalDate.of(2026, 8, 1).atStartOfDay()
-                )).thenReturn(4L);
-
         DashboardCountResponse response = dashboardService.getCounts(
                 1L,
                 10L,
@@ -124,6 +119,5 @@ class DashboardServiceTest {
         assertThat(response.messageCount()).isEqualTo(50);
         assertThat(response.imageCount()).isEqualTo(8);
         assertThat(response.reactionCount()).isEqualTo(6);
-        assertThat(response.bookmarkCount()).isEqualTo(4);
     }
 }

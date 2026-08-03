@@ -70,9 +70,9 @@
   color: var(--color-text-sub);
 }
 
+/* 서식은 공용 .empty-note 가 정한다. */
 .emptyText {
-  font-size: 12px;
-  color: var(--color-text-sub);
+  padding: 2px 0;
 }
 
 .editBtn {

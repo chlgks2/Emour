@@ -11,9 +11,6 @@ public record DashboardMainEmotionResponse(
         @Schema(description = "커플 방 번호", example = "1")
         Long roomId,
 
-        @Schema(description = "로그인한 사용자 번호", example = "10")
-        Long userId,
-
         @Schema(description = "조회 단위", example = "MONTH")
         DashboardPeriod period,
 

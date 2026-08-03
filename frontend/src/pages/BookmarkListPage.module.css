@@ -49,21 +49,30 @@
   flex-direction: column;
 }
 
+/* 실제 목록(인용 블록)과 같은 형태여야 로딩이 끝날 때 튀지 않는다 */
 .skeletonItem {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 16px 0;
-  border-bottom: 1px solid var(--color-border);
+  margin-bottom: 18px;
+  padding-left: 12px;
+  border-left: 2px solid var(--color-primary-faint);
 }
 
+/*
+ * 저장해둔 "말"이라서 목록보다 인용문에 가깝다.
+ * 대시보드 미리보기(BookmarkPreview)와 같은 형태로 맞춰,
+ * 미리보기에서 더보기로 넘어와도 같은 화면을 보는 느낌이 유지된다.
+ * 구분선 대신 왼쪽 괘선과 여백으로 항목을 나눈다.
+ */
 .item {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 10px;
-  padding: 14px 0;
-  border-bottom: 1px solid var(--color-border);
+  margin-bottom: 18px;
+  padding-left: 12px;
+  border-left: 2px solid var(--color-primary-faint);
 }
 
 .itemBody {
@@ -72,16 +81,17 @@
 }
 
 .itemText {
-  font-size: 14px;
-  color: var(--color-text);
-  line-height: 1.4;
+  color: var(--color-text-primary);
+  font-size: 15px;
+  line-height: 1.45;
   word-break: break-word;
 }
 
 .itemMeta {
+  margin-top: 4px;
+  color: var(--color-text-tertiary);
   font-size: 11px;
-  color: var(--color-text-placeholder);
-  margin-top: 6px;
+  font-variant-numeric: tabular-nums;
 }
 
 .removeBtn {

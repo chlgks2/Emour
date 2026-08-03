@@ -1,8 +1,17 @@
+/*
+ * 화면의 주인공 블록. 대시보드에서 색을 가진 면은 여기 하나뿐이라,
+ * 나머지를 상자 없이 풀어놔도 시선이 먼저 여기로 온다.
+ * 라디우스를 한 단계 키워 아래 섹션들과 격을 다르게 둔다.
+ *
+ * ⚠️ 감정 리포트·감정 분포 상자를 중성 회색 테두리로 바꿀 때 여기는 그대로 뒀다.
+ *    셋 다 중성으로 만들면 화면에 초점이 하나도 남지 않는다.
+ *    (색 배분 60 중성 / 30 보조 / 10 강조 — 이 블록이 그 10 을 맡는다)
+ */
 .card {
-  margin: 12px 20px 0;
+  margin: 12px var(--page-gutter) 0;
+  padding: 18px;
+  border-radius: var(--radius-xl);
   background: var(--color-sub-bg);
-  border-radius: var(--radius-lg);
-  padding: 16px;
 }
 
 .monthRow {

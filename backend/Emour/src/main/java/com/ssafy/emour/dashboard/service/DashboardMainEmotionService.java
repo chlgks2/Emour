@@ -29,7 +29,6 @@ public class DashboardMainEmotionService {
     private final ChatAnalysisRepository chatAnalysisRepository;
     private final CoupleMemberRepository coupleMemberRepository;
     // 기존 생성자 호환성을 유지하며, 조회는 원본 데이터 직접 집계를 사용한다.
-    private final DashboardSnapshotService dashboardSnapshotService;
     private final Clock dashboardClock;
 
     @Transactional
@@ -43,15 +42,13 @@ public class DashboardMainEmotionService {
         DateRange range = createRange(period, date);
 
         List<String> storedEmotions =
-                chatAnalysisRepository.findCompletedEmotionTypes(
+                chatAnalysisRepository.findCompletedRoomEmotionTypes(
                         roomId,
-                        userId,
                         range.startDate().atStartOfDay(),
                         range.endExclusive().atStartOfDay()
                 );
         return createResponse(
                 roomId,
-                userId,
                 period,
                 range,
                 createCounts(storedEmotions),
@@ -61,7 +58,6 @@ public class DashboardMainEmotionService {
 
     private DashboardMainEmotionResponse createResponse(
             Long roomId,
-            Long userId,
             DashboardPeriod period,
             DateRange range,
             Map<EmotionType, Integer> counts,
@@ -79,7 +75,6 @@ public class DashboardMainEmotionService {
 
         return new DashboardMainEmotionResponse(
                 roomId,
-                userId,
                 period,
                 range.startDate(),
                 range.endExclusive().minusDays(1),

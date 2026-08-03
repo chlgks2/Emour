@@ -5,7 +5,9 @@ import com.ssafy.emour.chat.entity.ChatMessage;
 import com.ssafy.emour.chat.repository.ChatAnalysisRepository;
 import com.ssafy.emour.couple.entity.CoupleMemberId;
 import com.ssafy.emour.couple.entity.CoupleMemberStatus;
+import com.ssafy.emour.couple.entity.CoupleMember;
 import com.ssafy.emour.couple.repository.CoupleMemberRepository;
+import com.ssafy.emour.dashboard.dto.DashboardCoupleEmotionFlowResponse;
 import com.ssafy.emour.dashboard.dto.DashboardEmotionFlowResponse;
 import com.ssafy.emour.dashboard.dto.DashboardPeriod;
 import com.ssafy.emour.dashboard.entity.Dashboard;
@@ -116,5 +118,50 @@ class DashboardEmotionServiceTest {
         assertThat(response.flow()).hasSize(12);
         assertThat(response.flow().get(6).positiveCount()).isEqualTo(1);
         assertThat(response.analyzedMessageCount()).isEqualTo(1);
+    }
+
+    @Test
+    void returnsMyAndPartnerEmotionFlowsTogether() {
+        LocalDate date = LocalDate.of(2026, 8, 3);
+        Dashboard myDashboard = Dashboard.create(1L, 10L, date);
+        myDashboard.updateEmotionFlow("""
+                [{
+                  "startHour":0,"endHour":2,
+                  "positiveCount":2,"negativeCount":0,"neutralCount":0
+                }]
+                """);
+        Dashboard partnerDashboard = Dashboard.create(1L, 20L, date);
+        partnerDashboard.updateEmotionFlow("""
+                [{
+                  "startHour":0,"endHour":2,
+                  "positiveCount":0,"negativeCount":1,"neutralCount":0
+                }]
+                """);
+        when(coupleMemberRepository.findAllByIdRoomId(1L))
+                .thenReturn(List.of(
+                        CoupleMember.active(10L, 1L),
+                        CoupleMember.active(20L, 1L)
+                ));
+        when(coupleMemberRepository.existsByIdAndStatus(
+                new CoupleMemberId(20L, 1L),
+                CoupleMemberStatus.ACTIVE
+        )).thenReturn(true);
+        when(dashboardSnapshotService.ensureSnapshot(1L, 10L, date))
+                .thenReturn(myDashboard);
+        when(dashboardSnapshotService.ensureSnapshot(1L, 20L, date))
+                .thenReturn(partnerDashboard);
+
+        DashboardCoupleEmotionFlowResponse response =
+                dashboardEmotionService.getCoupleEmotionFlow(
+                        1L,
+                        10L,
+                        DashboardPeriod.DAY,
+                        date
+                );
+
+        assertThat(response.me().userId()).isEqualTo(10L);
+        assertThat(response.me().analyzedMessageCount()).isEqualTo(2);
+        assertThat(response.partner().userId()).isEqualTo(20L);
+        assertThat(response.partner().analyzedMessageCount()).isEqualTo(1);
     }
 }

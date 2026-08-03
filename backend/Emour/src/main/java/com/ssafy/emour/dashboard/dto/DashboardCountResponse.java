@@ -13,9 +13,6 @@ public record DashboardCountResponse(
         @Schema(description = "커플방 번호", example = "1")
         Long roomId,
 
-        @Schema(description = "조회 요청 사용자 번호", example = "10")
-        Long userId,
-
         @Schema(description = "조회 단위", example = "MONTH")
         DashboardPeriod period,
 
@@ -36,9 +33,6 @@ public record DashboardCountResponse(
 
         @Schema(description = "커플이 남긴 공감 개수", example = "6")
         int reactionCount,
-
-        @Schema(description = "커플이 저장한 북마크 개수", example = "4")
-        int bookmarkCount,
 
         @Schema(description = "계산 시각")
         LocalDateTime calculatedAt,

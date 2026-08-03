@@ -55,26 +55,47 @@ class SwaggerDocumentationTest {
                 ).exists());
     }
 
-    // 대시보드 개수 조회 API가 Swagger 문서에 표시되는지 확인합니다.
+    // 개인·커플 대시보드 API가 Swagger 문서에 표시되는지 확인합니다.
     @Test
     void exposesDashboardApi() throws Exception {
         mockMvc.perform(get("/v3/api-docs"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath(
-                        "$.paths['/dashboards/daily'].get"
+                        "$.paths['/dashboards/couple/counts'].get"
                 ).exists())
                 .andExpect(jsonPath(
-                        "$.paths['/dashboards/emotion-flow'].get"
+                        "$.paths['/dashboards/me/counts'].get"
                 ).exists())
                 .andExpect(jsonPath(
-                        "$.paths['/dashboards/frequent-words'].get"
+                        "$.paths['/dashboards/couple/emotion-flow'].get"
                 ).exists())
                 .andExpect(jsonPath(
-                        "$.paths['/dashboards/main-emotions'].get"
+                        "$.paths['/dashboards/couple/frequent-words'].get"
                 ).exists())
                 .andExpect(jsonPath(
-                        "$.paths['/dashboards/conversation-flow'].get"
-                ).exists());
+                        "$.paths['/dashboards/couple/main-emotions'].get"
+                ).exists())
+                .andExpect(jsonPath(
+                        "$.paths['/dashboards/couple/conversation-flow'].get"
+                ).exists())
+                .andExpect(jsonPath(
+                        "$.paths['/dashboards/daily']"
+                ).doesNotExist())
+                .andExpect(jsonPath(
+                        "$.paths['/dashboards/counts']"
+                ).doesNotExist())
+                .andExpect(jsonPath(
+                        "$.paths['/dashboards/emotion-flow']"
+                ).doesNotExist())
+                .andExpect(jsonPath(
+                        "$.paths['/dashboards/frequent-words']"
+                ).doesNotExist())
+                .andExpect(jsonPath(
+                        "$.paths['/dashboards/main-emotions']"
+                ).doesNotExist())
+                .andExpect(jsonPath(
+                        "$.paths['/dashboards/conversation-flow']"
+                ).doesNotExist());
     }
 
     @Test

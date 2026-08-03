@@ -1,54 +1,9 @@
+/*
+ * 시트의 모양·움직임은 공용 .sheet-* (styles/surfaces.css) 가 갖는다.
+ * 여기서는 겹치는 순서만 정한다. 기념일 시트 위로 이 시트가 열린다.
+ */
 .schedule-modal-backdrop {
-  position: absolute;
   z-index: 50;
-  inset: 0;
-  display: flex;
-  align-items: flex-end;
-  overflow: hidden;
-  background: var(--color-scrim);
-  backdrop-filter: blur(3px);
-  -webkit-backdrop-filter: blur(3px);
-  animation: schedule-modal-fade var(--duration-base) var(--ease-out);
-}
-
-.schedule-modal {
-  position: relative;
-  isolation: isolate;
-  width: 100%;
-  max-height: 84%;
-  overflow-y: auto;
-  padding: 10px 22px calc(24px + var(--safe-bottom));
-  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-  background: var(--color-surface);
-  box-shadow: var(--shadow-sheet);
-  animation: schedule-modal-rise var(--duration-slow) var(--ease-out);
-}
-
-@keyframes schedule-modal-fade {
-  from {
-    opacity: 0;
-  }
-}
-
-@keyframes schedule-modal-rise {
-  from {
-    transform: translateY(14%);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .schedule-modal-backdrop,
-  .schedule-modal {
-    animation: none;
-  }
-}
-
-.schedule-modal-handle {
-  width: 40px;
-  height: 4px;
-  margin: 0 auto 18px;
-  border-radius: var(--radius-pill);
-  background: var(--color-border-strong);
 }
 
 .schedule-modal-header {

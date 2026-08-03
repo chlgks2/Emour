@@ -13,6 +13,14 @@ import {
 } from './httpClient.js'
 
 import {
+  getChatMessages,
+} from './chatApi.js'
+
+import {
+  resolveCoupleRoom,
+} from './coupleRoomContext.js'
+
+import {
   resolveProtectedImageUrl,
 } from '../utils/protectedImageUrl.js'
 
@@ -21,6 +29,7 @@ const USE_MOCK_API =
     .VITE_USE_ALBUM_MOCK_API === 'true'
 
 const MOCK_DELAY = 250
+const CHAT_PAGE_SIZE = 100
 
 /*
  * 실제 Spring API 주소가 정해지면
@@ -144,10 +153,67 @@ async function attachProtectedImageUrls(
       ),
     )
 
+  const chatPhotos =
+    await Promise.all(
+      (response.chatPhotos ?? []).map(
+        attachProtectedImageUrl,
+      ),
+    )
+
   return {
     ...response,
     albumPhotos,
+    chatPhotos,
   }
+}
+
+async function fetchChatPhotos() {
+  const room = await resolveCoupleRoom()
+  if (!room?.roomId) return []
+
+  const photos = []
+  const visitedCursors = new Set()
+  let beforeMessageId = null
+
+  while (true) {
+    const response = await getChatMessages({
+      roomId: room.roomId,
+      beforeMessageId,
+      size: CHAT_PAGE_SIZE,
+    })
+
+    ;(response?.messages ?? []).forEach(
+      (message) => {
+        ;(message.images ?? []).forEach(
+          (chatImage) => {
+            photos.push({
+              ...chatImage,
+              messageId:
+                message.messageId,
+              createdAt:
+                message.sentAt,
+            })
+          },
+        )
+      },
+    )
+
+    const nextCursor = response?.hasNext
+      ? response.nextCursor
+      : null
+
+    if (
+      !nextCursor ||
+      visitedCursors.has(nextCursor)
+    ) {
+      break
+    }
+
+    visitedCursors.add(nextCursor)
+    beforeMessageId = nextCursor
+  }
+
+  return photos
 }
 
 export async function getAlbumPhotos() {
@@ -157,10 +223,15 @@ export async function getAlbumPhotos() {
     return createMappedMockResponse()
   }
 
-  const albumPhotoPayload =
-    await apiRequest(
+  const [
+    albumPhotoPayload,
+    chatPhotosResponse,
+  ] = await Promise.all([
+    apiRequest(
       ENDPOINTS.albumPhotos,
-    )
+    ),
+    fetchChatPhotos(),
+  ])
 
   const mappedResponse =
     mapAlbumPageResponse({
@@ -174,7 +245,7 @@ export async function getAlbumPhotos() {
         ],
       ),
 
-    chatPhotosResponse: [],
+    chatPhotosResponse,
   })
 
   return attachProtectedImageUrls(

@@ -36,6 +36,7 @@ public class AnniversaryService {
                 room.getId(),
                 userId,
                 request.name(),
+                request.description(),
                 request.scheduleDate()
         );
         return ScheduleResponse.from(scheduleRepository.save(anniversary));
@@ -55,6 +56,7 @@ public class AnniversaryService {
         );
         anniversary.updateAnniversary(
                 request.name(),
+                request.description(),
                 request.scheduleDate()
         );
         return ScheduleResponse.from(anniversary);

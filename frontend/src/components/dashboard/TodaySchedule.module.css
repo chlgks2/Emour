@@ -1,45 +1,23 @@
-.card {
-  background: var(--color-white);
-  border-radius: var(--radius-lg);
-  padding: 16px;
-  box-shadow: var(--shadow-card);
-  height: 100%;
-}
-
-.title {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--color-primary-dark);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 12px;
-}
-
-.title svg {
-  flex-shrink: 0;
-}
-
-.count {
-  background: var(--color-sub-bg);
-  color: var(--color-primary);
-  font-size: 11px;
-  padding: 1px 7px;
-  border-radius: var(--radius-pill);
-  font-weight: 700;
-}
+/*
+ * 오늘의 주요 일정 — 왼쪽 세로선 + 점의 타임라인.
+ *
+ * 분홍 면을 깔았더니 괘선(#f0c3ce)과 점의 테두리 링이 면(#fdeef2)에 묻혀
+ * 타임라인이 사라진 것처럼 보였다. 상자를 걷어내고 페이지 배경 위에 바로 둔다.
+ * 시간 순서라는 형태는 세로선이 이미 만들어주므로 면이 따로 필요하지 않다.
+ */
 
 .timeline {
   position: relative;
   display: flex;
   flex-direction: column;
   gap: 14px;
+  /* 왼쪽 세로선과 점이 놓일 자리 */
   padding-left: 18px;
   list-style: none;
   margin: 0;
 }
 
-/* vertical line spanning all schedule items */
+/* 모든 항목을 관통하는 세로선 */
 .timeline::before {
   content: "";
   position: absolute;
@@ -47,7 +25,8 @@
   top: 4px;
   bottom: 4px;
   width: 2px;
-  background: var(--color-sub-bg);
+  /* 페이지 배경 위에 놓이므로 확실히 보이는 경계선 색을 쓴다 */
+  background: var(--color-border-strong);
   border-radius: 1px;
 }
 
@@ -56,10 +35,10 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 12px;
+  font-size: 13px;
 }
 
-/* dot marking this schedule's position on the line */
+/* 선 위에서 이 일정의 위치를 표시하는 점 */
 .dot {
   position: absolute;
   left: -18px;
@@ -69,13 +48,14 @@
   height: 8px;
   border-radius: 50%;
   background: var(--color-primary);
-  box-shadow: 0 0 0 2px var(--color-white);
+  /* 배경색 링으로 선을 끊어내야 점이 선 위에 얹힌 것처럼 보인다 */
+  box-shadow: 0 0 0 3px var(--color-background);
 }
 
 /* 이미 시간이 지난 일정: "완료"가 아니므로 취소선 없이 흐리게만 */
 .item.past .dot {
-  background: var(--color-sub);
-  box-shadow: 0 0 0 2px var(--color-white);
+  background: var(--color-border-strong);
+  box-shadow: 0 0 0 3px var(--color-background);
 }
 
 .item.past {
@@ -83,33 +63,31 @@
 }
 
 .time {
-  color: var(--color-text-sub);
-  font-variant-numeric: tabular-nums;
   flex-shrink: 0;
+  color: var(--color-text-tertiary);
+  font-variant-numeric: tabular-nums;
 }
 
 .name {
-  color: var(--color-text);
-  font-weight: 600;
   min-width: 0;
   overflow: hidden;
+  color: var(--color-text-primary);
+  font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .badge {
   flex-shrink: 0;
+  padding: 1px 7px;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary-faint);
+  color: var(--color-text-accent);
   font-size: 10px;
   font-weight: 700;
-  color: var(--color-primary);
-  background: var(--color-sub-bg);
-  padding: 1px 6px;
-  border-radius: var(--radius-pill);
 }
 
+/* 서식은 공용 .empty-note 가 정한다. */
 .emptyText {
-  font-size: 12px;
-  color: var(--color-text-placeholder);
-  line-height: 1.5;
-  padding: 4px 0 6px;
+  padding: 2px 0;
 }

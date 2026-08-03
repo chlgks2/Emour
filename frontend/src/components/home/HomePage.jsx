@@ -95,7 +95,14 @@ export default function HomePage({
 
         <div className={styles.profiles}>
           <ProfileCircle imageUrl={myProfileImageUrl} name={myNickname} fallbackLabel="나" />
-          <Heart className={styles.heart} size={20} aria-hidden="true" />
+          {/* 두 사람을 잇는 표시라 속을 채워야 눈에 걸린다 (선만 있으면 배경 사진에 묻힌다) */}
+          <Heart
+            className={styles.heart}
+            size={20}
+            fill="currentColor"
+            stroke="none"
+            aria-hidden="true"
+          />
           <ProfileCircle
             imageUrl={partnerProfileImageUrl}
             name={partnerNickname}

@@ -1,4 +1,4 @@
-import { ChartColumn, MessageSquare, Image, Heart, Clock, Timer } from "lucide-react";
+import EmotionReport from "./EmotionReport";
 import styles from "./DashboardStats.module.css";
 
 // 카드가 길어지지 않도록 상위 5개만 노출한다.
@@ -14,7 +14,7 @@ const FREQUENT_WORD_DISPLAY_COUNT = 5;
 export default function DashboardStats({
   dashboard,
   title = "오늘의 대화 기록",
-  showDailyCounts = true,
+  emotionLabel = "오늘의 채팅 감정 분포",
 }) {
   if (!dashboard) return null;
 
@@ -25,80 +25,106 @@ export default function DashboardStats({
     busiestHour,
     averageResponseSeconds,
     frequentWords = [],
+    emotionSummary = [],
   } = dashboard;
 
+  /*
+   * 아이콘은 더 이상 붙이지 않는다. 항목마다 아이콘을 달면 장식이 수치를 이기고,
+   * 같은 크기 아이콘이 반복되면서 화면이 산만해진다. 위계는 셀 크기로 만든다.
+   */
   const counts = [
-    { key: "message", label: "메시지", value: messageCount, Icon: MessageSquare },
-    showDailyCounts && { key: "image", label: "사진", value: imageCount, Icon: Image },
-    showDailyCounts && {
-      key: "reaction",
-      label: "공감",
-      value: reactionCount,
-      Icon: Heart,
-    },
-  ].filter(Boolean);
+    { key: "message", label: "메시지", value: messageCount },
+    { key: "image", label: "사진", value: imageCount },
+    { key: "reaction", label: "공감", value: reactionCount },
+  ];
 
+  /*
+   * 두 칸은 값이 없어도 자리를 지킨다.
+   * 예전에는 null 이면 통째로 감췄는데, 서버 집계가 아직 안 돌았을 뿐인 상황과
+   * "그런 항목이 없는" 상황이 구분되지 않아 사라진 것처럼 보였다.
+   */
   const highlights = [
-    busiestHour != null && {
+    {
       key: "busiest",
-      Icon: Clock,
       label: "가장 활발했던 시간",
-      value: formatHourRange(busiestHour),
+      value: busiestHour != null ? formatHourRange(busiestHour) : null,
     },
-    averageResponseSeconds != null && {
+    {
       key: "response",
-      Icon: Timer,
       label: "평균 답장 시간",
-      value: formatResponseTime(averageResponseSeconds),
+      value:
+        averageResponseSeconds != null
+          ? formatResponseTime(averageResponseSeconds)
+          : null,
     },
-  ].filter(Boolean);
+  ];
 
   return (
-    <section className={styles.card} aria-labelledby="dashboard-stats-title">
-      <p id="dashboard-stats-title" className={styles.title}>
-        <ChartColumn size={14} aria-hidden="true" />
-        {title}
-      </p>
+    <section className="surface-plain" aria-labelledby="dashboard-stats-title">
+      <header className="section-head">
+        <h2 id="dashboard-stats-title" className="section-title">
+          {title}
+        </h2>
+      </header>
 
-      <ul className={styles.countRow}>
-        {counts.map(({ key, label, value, Icon }) => (
-          <li key={key} className={styles.countItem}>
-            <span className={styles.countIcon} aria-hidden="true">
-              <Icon size={15} />
-            </span>
+      {/*
+        메시지·사진·공감은 같은 성격의 "개수"라서 한 행에 나란히 둔다.
+        칸 수에 맞춰 열이 늘어나므로 월/연간(메시지 하나)에서도 빈칸이 남지 않는다.
+      */}
+      <ul
+        className={styles.countRow}
+        style={{ "--count-columns": counts.length }}
+      >
+        {counts.map(({ key, label, value }) => (
+          <li key={key} className={styles.countCell}>
+            <span className={styles.cellLabel}>{label}</span>
             <span className={styles.countValue}>
               {(Number(value) || 0).toLocaleString("ko-KR")}
             </span>
-            <span className={styles.countLabel}>{label}</span>
           </li>
         ))}
       </ul>
 
-      {highlights.length > 0 && (
-        <ul className={styles.highlightList}>
-          {highlights.map(({ key, Icon, label, value }) => (
-            <li key={key} className={styles.highlightItem}>
-              <Icon size={13} aria-hidden="true" />
-              <span className={styles.highlightLabel}>{label}</span>
-              <span className={styles.highlightValue}>{value}</span>
-            </li>
-          ))}
-        </ul>
-      )}
+      {/*
+        오늘 나눈 대화가 어떤 감정이었는지.
+        개수(무엇을 얼마나 주고받았나) 다음, 흐름(언제·얼마나 빨리) 앞에 둔다.
+        면은 흰색으로 두고 옅은 로즈 헤어라인만 둘러, 위의 로즈 개수 행과
+        아래 회색 벤토 셀 사이에서 따로 놀지 않게 한다.
+      */}
+      <section className={styles.emotionPanel} aria-labelledby="dashboard-emotion-mix">
+        <p id="dashboard-emotion-mix" className={styles.cellLabel}>
+          {emotionLabel}
+        </p>
 
-      {frequentWords.length > 0 && (
-        <div className={styles.wordSection}>
-          <p className={styles.wordTitle}>자주 쓴 말</p>
-          <ul className={styles.wordRow}>
-            {frequentWords.slice(0, FREQUENT_WORD_DISPLAY_COUNT).map(({ word, count }) => (
-              <li key={word} className={styles.wordChip}>
-                {word}
-                <span className={styles.wordCount}>{count}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+        <EmotionReport emotionSummary={emotionSummary} />
+      </section>
+
+      <div className={`bento ${styles.detailGrid}`}>
+        {highlights.map(({ key, label, value }) => (
+          <div key={key} className="bento-cell">
+            <p className={styles.cellLabel}>{label}</p>
+            <p className={value ? styles.cellText : `empty-note ${styles.cellTextEmpty}`}>
+              {value ?? "아직 없어요"}
+            </p>
+          </div>
+        ))}
+
+        {frequentWords.length > 0 && (
+          <div className="bento-cell bento-wide">
+            <p className={styles.cellLabel}>자주 쓴 말</p>
+            <ul className={styles.wordRow}>
+              {frequentWords.slice(0, FREQUENT_WORD_DISPLAY_COUNT).map(({ word, count }) => (
+                <li key={word} className={styles.wordChip}>
+                  {word}
+                  <span className={styles.wordCount}>
+                    {Number(count).toLocaleString("ko-KR")}회
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
     </section>
   );
 }

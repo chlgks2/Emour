@@ -10,7 +10,7 @@ import com.ssafy.emour.couple.repository.CoupleMemberRepository;
 import com.ssafy.emour.dashboard.dto.DashboardFrequentWordsResponse;
 import com.ssafy.emour.dashboard.dto.DashboardPeriod;
 import com.ssafy.emour.dashboard.dto.FrequentWordItem;
-import com.ssafy.emour.dashboard.entity.Dashboard;
+import com.ssafy.emour.dashboard.entity.CoupleDashboard;
 import com.ssafy.emour.global.exception.CustomException;
 import com.ssafy.emour.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -36,7 +36,7 @@ public class DashboardWordService {
     private static final int MAX_LIMIT = 50;
     private static final String WORD_SEPARATOR = "[^\\p{L}\\p{N}]+";
 
-    private final DashboardSnapshotService dashboardSnapshotService;
+    private final CoupleDashboardSnapshotService coupleDashboardSnapshotService;
     private final ChatMessageRepository chatMessageRepository;
     private final CoupleMemberRepository coupleMemberRepository;
     private final Clock dashboardClock;
@@ -57,7 +57,7 @@ public class DashboardWordService {
         List<FrequentWordItem> allWords;
         LocalDateTime calculatedAt;
         if (period == DashboardPeriod.DAY) {
-            Dashboard dashboard = dashboardSnapshotService.ensureSnapshot(
+            CoupleDashboard dashboard = coupleDashboardSnapshotService.ensureSnapshot(
                     roomId,
                     userId,
                     date
@@ -65,9 +65,8 @@ public class DashboardWordService {
             allWords = readWords(dashboard.getFrequentWords());
             calculatedAt = dashboard.getCalculatedAt();
         } else {
-            List<String> contents = chatMessageRepository.findDailyTextContents(
+            List<String> contents = chatMessageRepository.findRoomTextContents(
                     roomId,
-                    userId,
                     range.startDate().atStartOfDay(),
                     range.endExclusive().atStartOfDay()
             );
@@ -83,7 +82,6 @@ public class DashboardWordService {
                 .sum();
         return new DashboardFrequentWordsResponse(
                 roomId,
-                userId,
                 period,
                 range.startDate(),
                 range.endDate(),
@@ -92,23 +90,6 @@ public class DashboardWordService {
                 allWords.size(),
                 limitedWords,
                 calculatedAt
-        );
-    }
-
-    // 기존 호출 코드는 일 단위로 그대로 동작합니다.
-    @Transactional
-    public DashboardFrequentWordsResponse getDailyFrequentWords(
-            Long roomId,
-            Long userId,
-            LocalDate date,
-            Integer requestedLimit
-    ) {
-        return getFrequentWords(
-                roomId,
-                userId,
-                DashboardPeriod.DAY,
-                date,
-                requestedLimit
         );
     }
 

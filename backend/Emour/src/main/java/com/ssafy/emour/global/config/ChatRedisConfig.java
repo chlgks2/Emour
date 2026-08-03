@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.ssafy.emour.chat.messaging.ChatRedisSubscriber;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
@@ -25,6 +26,11 @@ public class ChatRedisConfig {
     }
 
     @Bean
+    @ConditionalOnProperty(
+            name = "chat.redis.enabled",
+            havingValue = "true",
+            matchIfMissing = true
+    )
     public RedisMessageListenerContainer chatRedisMessageListenerContainer(
             RedisConnectionFactory connectionFactory,
             ChatRedisSubscriber subscriber,
