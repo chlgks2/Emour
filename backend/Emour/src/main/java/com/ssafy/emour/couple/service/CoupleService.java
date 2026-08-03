@@ -57,13 +57,22 @@ public class CoupleService {
         memberRepository.findByIdForUpdate(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
+        LocalDateTime currentTime = LocalDateTime.now();
         List<CoupleRoom> inactiveRooms =
                 coupleRoomRepository.findRetainedInactiveRoomsByUserIdForUpdate(
                         userId,
                         PageRequest.of(0, 1)
                 );
         if (!inactiveRooms.isEmpty()) {
-            return CoupleInvitationResponse.forReconnect(inactiveRooms.get(0));
+            CoupleRoom inactiveRoom = inactiveRooms.get(0);
+            if (inactiveRoom.getRoomCodeExpiresAt() == null
+                    || !inactiveRoom.getRoomCodeExpiresAt().isAfter(currentTime)) {
+                inactiveRoom.refreshReconnectInvitation(
+                        generateUniqueCode(),
+                        currentTime.plusHours(invitationValidityHours)
+                );
+            }
+            return CoupleInvitationResponse.from(inactiveRoom);
         }
 
         validateCanStartNewRelationship(userId);
@@ -73,7 +82,6 @@ public class CoupleService {
                 PageRequest.of(0, 1)
         );
 
-        LocalDateTime currentTime = LocalDateTime.now();
         if (!waitingRooms.isEmpty()) {
             CoupleRoom waitingRoom = waitingRooms.get(0);
             if (waitingRoom.hasValidInvitationAt(currentTime)) {
@@ -135,6 +143,10 @@ public class CoupleService {
 
         if (room.getStatus() != CoupleRoomStatus.INACTIVE) {
             throw new CustomException(ErrorCode.RECONNECT_NOT_AVAILABLE);
+        }
+        if (room.getRoomCodeExpiresAt() == null
+                || !room.getRoomCodeExpiresAt().isAfter(LocalDateTime.now())) {
+            throw new CustomException(ErrorCode.INVITATION_CODE_EXPIRED);
         }
 
         CoupleMember member = coupleMemberRepository.findById(
