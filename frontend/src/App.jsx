@@ -24,6 +24,7 @@ import SignUpPage from './pages/SignUpPage.jsx'
 import ProfileEditPage from './pages/ProfileEditPage/ProfileEditPage.jsx'
 import NotificationSettingPage from './pages/NotificationSettingPage/NotificationSettingPage.jsx'
 import PasswordChangePage from './pages/PasswordChangePage/PasswordChangePage.jsx'
+import PasswordResetPage from './pages/PasswordResetPage.jsx'
 
 import './App.css'
 
@@ -77,6 +78,11 @@ function App() {
         <Route
           path="/signup"
           element={<SignUpPage />}
+        />
+
+        <Route
+          path="/find-password"
+          element={<PasswordResetPage />}
         />
 
         <Route
