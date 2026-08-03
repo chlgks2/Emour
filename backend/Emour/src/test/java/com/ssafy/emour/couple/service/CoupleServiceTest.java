@@ -214,10 +214,38 @@ class CoupleServiceTest {
     }
 
     @Test
-    void retainedInactiveRoomReturnsItsFixedReconnectCode() {
+    void retainedInactiveRoomRefreshesItsExpiredReconnectCode() {
+        CoupleRoom inactiveRoom = CoupleRoom.waiting(
+                "OLD-CODE",
+                LocalDateTime.now().minusDays(1)
+        );
+        inactiveRoom.activate();
+        inactiveRoom.deactivate();
+        ReflectionTestUtils.setField(inactiveRoom, "id", ROOM_ID);
+
+        givenLockedMember();
+        given(coupleRoomRepository.findRetainedInactiveRoomsByUserIdForUpdate(
+                any(Long.class),
+                any(Pageable.class)
+        )).willReturn(List.of(inactiveRoom));
+        given(invitationCodeGenerator.generate()).willReturn(INVITATION_CODE);
+        given(coupleRoomRepository.existsByRoomCode(INVITATION_CODE))
+                .willReturn(false);
+
+        CoupleInvitationResponse response = coupleService.createInvitation(USER_ID);
+
+        assertThat(response.roomId()).isEqualTo(ROOM_ID);
+        assertThat(response.invitationCode()).isEqualTo(INVITATION_CODE);
+        assertThat(response.expiresAt()).isAfter(LocalDateTime.now());
+        verify(coupleRoomRepository, never()).save(any(CoupleRoom.class));
+        verify(coupleMemberRepository, never()).save(any(CoupleMember.class));
+    }
+
+    @Test
+    void retainedInactiveRoomKeepsItsValidReconnectCode() {
         CoupleRoom inactiveRoom = CoupleRoom.waiting(
                 "KEEP-CODE",
-                LocalDateTime.now().minusDays(1)
+                LocalDateTime.now().plusHours(1)
         );
         inactiveRoom.activate();
         inactiveRoom.deactivate();
@@ -233,7 +261,7 @@ class CoupleServiceTest {
 
         assertThat(response.roomId()).isEqualTo(ROOM_ID);
         assertThat(response.invitationCode()).isEqualTo("KEEP-CODE");
-        assertThat(response.expiresAt()).isNull();
+        assertThat(response.expiresAt()).isAfter(LocalDateTime.now());
         verify(invitationCodeGenerator, never()).generate();
         verify(coupleRoomRepository, never()).save(any(CoupleRoom.class));
         verify(coupleMemberRepository, never()).save(any(CoupleMember.class));
