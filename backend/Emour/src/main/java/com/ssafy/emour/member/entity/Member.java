@@ -109,6 +109,11 @@ public class Member {
         if (statusMessage != null) this.statusMessage = statusMessage;
     }
 
+    /** 업로드가 끝난 프로필 이미지의 접근 주소를 저장합니다. */
+    public void updateProfileImage(String profileImageUrl) {
+        this.profileImageUrl = profileImageUrl;
+    }
+
     /** 회원 탈퇴 (soft delete): 상태를 WITHDRAWN 으로, 탈퇴 시각 기록 */
     public void withdraw() {
         this.status = MemberStatus.WITHDRAWN;
