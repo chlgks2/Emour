@@ -106,11 +106,36 @@
   font-size: 14px;
 }
 
-/* 기간 선택과 리포트 본문 사이 경계 */
-.reportPanel > :last-child {
+/*
+ * 리포트 본문의 한 덩어리(제목 + 그래프).
+ * 위쪽 경계선이 기간 선택과 본문을, 그리고 두 그래프끼리를 갈라준다.
+ */
+.reportBlock {
   margin-top: 14px;
   padding-top: 14px;
   border-top: 1px solid var(--color-divider);
+}
+
+/*
+ * 무엇을 보는 그래프인지.
+ * 이름만으로는 '비율'과 '흐름'의 차이가 잘 안 와닿아서, 뒤에 한 마디를 붙여
+ * 각각 어떤 질문에 답하는지 밝힌다. 그 한 마디는 제목보다 작고 흐리게 둬서
+ * 제목을 읽는 흐름을 끊지 않는다.
+ */
+.reportBlockTitle {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin: 0 0 10px;
+  color: var(--color-text-primary);
+  font-size: var(--font-label);
+  font-weight: 700;
+}
+
+.reportBlockTitle span {
+  color: var(--color-text-tertiary);
+  font-size: var(--font-micro);
+  font-weight: 500;
 }
 
 @media (max-width: 420px) {

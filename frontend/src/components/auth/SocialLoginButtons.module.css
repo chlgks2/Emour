@@ -1,48 +1,46 @@
+/*
+ * 아이콘만 있던 정사각형 버튼을 글자가 들어가는 가로 버튼으로 바꿨다.
+ * 아이콘만으로는 어느 서비스인지 알아도 "눌러서 로그인" 인지가 분명하지 않다.
+ * 위에서 아래로 하나씩 쌓아 어떤 방법이 있는지 훑기 쉽게 한다.
+ */
 .row {
   display: flex;
-  gap: 16px; /* 버튼 사이 간격을 살짝 넓혀 쾌적하게 변경 */
-  justify-content: center;
-  align-items: center;
+  flex-direction: column;
+  gap: 10px;
   margin: 20px 0;
 }
 
 .socialBtn {
-  width: 54px;
-  height: 54px;
-  border-radius: 16px; /* 부드러운 스퀘어클(Squircle) 반경 */
+  width: 100%;
+  height: 50px;
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 10px;
+  padding: 0 16px;
   border: 1px solid transparent;
+  border-radius: var(--radius-md);
   position: relative;
+  font-size: var(--font-body);
+  font-weight: 700;
+  cursor: pointer;
 
-  /* 마이크로 인터랙션을 위한 스프링 느낌의 부드러운 트랜지션
-     (reduced-motion 이 켜지면 duration 토큰이 0이 되어 자동으로 멈춘다) */
-  transition: transform var(--duration-base) var(--ease-spring),
-              box-shadow var(--duration-base) var(--ease-out),
-              filter var(--duration-fast) var(--ease-out);
-
-  /* 미세한 내추럴 섀도우로 입체감 부여 */
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+  /*
+   * 떠오르는 효과(translateY)를 걷어냈다.
+   * 로그인 화면에서 버튼 세 개가 마우스를 따라 오르내리면 화면이 들썩인다.
+   * 색이 진해지는 것만으로 눌릴 수 있다는 건 충분히 전해진다.
+   */
+  transition:
+    filter var(--duration-fast) var(--ease-out),
+    opacity var(--duration-fast) var(--ease-out);
 }
 
-/* 호버(Hover) 시 살짝 떠오르며 그림자가 짙어지는 효과 */
 .socialBtn:hover:not(:disabled) {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04);
-  filter: brightness(1.03);
-}
-
-/* 클릭(Active) 시 쫀득하게 눌리는 효과 */
-.socialBtn:active:not(:disabled) {
-  transform: translateY(-1px) scale(0.96);
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.06);
+  filter: brightness(0.96);
 }
 
 .socialBtn:disabled {
   opacity: 0.5;
-  transform: none;
-  box-shadow: none;
 }
 
 /* 진행 중인 버튼만 100% 불투명하게 유지 + 맥동으로 진행 중임을 표시 */
@@ -73,24 +71,8 @@
   color: #191919;
 }
 
-.naver {
-  background: #03c75a;
-  color: #ffffff;
-}
-
 .google {
   background: #ffffff;
   border: 1px solid rgba(0, 0, 0, 0.08); /* 구글 버튼은 화이트 배경이므로 깔끔한 소프트 보더 추가 */
-}
-
-.srOnly {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
+  color: #1f1f1f;
 }

@@ -88,14 +88,20 @@ export default function EmotionCalendarStrip({
 
       <div className={styles.dayRow}>
         {weekDays.map((day) => {
-          const isSelected = day.moodDate === selectedMoodDate;
+          /*
+           * 로즈 링은 "지금 펼쳐서 보고 있는 날" 표시다.
+           * 선택 여부만으로 그렸더니, 접어 둔 상태에서도 링이 남아
+           * 눌린 것처럼 보이는데 아래에는 아무것도 없는 상태가 됐다.
+           */
+          const isSelected =
+            day.moodDate === selectedMoodDate && isSlotListOpen;
           return (
             <button
               type="button"
               key={day.moodDate}
               className={styles.dayItem}
               onClick={() => handleSelectDate(day.moodDate)}
-              aria-expanded={isSelected && isSlotListOpen}
+              aria-expanded={isSelected}
               aria-label={buildDayAriaLabel(day)}
             >
               <span
