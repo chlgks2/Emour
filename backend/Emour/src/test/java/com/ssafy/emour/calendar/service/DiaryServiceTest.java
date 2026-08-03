@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageRequest;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -227,8 +228,10 @@ class DiaryServiceTest {
                 "이전 기록"
         );
         given(memberRepository.existsById(userId)).willReturn(true);
-        given(coupleRoomRepository.findActiveRoomByUserId(userId))
-                .willReturn(Optional.of(room));
+        given(coupleRoomRepository.findReadableRoomsByUserId(
+                userId,
+                PageRequest.of(0, 1)
+        )).willReturn(List.of(room));
         given(room.getId()).willReturn(roomId);
         given(diaryRepository
                 .findAllByRoomIdAndUserIdOrderByDiaryDateDesc(

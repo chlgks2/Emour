@@ -14,6 +14,10 @@ public record ScheduleCreateRequest(
         @Size(max = 100)
         String name,
 
+        @Schema(example = "저녁 식사 후 영화 보기")
+        @Size(max = 1000)
+        String description,
+
         @Schema(example = "2026-08-05")
         @NotNull
         LocalDate scheduleDate,
@@ -22,4 +26,11 @@ public record ScheduleCreateRequest(
         @NotNull
         LocalTime scheduleTime
 ) {
+    public ScheduleCreateRequest(
+            String name,
+            LocalDate scheduleDate,
+            LocalTime scheduleTime
+    ) {
+        this(name, null, scheduleDate, scheduleTime);
+    }
 }

@@ -17,8 +17,7 @@ import java.time.LocalDateTime;
 /**
  * 앨범 사진. DB 테이블 album_photo 와 매핑.
  *
- * room_id(커플룸)는 아직 커플 연결 기능이 없어서 지금은 비워둔다(nullable).
- * → 커플룸 기능이 생기면 업로드 시 room_id 를 채우고, 조회를 방(room) 기준으로 바꾼다. (TODO)
+ * 커플방 단위로 저장하고 조회합니다.
  */
 @Entity
 @Table(name = "album_photo")
@@ -41,7 +40,7 @@ public class AlbumPhoto {
     @Column(name = "image_url", nullable = false, length = 2048)
     private String imageKey;
 
-    @Column(name = "memo", length = 500)
+    @Column(name = "memo", length = 100)
     private String memo;
 
     @CreationTimestamp

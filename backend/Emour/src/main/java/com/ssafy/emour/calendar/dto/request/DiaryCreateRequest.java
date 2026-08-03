@@ -6,6 +6,6 @@ import jakarta.validation.constraints.Size;
 
 public record DiaryCreateRequest(
         @Schema(example = "오늘 함께 산책해서 행복했다.")
-        @NotBlank @Size(max = 100) String content
+        @NotBlank @Size(max = 300) String content
 ) {
 }
