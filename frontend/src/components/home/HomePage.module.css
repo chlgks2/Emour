@@ -70,17 +70,24 @@
 }
 
 /* "from 260715" — 'from' 은 한 단계 눌러두고 날짜 숫자를 주인공으로 세운다. */
+/*
+ * 'from' 은 날짜를 가리키는 말일 뿐이라 날짜만큼 굵을 이유가 없다.
+ * 둘이 같은 무게(800)로 붙어 있으니 한 덩어리로 읽혀서 날짜가 안 도드라졌다.
+ * 여기(감싸는 p)를 얇고 작게 두고, 날짜(span)만 크고 굵게 올린다.
+ */
 .days {
   margin: 4px 0 0;
-  font-size: 24px;
-  font-weight: 800;
-  letter-spacing: 0.02em;
+  font-size: 17px;
+  font-weight: 400;
+  letter-spacing: 0.04em;
   text-shadow: 0 1px 6px rgba(0, 0, 0, 0.4);
-  color: rgba(255, 255, 255, 0.72);
+  color: rgba(255, 255, 255, 0.62);
 }
 
 .days span {
   color: #fff;
+  font-size: 24px;
+  font-weight: 800;
   letter-spacing: 0.06em;
 }
 

@@ -1,31 +1,11 @@
-.card {
-  margin: 14px 20px 0;
-  background: var(--color-white);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-card);
-  padding: 14px 16px;
-}
-
-.header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 8px;
-}
-
-/* 대시보드 카드 제목 공통 스타일 (다른 카드들과 색/간격을 맞춘다) */
-.title {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--color-primary-dark);
-}
-
-.title svg {
-  flex-shrink: 0;
-}
+/*
+ * 북마크 미리보기.
+ * 상자와 제목은 공용 표면 레이어(styles/surfaces.css)가 담당한다.
+ *
+ * 저장해둔 "말"이라서 목록보다 인용문에 가깝다.
+ * 흰 카드 안의 구분선 목록 대신, 왼쪽 괘선을 둔 인용 블록으로 보여준다.
+ * (카드가 줄줄이 이어지는 단조로움을 깨는 지점)
+ */
 
 .moreBtn {
   display: flex;
@@ -36,48 +16,48 @@
   margin: -6px -6px -6px 0;
   padding: 0 6px;
   border-radius: var(--radius-sm);
+  color: var(--color-text-tertiary);
   font-size: 12px;
-  color: var(--color-text-sub);
+  font-weight: 600;
 }
 
 .moreBtn:hover {
-  background: var(--color-sub-bg);
-  color: var(--color-primary-dark);
+  background: var(--color-surface-tint);
+  color: var(--color-text-accent);
 }
 
+/* 서식은 공용 .empty-note 가 정한다. 여기서는 자리만 잡는다. */
 .stateText {
-  font-size: 12px;
-  color: var(--color-text-placeholder);
   padding: 6px 0;
-  line-height: 1.5;
 }
 
 .list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 16px;
 }
 
+/* 인용 블록 — 왼쪽 괘선 하나로 "인용"임을 알린다 */
 .item {
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--color-border);
-}
-
-.item:last-child {
-  border-bottom: none;
-  padding-bottom: 0;
+  padding-left: 12px;
+  border-left: 2px solid var(--color-primary-faint);
 }
 
 .itemText {
-  font-size: 13px;
-  color: var(--color-text);
+  color: var(--color-text-primary);
+  font-size: 15px;
+  line-height: 1.45;
+  /* 두 줄까지 보여준다. 한 줄 말줄임은 저장한 문장을 너무 잘라낸다 */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .itemMeta {
+  margin-top: 4px;
+  color: var(--color-text-tertiary);
   font-size: 11px;
-  color: var(--color-text-placeholder);
-  margin-top: 2px;
+  font-variant-numeric: tabular-nums;
 }

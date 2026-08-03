@@ -24,6 +24,7 @@ import {
 
 import ScheduleModal from '../../components/calendar/ScheduleModal/ScheduleModal.jsx'
 import AnniversaryManager from '../../components/calendar/AnniversaryManager/AnniversaryManager.jsx'
+import DiaryModal from '../../components/calendar/DiaryModal/DiaryModal.jsx'
 import BottomNavigation from '../../components/common/BottomNavigation/BottomNavigation.jsx'
 
 import {
@@ -1106,59 +1107,12 @@ function CalendarPage() {
           </div>
         </section>
 
-        <section
-          className="calendar-create-actions"
-          aria-label="캘린더 기록 추가"
-        >
-          <button
-            type="button"
-            className="calendar-create-schedule"
-            disabled={
-              isLoading || isProcessing
-            }
-            onClick={
-              openCreateScheduleModal
-            }
-          >
-            <CalendarPlus
-              size={19}
-              strokeWidth={2}
-              aria-hidden="true"
-            />
-
-            <span>
-              <strong>일정 추가</strong>
-              <small>
-                선택한 날짜에 등록
-              </small>
-            </span>
-          </button>
-
-          <button
-            type="button"
-            className="calendar-create-anniversary"
-            disabled={
-              isLoading || isProcessing
-            }
-            onClick={
-              openAnniversaryManager
-            }
-          >
-            <Heart
-              size={19}
-              strokeWidth={2}
-              aria-hidden="true"
-            />
-
-            <span>
-              <strong>기념일 관리</strong>
-              <small>
-                추가·수정과 반복 설정
-              </small>
-            </span>
-          </button>
-        </section>
-
+        {/*
+          '일정 추가' / '기념일 관리' 큰 버튼 두 개를 달력 아래 따로 두던 것을
+          각 섹션 제목 줄 안으로 옮겼다. (한줄 일기의 '수정'과 같은 자리)
+          무엇에 대한 추가인지 제목 옆에서 바로 읽히고, 달력과 상세 사이를
+          가로막던 덩어리가 사라져 화면이 한 흐름으로 이어진다.
+        */}
         <section className="selected-day-card">
           <div className="selected-day-header">
             <div>
@@ -1221,6 +1175,25 @@ function CalendarPage() {
                   }
                 </span>
               </h3>
+
+              <button
+                type="button"
+                className="section-action-button"
+                disabled={
+                  isLoading || isProcessing
+                }
+                onClick={
+                  openCreateScheduleModal
+                }
+              >
+                <CalendarPlus
+                  size={13}
+                  strokeWidth={2}
+                  aria-hidden="true"
+                />
+
+                <span>추가</span>
+              </button>
             </div>
 
             {selectedDayData.schedules
@@ -1260,8 +1233,8 @@ function CalendarPage() {
                 )}
               </div>
             ) : (
-              <p className="empty-section-message">
-                등록된 일정이 없습니다.
+              <p className="empty-note empty-section-message">
+                등록된 일정이 없어요.
               </p>
             )}
           </div>
@@ -1278,6 +1251,25 @@ function CalendarPage() {
                   }
                 </span>
               </h3>
+
+              <button
+                type="button"
+                className="section-action-button"
+                disabled={
+                  isLoading || isProcessing
+                }
+                onClick={
+                  openAnniversaryManager
+                }
+              >
+                <Heart
+                  size={13}
+                  strokeWidth={2}
+                  aria-hidden="true"
+                />
+
+                <span>관리</span>
+              </button>
             </div>
 
             {selectedDayData.anniversaries
@@ -1330,8 +1322,8 @@ function CalendarPage() {
                   ))}
               </div>
             ) : (
-              <p className="empty-section-message">
-                등록된 기념일이 없습니다.
+              <p className="empty-note empty-section-message">
+                등록된 기념일이 없어요.
               </p>
             )}
           </div>
@@ -1340,83 +1332,81 @@ function CalendarPage() {
             <div className="selected-day-section-title">
               <h3>한줄 일기</h3>
 
-              {!isDiaryEditing && (
-                <button
-                  type="button"
-                  className="diary-edit-button"
-                  disabled={isProcessing}
-                  onClick={() => {
-                    setDiaryDraft(
-                      selectedDayData.diary
-                        .content ?? '',
-                    )
-                    setIsDiaryEditing(true)
-                  }}
-                >
-                  <Pencil
-                    size={13}
-                    strokeWidth={2}
-                    aria-hidden="true"
-                  />
-
-                  <span>수정</span>
-                </button>
-              )}
-            </div>
-
-            {isDiaryEditing ? (
-              <div className="diary-editor">
-                <textarea
-                  value={diaryDraft}
-                  placeholder="오늘의 한줄 일기를 작성해주세요"
-                  rows={3}
-                  disabled={isProcessing}
-                  onChange={(event) =>
-                    setDiaryDraft(
-                      event.target.value,
-                    )
-                  }
+              {/*
+                편집은 시트에서 하므로 이 버튼은 늘 자리를 지킨다.
+                (예전에는 인라인 편집이 열리면 버튼이 사라졌다)
+              */}
+              <button
+                type="button"
+                className="diary-edit-button"
+                disabled={isProcessing}
+                onClick={() => {
+                  setDiaryDraft(
+                    selectedDayData.diary
+                      .content ?? '',
+                  )
+                  setIsDiaryEditing(true)
+                }}
+              >
+                <Pencil
+                  size={13}
+                  strokeWidth={2}
+                  aria-hidden="true"
                 />
 
-                <div>
-                  <button
-                    type="button"
-                    className="diary-cancel-button"
-                    disabled={isProcessing}
-                    onClick={() => {
-                      setDiaryDraft('')
-                      setIsDiaryEditing(
-                        false,
-                      )
-                    }}
-                  >
-                    취소
-                  </button>
+                {/*
+                  아직 아무것도 안 썼는데 '수정'이라고 하면 고칠 것이 있는 줄
+                  알게 된다. 일정·기념일이 없을 때 '추가'라고 하는 것과 같은
+                  말을 쓴다. 이 페이지에서 '추가'는 새로 만들기,
+                  '수정'은 있는 것 고치기로 뜻을 고정한다.
+                */}
+                <span>
+                  {selectedDayData.diary
+                    ?.content?.trim()
+                    ? '수정'
+                    : '추가'}
+                </span>
+              </button>
+            </div>
 
-                  <button
-                    type="button"
-                    className="diary-save-button"
-                    disabled={isProcessing}
-                    onClick={handleDiarySave}
-                  >
-                    {isProcessing
-                      ? '저장 중'
-                      : '저장'}
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <p className="diary-content">
-                {selectedDayData.diary
-                  .content ||
-                  '작성된 한줄 일기가 없습니다.'}
-              </p>
-            )}
+            {/*
+              비었을 때는 일정·기념일과 같은 공용 빈 상태 서식(.empty-note)을 쓴다.
+              내용용 서식(.diary-content)을 그대로 쓰면 안내 문구가 실제로 쓴 일기처럼
+              진하게 놓여 다른 섹션의 빈 상태와 어긋나 보였다.
+            */}
+            <p
+              className={
+                selectedDayData.diary
+                  .content
+                  ? 'diary-content'
+                  : 'empty-note empty-section-message'
+              }
+            >
+              {selectedDayData.diary
+                .content ||
+                '작성된 한줄 일기가 없어요.'}
+            </p>
           </div>
         </section>
       </div>
 
       <BottomNavigation />
+
+      {isDiaryEditing && (
+        <DiaryModal
+          dateLabel={formatSelectedDate(
+            selectedDate,
+          )}
+          value={diaryDraft}
+          isProcessing={isProcessing}
+          onChange={setDiaryDraft}
+          onClose={() => {
+            setDiaryDraft('')
+            setIsDiaryEditing(false)
+          }}
+          onSave={handleDiarySave}
+        />
+      )}
 
       {anniversaryManager.isOpen && (
         <AnniversaryManager

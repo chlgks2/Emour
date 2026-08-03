@@ -1,5 +1,4 @@
 import { useId } from "react";
-import { TrendingUp } from "lucide-react";
 import { MOOD_AXIS } from "../../utils/moodTrendSeries";
 import styles from "./MoodTrendChart.module.css";
 
@@ -39,12 +38,13 @@ export default function MoodTrendChart({
 
   if (allPoints.length === 0) {
     return (
-      <section className={styles.card} aria-labelledby={`${gradientId}-title`}>
-        <p id={`${gradientId}-title`} className={styles.title}>
-          <TrendingUp size={14} aria-hidden="true" />
-          {title}
-        </p>
-        <p className={styles.emptyText}>
+      <section className="surface-plain" aria-labelledby={`${gradientId}-title`}>
+        <header className="section-head">
+          <h2 id={`${gradientId}-title`} className="section-title">
+            {title}
+          </h2>
+        </header>
+        <p className={`empty-note ${styles.emptyText}`}>
           {emptyText.split("\n").map((line, i) => (
             <span key={line}>
               {i > 0 && <br />}
@@ -80,11 +80,12 @@ export default function MoodTrendChart({
   const [primary] = projected;
 
   return (
-    <section className={styles.card} aria-labelledby={`${gradientId}-title`}>
-      <p id={`${gradientId}-title`} className={styles.title}>
-        <TrendingUp size={14} aria-hidden="true" />
-        {title}
-      </p>
+    <section className="surface-plain" aria-labelledby={`${gradientId}-title`}>
+      <header className="section-head">
+        <h2 id={`${gradientId}-title`} className="section-title">
+          {title}
+        </h2>
+      </header>
 
       <svg
         className={styles.chart}

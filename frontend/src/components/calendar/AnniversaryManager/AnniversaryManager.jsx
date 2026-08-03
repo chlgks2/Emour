@@ -28,7 +28,7 @@ function AnniversaryManager({
 }) {
   return (
     <div
-      className="anniversary-manager-backdrop"
+      className="sheet-backdrop anniversary-manager-backdrop"
       role="presentation"
       onMouseDown={(event) => {
         if (
@@ -41,21 +41,18 @@ function AnniversaryManager({
       }}
     >
       <section
-        className="anniversary-manager"
+        className="sheet-panel anniversary-manager"
         role="dialog"
         aria-modal="true"
         aria-labelledby="anniversary-manager-title"
       >
-        <div className="anniversary-manager-handle" />
+        <div className="sheet-handle" />
 
         <header>
-          <div>
-            <p>OUR SPECIAL DAYS</p>
-
-            <h2 id="anniversary-manager-title">
-              기념일 관리
-            </h2>
-          </div>
+          {/* 눈썹 문구(OUR SPECIAL DAYS)는 바로 아래 제목과 같은 말이라 뺐다 */}
+          <h2 id="anniversary-manager-title">
+            기념일 관리
+          </h2>
 
           <button
             type="button"

@@ -410,8 +410,19 @@ export async function fetchDashboardPeriod({
     messageCount: conversationFlow?.totalMessageCount ?? 0,
     imageCount: period === "DAY" ? coupleImageCount : null,
     reactionCount: period === "DAY" ? coupleReactionCount : null,
-    busiestHour: conversationFlow?.busiestHour ?? null,
-    averageResponseSeconds: conversationFlow?.averageResponseSeconds ?? null,
+    /*
+     * 서버 집계(conversation-flow)는 스냅샷 배치가 돌아야 채워진다.
+     * 아직 비어 있으면 '가장 활발했던 시간'과 '평균 답장 시간'이 통째로 사라져
+     * 카드에 안 보이는데, 일간은 원본 대화를 이미 받아왔으니 직접 계산해 채운다.
+     * (fetchDashboard 가 쓰는 폴백과 같은 기준)
+     * busiestHour 는 0시(자정)가 정상값이라 null 일 때만 폴백해야 한다.
+     */
+    busiestHour:
+      conversationFlow?.busiestHour ??
+      (period === "DAY" ? calcBusiestHour(dailyMessages) : null),
+    averageResponseSeconds:
+      conversationFlow?.averageResponseSeconds ??
+      (period === "DAY" ? calcAverageResponseSeconds(dailyMessages) : null),
     dailyFrequency: conversationFlow?.dailyFrequency ?? [],
     // 기간 전환 뒤 frequent-words 요청이 실패해 목록이 사라지는 일을 막고,
     // 메시지/사진/공감과 동일하게 두 사람의 일간 대화 원본을 기준으로 계산한다.

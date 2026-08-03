@@ -248,8 +248,14 @@ export async function removeChatReaction(
  * 채팅 헤더에 쓰는 상대방 정보.
  *
  * 프로필 사진은 GET /users/partner/profile-img 에서 받아온다.
- * 별명(couple_member.partner_nickname)은 아직 어떤 응답 DTO 에도 실려오지 않아
- * 기본 문구를 쓴다. 백엔드가 노출하면 nickname 만 갈아 끼우면 된다.
+ *
+ * ⚠️ 상대방 이름은 아직 어떤 응답에도 실려오지 않는다.
+ *    · MemberProfileImageResponse : { userId, profileImageUrl } — 이름 없음
+ *    · couple_member.partner_nickname : 컬럼은 있으나 노출하는 엔드포인트가 없음
+ *    · 채팅 메시지 DTO : senderId 만 있고 닉네임 없음
+ *    그래서 헤더에 실제 이름을 띄우려면 백엔드가 값을 내려줘야 한다.
+ *    (MemberProfileImageResponse 에 nickname 한 칸이면 충분하다)
+ *    아래는 그 값이 오면 바로 쓰도록 열어둔 것이고, 없으면 기존 문구를 쓴다.
  */
 export async function fetchChatPartner() {
   let partner
@@ -262,7 +268,7 @@ export async function fetchChatPartner() {
 
   return {
     userId: partner?.userId ?? null,
-    nickname: '연인',
+    nickname: partner?.nickname || '연인',
     statusMessage: '',
     profileImageUrl: partner?.profileImageUrl ?? null,
   }

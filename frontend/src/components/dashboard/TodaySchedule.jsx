@@ -1,4 +1,3 @@
-import { CalendarDays } from "lucide-react";
 import { SCHEDULE_TYPE } from "../../constants/enums";
 import styles from "./TodaySchedule.module.css";
 
@@ -25,14 +24,17 @@ export default function TodaySchedule({ schedules = [] }) {
   };
 
   return (
-    <section className={styles.card} aria-labelledby="today-schedule-title">
-      <p id="today-schedule-title" className={styles.title}>
-        <CalendarDays size={14} aria-hidden="true" />
-        오늘의 주요 일정 <span className={styles.count}>{schedules.length}건</span>
-      </p>
+    // 상자 없이 배경 위에 바로. 시간 순서는 왼쪽 세로선이 만들어준다.
+    <section className="surface-plain" aria-labelledby="today-schedule-title">
+      <header className="section-head">
+        <h2 id="today-schedule-title" className="section-title">
+          오늘의 주요 일정
+        </h2>
+        <span className="section-meta">{schedules.length}건</span>
+      </header>
 
       {schedules.length === 0 ? (
-        <p className={styles.emptyText}>오늘은 등록된 일정이 없어요.</p>
+        <p className={`empty-note ${styles.emptyText}`}>오늘은 등록된 일정이 없어요.</p>
       ) : (
         <ul className={styles.timeline}>
           {schedules.map((schedule) => (

@@ -1,33 +1,11 @@
-/* 우리 방의 연결 상대 수정 버튼 */
-
-.mypage-partner-edit-button {
-  width: 30px;
-  height: 30px;
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  border: 0;
-  border-radius: var(--radius-xs);
-  border: 1px solid var(--color-border-strong);
-  background: var(--color-surface);
-  color: var(--color-text-primary);
-  cursor: pointer;
-  transition:
-    background-color var(--duration-fast) var(--ease-out),
-    color var(--duration-fast) var(--ease-out);
-}
-
-.mypage-partner-edit-button:hover:not(:disabled) {
-  background: var(--color-primary-faint);
-  color: var(--color-text-accent);
-}
-
-.mypage-partner-edit-button:disabled {
-  cursor: not-allowed;
-  opacity: 0.5;
-}
+/*
+ * 이 파일에는 '.mypage-partner-edit-button'(애칭 수정 버튼) 규칙도 들어 있었다.
+ * 버튼은 모달이 아니라 마이페이지 화면에 있는데 스타일만 여기 남아 있었고,
+ * 30x30 정사각형에 padding:0 으로 못박아 두는 바람에 MyPagePage.css 에서
+ * 프로필 '수정' 버튼과 같은 알약 모양으로 맞춰도 계속 되돌려졌다.
+ * (같은 특이도라 나중에 로드되는 이 파일이 이겼다)
+ * 이제 버튼 스타일은 MyPagePage.css 한 곳에만 있다.
+ */
 
 /* 모달 배경 */
 
@@ -69,7 +47,7 @@
 
 .partner-nickname-header {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 14px;
 }
@@ -90,14 +68,6 @@
   border-radius: var(--radius-md);
   background: var(--color-primary-faint);
   color: var(--color-primary);
-}
-
-.partner-nickname-header p {
-  margin: 0 0 3px;
-  color: var(--color-primary);
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.12em;
 }
 
 .partner-nickname-header h2 {
