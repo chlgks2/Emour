@@ -25,7 +25,7 @@ body {
   min-width: 320px;
   overflow: hidden;
   color: var(--color-text-primary);
-  /* 프레임 바깥 데스크톱 배경 — CI 배경색 계열의 한 단계 짙은 톤 */
+  /* 무대 바깥 데스크톱 배경 — CI 배경색 계열의 한 단계 짙은 톤 */
   background: var(--ci-bg-deep);
   font-family: var(--font-family);
   font-size: var(--font-body);

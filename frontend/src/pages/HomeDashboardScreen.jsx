@@ -38,7 +38,7 @@ export default function HomeDashboardScreen() {
    * 스냅 컨테이너 "하나만" 스크롤한다.
    *
    * section.scrollIntoView() 를 쓰면 브라우저가 스크롤 가능한 조상을 전부 함께 굴리기
-   * 때문에, 폰 목업(.mobile-layout) 처럼 overflow: hidden 인 바깥 요소까지 밀려 올라간다.
+   * 때문에, 앱 뷰포트(.app-viewport) 처럼 overflow: hidden 인 바깥 요소까지 밀려 올라간다.
    * 컨테이너의 scrollTop 을 직접 지정하면 그런 전파가 일어나지 않는다.
    */
   const scrollToSection = useCallback((sectionRef, behavior) => {

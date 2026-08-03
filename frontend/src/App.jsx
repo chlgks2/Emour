@@ -4,7 +4,7 @@ import {
   Routes,
 } from 'react-router-dom'
 
-import MobileLayout from './layouts/MobileLayout/MobileLayout.jsx'
+import AppViewport from './layouts/AppViewport/AppViewport.jsx'
 import BottomNavigation from './components/common/BottomNavigation/BottomNavigation.jsx'
 import MoodNotificationPrompt from './components/mood/MoodNotificationPrompt.jsx'
 import { AuthProvider } from './context/AuthContext.jsx'
@@ -41,7 +41,7 @@ function App() {
   return (
     <AuthProvider>
       <ToastProvider>
-        <MobileLayout>
+        <AppViewport>
           <Routes>
         <Route
           path="/"
@@ -144,7 +144,7 @@ function App() {
         />
           </Routes>
           <MoodNotificationPrompt />
-        </MobileLayout>
+        </AppViewport>
       </ToastProvider>
     </AuthProvider>
   )

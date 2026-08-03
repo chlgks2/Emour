@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Bookmark, BookmarkX } from "lucide-react";
 import { REACTION_OPTIONS } from "../../constants/reactions";
+import { toAppViewportRect } from "../../layouts/AppViewport/appViewport.js";
 import styles from "./MessageActionPopover.module.css";
 
 /**
@@ -45,12 +46,19 @@ export default function MessageActionPopover({
     const width = el.offsetWidth;
     const height = el.offsetHeight;
 
-    let top = anchorRect.top - height - GAP;
+    /*
+     * 앱 뷰포트가 확대돼 있으면 anchorRect(브라우저 화면 좌표)와
+     * position:fixed 가 쓰는 좌표계가 다르다. 뷰포트 안쪽 좌표로 변환하고,
+     * 화면 경계도 브라우저 창이 아니라 뷰포트 크기로 잡는다.
+     */
+    const anchor = toAppViewportRect(anchorRect);
+
+    let top = anchor.top - height - GAP;
     if (top < EDGE) {
-      top = Math.min(anchorRect.bottom + GAP, window.innerHeight - height - EDGE);
+      top = Math.min(anchor.bottom + GAP, anchor.boundsHeight - height - EDGE);
     }
-    const centered = anchorRect.left + anchorRect.width / 2 - width / 2;
-    const left = Math.max(EDGE, Math.min(centered, window.innerWidth - width - EDGE));
+    const centered = anchor.left + anchor.width / 2 - width / 2;
+    const left = Math.max(EDGE, Math.min(centered, anchor.boundsWidth - width - EDGE));
 
     setPosition({ top, left });
   }, [anchorRect]);
