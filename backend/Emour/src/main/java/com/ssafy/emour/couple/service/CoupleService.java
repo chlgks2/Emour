@@ -57,9 +57,7 @@ public class CoupleService {
         memberRepository.findByIdForUpdate(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
-        if (coupleMemberRepository.existsActiveCoupleByUserId(userId)) {
-            throw new CustomException(ErrorCode.ALREADY_COUPLED);
-        }
+        validateCanStartNewRelationship(userId);
 
         List<CoupleRoom> waitingRooms = coupleMemberRepository.findWaitingRoomsByUserId(
                 userId,
@@ -110,9 +108,7 @@ public class CoupleService {
         memberRepository.findByIdForUpdate(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
-        if (coupleMemberRepository.existsActiveCoupleByUserId(userId)) {
-            throw new CustomException(ErrorCode.ALREADY_COUPLED);
-        }
+        validateCanStartNewRelationship(userId);
 
         String invitationCode = normalizeInvitationCode(request.invitationCode());
         CoupleRoom room = coupleRoomRepository.findByRoomCodeForUpdate(invitationCode)
@@ -134,9 +130,7 @@ public class CoupleService {
         memberRepository.findByIdForUpdate(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
-        if (coupleMemberRepository.existsActiveCoupleByUserId(userId)) {
-            throw new CustomException(ErrorCode.ALREADY_COUPLED);
-        }
+        validateCanStartNewRelationship(userId);
 
         String invitationCode = normalizeInvitationCode(
                 request.invitationCode()
@@ -323,6 +317,17 @@ public class CoupleService {
 
     private String normalizeInvitationCode(String invitationCode) {
         return invitationCode.trim().toUpperCase(Locale.ROOT);
+    }
+
+    private void validateCanStartNewRelationship(Long userId) {
+        boolean hasActiveCouple =
+                coupleMemberRepository.existsActiveCoupleByUserId(userId);
+        boolean retainsInactiveRoom =
+                coupleMemberRepository.existsRetainedInactiveRoomByUserId(userId);
+
+        if (hasActiveCouple || retainsInactiveRoom) {
+            throw new CustomException(ErrorCode.ALREADY_COUPLED);
+        }
     }
 
     private void validateInvitation(CoupleRoom room, Long userId) {

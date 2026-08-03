@@ -213,6 +213,24 @@ class CoupleServiceTest {
         verify(coupleRoomRepository).existsByRoomCode(INVITATION_CODE);
     }
 
+    @Test
+    void retainedInactiveRoomBlocksCreatingAnotherInvitation() {
+        givenLockedMember();
+        given(coupleMemberRepository.existsActiveCoupleByUserId(USER_ID))
+                .willReturn(false);
+        given(coupleMemberRepository.existsRetainedInactiveRoomByUserId(USER_ID))
+                .willReturn(true);
+
+        assertThatThrownBy(() -> coupleService.createInvitation(USER_ID))
+                .isInstanceOf(CustomException.class)
+                .satisfies(exception -> assertThat(
+                        ((CustomException) exception).getErrorCode()
+                ).isEqualTo(ErrorCode.ALREADY_COUPLED));
+
+        verify(invitationCodeGenerator, never()).generate();
+        verify(coupleRoomRepository, never()).save(any(CoupleRoom.class));
+    }
+
     private void givenLockedMember() {
         Member member = Member.builder()
                 .email("couple@example.com")
