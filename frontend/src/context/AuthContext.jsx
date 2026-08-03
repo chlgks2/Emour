@@ -1,5 +1,6 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import * as authApi from "../api/authApi";
+import { SESSION_EXPIRED_EVENT } from "../api/httpClient";
 import { AuthContext } from "../hooks/useAuth";
 
 export function AuthProvider({ children }) {
@@ -15,6 +16,22 @@ export function AuthProvider({ children }) {
   // 지금은 동기 복원이라 항상 false. 나중에 서버에 토큰 검증(GET /auth/me)을 붙이면
   // 그 응답을 기다리는 동안 true 로 두면 된다. (ProtectedRoute 가 이 값으로 로딩 화면을 띄운다)
   const [initializing] = useState(false);
+
+  /*
+   * 토큰이 죽으면(갱신 실패) 여기서도 로그아웃 상태가 되어야 한다.
+   *
+   * 세션 복원을 첫 렌더에 한 번만 하기 때문에, httpClient 가 저장소를 비워도
+   * 이 상태는 그대로 남아 앱이 계속 "로그인됨" 으로 동작했다.
+   * 그 사이 로그인 전용 기능들이 계속 돌아서, 로그인 화면에 있는데도
+   * 무드 기록 알림이 뜨는 일이 생겼다.
+   */
+  useEffect(() => {
+    const handleSessionExpired = () => setUser(null);
+
+    window.addEventListener(SESSION_EXPIRED_EVENT, handleSessionExpired);
+    return () =>
+      window.removeEventListener(SESSION_EXPIRED_EVENT, handleSessionExpired);
+  }, []);
 
   const login = useCallback(async (payload) => {
     const loggedInUser = await authApi.login(payload);

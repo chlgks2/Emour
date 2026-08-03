@@ -131,47 +131,12 @@
   border-top: 1px solid color-mix(in srgb, var(--color-primary) 18%, transparent);
 }
 
-/* 날짜와 펼치기/접기를 한 줄에 */
-.detailHead {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  min-height: 26px;
-}
-
 .detailLabel {
-  margin: 0;
+  margin: 0 0 8px;
   color: var(--color-text-accent);
   font-size: var(--font-micro);
   font-weight: 800;
   letter-spacing: 0.02em;
-}
-
-/* 로즈 면 위에 놓이므로 흰 알약으로 띄운다 */
-.toggleButton {
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  padding: 4px 9px 4px 11px;
-  border: 0;
-  border-radius: var(--radius-pill);
-  background: color-mix(in srgb, var(--color-surface) 72%, transparent);
-  color: var(--color-text-accent);
-  font-size: var(--font-micro);
-  font-weight: 700;
-  cursor: pointer;
-  transition: background-color var(--duration-fast) var(--ease-out);
-}
-
-.toggleButton:hover {
-  background: var(--color-surface);
-}
-
-/* 목록이 펼쳐질 때만 날짜 줄과 간격을 둔다 */
-.detail > .detailHead + * {
-  margin-top: 10px;
 }
 
 @media (max-width: 420px) {
