@@ -28,15 +28,23 @@
  * 하트도 달지 않는다. 아래 일정의 로즈 점과 색이 겹쳐 무엇이 강조인지 흐려졌다.
  * 이름 하나면 충분하고, 무엇의 목록인지는 위 소제목이 말한다.
  */
+/*
+ * 왼쪽 여백은 아래 타임라인과 같은 18px 이다.
+ * 두 묶음의 점이 같은 세로선 위에 서야 한 섹션 안의 목록으로 읽힌다.
+ * 다만 여기에는 관통하는 세로선을 긋지 않는다. 기념일은 시각이 없어서
+ * 순서라는 것이 없고, 선은 "위에서 아래로 흐른다"는 뜻을 갖는다.
+ */
 .anniversaryList {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
+  padding-left: 18px;
   list-style: none;
   margin: 0;
 }
 
 .anniversaryItem {
+  position: relative;
   min-width: 0;
   overflow: hidden;
   color: var(--color-text-primary);
@@ -78,7 +86,11 @@
   font-size: 13px;
 }
 
-/* 선 위에서 이 일정의 위치를 표시하는 점 */
+/*
+ * 항목 앞의 점. 기념일 목록과 일정 타임라인이 같은 점을 쓴다.
+ * 일정 쪽에서는 세로선 위에 얹히는 눈금이고, 기념일 쪽에서는 그냥 글머리다.
+ * 모양이 같아야 두 묶음이 한 섹션의 목록으로 읽힌다.
+ */
 .dot {
   position: absolute;
   left: -18px;
