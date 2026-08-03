@@ -2,6 +2,7 @@ package com.ssafy.emour.member.service;
 
 import com.ssafy.emour.auth.service.RefreshTokenService;
 import com.ssafy.emour.couple.repository.CoupleMemberRepository;
+import com.ssafy.emour.global.storage.FileStorage;
 import com.ssafy.emour.member.dto.response.MemberProfileImageResponse;
 import com.ssafy.emour.member.dto.response.MemberProfileImagesResponse;
 import com.ssafy.emour.member.entity.Member;
@@ -13,6 +14,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Pageable;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.List;
@@ -23,6 +25,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -40,6 +43,9 @@ class MemberServiceTest {
     @Mock
     private RefreshTokenService refreshTokenService;
 
+    @Mock
+    private FileStorage fileStorage;
+
     private MemberService memberService;
 
     @BeforeEach
@@ -48,7 +54,8 @@ class MemberServiceTest {
                 memberRepository,
                 coupleMemberRepository,
                 passwordEncoder,
-                refreshTokenService
+                refreshTokenService,
+                fileStorage
         );
     }
 
@@ -144,6 +151,32 @@ class MemberServiceTest {
         assertThat(response.userId()).isEqualTo(22L);
         assertThat(response.profileImageUrl())
                 .isEqualTo("https://example.com/partner.png");
+    }
+
+    // 업로드한 파일의 저장 주소를 내 프로필 이미지로 반영합니다.
+    @Test
+    void uploadsMyProfileImage() {
+        Member me = member(21L, null);
+        MockMultipartFile image = new MockMultipartFile(
+                "file",
+                "profile.png",
+                "image/png",
+                new byte[]{1, 2, 3}
+        );
+        when(memberRepository.findById(21L))
+                .thenReturn(Optional.of(me));
+        when(fileStorage.store(image))
+                .thenReturn("2026/08/03/profile.png");
+
+        MemberProfileImageResponse response =
+                memberService.uploadProfileImage(21L, image);
+
+        assertThat(response.userId()).isEqualTo(21L);
+        assertThat(response.profileImageUrl())
+                .isEqualTo("/uploads/2026/08/03/profile.png");
+        verify(me).updateProfileImage(
+                "/uploads/2026/08/03/profile.png"
+        );
     }
 
     private Member member(Long userId, String imageUrl) {
