@@ -1,0 +1,136 @@
+.wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  /* 글자 흐름에 얹히는 요소라 줄 높이를 따라가지 않게 */
+  vertical-align: middle;
+  /*
+   * .section-head 는 align-items: baseline 이라, 글자가 없는 이 칸의 기준선이
+   * 아래 모서리로 잡혀 물음표가 제목보다 한참 내려앉는다. 자기 정렬만 뒤집는다.
+   */
+  align-self: center;
+}
+
+/*
+ * 물음표 버튼.
+ *
+ * 아이콘은 15px 이지만 눌리는 영역은 그보다 넓어야 한다. 손가락으로 누르는
+ * 화면에서 15px 과녁은 놓치기 쉽다. 음수 마진으로 여백을 되돌려서,
+ * 커진 과녁이 옆 제목을 밀어내지 않게 한다.
+ */
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  margin: -6px;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--color-text-placeholder);
+  cursor: pointer;
+  transition: color var(--duration-fast) var(--ease-out);
+}
+
+.button:hover,
+.button[aria-expanded="true"] {
+  color: var(--color-text-accent);
+}
+
+/* 분홍 면 위. 회색 placeholder 는 그 면에서 거의 보이지 않는다. */
+.buttonAccent {
+  color: color-mix(in srgb, var(--color-text-accent) 55%, transparent);
+}
+
+.buttonAccent:hover,
+.buttonAccent[aria-expanded="true"] {
+  color: var(--color-text-accent);
+}
+
+/*
+ * 설명 말풍선.
+ *
+ * 어두운 면에 흰 글씨를 쓴다. 이 말풍선이 놓이는 자리가 흰 카드 위이기도 하고
+ * 분홍 카드 위이기도 한데, 밝은 면으로 만들면 그때마다 경계가 묻힌다.
+ * 잠깐 떠 있다 사라지는 것이라 대비가 확실한 편이 낫다.
+ *
+ * width: max-content + max-width 조합이라 짧은 문장은 짧게, 긴 문장은
+ * 240px 에서 접힌다. 좁은 화면에서도 앱 프레임을 넘지 않는 폭이다.
+ */
+.popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  z-index: 40;
+  display: block;
+  width: max-content;
+  max-width: min(240px, 68vw);
+  padding: 9px 11px;
+  border-radius: var(--radius-sm);
+  background: var(--color-text-primary);
+  color: var(--color-surface);
+  font-size: var(--font-micro);
+  font-weight: 500;
+  line-height: 1.55;
+  letter-spacing: 0;
+  text-align: left;
+  word-break: keep-all;
+  box-shadow: var(--shadow-float);
+  /*
+   * 페이드만 준다. 가운데 정렬 변형이 transform: translateX(-50%) 를 쓰고 있어서
+   * 키프레임에서 transform 을 건드리면 그 정렬을 덮어쓴다.
+   */
+  animation: hint-in var(--duration-fast) var(--ease-out);
+}
+
+/*
+ * 버튼이 왼쪽(제목 옆)이면 오른쪽으로, 오른쪽 끝(카드 모서리)이면 왼쪽으로 편다.
+ * center 는 버튼이 화면 한가운데 있을 때(달력의 달 이름 옆)를 위한 것이다.
+ * 그 자리에서 한쪽으로만 펴면 좁은 화면에서 반대쪽 끝이 잘린다.
+ */
+.popoverStart {
+  left: -6px;
+}
+
+.popoverEnd {
+  right: -6px;
+}
+
+.popoverCenter {
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.popoverCenter::before {
+  left: 50%;
+  margin-left: -4px;
+}
+
+/* 어디서 나온 말풍선인지 잇는 꼭지 */
+.popover::before {
+  content: "";
+  position: absolute;
+  top: -3px;
+  width: 8px;
+  height: 8px;
+  transform: rotate(45deg);
+  background: inherit;
+}
+
+.popoverStart::before {
+  left: 12px;
+}
+
+.popoverEnd::before {
+  right: 12px;
+}
+
+@keyframes hint-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .popover {
+    animation: none;
+  }
+}

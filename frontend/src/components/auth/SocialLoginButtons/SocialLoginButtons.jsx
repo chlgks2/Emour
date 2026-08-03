@@ -2,11 +2,6 @@ import { SOCIAL_PROVIDER } from "../../../constants/enums";
 import styles from "./SocialLoginButtons.module.css";
 
 const SVGS = {
-  kakao: (
-    <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
-      <path d="M12 3c-4.97 0-9 3.185-9 7.115 0 2.558 1.708 4.8 4.27 6.054-.19.67-.683 2.42-.782 2.782-.124.453.152.447.32.335.132-.088 2.094-1.42 2.924-1.983.41.057.83.087 1.257.087 4.97 0 9-3.185 9-7.115S16.97 3 12 3z" />
-    </svg>
-  ),
   google: (
     <svg viewBox="0 0 24 24" width="20" height="20">
       <path fill="#EA4335" d="M5.266 9.765A7.077 7.077 0 0112 4.909c1.69 0 3.218.6 4.418 1.582l3.51-3.51C17.817 1.164 15.055 0 12 0 7.34 0 3.32 2.66 1.343 6.549l3.923 3.216z"/>
@@ -17,10 +12,14 @@ const SVGS = {
   ),
 };
 
-// provider 는 social_login.provider 로 그대로 전달되는 값 (대문자)
-// iconKey 는 위 SVGS 조회용 소문자 키
+/*
+ * provider 는 social_login.provider 로 그대로 전달되는 값 (대문자)
+ * iconKey 는 위 SVGS 조회용 소문자 키
+ *
+ * 지금은 구글 하나다. 네이버·카카오는 만들지 않기로 해서 걷어냈다.
+ * 다시 넣을 때는 이 배열에 한 줄, SVGS 에 심볼, CSS 에 브랜드 면색을 더하면 된다.
+ */
 const PROVIDERS = [
-  { provider: SOCIAL_PROVIDER.KAKAO, iconKey: "kakao", label: "카카오", className: "kakao" },
   { provider: SOCIAL_PROVIDER.GOOGLE, iconKey: "google", label: "구글", className: "google" },
 ];
 

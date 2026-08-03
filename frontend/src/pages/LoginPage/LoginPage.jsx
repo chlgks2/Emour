@@ -122,7 +122,11 @@ export default function LoginPage() {
           로그인
         </Button>
 
-        <div className={styles.helperLinks}>
+        {/*
+          계정 찾기는 만들지 않기로 해서 잠시 내려둔다.
+          지우지 않고 남겨 두는 건 다시 살릴 때 자리와 서식을 그대로 쓰기 위해서다.
+          (같이 주석 처리한 .divider 는 '|' 구분자다. 링크가 하나면 필요 없다)
+
           <button
             type="button"
             onClick={() => {
@@ -134,6 +138,8 @@ export default function LoginPage() {
           <span className={styles.divider} aria-hidden="true">
             |
           </span>
+        */}
+        <div className={styles.helperLinks}>
           <Link to="/find-password">비밀번호 찾기</Link>
         </div>
 

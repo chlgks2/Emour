@@ -1,4 +1,3 @@
-import { Heart } from "lucide-react";
 import { SCHEDULE_TYPE } from "../../../constants/enums";
 import styles from "./TodaySchedule.module.css";
 
@@ -48,21 +47,35 @@ export default function TodaySchedule({ schedules = [] }) {
         <span className="section-meta">{schedules.length}건</span>
       </header>
 
-      {anniversaries.length > 0 && (
-        <ul className={styles.anniversaryList}>
-          {anniversaries.map((anniversary) => (
-            <li key={anniversary.scheduleId} className={styles.anniversaryItem}>
-              <Heart size={14} fill="currentColor" stroke="none" aria-hidden="true" />
-              <span className={styles.anniversaryName}>{anniversary.name}</span>
-            </li>
-          ))}
-        </ul>
+      {schedules.length === 0 && (
+        <p className={`empty-note ${styles.emptyText}`}>오늘은 등록된 일정이 없어요.</p>
       )}
 
-      {schedules.length === 0 ? (
-        <p className={`empty-note ${styles.emptyText}`}>오늘은 등록된 일정이 없어요.</p>
-      ) : (
-        timedSchedules.length > 0 && (
+      {/*
+        기념일.
+        하트 아이콘과 분홍 면을 걷어냈다. 한 섹션 안에서 기념일만 색 상자를
+        두르니 '오늘의 주요 일정'의 일부가 아니라 끼어든 배너처럼 보였고,
+        아래 타임라인의 로즈 점과 색이 겹쳐 무엇이 강조인지 흐려졌다.
+        갈라 놓는 일은 작은 소제목이 한다. 항목은 이름만 담백하게 둔다.
+      */}
+      {anniversaries.length > 0 && (
+        <div className={styles.group}>
+          <h3 className={styles.groupTitle}>기념일</h3>
+          <ul className={styles.anniversaryList}>
+            {anniversaries.map((anniversary) => (
+              <li key={anniversary.scheduleId} className={styles.anniversaryItem}>
+                {anniversary.name}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {timedSchedules.length > 0 && (
+        <div className={styles.group}>
+          {/* 기념일이 없으면 나눌 것이 없으므로 소제목도 두지 않는다 */}
+          {anniversaries.length > 0 && <h3 className={styles.groupTitle}>일정</h3>}
+
           <ul className={styles.timeline}>
             {timedSchedules.map((schedule) => (
               <li
@@ -79,7 +92,7 @@ export default function TodaySchedule({ schedules = [] }) {
               </li>
             ))}
           </ul>
-        )
+        </div>
       )}
     </section>
   );
