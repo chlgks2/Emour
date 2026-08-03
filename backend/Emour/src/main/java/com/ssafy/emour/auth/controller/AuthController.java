@@ -2,6 +2,7 @@ package com.ssafy.emour.auth.controller;
 
 import com.ssafy.emour.auth.dto.request.EmailSendRequest;
 import com.ssafy.emour.auth.dto.request.EmailVerifyRequest;
+import com.ssafy.emour.auth.dto.request.GoogleLoginRequest;
 import com.ssafy.emour.auth.dto.request.LoginRequest;
 import com.ssafy.emour.auth.dto.request.PasswordResetRequest;
 import com.ssafy.emour.auth.dto.request.SignUpRequest;
@@ -103,6 +104,26 @@ public class AuthController {
         LoginResponse response = authService.login(request);
         return ResponseEntity.ok(
                 ApiResponse.success("로그인에 성공했습니다.", response)
+        );
+    }
+
+    /**
+     * 구글 소셜 로그인.  POST /auth/login/google
+     * 프론트가 구글에서 받은 ID 토큰을 보내면, 검증 후 우리 서비스 토큰을 발급한다.
+     * 처음 로그인하는 구글 계정이면 회원을 자동 생성한다.
+     */
+    @Operation(
+            summary = "구글 소셜 로그인",
+            description = "구글 ID 토큰을 검증하고 Access/Refresh 토큰을 발급합니다. "
+                    + "가입 이력이 없는 구글 계정은 자동으로 회원 생성됩니다."
+    )
+    @PostMapping("/login/google")
+    public ResponseEntity<ApiResponse<LoginResponse>> googleLogin(
+            @Valid @RequestBody GoogleLoginRequest request
+    ) {
+        LoginResponse response = authService.loginWithGoogle(request.idToken());
+        return ResponseEntity.ok(
+                ApiResponse.success("구글 로그인에 성공했습니다.", response)
         );
     }
 
