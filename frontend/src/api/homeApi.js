@@ -23,7 +23,7 @@ import {
   updateRelationshipStartDate,
 } from "./calendarApi.js";
 import { getCurrentUser } from "./authApi.js";
-import { getMyProfile } from "./memberApi.js";
+import { getMyProfile, getProfileImages } from "./memberApi.js";
 
 const STORAGE_KEY = "emour_mock_home_v1";
 
@@ -98,7 +98,16 @@ async function fetchMe() {
  * 그때까지는 null 을 돌려주고, 화면은 사람 아이콘 플레이스홀더를 보여준다.
  */
 async function fetchPartner() {
-  return null;
+  try {
+    const profiles = await getProfileImages();
+    return {
+      userId: profiles?.partnerUserId ?? null,
+      profileImageUrl:
+        profiles?.partnerProfileImageUrl ?? null,
+    };
+  } catch {
+    return null;
+  }
 }
 
 export async function saveRelationshipStartDate(

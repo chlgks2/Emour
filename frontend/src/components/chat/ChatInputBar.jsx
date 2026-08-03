@@ -1,7 +1,16 @@
-import { Send, Smile } from "lucide-react";
+import { useRef } from "react";
+import { ImagePlus, Send } from "lucide-react";
 import styles from "./ChatInputBar.module.css";
 
-export default function ChatInputBar({ value, onChange, onSend, disabled }) {
+export default function ChatInputBar({
+  value,
+  onChange,
+  onSend,
+  onImagesSelect,
+  disabled,
+}) {
+  const fileInputRef = useRef(null);
+
   const handleKeyDown = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -9,19 +18,36 @@ export default function ChatInputBar({ value, onChange, onSend, disabled }) {
     }
   };
 
+  const handleFilesChange = (event) => {
+    const files = Array.from(event.target.files ?? []);
+    event.target.value = "";
+
+    if (files.length > 0) {
+      onImagesSelect?.(files);
+    }
+  };
+
   return (
     <div className={styles.bar}>
-      {/* 이모지 피커는 아직 미구현. 눌러도 아무 일이 없으면 고장처럼 보이므로
-          명시적으로 비활성화해 둔다. (구현 시 disabled 제거 + onClick 연결) */}
       <button
         type="button"
-        className={styles.emojiBtn}
-        aria-label="이모지 (준비 중)"
-        title="준비 중이에요"
-        disabled
+        className={styles.imageBtn}
+        aria-label="사진 추가"
+        title="사진 추가"
+        disabled={disabled}
+        onClick={() => fileInputRef.current?.click()}
       >
-        <Smile size={20} />
+        <ImagePlus size={21} />
       </button>
+      <input
+        ref={fileInputRef}
+        className={styles.fileInput}
+        type="file"
+        accept="image/*"
+        multiple
+        onChange={handleFilesChange}
+        tabIndex={-1}
+      />
       <input
         className={styles.input}
         value={value}
@@ -30,6 +56,7 @@ export default function ChatInputBar({ value, onChange, onSend, disabled }) {
         placeholder="메시지를 입력하세요"
         aria-label="메시지 입력"
         enterKeyHint="send"
+        disabled={disabled}
       />
       <button
         type="button"
