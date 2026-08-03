@@ -71,7 +71,8 @@ class MoodServiceTest {
         Long userId = 1L;
         Long roomId = 10L;
         MoodCreateRequest request = new MoodCreateRequest(
-                MoodType.VERY_HAPPY
+                MoodType.VERY_HAPPY,
+                "  좋은 일이 있었어요  "
         );
         LocalDateTime currentTime = LocalDateTime.of(
                 2026, 7, 31, 10, 30
@@ -90,7 +91,7 @@ class MoodServiceTest {
         given(coupleRoomRepository.findActiveRoomByUserId(userId))
                 .willReturn(Optional.of(room));
         given(room.getId()).willReturn(roomId);
-        given(moodNotificationRepository.findByRoomIdAndActiveTrue(roomId))
+        given(moodNotificationRepository.findById(roomId))
                 .willReturn(Optional.of(notification));
         given(moodTimeProvider.now()).willReturn(currentTime);
         given(moodRepository.save(any(Mood.class)))
@@ -105,12 +106,14 @@ class MoodServiceTest {
         assertThat(savedMood.getRoomId()).isEqualTo(roomId);
         assertThat(savedMood.getUserId()).isEqualTo(userId);
         assertThat(savedMood.getMoodType()).isEqualTo(MoodType.VERY_HAPPY);
+        assertThat(savedMood.getReason()).isEqualTo("좋은 일이 있었어요");
         assertThat(savedMood.getMoodDatetime()).isEqualTo(expectedSlot);
         assertThat(savedMood.getCreatedAt()).isEqualTo(currentTime);
         assertThat(savedMood.getUpdatedAt()).isEqualTo(currentTime);
         assertThat(response.roomId()).isEqualTo(roomId);
         assertThat(response.moodDatetime()).isEqualTo(expectedSlot);
         assertThat(response.moodType()).isEqualTo(MoodType.VERY_HAPPY);
+        assertThat(response.reason()).isEqualTo("좋은 일이 있었어요");
     }
 
     @Test
@@ -134,7 +137,7 @@ class MoodServiceTest {
         given(coupleRoomRepository.findActiveRoomByUserId(userId))
                 .willReturn(Optional.of(room));
         given(room.getId()).willReturn(roomId);
-        given(moodNotificationRepository.findByRoomIdAndActiveTrue(roomId))
+        given(moodNotificationRepository.findById(roomId))
                 .willReturn(Optional.of(notification));
         given(moodTimeProvider.now()).willReturn(currentTime);
         given(moodRepository.existsByRoomIdAndUserIdAndMoodDatetime(
@@ -216,19 +219,21 @@ class MoodServiceTest {
                 .willReturn(Optional.of(room));
         given(room.getId()).willReturn(roomId);
         given(moodRepository.findById(moodId)).willReturn(Optional.of(mood));
-        given(moodNotificationRepository.findByRoomIdAndActiveTrue(roomId))
+        given(moodNotificationRepository.findById(roomId))
                 .willReturn(Optional.of(notification));
         given(moodTimeProvider.now()).willReturn(currentTime);
 
         var response = moodService.update(
                 userId,
                 moodId,
-                new MoodUpdateRequest(MoodType.HAPPY)
+                new MoodUpdateRequest(MoodType.HAPPY, "  기분이 좋아졌어요  ")
         );
 
         assertThat(mood.getMoodType()).isEqualTo(MoodType.HAPPY);
+        assertThat(mood.getReason()).isEqualTo("기분이 좋아졌어요");
         assertThat(mood.getUpdatedAt()).isEqualTo(currentTime);
         assertThat(response.moodType()).isEqualTo(MoodType.HAPPY);
+        assertThat(response.reason()).isEqualTo("기분이 좋아졌어요");
         assertThat(response.updatedAt()).isEqualTo(currentTime);
     }
 
@@ -292,7 +297,7 @@ class MoodServiceTest {
                 .willReturn(Optional.of(room));
         given(room.getId()).willReturn(roomId);
         given(moodRepository.findById(moodId)).willReturn(Optional.of(mood));
-        given(moodNotificationRepository.findByRoomIdAndActiveTrue(roomId))
+        given(moodNotificationRepository.findById(roomId))
                 .willReturn(Optional.of(notification));
         given(moodTimeProvider.now()).willReturn(currentTime);
 

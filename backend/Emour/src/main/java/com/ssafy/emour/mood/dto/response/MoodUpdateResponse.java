@@ -11,6 +11,7 @@ public record MoodUpdateResponse(
         Long userId,
         LocalDateTime moodDatetime,
         MoodType moodType,
+        String reason,
         LocalDateTime updatedAt
 ) {
     public static MoodUpdateResponse from(Mood mood) {
@@ -20,6 +21,7 @@ public record MoodUpdateResponse(
                 mood.getUserId(),
                 mood.getMoodDatetime(),
                 mood.getMoodType(),
+                mood.getReason(),
                 mood.getUpdatedAt()
         );
     }
