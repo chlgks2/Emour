@@ -10,6 +10,7 @@ import MoodNotificationPrompt from './components/mood/MoodNotificationPrompt.jsx
 import CoupleRouteGuard from './components/routing/CoupleRouteGuard.jsx'
 import { AuthProvider } from './context/AuthContext.jsx'
 import { ToastProvider } from './context/ToastProvider.jsx'
+import { useAuth } from './hooks/useAuth.js'
 
 import AlbumPage from './pages/AlbumPage/AlbumPage.jsx'
 import BookmarkListPage from './pages/BookmarkListPage.jsx'
@@ -35,6 +36,20 @@ function PageWithNavigation({ children }) {
 
       <BottomNavigation />
     </div>
+  )
+}
+
+function AuthenticatedMoodNotification() {
+  const { isAuthenticated, user } = useAuth()
+
+  if (!isAuthenticated || !user?.userId) {
+    return null
+  }
+
+  return (
+    <MoodNotificationPrompt
+      key={user.userId}
+    />
   )
 }
 
@@ -158,7 +173,7 @@ function App() {
           }
         />
           </Routes>
-          <MoodNotificationPrompt />
+          <AuthenticatedMoodNotification />
         </AppViewport>
       </ToastProvider>
     </AuthProvider>

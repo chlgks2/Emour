@@ -6,7 +6,6 @@ import com.ssafy.emour.couple.entity.CoupleMemberStatus;
 import com.ssafy.emour.couple.repository.CoupleMemberRepository;
 import com.ssafy.emour.dashboard.dto.DashboardMainEmotionResponse;
 import com.ssafy.emour.dashboard.dto.DashboardPeriod;
-import com.ssafy.emour.dashboard.entity.Dashboard;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -17,6 +16,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
@@ -49,25 +49,20 @@ class DashboardMainEmotionServiceTest {
         );
     }
 
-    // 저장된 감정별 개수에서 가장 많이 나타난 감정을 찾습니다.
+    // 일 단위 조회도 완료된 원본 분석에서 가장 많이 나타난 감정을 찾습니다.
     @Test
     void returnsMainEmotion() {
         LocalDate date = LocalDate.of(2026, 7, 31);
-        Dashboard dashboard = Dashboard.create(1L, 10L, date);
-        dashboard.updateEmotionSummary("""
-                {
-                  "JOY": 2,
-                  "SADNESS": 1,
-                  "NEUTRAL": 1
-                }
-                """);
-
         when(coupleMemberRepository.existsByIdAndStatus(
                 new CoupleMemberId(10L, 1L),
                 CoupleMemberStatus.ACTIVE
         )).thenReturn(true);
-        when(dashboardSnapshotService.ensureSnapshot(1L, 10L, date))
-                .thenReturn(dashboard);
+        when(chatAnalysisRepository.findCompletedEmotionTypes(
+                1L,
+                10L,
+                date.atStartOfDay(),
+                date.plusDays(1).atStartOfDay()
+        )).thenReturn(List.of("JOY", "JOY", "SADNESS", "NEUTRAL"));
 
         DashboardMainEmotionResponse response =
                 dashboardMainEmotionService.getMainEmotions(
