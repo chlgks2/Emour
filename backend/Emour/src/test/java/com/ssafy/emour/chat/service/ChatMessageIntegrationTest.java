@@ -3,6 +3,7 @@ package com.ssafy.emour.chat.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ssafy.emour.chat.dto.ChatBookmarkListResponse;
 import com.ssafy.emour.chat.dto.ChatHistoryResponse;
+import com.ssafy.emour.chat.dto.ChatImageDeleteResponse;
 import com.ssafy.emour.chat.dto.ChatMessageRequest;
 import com.ssafy.emour.chat.dto.ChatMessageResponse;
 import com.ssafy.emour.chat.dto.ChatReactionRequest;
@@ -48,6 +49,9 @@ class ChatMessageIntegrationTest {
 
     @Autowired
     private ChatReactionService chatReactionService;
+
+    @Autowired
+    private ChatImageDeleteService chatImageDeleteService;
 
     @Autowired
     private DashboardEmotionService dashboardEmotionService;
@@ -178,6 +182,80 @@ class ChatMessageIntegrationTest {
                         "https://image/first.jpg",
                         "https://image/second.jpg"
                 );
+    }
+
+    @Test
+    void deletesOneImageFromMessage() {
+        ChatMessageResponse sent = chatMessageService.sendMessage(
+                1L,
+                10L,
+                new ChatMessageRequest(
+                        "49bbab23-475d-4d73-a266-e1655c61fb4b",
+                        MessageType.IMAGE,
+                        null,
+                        List.of(
+                                "/uploads/2026/08/03/first.jpg",
+                                "/uploads/2026/08/03/second.jpg"
+                        )
+                )
+        );
+        Long deletedImageId = sent.images().get(0).imageId();
+
+        ChatImageDeleteResponse deleted = chatImageDeleteService.deleteImage(
+                deletedImageId,
+                10L
+        );
+        entityManager.flush();
+        entityManager.clear();
+
+        ChatMessageResponse saved = chatMessageService.getMessages(
+                        1L,
+                        10L,
+                        null,
+                        50
+                ).messages().stream()
+                .filter(message -> message.messageId().equals(sent.messageId()))
+                .findFirst()
+                .orElseThrow();
+
+        assertThat(deleted.remainingImageCount()).isEqualTo(1);
+        assertThat(deleted.messageHidden()).isFalse();
+        assertThat(saved.images())
+                .extracting(image -> image.imageUrl())
+                .containsExactly("/uploads/2026/08/03/second.jpg");
+    }
+
+    @Test
+    void deletesMessageWithLastImage() {
+        ChatMessageResponse sent = chatMessageService.sendMessage(
+                1L,
+                10L,
+                new ChatMessageRequest(
+                        "34cc54ae-4218-41e6-946b-299cc7601991",
+                        MessageType.IMAGE,
+                        null,
+                        List.of("/uploads/2026/08/03/only.jpg")
+                )
+        );
+
+        ChatImageDeleteResponse deleted = chatImageDeleteService.deleteImage(
+                sent.images().get(0).imageId(),
+                10L
+        );
+        entityManager.flush();
+        entityManager.clear();
+
+        boolean messageExists = chatMessageService.getMessages(
+                        1L,
+                        10L,
+                        null,
+                        50
+                ).messages().stream()
+                .anyMatch(message -> message.messageId().equals(sent.messageId()));
+
+        assertThat(deleted.remainingImageCount()).isZero();
+        assertThat(deleted.messageHidden()).isTrue();
+        assertThat(messageExists).isFalse();
     }
 
     // 마지막 읽은 위치 뒤의 상대방 메시지만 안 읽은 메시지로 계산합니다.

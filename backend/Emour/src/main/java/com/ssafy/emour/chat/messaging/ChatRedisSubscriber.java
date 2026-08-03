@@ -17,7 +17,7 @@ import java.util.regex.Pattern;
 public class ChatRedisSubscriber implements MessageListener {
 
     private static final Pattern ALLOWED_DESTINATION = Pattern.compile(
-            "^/sub/chat/rooms/\\d+/(messages|read|reactions|analysis)$"
+            "^/sub/chat/rooms/\\d+/(messages|read|reactions|analysis|image-deletions)$"
     );
 
     private final ObjectMapper objectMapper;

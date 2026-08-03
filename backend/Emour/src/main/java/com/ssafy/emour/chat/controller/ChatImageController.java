@@ -1,6 +1,8 @@
 package com.ssafy.emour.chat.controller;
 
+import com.ssafy.emour.chat.dto.ChatImageDeleteResponse;
 import com.ssafy.emour.chat.dto.ChatImageUploadResponse;
+import com.ssafy.emour.chat.service.ChatImageDeleteService;
 import com.ssafy.emour.chat.service.ChatImageUploadService;
 import com.ssafy.emour.global.response.ErrorResponse;
 import com.ssafy.emour.global.util.SecurityUtil;
@@ -15,6 +17,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -33,6 +37,7 @@ import java.util.List;
 public class ChatImageController {
 
     private final ChatImageUploadService chatImageUploadService;
+    private final ChatImageDeleteService chatImageDeleteService;
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
@@ -60,5 +65,29 @@ public class ChatImageController {
                 SecurityUtil.getCurrentUserId(),
                 files
         );
+    }
+
+    @DeleteMapping("/{imageId}")
+    @Operation(
+            summary = "채팅 이미지 삭제",
+            description = "본인이 보낸 이미지 한 장을 삭제합니다. 같은 메시지의 다른 이미지는 유지됩니다."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "삭제 성공"),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "이미지가 없거나 본인이 보낸 이미지가 아님",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+            )
+    })
+    public ChatImageDeleteResponse deleteImage(
+            @Parameter(description = "삭제할 이미지 번호", example = "10")
+            @PathVariable Long imageId
+    ) {
+        ChatImageDeleteResponse response = chatImageDeleteService.deleteImage(
+                imageId,
+                SecurityUtil.getCurrentUserId()
+        );
+        return response;
     }
 }

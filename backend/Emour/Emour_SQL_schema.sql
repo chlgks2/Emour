@@ -244,8 +244,10 @@ CREATE TABLE `chat_message_image` (
     -- 메시지 안에서 이미지가 표시되는 순서
     `display_order` INT NOT NULL DEFAULT 1,
     `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    `deleted_at` DATETIME(6) NULL,
 
     UNIQUE (`message_id`, `display_order`),
+    INDEX `idx_chat_message_image_active` (`message_id`, `deleted_at`),
     CHECK (`display_order` >= 1),
     FOREIGN KEY (`message_id`) REFERENCES `chat_message` (`message_id`) ON DELETE CASCADE
 );
