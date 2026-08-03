@@ -25,7 +25,6 @@ public class DashboardConversationService {
     private final ChatMessageRepository chatMessageRepository;
     private final CoupleMemberRepository coupleMemberRepository;
     // 기존 생성자 호환성을 유지하며, 조회는 원본 데이터 직접 집계를 사용한다.
-    private final DashboardSnapshotService dashboardSnapshotService;
     private final ConversationFlowCalculator conversationFlowCalculator;
     private final Clock dashboardClock;
 

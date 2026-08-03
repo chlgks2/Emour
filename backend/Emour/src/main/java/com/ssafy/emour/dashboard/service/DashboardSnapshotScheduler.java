@@ -12,7 +12,9 @@ import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Slf4j
 @Component
@@ -20,22 +22,21 @@ import java.util.List;
 public class DashboardSnapshotScheduler {
 
     private final CoupleMemberRepository coupleMemberRepository;
-    private final DashboardSnapshotService dashboardSnapshotService;
+    private final DashboardSnapshotService memberDashboardSnapshotService;
+    private final CoupleDashboardSnapshotService coupleDashboardSnapshotService;
     private final Clock dashboardClock;
 
-    // 매 정각 이전 한 시간까지 1차 집계합니다.
     @Scheduled(cron = "0 0 * * * *", zone = "Asia/Seoul")
     public void aggregatePreviousHour() {
-        refreshActiveMembers(false);
+        refreshActiveDashboards(false);
     }
 
-    // 매시간 5분에 같은 범위를 다시 계산해 늦게 저장된 데이터를 최종 반영합니다.
     @Scheduled(cron = "0 5 * * * *", zone = "Asia/Seoul")
     public void finalizePreviousHour() {
-        refreshActiveMembers(true);
+        refreshActiveDashboards(true);
     }
 
-    private void refreshActiveMembers(boolean finalized) {
+    private void refreshActiveDashboards(boolean finalized) {
         LocalDateTime snapshotUntil = LocalDateTime
                 .now(dashboardClock)
                 .truncatedTo(ChronoUnit.HOURS);
@@ -44,25 +45,73 @@ public class DashboardSnapshotScheduler {
                 .toLocalDate();
         List<CoupleMember> members = coupleMemberRepository
                 .findAllByStatus(CoupleMemberStatus.ACTIVE);
+        Set<Long> refreshedRooms = new HashSet<>();
 
         for (CoupleMember member : members) {
-            try {
-                dashboardSnapshotService.refreshSnapshot(
-                        member.getId().getRoomId(),
-                        member.getId().getUserId(),
+            Long roomId = member.getId().getRoomId();
+            Long userId = member.getId().getUserId();
+            refreshMember(
+                    roomId,
+                    userId,
+                    summaryDate,
+                    snapshotUntil,
+                    finalized
+            );
+            if (refreshedRooms.add(roomId)) {
+                refreshCouple(
+                        roomId,
                         summaryDate,
                         snapshotUntil,
                         finalized
                 );
-            } catch (RuntimeException exception) {
-                // 한 사용자의 실패 때문에 다른 커플의 집계까지 멈추지 않게 합니다.
-                log.error(
-                        "대시보드 시간별 집계 실패: roomId={}, userId={}",
-                        member.getId().getRoomId(),
-                        member.getId().getUserId(),
-                        exception
-                );
             }
+        }
+    }
+
+    private void refreshMember(
+            Long roomId,
+            Long userId,
+            LocalDate summaryDate,
+            LocalDateTime snapshotUntil,
+            boolean finalized
+    ) {
+        try {
+            memberDashboardSnapshotService.refreshSnapshot(
+                    roomId,
+                    userId,
+                    summaryDate,
+                    snapshotUntil,
+                    finalized
+            );
+        } catch (RuntimeException exception) {
+            log.error(
+                    "회원 대시보드 집계 실패: roomId={}, userId={}",
+                    roomId,
+                    userId,
+                    exception
+            );
+        }
+    }
+
+    private void refreshCouple(
+            Long roomId,
+            LocalDate summaryDate,
+            LocalDateTime snapshotUntil,
+            boolean finalized
+    ) {
+        try {
+            coupleDashboardSnapshotService.refreshSnapshot(
+                    roomId,
+                    summaryDate,
+                    snapshotUntil,
+                    finalized
+            );
+        } catch (RuntimeException exception) {
+            log.error(
+                    "커플 대시보드 집계 실패: roomId={}",
+                    roomId,
+                    exception
+            );
         }
     }
 }

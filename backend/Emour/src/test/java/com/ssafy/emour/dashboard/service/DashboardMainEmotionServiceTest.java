@@ -30,9 +30,6 @@ class DashboardMainEmotionServiceTest {
     @Mock
     private CoupleMemberRepository coupleMemberRepository;
 
-    @Mock
-    private DashboardSnapshotService dashboardSnapshotService;
-
     private DashboardMainEmotionService dashboardMainEmotionService;
 
     @BeforeEach
@@ -44,7 +41,6 @@ class DashboardMainEmotionServiceTest {
         dashboardMainEmotionService = new DashboardMainEmotionService(
                 chatAnalysisRepository,
                 coupleMemberRepository,
-                dashboardSnapshotService,
                 clock
         );
     }
@@ -57,9 +53,8 @@ class DashboardMainEmotionServiceTest {
                 new CoupleMemberId(10L, 1L),
                 CoupleMemberStatus.ACTIVE
         )).thenReturn(true);
-        when(chatAnalysisRepository.findCompletedEmotionTypes(
+        when(chatAnalysisRepository.findCompletedRoomEmotionTypes(
                 1L,
-                10L,
                 date.atStartOfDay(),
                 date.plusDays(1).atStartOfDay()
         )).thenReturn(List.of("JOY", "JOY", "SADNESS", "NEUTRAL"));
