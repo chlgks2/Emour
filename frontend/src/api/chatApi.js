@@ -1,5 +1,5 @@
 import { apiRequest } from './httpClient.js'
-import { getProfileImages } from './memberApi.js'
+import { getPartnerProfileImage } from './memberApi.js'
 
 const CHAT_ENDPOINTS = {
   messages: '/chats',
@@ -112,14 +112,44 @@ export async function getUnreadChatCount(
 }
 
 export function normalizeChatMessage(
-  message,
+  payload,
 ) {
-  if (!message) {
-    return message
+  const message =
+    payload?.data?.message ??
+    payload?.data ??
+    payload?.message ??
+    payload
+
+  if (!message || typeof message !== 'object') {
+    return null
+  }
+
+  const sentAt = message.sentAt ?? message.sent_at
+  const sentTime = new Date(sentAt).getTime()
+  const messageId = message.messageId ?? message.message_id ?? null
+  const clientMessageId =
+    message.clientMessageId ?? message.client_message_id ?? null
+  const senderId = message.senderId ?? message.sender_id ?? null
+  const images = Array.isArray(message.images) ? message.images : []
+  const content = typeof message.content === 'string' ? message.content : ''
+
+  if (
+    (!messageId && !clientMessageId) ||
+    senderId == null ||
+    !Number.isFinite(sentTime) ||
+    (!content.trim() && images.length === 0)
+  ) {
+    return null
   }
 
   return {
     ...message,
+    messageId,
+    clientMessageId,
+    senderId,
+    sentAt,
+    content,
+    images,
     emotionType:
       message.emotionType ??
       message.emotion ??
@@ -127,6 +157,31 @@ export function normalizeChatMessage(
     analysisStatus:
       message.analysisStatus ?? null,
   }
+}
+
+export function dedupeChatMessages(messages) {
+  const seenMessageIds = new Set()
+  const seenClientIds = new Set()
+
+  return messages.filter((message) => {
+    if (!message) return false
+
+    const messageKey = message.messageId == null
+      ? null
+      : String(message.messageId)
+    const clientKey = message.clientMessageId || null
+
+    if (
+      (messageKey && seenMessageIds.has(messageKey)) ||
+      (clientKey && seenClientIds.has(clientKey))
+    ) {
+      return false
+    }
+
+    if (messageKey) seenMessageIds.add(messageKey)
+    if (clientKey) seenClientIds.add(clientKey)
+    return true
+  })
 }
 
 export async function getPartnerReadStatus(
@@ -244,15 +299,27 @@ export async function removeChatReaction(
  * feature/frontend-minhee의 채팅 화면이 사용하는 호환 API입니다.
  * 기존 Spring 연동 함수는 위에 그대로 유지합니다.
  */
+/**
+ * 채팅 헤더에 쓰는 상대방 정보.
+ *
+ * 프로필 사진은 GET /users/partner/profile-img 에서 받아온다.
+ * 별명(couple_member.partner_nickname)은 아직 어떤 응답 DTO 에도 실려오지 않아
+ * 기본 문구를 쓴다. 백엔드가 노출하면 nickname 만 갈아 끼우면 된다.
+ */
 export async function fetchChatPartner() {
-  const profiles = await getProfileImages()
+  let partner
+
+  try {
+    partner = await getPartnerProfileImage()
+  } catch {
+    partner = null
+  }
 
   return {
+    userId: partner?.userId ?? null,
     nickname: '연인',
     statusMessage: '',
-    profileImageUrl:
-      profiles?.partnerProfileImageUrl ??
-      null,
+    profileImageUrl: partner?.profileImageUrl ?? null,
   }
 }
 
@@ -290,9 +357,11 @@ export async function fetchMessages({
   })
 
   return {
-    messages: (
-      response?.messages ?? []
-    ).map(normalizeChatMessage),
+    messages: dedupeChatMessages(
+      (response?.messages ?? [])
+        .map(normalizeChatMessage)
+        .filter(Boolean),
+    ),
     nextBeforeMessageId:
       response?.nextCursor ?? null,
   }

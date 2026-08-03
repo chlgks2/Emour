@@ -7,8 +7,8 @@ import styles from "./MoodSlotList.module.css";
 /**
  * 하루의 시간대별 기분.
  *
- * 기록이 있는 슬롯만 나열하면 지나간 시간대에 기분을 새로 넣을 방법이 없어서,
- * 알림 설정으로 만든 하루치 슬롯을 전부 깔고 각 칸을 따로 등록/수정하게 한다.
+ * 알림 설정으로 만든 하루치 슬롯을 전부 깔아 그날의 흐름을 시간 순서대로 보여준다.
+ * 등록·수정 버튼은 진행 중인 슬롯 한 칸에만 붙고, 지난 시간대는 보기 전용이다.
  * 대시보드(선택한 날짜)와 캘린더가 같은 컴포넌트를 쓰므로 동작이 어디서나 같다.
  *
  * @param {Array}  mySlots      moodApi 슬롯 (내 기록)
@@ -31,35 +31,51 @@ export default function MoodSlotList({
     return <p className={styles.emptyText}>표시할 시간대가 없어요.</p>;
   }
 
-  return (
-    <ul className={styles.list}>
-      {grid.map((row) => (
-        <li
-          key={row.minutesOfDay}
-          className={`${styles.row} ${row.isFuture ? styles.rowFuture : ""}`}
-        >
-          <span className={styles.time}>{formatSlotTime(row.minutesOfDay)}</span>
+  /*
+   * 기록·수정 버튼은 지금 진행 중인 시간대에만 붙는다. (moodSlotGrid.isEditable)
+   * 서버도 같은 규칙이라 지난 시간대는 등록도 수정도 거절된다.
+   * 버튼이 하나도 없으면 고장 난 것처럼 보여서 이유를 적어둔다.
+   */
+  const hasEditableSlot = grid.some((row) => row.isEditable);
 
-          <div className={styles.pair}>
-            <SlotCell
-              label="나"
-              slot={row.mine}
-              onEdit={
-                row.isEditable
-                  ? () =>
-                      onEditSlot?.({
-                        slot: row.mine,
-                        minutesOfDay:
-                          row.minutesOfDay,
-                      })
-                  : undefined
-              }
-            />
-            <SlotCell label="상대방" slot={row.partner} />
-          </div>
-        </li>
-      ))}
-    </ul>
+  return (
+    <>
+      {!hasEditableSlot && (
+        <p className={styles.emptyText}>
+          {nowMinutes === null
+            ? "지난 날짜는 볼 수만 있어요."
+            : "지금은 기록할 수 있는 시간대가 아니에요."}
+        </p>
+      )}
+
+      <ul className={styles.list}>
+        {grid.map((row) => (
+          <li
+            key={row.minutesOfDay}
+            className={`${styles.row} ${row.isFuture ? styles.rowFuture : ""}`}
+          >
+            <span className={styles.time}>{formatSlotTime(row.minutesOfDay)}</span>
+
+            <div className={styles.pair}>
+              <SlotCell
+                label="나"
+                slot={row.mine}
+                onEdit={
+                  row.isEditable
+                    ? () =>
+                        onEditSlot?.({
+                          slot: row.mine,
+                          minutesOfDay: row.minutesOfDay,
+                        })
+                    : undefined
+                }
+              />
+              <SlotCell label="상대방" slot={row.partner} />
+            </div>
+          </li>
+        ))}
+      </ul>
+    </>
   );
 }
 

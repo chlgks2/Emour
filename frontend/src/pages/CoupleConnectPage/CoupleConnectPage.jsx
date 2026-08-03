@@ -15,6 +15,9 @@ import {
   saveCurrentCoupleRoom,
   savePendingCoupleRoom,
 } from '../../utils/pendingCoupleRoom.js'
+import {
+  invalidateCoupleRoom,
+} from '../../api/coupleRoomContext.js'
 import { useAuth } from '../../hooks/useAuth.js'
 
 import './CoupleConnectPage.css'
@@ -64,6 +67,8 @@ function CoupleConnectPage() {
         invitation,
         user?.userId,
       )
+      // 방이 새로 생겼으니 캐시해 둔 roomId 를 버린다.
+      invalidateCoupleRoom()
 
       navigate('/mypage', {
         replace: true,
@@ -111,6 +116,7 @@ function CoupleConnectPage() {
         connectedRoom,
         user?.userId,
       )
+      invalidateCoupleRoom()
 
       setFeedback({
         type: 'success',

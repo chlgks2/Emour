@@ -16,6 +16,7 @@ import com.ssafy.emour.chat.service.ChatBookmarkService;
 import com.ssafy.emour.chat.service.ChatMessageService;
 import com.ssafy.emour.chat.service.ChatReactionService;
 import com.ssafy.emour.chat.service.ChatReadService;
+import com.ssafy.emour.dashboard.dto.DashboardPeriod;
 import com.ssafy.emour.global.response.ErrorResponse;
 import com.ssafy.emour.global.util.SecurityUtil;
 import io.swagger.v3.oas.annotations.Operation;
@@ -27,6 +28,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -37,6 +39,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.time.LocalDate;
 
 @RestController
 @RequestMapping("/chats")
@@ -235,13 +239,23 @@ public class ChatRestController {
             @RequestParam(required = false) Long beforeBookmarkId,
 
             @Parameter(description = "조회 개수, 최대 100개", example = "20")
-            @RequestParam(required = false) Integer size
+            @RequestParam(required = false) Integer size,
+
+            @Parameter(description = "조회 단위: DAY, MONTH, YEAR")
+            @RequestParam(required = false) DashboardPeriod period,
+
+            @Parameter(description = "메시지를 보낸 기준 날짜. period와 함께 입력")
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate date
     ) {
         return chatBookmarkService.getBookmarks(
                 roomId,
                 SecurityUtil.getCurrentUserId(),
                 beforeBookmarkId,
-                size
+                size,
+                period,
+                date
         );
     }
 

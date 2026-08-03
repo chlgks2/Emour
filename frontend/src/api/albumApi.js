@@ -9,9 +9,12 @@ import {
 } from '../mappers/albumMapper.js'
 
 import {
-  apiBlobRequest,
   apiRequest,
 } from './httpClient.js'
+
+import {
+  resolveProtectedImageUrl,
+} from '../utils/protectedImageUrl.js'
 
 const USE_MOCK_API =
   import.meta.env
@@ -113,54 +116,6 @@ function createMappedMockResponse() {
     chatPhotosResponse:
       mockChatImageResponse,
   })
-}
-
-async function resolveProtectedImageUrl(
-  imageUrl,
-) {
-  if (
-    !imageUrl ||
-    imageUrl.startsWith('blob:') ||
-    imageUrl.startsWith('data:')
-  ) {
-    return imageUrl
-  }
-
-  let requestUrl = imageUrl
-
-  try {
-    const parsedUrl = new URL(
-      imageUrl,
-      window.location.origin,
-    )
-
-    /*
-     * 로컬 백엔드는 이미지 주소를
-     * http://localhost:8080/uploads/... 형태로 반환합니다.
-     * 같은 출처의 Vite 프록시를 통하도록 상대 경로로 바꿉니다.
-     */
-    if (
-      parsedUrl.pathname.startsWith(
-        '/uploads/',
-      )
-    ) {
-      requestUrl =
-        `${parsedUrl.pathname}${parsedUrl.search}`
-    }
-  } catch {
-    requestUrl = imageUrl
-  }
-
-  try {
-    const imageBlob =
-      await apiBlobRequest(requestUrl)
-
-    return URL.createObjectURL(
-      imageBlob,
-    )
-  } catch {
-    return imageUrl
-  }
 }
 
 async function attachProtectedImageUrl(

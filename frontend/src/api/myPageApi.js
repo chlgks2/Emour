@@ -16,14 +16,25 @@ import {
 
 import {
   logout,
+  updateCurrentUserCache,
 } from './authApi.js'
 
 import {
   getMyProfile,
-  uploadMyProfileImage,
+  getPartnerNickname,
   updateMyProfile,
+  updatePartnerNickname as updatePartnerNicknameOnServer,
+  uploadMyProfileImage,
   withdrawMyAccount,
 } from './memberApi.js'
+
+import {
+  invalidateCoupleRoom,
+} from './coupleRoomContext.js'
+
+import {
+  resolveProtectedImageUrl,
+} from '../utils/protectedImageUrl.js'
 
 import {
   clearPendingCoupleRoom,
@@ -219,7 +230,7 @@ export async function getMyPageProfile() {
       )
     : null
 
-  return mapMyPageResponse({
+  const profile = mapMyPageResponse({
     userResponse,
     roomResponse: currentRoom,
     memberResponse: currentRoom
@@ -230,6 +241,30 @@ export async function getMyPageProfile() {
         }
       : null,
   })
+
+  let partner = null
+  if (currentRoom?.status === 'ACTIVE') {
+    try {
+      partner = await getPartnerNickname()
+    } catch {
+      // 상대방 이름만 실패해도 마이페이지의 나머지 정보는 표시한다.
+    }
+  }
+
+  /*
+   * user.profile_image_url 은 인증이 필요한 /uploads/... 경로다.
+   * <img src> 에 그대로 걸면 401 이 나므로 화면에 걸 수 있는 형태로 바꿔서 넘긴다.
+   */
+  return {
+    ...profile,
+    partnerNickname:
+      partner?.partnerNickname ??
+      profile.partnerNickname,
+    profileImageUrl:
+      (await resolveProtectedImageUrl(
+        profile.profileImageUrl,
+      )) ?? '',
+  }
 }
 
 export async function updateMyPageProfile({
@@ -276,17 +311,33 @@ export async function updateMyPageProfile({
     return createMappedMockResponse()
   }
 
-  await updateMyProfile({
+  /*
+   * 사진은 POST /users/profile-img 로 올려 user.profile_image_url 에 저장한다.
+   * 예전에는 이 자리에서 막아두고 목업만 data URL 을 들고 있어서,
+   * 바꾼 사진이 이 브라우저 밖으로 나가지 않았다.
+   */
+  if (profileImageFile) {
+    await uploadMyProfileImage(profileImageFile)
+  }
+
+  const updatedProfile = await updateMyProfile({
     nickname: trimmedNickname,
     statusMessage:
       trimmedStatusMessage,
   })
 
-  if (profileImageFile) {
-    await uploadMyProfileImage(
-      profileImageFile,
-    )
-  }
+  // 로그인할 때 저장해 둔 세션 캐시도 같이 갱신한다. (안 하면 옛 닉네임이 남는다)
+  updateCurrentUserCache({
+    nickname:
+      updatedProfile?.nickname ??
+      trimmedNickname,
+    statusMessage:
+      updatedProfile?.statusMessage ??
+      trimmedStatusMessage,
+    profileImageUrl:
+      updatedProfile?.profileImageUrl ??
+      null,
+  })
 
   return getMyPageProfile()
 }
@@ -335,9 +386,11 @@ export async function updatePartnerNickname({
     return createMappedMockResponse()
   }
 
-  throw new Error(
-    '연인 애칭 수정 API는 아직 제공되지 않습니다.',
+  await updatePartnerNicknameOnServer(
+    trimmedPartnerNickname,
   )
+
+  return getMyPageProfile()
 }
 
 export async function regenerateRoomCode() {
@@ -377,10 +430,18 @@ export async function regenerateRoomCode() {
     return createMappedMockResponse()
   }
 
-  const invitation =
-    await createCoupleInvitation()
+  const [invitation, profile] =
+    await Promise.all([
+      createCoupleInvitation(),
+      getMyProfile(),
+    ])
 
-  savePendingCoupleRoom(invitation)
+  // ownerUserId 를 같이 남겨야 다른 계정으로 로그인했을 때 이 방을 걸러낼 수 있다.
+  savePendingCoupleRoom(
+    invitation,
+    profile?.userId ?? null,
+  )
+  invalidateCoupleRoom()
 
   return getMyPageProfile()
 }
@@ -419,6 +480,8 @@ export async function leaveCoupleRoom() {
 
   await disconnectCouple()
   clearPendingCoupleRoom()
+  // 방이 바뀌었으니 캐시해 둔 roomId 를 버린다. (안 그러면 끝난 방을 계속 조회한다)
+  invalidateCoupleRoom()
 
   return null
 }
@@ -468,6 +531,7 @@ export async function withdrawCurrentUser() {
 
   await withdrawMyAccount()
   clearPendingCoupleRoom()
+  invalidateCoupleRoom()
 
   return null
 }
