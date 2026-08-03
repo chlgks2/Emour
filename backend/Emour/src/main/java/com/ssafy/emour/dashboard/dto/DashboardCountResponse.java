@@ -5,36 +5,45 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-@Schema(description = "사용자의 날짜별 대시보드 개수")
+@Schema(description = "커플방의 기간별 정량 기록")
 public record DashboardCountResponse(
-        @Schema(description = "대시보드 번호", example = "1")
+        @Schema(description = "일 단위 저장 데이터 번호. 월·년 조회에서는 null")
         Long dashboardId,
 
-        @Schema(description = "커플 방 번호", example = "1")
+        @Schema(description = "커플방 번호", example = "1")
         Long roomId,
 
-        @Schema(description = "로그인한 사용자 번호", example = "10")
+        @Schema(description = "조회 요청 사용자 번호", example = "10")
         Long userId,
 
-        @Schema(description = "집계 날짜", example = "2026-07-31")
+        @Schema(description = "조회 단위", example = "MONTH")
+        DashboardPeriod period,
+
+        @Schema(description = "조회 시작 날짜", example = "2026-07-01")
+        LocalDate startDate,
+
+        @Schema(description = "조회 종료 날짜", example = "2026-07-31")
+        LocalDate endDate,
+
+        @Schema(description = "기존 일 단위 응답 호환용 날짜. 조회 시작 날짜와 같습니다.")
         LocalDate summaryDate,
 
-        @Schema(description = "사용자가 보낸 메시지 개수", example = "25")
+        @Schema(description = "커플이 주고받은 메시지 개수", example = "50")
         int messageCount,
 
-        @Schema(description = "사용자가 보낸 이미지 개수", example = "4")
+        @Schema(description = "커플이 채팅으로 주고받은 이미지 개수", example = "8")
         int imageCount,
 
-        @Schema(description = "사용자가 남긴 공감 개수", example = "3")
+        @Schema(description = "커플이 남긴 공감 개수", example = "6")
         int reactionCount,
 
-        @Schema(description = "사용자가 저장한 북마크 개수", example = "2")
+        @Schema(description = "커플이 저장한 북마크 개수", example = "4")
         int bookmarkCount,
 
-        @Schema(description = "마지막 계산 시각")
+        @Schema(description = "계산 시각")
         LocalDateTime calculatedAt,
 
-        @Schema(description = "마지막 수정 시각")
+        @Schema(description = "마지막 갱신 시각")
         LocalDateTime updatedAt
 ) {
 }

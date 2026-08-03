@@ -35,4 +35,10 @@ public interface ChatBookmarkRepository
             LocalDateTime start,
             LocalDateTime end
     );
+
+    long countByRoomIdAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
+            Long roomId,
+            LocalDateTime start,
+            LocalDateTime end
+    );
 }

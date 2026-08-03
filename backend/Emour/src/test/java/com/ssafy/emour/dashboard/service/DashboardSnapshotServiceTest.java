@@ -110,9 +110,8 @@ class DashboardSnapshotServiceTest {
         assertThat(result.getAggregatedUntil()).isEqualTo(boundary);
         assertThat(result.getFinalizedUntil()).isEqualTo(boundary);
         verify(chatMessageRepository)
-                .countByRoomIdAndSenderIdAndSentAtGreaterThanEqualAndSentAtLessThan(
+                .countByRoomIdAndSentAtGreaterThanEqualAndSentAtLessThan(
                         1L,
-                        10L,
                         date.atStartOfDay(),
                         boundary
                 );
