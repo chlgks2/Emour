@@ -9,7 +9,6 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  ChevronUp,
   Pencil,
 } from 'lucide-react'
 
@@ -1142,46 +1141,47 @@ function CalendarPage() {
           */}
           <div className="selected-day-section">
             <div className="selected-day-section-title">
-              <h3>무드트래커</h3>
-
               {/*
-                개수 뱃지 자리를 펼치기/접기가 대신한다.
-                시간대가 하루 8칸이라 늘 펼쳐두면 이 섹션 하나가 상세 카드를
-                거의 다 차지해서 아래 일정·기념일·일기가 화면 밖으로 밀렸다.
-                개수는 펼치면 목록에서 그대로 보인다.
-              */}
-              <button
-                type="button"
-                className="section-action-button"
-                aria-expanded={
-                  isMoodTrackerOpen
-                }
-                onClick={() =>
-                  setIsMoodTrackerOpen(
-                    (previous) => !previous,
-                  )
-                }
-              >
-                <span>
-                  {isMoodTrackerOpen
-                    ? '접기'
-                    : '펼치기'}
-                </span>
+                펼치기/접기는 제목 바로 옆에 둔다.
+                줄 오른쪽 끝에 두면 무엇을 펼치는 버튼인지가 제목에서 멀어지고,
+                옆 섹션들의 '편집' 버튼과 같은 자리라 같은 성격으로 오해된다.
+                (저건 다른 화면을 여는 버튼이고 이건 이 자리에서 여닫는 버튼이다)
 
-                {isMoodTrackerOpen ? (
-                  <ChevronUp
-                    size={13}
-                    strokeWidth={2}
-                    aria-hidden="true"
-                  />
-                ) : (
+                그래서 알약도 벗겼다. 알약은 '누르면 어디론가 간다'는 표시로
+                이 화면에서 이미 쓰이고 있다. 여닫기는 제목의 일부처럼 조용해야 한다.
+              */}
+              <h3>
+                무드트래커
+
+                <button
+                  type="button"
+                  className="section-toggle-button"
+                  aria-expanded={
+                    isMoodTrackerOpen
+                  }
+                  aria-label={
+                    isMoodTrackerOpen
+                      ? '무드트래커 접기'
+                      : '무드트래커 펼치기'
+                  }
+                  onClick={() =>
+                    setIsMoodTrackerOpen(
+                      (previous) => !previous,
+                    )
+                  }
+                >
+                  {/*
+                    화살표 두 개를 갈아끼우지 않고 하나를 돌린다.
+                    갈아끼우면 다른 아이콘이 튀어나온 것처럼 보이는데,
+                    돌리면 같은 것이 방향만 바꾼 것으로 읽힌다.
+                  */}
                   <ChevronDown
-                    size={13}
-                    strokeWidth={2}
+                    size={16}
+                    strokeWidth={2.2}
                     aria-hidden="true"
                   />
-                )}
-              </button>
+                </button>
+              </h3>
             </div>
 
             {isMoodTrackerOpen && (

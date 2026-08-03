@@ -237,6 +237,10 @@ export default function DashboardPage() {
       ? periodDashboard
       : null;
 
+  const conversationTrendSeries = buildConversationTrendSeries(
+    visiblePeriodDashboard?.emotionFlow ?? [],
+  );
+
   const reportPeriodName = {
     DAY: "일간",
     MONTH: "월간",
@@ -454,18 +458,25 @@ export default function DashboardPage() {
               도넛은 "무엇이 얼마나"를 말하고 이 선은 "언제"를 말한다.
               둘 다 같은 기간(GET /dashboards/main-emotions, /emotion-flow)을 본다.
 
+              그릴 점이 없으면 이 자리를 통째로 비운다.
+              두 그래프의 출처가 달라서(main-emotions / emotion-flow) 도넛에는
+              값이 있는데 흐름만 비는 경우가 생기는데, 그때 '아직 분석된 대화가
+              없어요' 가 도넛 바로 아래에 남아 앞말과 모순됐다.
+              둘 다 비었을 때의 안내는 도넛(EmotionReport)이 이미 하고 있다.
+
               ⚠️ emotion-flow 는 로그인한 사용자 본인의 메시지만 집계한다.
                  두 사람을 나란히 그리려면 백엔드 응답이 상대/커플 기준으로 나뉘어야 한다.
                  (backend .../dashboard/service/DashboardEmotionService.java)
             */}
-            <MoodTrendChart
-              bare
-              series={buildConversationTrendSeries(
-                visiblePeriodDashboard?.emotionFlow ?? [],
-              )}
-              axis={CONVERSATION_AXIS}
-              emptyText={"아직 분석된 대화가 없어요.\n대화를 나누면 감정의 흐름이 그려져요."}
-            />
+            {conversationTrendSeries.some(
+              (series) => series.points.length > 0,
+            ) && (
+              <MoodTrendChart
+                bare
+                series={conversationTrendSeries}
+                axis={CONVERSATION_AXIS}
+              />
+            )}
           </div>
         </section>
 
