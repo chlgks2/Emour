@@ -21,7 +21,6 @@ import {
 
 import {
   getMyProfile,
-  uploadMyProfileImage,
   updateMyProfile,
   uploadMyProfileImage,
   withdrawMyAccount,
