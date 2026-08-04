@@ -17,6 +17,14 @@ async function getRoomId(roomId) {
 
 function mapBookmark(bookmark) {
   const message = bookmark.message ?? {}
+  const images = Array.isArray(message.images)
+    ? message.images
+        .map((image) => ({
+          imageId: image?.imageId ?? null,
+          imageUrl: typeof image === 'string' ? image : image?.imageUrl,
+        }))
+        .filter((image) => image.imageUrl)
+    : []
 
   return {
     bookmarkId: bookmark.bookmarkId,
@@ -24,7 +32,9 @@ function mapBookmark(bookmark) {
     messageId: message.messageId,
     content: message.content,
     senderId: message.senderId,
+    messageType: message.messageType,
     sentAt: message.sentAt,
+    images,
     createdAt: bookmark.bookmarkedAt,
   }
 }
@@ -33,6 +43,8 @@ export async function fetchBookmarks({
   cursorBookmarkId = null,
   size = 20,
   roomId,
+  period,
+  date,
 } = {}) {
   const currentRoomId = await getRoomId(roomId)
 
@@ -48,6 +60,8 @@ export async function fetchBookmarks({
     beforeBookmarkId:
       cursorBookmarkId,
     size,
+    period,
+    date,
   })
 
   return {

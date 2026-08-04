@@ -24,6 +24,8 @@ export const MOOD_REPORT_PERIODS = [
   ["DAY", "일간"],
   ["WEEK", "주간"],
   ["MONTH", "월간"],
+  ["YEAR", "연간"],
+  ["ALL", "전체"],
 ];
 
 const MOOD_LEVEL_BY_TYPE = Object.fromEntries(
@@ -59,6 +61,15 @@ export function buildPeriodDateKeys(period, date) {
     const lastDate = new Date(year, month + 1, 0).getDate();
     return Array.from({ length: lastDate }, (_, index) =>
       formatDateKey(new Date(year, month, index + 1)),
+    );
+  }
+
+  if (period === "YEAR") {
+    const year = date.getFullYear();
+    const lastDate = new Date(year, 11, 31);
+    const days = Math.round((lastDate - new Date(year, 0, 1)) / 86400000) + 1;
+    return Array.from({ length: days }, (_, index) =>
+      formatDateKey(new Date(year, 0, index + 1)),
     );
   }
 
@@ -190,7 +201,7 @@ export function buildMoodReportTrend(moodRecords, dateKeys, period) {
               x: index,
               label: WEEKDAY_LABELS[parseDateKey(dateKey).getDay()],
             }))
-          : buildMonthTicks(dateKeys),
+          : buildLongPeriodTicks(dateKeys, period),
       formatX: (index) => formatDayIndex(dateKeys, index, period),
     },
   };
@@ -201,7 +212,24 @@ export function buildMoodReportTrend(moodRecords, dateKeys, period) {
  * 하루마다 붙이면 30개가 겹쳐 뭉개지고, 양 끝에만 붙이면 가운데 점이 며칠인지
  * 셀 수가 없다. 7일 간격이면 눈금이 곧 주 경계라 자리를 짐작하기도 쉽다.
  */
-function buildMonthTicks(dateKeys) {
+function buildLongPeriodTicks(dateKeys, period) {
+  if (period === "YEAR") {
+    return dateKeys
+      .map((dateKey, index) => ({ date: parseDateKey(dateKey), index }))
+      .filter(({ date }) => date.getDate() === 1)
+      .map(({ date, index }) => ({ x: index, label: `${date.getMonth() + 1}월` }));
+  }
+
+  if (period === "ALL") {
+    const step = Math.max(1, Math.ceil(dateKeys.length / 5));
+    return dateKeys
+      .filter((_, index) => index % step === 0 || index === dateKeys.length - 1)
+      .map((dateKey) => ({
+        x: dateKeys.indexOf(dateKey),
+        label: `${parseDateKey(dateKey).getFullYear()}년`,
+      }));
+  }
+
   const ticks = [];
   for (let index = 0; index < dateKeys.length; index += 7) {
     ticks.push({ x: index, label: `${index + 1}일` });
@@ -216,6 +244,9 @@ function formatDayIndex(dateKeys, index, period) {
   const date = parseDateKey(dateKey);
   if (period === "WEEK") {
     return `${date.getMonth() + 1}월 ${date.getDate()}일(${WEEKDAY_LABELS[date.getDay()]})`;
+  }
+  if (period === "YEAR" || period === "ALL") {
+    return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일`;
   }
   return `${date.getDate()}일`;
 }

@@ -1,29 +1,25 @@
 import { useRef, useState } from "react";
-import { X, Check, ImagePlus } from "lucide-react";
+import {
+  AlignCenter,
+  AlignLeft,
+  AlignRight,
+  Blend,
+  Check,
+  GripHorizontal,
+  ImagePlus,
+  Type,
+  X,
+} from "lucide-react";
 import styles from "./HomeEditPage.module.css";
 
-const FONT_SIZES = [
-  { key: "sm", label: "작게" },
-  { key: "md", label: "보통" },
-  { key: "lg", label: "크게" },
-];
-
 const ALIGNS = [
-  { key: "left", label: "왼쪽" },
-  { key: "center", label: "가운데" },
-  { key: "right", label: "오른쪽" },
+  { key: "left", label: "왼쪽 정렬", Icon: AlignLeft },
+  { key: "center", label: "가운데 정렬", Icon: AlignCenter },
+  { key: "right", label: "오른쪽 정렬", Icon: AlignRight },
 ];
 
-const BOX_TONES = [
-  { key: "dim", label: "반투명" },
-  { key: "solid", label: "진하게" },
-  { key: "none", label: "없음" },
-];
-
-const TEXT_COLORS = [
-  { key: "#ffffff", label: "흰색" },
-  { key: "#1c1c1c", label: "검정" },
-];
+const LEGACY_FONT_SIZE = { sm: 15, md: 19, lg: 24 };
+const LEGACY_BOX_TRANSPARENCY = { none: 100, dim: 60, solid: 20 };
 
 // 인스타그램 스토리 업로드 화면 참고: 사진 위에서 문구 박스를 직접 드래그해서
 // 위치를 잡고, 아래 컨트롤에서 문구/크기/정렬/배경 톤/글자색을 고른다.
@@ -32,9 +28,15 @@ export default function HomeEditPage({ initial, onCancel, onSave }) {
   const [imagePreviewUrl, setImagePreviewUrl] = useState(initial?.imageUrl ?? "");
   const [caption, setCaption] = useState(initial?.caption ?? "");
   const [position, setPosition] = useState(initial?.captionPosition ?? { xPercent: 50, yPercent: 72 });
-  const [style, setStyle] = useState(
-    initial?.captionStyle ?? { fontSize: "md", align: "left", box: "dim", color: "#ffffff" }
-  );
+  const initialStyle = initial?.captionStyle ?? {};
+  const [style, setStyle] = useState({
+    fontSizePx: Number(initialStyle.fontSizePx) || LEGACY_FONT_SIZE[initialStyle.fontSize] || 19,
+    backgroundTransparency: Number.isFinite(Number(initialStyle.backgroundTransparency))
+      ? Number(initialStyle.backgroundTransparency)
+      : LEGACY_BOX_TRANSPARENCY[initialStyle.box] ?? 60,
+    align: initialStyle.align ?? "left",
+    color: initialStyle.color ?? "#ffffff",
+  });
   const [saving, setSaving] = useState(false);
 
   const stageRef = useRef(null);
@@ -96,13 +98,8 @@ export default function HomeEditPage({ initial, onCancel, onSave }) {
     top: `${position.yPercent}%`,
     textAlign: style.align,
     color: style.color,
+    background: `rgba(20, 20, 20, ${1 - style.backgroundTransparency / 100})`,
   };
-
-  const boxToneClass =
-    style.box === "solid" ? styles.captionBoxSolid : style.box === "none" ? styles.captionBoxNone : styles.captionBoxDim;
-
-  const fontSizeClass =
-    style.fontSize === "lg" ? styles.captionLg : style.fontSize === "sm" ? styles.captionSm : styles.captionMd;
 
   return (
     <div className={styles.overlay}>
@@ -127,12 +124,60 @@ export default function HomeEditPage({ initial, onCancel, onSave }) {
         <div className={styles.stageGradient} />
 
         <div
-          className={`${styles.captionBox} ${fontSizeClass} ${boxToneClass}`}
+          className={styles.captionBox}
           style={boxInlineStyle}
-          onPointerDown={handleBoxPointerDown}
-          onPointerUp={handleBoxPointerUp}
         >
-          <p className={styles.captionPreviewText}>{caption || "문구를 입력해보세요"}</p>
+          <div className={styles.captionToolbar} aria-label="문구 스타일 편집">
+            <label className={styles.toolbarField} title="글자 크기">
+              <Type size={14} aria-hidden="true" />
+              <input type="number" min="10" max="48" value={style.fontSizePx}
+                onChange={(event) => setStyle((current) => ({ ...current, fontSizePx: Math.min(48, Math.max(10, Number(event.target.value) || 10)) }))} />
+              <span>px</span>
+            </label>
+            <label className={styles.toolbarField} title="배경 투명도">
+              <Blend size={14} aria-hidden="true" />
+              <input type="number" min="0" max="100" value={style.backgroundTransparency}
+                onChange={(event) => setStyle((current) => ({ ...current, backgroundTransparency: Math.min(100, Math.max(0, Number(event.target.value) || 0)) }))} />
+              <span>%</span>
+            </label>
+            <label className={styles.colorField} title="글자색" aria-label="글자색 선택">
+              <input type="color" value={style.color}
+                onChange={(event) => setStyle((current) => ({ ...current, color: event.target.value }))} />
+            </label>
+            <span className={styles.toolbarDivider} aria-hidden="true" />
+            <div className={styles.alignButtons} aria-label="문구 정렬">
+              {ALIGNS.map(({ key, label, Icon }) => (
+                <button key={key} type="button" aria-label={label} aria-pressed={style.align === key}
+                  className={style.align === key ? styles.toolbarButtonActive : ""}
+                  onClick={() => setStyle((current) => ({ ...current, align: key }))}>
+                  <Icon size={15} aria-hidden="true" />
+                </button>
+              ))}
+            </div>
+          </div>
+          <textarea
+            className={styles.captionInlineInput}
+            aria-label="홈 화면 문구"
+            placeholder="문구를 입력해보세요"
+            value={caption}
+            maxLength={60}
+            rows={1}
+            style={{ fontSize: `${style.fontSizePx}px` }}
+            onChange={(event) => {
+              setCaption(event.target.value);
+              event.target.style.height = "auto";
+              event.target.style.height = `${event.target.scrollHeight}px`;
+            }}
+          />
+          <button
+            type="button"
+            className={styles.captionMoveHandle}
+            aria-label="문구 박스 위치 이동"
+            onPointerDown={handleBoxPointerDown}
+            onPointerUp={handleBoxPointerUp}
+          >
+            <GripHorizontal size={18} aria-hidden="true" />
+          </button>
         </div>
 
         <button type="button" className={styles.pickPhotoBtn} onClick={() => fileInputRef.current?.click()}>
@@ -148,71 +193,6 @@ export default function HomeEditPage({ initial, onCancel, onSave }) {
         />
       </div>
 
-      <div className={styles.controls}>
-        <textarea
-          className={styles.captionInput}
-          placeholder="홈 화면에 보여줄 문구를 입력하세요"
-          value={caption}
-          maxLength={60}
-          onChange={(e) => setCaption(e.target.value)}
-        />
-
-        <div className={styles.controlRow}>
-          <span className={styles.controlLabel}>크기</span>
-          {FONT_SIZES.map((opt) => (
-            <button
-              key={opt.key}
-              type="button"
-              className={`${styles.pill} ${style.fontSize === opt.key ? styles.pillActive : ""}`}
-              onClick={() => setStyle((s) => ({ ...s, fontSize: opt.key }))}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
-
-        <div className={styles.controlRow}>
-          <span className={styles.controlLabel}>정렬</span>
-          {ALIGNS.map((opt) => (
-            <button
-              key={opt.key}
-              type="button"
-              className={`${styles.pill} ${style.align === opt.key ? styles.pillActive : ""}`}
-              onClick={() => setStyle((s) => ({ ...s, align: opt.key }))}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
-
-        <div className={styles.controlRow}>
-          <span className={styles.controlLabel}>배경</span>
-          {BOX_TONES.map((opt) => (
-            <button
-              key={opt.key}
-              type="button"
-              className={`${styles.pill} ${style.box === opt.key ? styles.pillActive : ""}`}
-              onClick={() => setStyle((s) => ({ ...s, box: opt.key }))}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
-
-        <div className={styles.controlRow}>
-          <span className={styles.controlLabel}>글자색</span>
-          {TEXT_COLORS.map((opt) => (
-            <button
-              key={opt.key}
-              type="button"
-              className={`${styles.pill} ${style.color === opt.key ? styles.pillActive : ""}`}
-              onClick={() => setStyle((s) => ({ ...s, color: opt.key }))}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
-      </div>
     </div>
   );
 }
