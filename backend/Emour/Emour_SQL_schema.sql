@@ -82,14 +82,17 @@ CREATE TABLE `home_image_setting` (
     `text_content` VARCHAR(100) NULL,
     `text_position_x` DECIMAL(5,2) NULL,
     `text_position_y` DECIMAL(5,2) NULL,
-    `text_size` ENUM('SMALL', 'MEDIUM', 'LARGE') NOT NULL DEFAULT 'MEDIUM',
+    `text_size` INT NOT NULL DEFAULT 24,
     `text_alignment` ENUM('LEFT', 'CENTER', 'RIGHT') NOT NULL DEFAULT 'LEFT',
-    `background_style` ENUM('TRANSLUCENT', 'DARK', 'NONE') NOT NULL DEFAULT 'TRANSLUCENT',
-    `text_color` ENUM('WHITE', 'BLACK') NOT NULL DEFAULT 'WHITE',
+    `background_transparency` INT NOT NULL DEFAULT 80,
+    `text_color` VARCHAR(100) NOT NULL DEFAULT 'rgb(255, 255, 255)',
     `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     `updated_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
 
-    FOREIGN KEY (`room_id`) REFERENCES `couple_room` (`room_id`) ON DELETE CASCADE
+    FOREIGN KEY (`room_id`) REFERENCES `couple_room` (`room_id`) ON DELETE CASCADE,
+    CHECK (`text_size` BETWEEN 10 AND 48),
+    CHECK (`background_transparency` BETWEEN 0 AND 100)
+
 );
 
 CREATE TABLE `couple_member`
