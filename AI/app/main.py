@@ -20,6 +20,8 @@ from .metrics import METRICS, estimate_cost_usd
 from .providers import build_llm
 from .schemas import AnalyzeRequest, AnalyzeResponse
 from .service import analyze
+from .routers_suggest import router as suggest_router
+
 
 logging.basicConfig(
     level=logging.INFO,
@@ -58,6 +60,7 @@ app = FastAPI(
     root_path="/ai", 
 )
 
+app.include_router(suggest_router)
 
 @app.get("/health", tags=["시스템"])
 async def health():
