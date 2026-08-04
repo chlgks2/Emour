@@ -30,6 +30,22 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
             Pageable pageable
     );
 
+    @Query("""
+            select message
+            from ChatMessage message
+            where message.roomId = :roomId
+              and message.messageId < :messageId
+              and message.messageType =
+                  com.ssafy.emour.chat.entity.MessageType.TEXT
+              and message.content is not null
+            order by message.messageId desc
+            """)
+    List<ChatMessage> findRecentTextMessagesBefore(
+            @Param("roomId") Long roomId,
+            @Param("messageId") Long messageId,
+            Pageable pageable
+    );
+
     List<ChatMessage> findByRoomIdAndContentContainingIgnoreCaseOrderByMessageIdDesc(
             Long roomId,
             String keyword,
