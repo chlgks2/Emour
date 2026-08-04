@@ -73,4 +73,43 @@ class ChatBookmarkServiceTest {
                 any(Pageable.class)
         );
     }
+
+    @Test
+    void filtersBookmarksFromSundayToSaturday() {
+        when(coupleMemberRepository.existsByIdAndStatus(
+                new CoupleMemberId(10L, 1L),
+                CoupleMemberStatus.ACTIVE
+        )).thenReturn(true);
+        when(chatBookmarkRepository.findPeriodBookmarks(
+                eq(1L),
+                eq(10L),
+                eq(LocalDate.of(2026, 8, 2).atStartOfDay()),
+                eq(LocalDate.of(2026, 8, 9).atStartOfDay()),
+                any(Pageable.class)
+        )).thenReturn(List.of());
+        ChatBookmarkService service = new ChatBookmarkService(
+                chatBookmarkRepository,
+                coupleMemberRepository,
+                chatMessageService,
+                dashboardChangePublisher
+        );
+
+        ChatBookmarkListResponse response = service.getBookmarks(
+                1L,
+                10L,
+                null,
+                20,
+                DashboardPeriod.WEEK,
+                LocalDate.of(2026, 8, 4)
+        );
+
+        assertThat(response.bookmarks()).isEmpty();
+        verify(chatBookmarkRepository).findPeriodBookmarks(
+                eq(1L),
+                eq(10L),
+                eq(LocalDate.of(2026, 8, 2).atStartOfDay()),
+                eq(LocalDate.of(2026, 8, 9).atStartOfDay()),
+                any(Pageable.class)
+        );
+    }
 }
