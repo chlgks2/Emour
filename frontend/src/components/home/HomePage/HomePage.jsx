@@ -12,7 +12,7 @@ import styles from "./HomePage.module.css";
 // - myProfileImageUrl / partnerProfileImageUrl : user.profile_image_url
 // - datingStartDate : couple_room.dating_start_date ('from 260715' 형태로 표시)
 // - imageUrl / caption / captionPosition / captionStyle
-//   : ⚠️ ERD에 대응 컬럼이 아직 없음 (api/homeApi.js 상단 주석 참고)
+//   : home_image_setting의 커플 공용 설정
 export default function HomePage({
   home,
   onEdit,
