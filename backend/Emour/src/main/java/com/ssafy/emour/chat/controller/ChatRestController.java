@@ -11,11 +11,14 @@ import com.ssafy.emour.chat.dto.ChatReadResponse;
 import com.ssafy.emour.chat.dto.ChatReadStatusResponse;
 import com.ssafy.emour.chat.dto.ChatRestMessageRequest;
 import com.ssafy.emour.chat.dto.ChatUnreadCountResponse;
+import com.ssafy.emour.chat.dto.AiSuggestionResponse;
+import com.ssafy.emour.chat.dto.ChatSuggestionRequest;
 import com.ssafy.emour.chat.messaging.ChatRealtimePublisher;
 import com.ssafy.emour.chat.service.ChatBookmarkService;
 import com.ssafy.emour.chat.service.ChatMessageService;
 import com.ssafy.emour.chat.service.ChatReactionService;
 import com.ssafy.emour.chat.service.ChatReadService;
+import com.ssafy.emour.chat.service.ChatSuggestionService;
 import com.ssafy.emour.dashboard.dto.DashboardPeriod;
 import com.ssafy.emour.global.response.ErrorResponse;
 import com.ssafy.emour.global.util.SecurityUtil;
@@ -27,6 +30,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
@@ -57,6 +61,7 @@ public class ChatRestController {
     private final ChatBookmarkService chatBookmarkService;
     private final ChatReactionService chatReactionService;
     private final ChatRealtimePublisher realtimePublisher;
+    private final ChatSuggestionService chatSuggestionService;
 
     /**
      * 채팅방에 처음 들어오거나 위로 스크롤할 때 이전 메시지를 가져옵니다.
@@ -350,6 +355,38 @@ public class ChatRestController {
         realtimePublisher.publishReaction(
                 reaction.roomId(),
                 new ChatReactionEventResponse(action, reaction)
+        );
+    }
+
+    /** 저장된 내 메시지를 기준으로 세 가지 스타일의 문장을 추천받습니다. */
+    @PostMapping("/suggest")
+    @Operation(
+            summary = "AI 답장 문장 추천",
+            description = "최근 대화 문맥을 AI에 전달해 논리적·공감형·상냥한 문장을 추천합니다."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "추천 성공 또는 안전 정책으로 차단됨"),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "메시지가 없거나 본인의 메시지가 아님",
+                    content = @Content(
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "502",
+                    description = "AI 서버 요청 또는 응답 검증 실패",
+                    content = @Content(
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            )
+    })
+    public AiSuggestionResponse suggestMessage(
+            @Valid @RequestBody ChatSuggestionRequest request
+    ) {
+        return chatSuggestionService.suggest(
+                SecurityUtil.getCurrentUserId(),
+                request
         );
     }
 }
