@@ -259,11 +259,15 @@ export async function getChatBookmarks({
   roomId,
   beforeBookmarkId,
   size,
+  period,
+  date,
 }) {
   const query = createQuery({
     roomId,
     beforeBookmarkId,
     size,
+    period,
+    date: period === 'ALL' ? null : date,
   })
 
   return apiRequest(

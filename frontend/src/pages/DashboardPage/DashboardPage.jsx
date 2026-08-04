@@ -1,5 +1,16 @@
 ﻿import { useCallback, useEffect, useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, CloudOff } from "lucide-react";
+import {
+  CalendarDays,
+  Calendar1,
+  CalendarFold,
+  CalendarRange,
+  Check,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  CloudOff,
+  Infinity as InfinityIcon,
+} from "lucide-react";
 import DashboardTopBar from "../../components/dashboard/DashboardTopBar/DashboardTopBar";
 import DashboardSkeleton from "../../components/dashboard/DashboardSkeleton/DashboardSkeleton";
 import DashboardStats from "../../components/dashboard/DashboardStats/DashboardStats";
@@ -14,7 +25,7 @@ import EmptyState from "../../components/common/EmptyState/EmptyState";
 import HelpHint from "../../components/common/HelpHint/HelpHint";
 import { fetchDashboard, fetchDashboardPeriod } from "../../api/dashboardApi";
 import MoodTrendChart from "../../components/dashboard/MoodTrendChart/MoodTrendChart";
-import { fetchMoodRecordsForMonth, saveMyMood } from "../../api/moodApi";
+import { fetchMoodRecordsForMonth, fetchMoodSlots, saveMyMood } from "../../api/moodApi";
 import {
   MOOD_REPORT_PERIODS,
   buildMoodDistribution,
@@ -45,13 +56,64 @@ const MOOD_TREND_HINT = {
   DAY: "하루 중 어느 시간에 마음이 오르내렸는지 이어봤어요",
   WEEK: "요일마다 마음이 어떻게 달라졌는지 이어봤어요",
   MONTH: "한 달 동안 마음이 어떤 결로 흘러왔는지 이어봤어요",
+  YEAR: "한 해 동안 마음이 어떤 결로 흘러왔는지 이어봤어요",
+  ALL: "함께 기록한 모든 날의 마음 흐름을 이어봤어요",
 };
+
+function PeriodMenu({ value, onChange, label }) {
+  const selectedLabel = MOOD_REPORT_PERIODS.find(([period]) => period === value)?.[1];
+  const periodIcons = {
+    DAY: Calendar1,
+    WEEK: CalendarRange,
+    MONTH: CalendarDays,
+    YEAR: CalendarFold,
+    ALL: InfinityIcon,
+  };
+  const SelectedIcon = periodIcons[value] ?? CalendarDays;
+  return (
+    <details className={styles.periodMenu}>
+      <summary aria-label={label}>
+        <span className={styles.periodMenuTriggerIcon}>
+          <SelectedIcon size={16} aria-hidden="true" />
+        </span>
+        <span className={styles.periodMenuLabel}>{selectedLabel}</span>
+        <ChevronDown className={styles.periodMenuChevron} size={15} aria-hidden="true" />
+      </summary>
+      <div className={styles.periodMenuList}>
+        {MOOD_REPORT_PERIODS.map(([period, periodLabel]) => {
+          const ItemIcon = periodIcons[period];
+          return (
+            <button
+              key={period}
+              type="button"
+              className={value === period ? styles.periodMenuActive : ""}
+              onClick={(event) => {
+                onChange(period);
+                event.currentTarget.closest("details")?.removeAttribute("open");
+              }}
+            >
+              <span className={styles.periodMenuItemIcon}>
+                <ItemIcon size={15} aria-hidden="true" />
+              </span>
+              <span className={styles.periodMenuItemLabel}>{periodLabel}</span>
+              <span className={styles.periodMenuCheck}>
+                {value === period && <Check size={14} aria-hidden="true" />}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </details>
+  );
+}
 
 function formatPeriodLabel(period, date) {
   const year = date.getFullYear();
   const month = date.getMonth() + 1;
 
   if (period === "MONTH") return `${year}년 ${month}월`;
+  if (period === "YEAR") return `${year}년`;
+  if (period === "ALL") return "전체 기간";
 
   if (period === "WEEK") {
     const start = getWeekStart(date);
@@ -77,6 +139,8 @@ function isCurrentPeriod(period, date) {
         date.getMonth() >= now.getMonth())
     );
   }
+  if (period === "YEAR") return date.getFullYear() >= now.getFullYear();
+  if (period === "ALL") return true;
 
   if (period === "WEEK") {
     return getWeekStart(date) >= getWeekStart(now);
@@ -89,6 +153,7 @@ function shiftPeriod(period, date, direction) {
   const next = new Date(date);
 
   if (period === "MONTH") next.setMonth(next.getMonth() + direction, 1);
+  else if (period === "YEAR") next.setFullYear(next.getFullYear() + direction, 0, 1);
   else if (period === "WEEK") next.setDate(next.getDate() + direction * 7);
   else next.setDate(next.getDate() + direction);
 
@@ -210,13 +275,20 @@ export default function DashboardPage() {
    * (fetchMoodRecordsForMonth 는 매번 전체를 받아 걸러내므로 중복 호출이 손해는 아니다)
    */
   useEffect(() => {
+    if (moodPeriod === "ALL" || moodPeriod === "YEAR") {
+      fetchMoodSlots()
+        .then(setMoodRecords)
+        .catch(() => showToast("감정 기록을 불러오지 못했어요.", { tone: "error" }));
+      return;
+    }
+
     loadMonth(moodDate);
     if (moodPeriod === "WEEK") {
       const start = getWeekStart(moodDate);
       loadMonth(start);
       loadMonth(addDays(start, 6));
     }
-  }, [moodDate, moodPeriod, loadMonth]);
+  }, [moodDate, moodPeriod, loadMonth, showToast]);
 
   const refreshDashboard = useCallback(async () => {
     await Promise.allSettled([
@@ -300,8 +372,10 @@ export default function DashboardPage() {
      서버를 다시 부르지 않는다. moodRecords 에 이미 방 전체 기록이 들어와 있어서
      기간에 해당하는 날짜만 골라 세면 된다. (moodApi.fetchMoodSlots 가 전부 받아온다) */
   const moodDateKeys = useMemo(
-    () => buildPeriodDateKeys(moodPeriod, moodDate),
-    [moodPeriod, moodDate],
+    () => moodPeriod === "ALL"
+      ? Object.keys(moodRecords).sort()
+      : buildPeriodDateKeys(moodPeriod, moodDate),
+    [moodPeriod, moodDate, moodRecords],
   );
 
   const myMoodShare = useMemo(
@@ -329,6 +403,8 @@ export default function DashboardPage() {
     DAY: "일간",
     WEEK: "주간",
     MONTH: "월간",
+    YEAR: "연간",
+    ALL: "전체",
   }[reportPeriod];
 
   const isTodayReport =
@@ -490,21 +566,13 @@ export default function DashboardPage() {
           </header>
 
           <div className={styles.reportPanel}>
-            <div className={styles.periodTabs}>
-              {MOOD_REPORT_PERIODS.map(([period, label]) => (
-                <button
-                  key={period}
-                  type="button"
-                  className={moodPeriod === period ? styles.periodTabActive : ""}
-                  aria-pressed={moodPeriod === period}
-                  onClick={() => changeMoodPeriod(period)}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
+            <PeriodMenu
+              value={moodPeriod}
+              onChange={changeMoodPeriod}
+              label="무드트래커 리포트 기간 선택"
+            />
 
-            <div className={styles.periodNavigator}>
+            {moodPeriod !== "ALL" && <div className={styles.periodNavigator}>
               <button type="button" onClick={() => moveMoodDate(-1)} aria-label="이전 기간">
                 <ChevronLeft size={18} />
               </button>
@@ -517,7 +585,7 @@ export default function DashboardPage() {
               >
                 <ChevronRight size={18} />
               </button>
-            </div>
+            </div>}
 
             {/*
               한 상자 안에 그래프가 여럿이다. 같은 기간의 같은 기분을 보는데
@@ -579,21 +647,13 @@ export default function DashboardPage() {
           emotionLabel={`${reportPeriodName} 채팅 감정 분포 비율`}
           periodControl={
             <div className={styles.chatPeriod} aria-busy={periodLoading}>
-              <div className={styles.periodTabs}>
-                {MOOD_REPORT_PERIODS.map(([period, label]) => (
-                  <button
-                    key={period}
-                    type="button"
-                    className={reportPeriod === period ? styles.periodTabActive : ""}
-                    aria-pressed={reportPeriod === period}
-                    onClick={() => changeReportPeriod(period)}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
+              <PeriodMenu
+                value={reportPeriod}
+                onChange={changeReportPeriod}
+                label="대화 기록 리포트 기간 선택"
+              />
 
-              <div className={styles.periodNavigator}>
+              {reportPeriod !== "ALL" && <div className={styles.periodNavigator}>
                 <button type="button" onClick={() => moveReportDate(-1)} aria-label="이전 기간">
                   <ChevronLeft size={18} />
                 </button>
@@ -606,7 +666,7 @@ export default function DashboardPage() {
                 >
                   <ChevronRight size={18} />
                 </button>
-              </div>
+              </div>}
             </div>
           }
         />

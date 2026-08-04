@@ -72,7 +72,7 @@ function buildQuery(params) {
   return query.toString();
 }
 
-/** GET /dashboards/couple/counts — period: 'DAY' | 'WEEK' | 'MONTH' | 'YEAR' */
+/** GET /dashboards/couple/counts — period: 'DAY' | 'WEEK' | 'MONTH' | 'YEAR' | 'ALL' */
 export async function getDailyCounts(roomId, date, period = "DAY") {
   const response = await apiRequest(
     `/dashboards/couple/counts?${buildQuery({ roomId, period, date })}`,
@@ -88,7 +88,7 @@ export async function getMemberCounts(roomId, date, period = "DAY") {
   return unwrap(response);
 }
 
-/** GET /dashboards/couple/main-emotions — period: 'DAY' | 'WEEK' | 'MONTH' | 'YEAR' */
+/** GET /dashboards/couple/main-emotions — period: 'DAY' | 'WEEK' | 'MONTH' | 'YEAR' | 'ALL' */
 export async function getMainEmotions(roomId, date, period = "DAY") {
   const response = await apiRequest(
     `/dashboards/couple/main-emotions?${buildQuery({ roomId, period, date })}`
@@ -96,7 +96,7 @@ export async function getMainEmotions(roomId, date, period = "DAY") {
   return unwrap(response);
 }
 
-/** GET /dashboards/couple/frequent-words — period: 'DAY' | 'WEEK' | 'MONTH' | 'YEAR' */
+/** GET /dashboards/couple/frequent-words — period: 'DAY' | 'WEEK' | 'MONTH' | 'YEAR' | 'ALL' */
 export async function getFrequentWords(
   roomId,
   date,
@@ -406,6 +406,7 @@ export async function fetchDashboardPeriod({
   const currentRoom = await safe(resolveCoupleRoom());
   const roomId = currentRoom?.roomId ?? null;
   const dateKey = formatLocalDateKey(date);
+  const requestDate = period === "ALL" ? null : dateKey;
 
   if (!roomId) {
     throw new Error("연결된 커플방 정보가 없습니다.");
@@ -419,16 +420,16 @@ export async function fetchDashboardPeriod({
     frequentWords,
   ] =
     await Promise.all([
-      safe(getDailyCounts(roomId, dateKey, period), null),
-      safe(getMemberCounts(roomId, dateKey, period), null),
-      safe(getMainEmotions(roomId, dateKey, period), null),
-      safe(getConversationFlow(roomId, dateKey, period), null),
-      safe(getFrequentWords(roomId, dateKey, period), null),
+      safe(getDailyCounts(roomId, requestDate, period), null),
+      safe(getMemberCounts(roomId, requestDate, period), null),
+      safe(getMainEmotions(roomId, requestDate, period), null),
+      safe(getConversationFlow(roomId, requestDate, period), null),
+      safe(getFrequentWords(roomId, requestDate, period), null),
     ]);
 
   return {
     period,
-    date: dateKey,
+    date: period === "ALL" ? null : dateKey,
     startDate: counts?.startDate ?? mainEmotions?.startDate ?? dateKey,
     endDate: counts?.endDate ?? mainEmotions?.endDate ?? dateKey,
     myEmotionSummary: mainEmotions?.me?.emotions ?? [],
