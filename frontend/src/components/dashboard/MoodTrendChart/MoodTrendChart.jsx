@@ -63,6 +63,7 @@ export default function MoodTrendChart({
   title = "기분 흐름",
   emptyText = "아직 기록된 기분이 없어요.\n기분을 기록하면 하루의 흐름이 그려져요.",
   bare = false,
+  onPointSelect,
 }) {
   const gradientId = useId();
 
@@ -203,14 +204,35 @@ export default function MoodTrendChart({
           p.colors.length === 1 ? (
             <circle
               key={p.key}
-              className={styles.dot}
               cx={p.cx}
               cy={p.cy}
               r={DOT_RADIUS}
               fill={p.colors[0]}
+              className={`${styles.dot} ${onPointSelect && p.targetPeriod ? styles.clickableDot : ""}`}
+              role={onPointSelect && p.targetPeriod ? "button" : undefined}
+              tabIndex={onPointSelect && p.targetPeriod ? 0 : undefined}
+              onClick={() => p.targetPeriod && onPointSelect?.(p)}
+              onKeyDown={(event) => {
+                if (p.targetPeriod && (event.key === "Enter" || event.key === " ")) {
+                  event.preventDefault();
+                  onPointSelect?.(p);
+                }
+              }}
             />
           ) : (
-            <g key={p.key} className={styles.splitDot}>
+            <g
+              key={p.key}
+              className={`${styles.splitDot} ${onPointSelect && p.targetPeriod ? styles.clickableDot : ""}`}
+              role={onPointSelect && p.targetPeriod ? "button" : undefined}
+              tabIndex={onPointSelect && p.targetPeriod ? 0 : undefined}
+              onClick={() => p.targetPeriod && onPointSelect?.(p)}
+              onKeyDown={(event) => {
+                if (p.targetPeriod && (event.key === "Enter" || event.key === " ")) {
+                  event.preventDefault();
+                  onPointSelect?.(p);
+                }
+              }}
+            >
               <path d={buildHalfDotPath(p.cx, p.cy, DOT_RADIUS, true)} fill={p.colors[0]} />
               <path d={buildHalfDotPath(p.cx, p.cy, DOT_RADIUS, false)} fill={p.colors[1]} />
               <circle cx={p.cx} cy={p.cy} r={DOT_RADIUS} />
