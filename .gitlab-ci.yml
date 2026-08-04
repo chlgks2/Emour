@@ -50,7 +50,7 @@ build:api:
     - if: ($CI_COMMIT_BRANCH =~ /^develop\// || $CI_COMMIT_BRANCH == "master")
       changes: [backend/**/*]
   script:
-    - docker build -t emour-api:$CI_PIPELINE_IID -t emour-api:latest ./backend/Emour
+    - docker build -t emour-api:$CI_PIPELINE_IID -t ./backend/Emour
 
 deploy:api:dev:
   stage: deploy
