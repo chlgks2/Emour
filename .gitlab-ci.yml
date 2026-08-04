@@ -19,7 +19,7 @@ build:web:
   script:
     - docker build --build-arg VITE_API_BASE_URL=/api --build-arg VITE_WS_BASE_URL=/ws
         --build-arg VITE_GOOGLE_CLIENT_ID=$VITE_GOOGLE_CLIENT_ID
-        -t emour-web:$CI_PIPELINE_IID -t ./frontend
+        -t emour-web:$CI_PIPELINE_IID ./frontend
 
 deploy:web:dev:
   stage: deploy
@@ -30,7 +30,7 @@ deploy:web:dev:
       changes: [frontend/**/*]
   script:
     - /opt/emour/scripts/deploy.sh dev web $CI_PIPELINE_IID
-  environment: { name: development, url: "http://43.203.253.56:8080" }
+  environment: { name: development, url: "http://i15b208.p.ssafy.io:8080" }
 
 deploy:web:prod:
   stage: deploy
@@ -41,7 +41,7 @@ deploy:web:prod:
       changes: [frontend/**/*]
   script:
     - /opt/emour/scripts/deploy.sh prod web $CI_PIPELINE_IID
-  environment: { name: production, url: "https://ec2-43-203-253-56.ap-northeast-2.compute.amazonaws.com" }
+  environment: { name: production, url: "https://i15b208.p.ssafy.io" }
 
 # ============ BACKEND ============
 build:api:
@@ -51,7 +51,7 @@ build:api:
     - if: ($CI_COMMIT_BRANCH =~ /^develop\// || $CI_COMMIT_BRANCH == "master")
       changes: [backend/**/*]
   script:
-    - docker build -t emour-api:$CI_PIPELINE_IID -t ./backend/Emour
+    - docker build -t emour-api:$CI_PIPELINE_IID ./backend/Emour
 
 deploy:api:dev:
   stage: deploy
@@ -83,8 +83,7 @@ build:ai:
     - if: ($CI_COMMIT_BRANCH =~ /^develop\// || $CI_COMMIT_BRANCH == "master")
       changes: [AI/**/*]
   script:
-    - docker build --cache-from emour-ai:latest
-        -t emour-ai:$CI_PIPELINE_IID -t emour-ai:latest ./AI
+    - docker build -t emour-ai:$CI_PIPELINE_IID ./AI
 
 deploy:ai:dev:
   stage: deploy
