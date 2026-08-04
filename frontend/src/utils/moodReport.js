@@ -173,6 +173,24 @@ export function buildMoodReportTrend(moodRecords, dateKeys, period) {
     };
   }
 
+  if (period === "YEAR" || period === "ALL") {
+    const buckets = buildLongPeriodBuckets(dateKeys, period);
+    return {
+      series: [
+        makeSeries("mine", "나", "var(--color-primary)", false,
+          toBucketPoints(moodRecords, buckets, "mySlots")),
+        makeSeries("partner", "상대방", "var(--emotion-surprise)", true,
+          toBucketPoints(moodRecords, buckets, "partnerSlots")),
+      ],
+      axis: {
+        ...MOOD_SCALE,
+        domain: buckets.length === 1 ? [0, 0] : [0, Math.max(buckets.length - 1, 1)],
+        ticks: buckets.map((bucket, index) => ({ x: index, label: bucket.label })),
+        formatX: (index) => buckets[Math.round(index)]?.detailLabel ?? "",
+      },
+    };
+  }
+
   const lastIndex = Math.max(dateKeys.length - 1, 1);
 
   return {
@@ -205,6 +223,65 @@ export function buildMoodReportTrend(moodRecords, dateKeys, period) {
       formatX: (index) => formatDayIndex(dateKeys, index, period),
     },
   };
+}
+
+function buildLongPeriodBuckets(dateKeys, period) {
+  if (period === "YEAR") {
+    const year = parseDateKey(dateKeys[0] ?? formatDateKey(new Date())).getFullYear();
+    return Array.from({ length: 12 }, (_, month) => ({
+      key: `${year}-${String(month + 1).padStart(2, "0")}`,
+      label: `${month + 1}월`,
+      detailLabel: `${year}년 ${month + 1}월`,
+      dateKeys: dateKeys.filter((dateKey) => dateKey.startsWith(
+        `${year}-${String(month + 1).padStart(2, "0")}`,
+      )),
+      targetPeriod: "MONTH",
+      targetDate: `${year}-${String(month + 1).padStart(2, "0")}-01`,
+    }));
+  }
+
+  const years = [...new Set(dateKeys.map((dateKey) => dateKey.slice(0, 4)))].sort();
+  return years.map((year) => ({
+    key: year,
+    label: `${year}년`,
+    detailLabel: `${year}년`,
+    dateKeys: dateKeys.filter((dateKey) => dateKey.startsWith(`${year}-`)),
+    targetPeriod: "YEAR",
+    targetDate: `${year}-01-01`,
+  }));
+}
+
+function toBucketPoints(moodRecords, buckets, slotsKey) {
+  return buckets.map((bucket, index) => {
+    const records = bucket.dateKeys.flatMap((dateKey) =>
+      (moodRecords?.[dateKey]?.[slotsKey] ?? []).map((slot) => ({ slot, dateKey })),
+    );
+    const representative = pickRepresentativeMood(records);
+    if (!representative) return null;
+    return {
+      x: index,
+      y: MOOD_LEVEL_BY_TYPE[representative],
+      label: getMoodLabel(representative),
+      targetPeriod: bucket.targetPeriod,
+      targetDate: bucket.targetDate,
+    };
+  }).filter(Boolean);
+}
+
+function pickRepresentativeMood(records) {
+  const counted = new Map();
+  records.forEach(({ slot, dateKey }) => {
+    if (!slot?.moodType) return;
+    const previous = counted.get(slot.moodType) ?? { count: 0, latest: "" };
+    const latest = `${dateKey}-${String(slot.minutesOfDay ?? 0).padStart(4, "0")}`;
+    counted.set(slot.moodType, {
+      count: previous.count + 1,
+      latest: latest > previous.latest ? latest : previous.latest,
+    });
+  });
+  return [...counted.entries()].sort(([, first], [, second]) =>
+    second.count - first.count || second.latest.localeCompare(first.latest),
+  )[0]?.[0] ?? null;
 }
 
 /**

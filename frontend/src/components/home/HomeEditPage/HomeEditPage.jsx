@@ -20,6 +20,9 @@ const ALIGNS = [
 
 const LEGACY_FONT_SIZE = { sm: 15, md: 19, lg: 24 };
 const LEGACY_BOX_TRANSPARENCY = { none: 100, dim: 60, solid: 20 };
+const clampXPercent = (value) => Math.min(94, Math.max(6, value));
+// 홈 상단의 날짜·커플 프로필과 문구 박스가 겹치지 않는 안전 영역.
+const clampYPercent = (value) => Math.min(94, Math.max(30, value));
 
 // 인스타그램 스토리 업로드 화면 참고: 사진 위에서 문구 박스를 직접 드래그해서
 // 위치를 잡고, 아래 컨트롤에서 문구/크기/정렬/배경 톤/글자색을 고른다.
@@ -27,7 +30,11 @@ export default function HomeEditPage({ initial, onCancel, onSave }) {
   const [imageFile, setImageFile] = useState(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState(initial?.imageUrl ?? "");
   const [caption, setCaption] = useState(initial?.caption ?? "");
-  const [position, setPosition] = useState(initial?.captionPosition ?? { xPercent: 50, yPercent: 72 });
+  const initialPosition = initial?.captionPosition ?? { xPercent: 50, yPercent: 72 };
+  const [position, setPosition] = useState({
+    xPercent: clampXPercent(Number(initialPosition.xPercent) || 50),
+    yPercent: clampYPercent(Number(initialPosition.yPercent) || 72),
+  });
   const initialStyle = initial?.captionStyle ?? {};
   const [style, setStyle] = useState({
     fontSizePx: Number(initialStyle.fontSizePx) || LEGACY_FONT_SIZE[initialStyle.fontSize] || 19,
@@ -37,20 +44,26 @@ export default function HomeEditPage({ initial, onCancel, onSave }) {
     align: initialStyle.align ?? "left",
     color: initialStyle.color ?? "#ffffff",
   });
+  const [fontSizeInput, setFontSizeInput] = useState(String(
+    Number(initialStyle.fontSizePx) || LEGACY_FONT_SIZE[initialStyle.fontSize] || 19,
+  ));
+  const [transparencyInput, setTransparencyInput] = useState(String(
+    Number.isFinite(Number(initialStyle.backgroundTransparency))
+      ? Number(initialStyle.backgroundTransparency)
+      : LEGACY_BOX_TRANSPARENCY[initialStyle.box] ?? 60,
+  ));
   const [saving, setSaving] = useState(false);
 
   const stageRef = useRef(null);
   const draggingRef = useRef(false);
   const fileInputRef = useRef(null);
 
-  const clampPercent = (v) => Math.min(94, Math.max(6, v));
-
   const updatePositionFromPointer = (clientX, clientY) => {
     const rect = stageRef.current?.getBoundingClientRect();
     if (!rect) return;
     setPosition({
-      xPercent: clampPercent(((clientX - rect.left) / rect.width) * 100),
-      yPercent: clampPercent(((clientY - rect.top) / rect.height) * 100),
+      xPercent: clampXPercent(((clientX - rect.left) / rect.width) * 100),
+      yPercent: clampYPercent(((clientY - rect.top) / rect.height) * 100),
     });
   };
 
@@ -130,14 +143,30 @@ export default function HomeEditPage({ initial, onCancel, onSave }) {
           <div className={styles.captionToolbar} aria-label="문구 스타일 편집">
             <label className={styles.toolbarField} title="글자 크기">
               <Type size={14} aria-hidden="true" />
-              <input type="number" min="10" max="48" value={style.fontSizePx}
-                onChange={(event) => setStyle((current) => ({ ...current, fontSizePx: Math.min(48, Math.max(10, Number(event.target.value) || 10)) }))} />
+              <input type="number" min="10" max="48" value={fontSizeInput}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  setFontSizeInput(value);
+                  if (value !== "") setStyle((current) => ({
+                    ...current,
+                    fontSizePx: Math.min(48, Math.max(10, Number(value) || 10)),
+                  }));
+                }}
+                onBlur={() => setFontSizeInput(String(style.fontSizePx))} />
               <span>px</span>
             </label>
             <label className={styles.toolbarField} title="배경 투명도">
               <Blend size={14} aria-hidden="true" />
-              <input type="number" min="0" max="100" value={style.backgroundTransparency}
-                onChange={(event) => setStyle((current) => ({ ...current, backgroundTransparency: Math.min(100, Math.max(0, Number(event.target.value) || 0)) }))} />
+              <input type="number" min="0" max="100" value={transparencyInput}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  setTransparencyInput(value);
+                  if (value !== "") setStyle((current) => ({
+                    ...current,
+                    backgroundTransparency: Math.min(100, Math.max(0, Number(value) || 0)),
+                  }));
+                }}
+                onBlur={() => setTransparencyInput(String(style.backgroundTransparency))} />
               <span>%</span>
             </label>
             <label className={styles.colorField} title="글자색" aria-label="글자색 선택">
