@@ -45,6 +45,44 @@
   margin-top: 26px;
 }
 
+.verificationHint {
+  padding: 14px 16px;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary-soft);
+  color: var(--color-text-secondary);
+  font-size: var(--font-caption);
+  line-height: 1.55;
+}
+
+.verifiedEmail {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 14px 16px;
+  border: 1px solid var(--color-divider);
+  border-radius: 14px;
+  background: var(--color-sub-bg);
+}
+
+.verifiedEmail span {
+  font-size: 12px;
+  color: var(--color-text-sub);
+}
+
+.verifiedEmail strong {
+  font-size: 14px;
+  color: var(--color-primary);
+  overflow-wrap: anywhere;
+}
+
+.changeEmailButton {
+  align-self: center;
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--color-text-sub);
+  text-decoration: underline;
+}
+
 .loginLink {
   margin-top: 20px;
   font-size: var(--font-label);

@@ -40,8 +40,8 @@ export function AuthProvider({ children }) {
   }, []);
 
   // provider: social_login.provider 값 (지금은 'GOOGLE' 하나 — constants/enums.js)
-  const loginWithSocial = useCallback(async (provider) => {
-    const loggedInUser = await authApi.loginWithSocial(provider);
+  const loginWithSocial = useCallback(async (provider, idToken) => {
+    const loggedInUser = await authApi.loginWithSocial(provider, idToken);
     setUser(loggedInUser);
     return loggedInUser;
   }, []);

@@ -3,6 +3,7 @@ import { apiRequest } from './httpClient.js'
 const AUTH_ENDPOINTS = {
   signUp: '/auth/signup',
   login: '/auth/login',
+  googleLogin: '/auth/login/google',
   logout: '/auth/logout',
   emailCheck: '/auth/email-check',
   sendEmailCode: '/auth/email/send',
@@ -12,6 +13,32 @@ const AUTH_ENDPOINTS = {
   verifyPasswordResetCode:
     '/auth/password/verify',
   resetPassword: '/auth/password',
+}
+
+function saveLoginSession(loginData) {
+  if (
+    !loginData?.accessToken ||
+    !loginData?.refreshToken
+  ) {
+    throw new Error(
+      '로그인 응답에 인증 토큰이 없습니다.',
+    )
+  }
+
+  localStorage.setItem(
+    'accessToken',
+    loginData.accessToken,
+  )
+  localStorage.setItem(
+    'refreshToken',
+    loginData.refreshToken,
+  )
+  localStorage.setItem(
+    'currentUser',
+    JSON.stringify(loginData),
+  )
+
+  return loginData
 }
 
 export async function signUp({
@@ -54,29 +81,7 @@ export async function login({
 
   const loginData = response?.data
 
-  if (
-    !loginData?.accessToken ||
-    !loginData?.refreshToken
-  ) {
-    throw new Error(
-      '로그인 응답에 인증 토큰이 없습니다.',
-    )
-  }
-
-  localStorage.setItem(
-    'accessToken',
-    loginData.accessToken,
-  )
-  localStorage.setItem(
-    'refreshToken',
-    loginData.refreshToken,
-  )
-  localStorage.setItem(
-    'currentUser',
-    JSON.stringify(loginData),
-  )
-
-  return loginData
+  return saveLoginSession(loginData)
 }
 
 export async function logout() {
@@ -141,10 +146,25 @@ export function updateCurrentUserCache(changes) {
   return nextUser
 }
 
-export async function loginWithSocial() {
-  throw new Error(
-    '소셜 로그인은 아직 지원하지 않습니다.',
+export async function loginWithSocial(provider, idToken) {
+  if (provider !== 'GOOGLE') {
+    throw new Error('지원하지 않는 소셜 로그인입니다.')
+  }
+
+  if (!idToken) {
+    throw new Error('Google 로그인 정보를 받지 못했습니다.')
+  }
+
+  const response = await apiRequest(
+    AUTH_ENDPOINTS.googleLogin,
+    {
+      method: 'POST',
+      body: { idToken },
+      skipAuth: true,
+    },
   )
+
+  return saveLoginSession(response?.data)
 }
 
 export async function checkEmailAvailability(
