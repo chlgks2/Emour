@@ -132,7 +132,6 @@ export default function HomeEditPage({ initial, onCancel, onSave }) {
           onPointerDown={handleBoxPointerDown}
           onPointerUp={handleBoxPointerUp}
         >
-          <span className={styles.quoteMark}>&ldquo;</span>
           <p className={styles.captionPreviewText}>{caption || "문구를 입력해보세요"}</p>
         </div>
 

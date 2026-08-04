@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
 import styles from "./AuthHeader.module.css";
 
-export default function AuthHeader({ fallbackTo = "/login" }) {
+export default function AuthHeader({ fallbackTo = "/login", showBack = true }) {
   const navigate = useNavigate();
 
   const handleBack = () => {
@@ -12,14 +12,14 @@ export default function AuthHeader({ fallbackTo = "/login" }) {
 
   return (
     <header className={styles.header}>
-      <button
+      {showBack && <button
         type="button"
         className={styles.backBtn}
         onClick={handleBack}
         aria-label="뒤로가기"
       >
         <ChevronLeft size={24} />
-      </button>
+      </button>}
     </header>
   );
 }
