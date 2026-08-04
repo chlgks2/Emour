@@ -15,6 +15,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Service
 @RequiredArgsConstructor
@@ -22,6 +24,9 @@ public class HomeSettingService {
 
     private static final String IMAGE_URL_PREFIX = "/uploads/";
     private static final long MAX_IMAGE_SIZE = 10L * 1024 * 1024;
+    private static final Pattern RGB_COLOR_PATTERN = Pattern.compile(
+            "(?i)^rgb\\(\\s*(\\d{1,3})\\s*,\\s*(\\d{1,3})\\s*,\\s*(\\d{1,3})\\s*\\)$"
+    );
     private static final Set<String> ALLOWED_IMAGE_TYPES = Set.of(
             "image/jpeg",
             "image/png",
@@ -56,8 +61,8 @@ public class HomeSettingService {
                 request.textPositionY(),
                 request.textSize(),
                 request.textAlignment(),
-                request.backgroundStyle(),
-                request.textColor()
+                request.backgroundTransparency(),
+                normalizeRgbColor(request.textColor())
         );
 
         return HomeSettingResponse.from(
@@ -112,6 +117,22 @@ public class HomeSettingService {
             return null;
         }
         return textContent.trim();
+    }
+
+    /** RGB 문자열을 검증하고 프런트에서 사용하기 쉬운 동일한 형식으로 정리합니다. */
+    private String normalizeRgbColor(String textColor) {
+        Matcher matcher = RGB_COLOR_PATTERN.matcher(textColor.trim());
+        if (!matcher.matches()) {
+            throw new CustomException(ErrorCode.INVALID_INPUT);
+        }
+
+        int red = Integer.parseInt(matcher.group(1));
+        int green = Integer.parseInt(matcher.group(2));
+        int blue = Integer.parseInt(matcher.group(3));
+        if (red > 255 || green > 255 || blue > 255) {
+            throw new CustomException(ErrorCode.INVALID_INPUT);
+        }
+        return "rgb(%d, %d, %d)".formatted(red, green, blue);
     }
 
     private Long getActiveRoomId(Long userId) {

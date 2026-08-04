@@ -37,21 +37,18 @@ public class HomeImageSetting {
     @Column(name = "text_position_y", precision = 5, scale = 2)
     private BigDecimal textPositionY;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "text_size", nullable = false, length = 10)
-    private HomeTextSize textSize;
+    @Column(name = "text_size", nullable = false)
+    private Integer textSize;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "text_alignment", nullable = false, length = 10)
     private HomeTextAlignment textAlignment;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "background_style", nullable = false, length = 20)
-    private HomeBackgroundStyle backgroundStyle;
+    @Column(name = "background_transparency", nullable = false)
+    private Integer backgroundTransparency;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "text_color", nullable = false, length = 10)
-    private HomeTextColor textColor;
+    @Column(name = "text_color", nullable = false, length = 100)
+    private String textColor;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -66,10 +63,10 @@ public class HomeImageSetting {
         setting.roomId = roomId;
         setting.textPositionX = new BigDecimal("50.00");
         setting.textPositionY = new BigDecimal("72.00");
-        setting.textSize = HomeTextSize.MEDIUM;
+        setting.textSize = 24;
         setting.textAlignment = HomeTextAlignment.LEFT;
-        setting.backgroundStyle = HomeBackgroundStyle.TRANSLUCENT;
-        setting.textColor = HomeTextColor.WHITE;
+        setting.backgroundTransparency = 80;
+        setting.textColor = "rgb(255, 255, 255)";
         return setting;
     }
 
@@ -77,17 +74,17 @@ public class HomeImageSetting {
             String textContent,
             BigDecimal textPositionX,
             BigDecimal textPositionY,
-            HomeTextSize textSize,
+            Integer textSize,
             HomeTextAlignment textAlignment,
-            HomeBackgroundStyle backgroundStyle,
-            HomeTextColor textColor
+            Integer backgroundTransparency,
+            String textColor
     ) {
         this.textContent = textContent;
         this.textPositionX = textPositionX;
         this.textPositionY = textPositionY;
         this.textSize = textSize;
         this.textAlignment = textAlignment;
-        this.backgroundStyle = backgroundStyle;
+        this.backgroundTransparency = backgroundTransparency;
         this.textColor = textColor;
     }
 
