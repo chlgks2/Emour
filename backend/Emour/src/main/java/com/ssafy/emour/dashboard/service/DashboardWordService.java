@@ -3,7 +3,6 @@ package com.ssafy.emour.dashboard.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ssafy.emour.chat.repository.ChatMessageRepository;
 import com.ssafy.emour.couple.entity.CoupleMemberId;
 import com.ssafy.emour.couple.entity.CoupleMemberStatus;
 import com.ssafy.emour.couple.repository.CoupleMemberRepository;
@@ -20,12 +19,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -34,10 +30,7 @@ public class DashboardWordService {
 
     private static final int DEFAULT_LIMIT = 10;
     private static final int MAX_LIMIT = 50;
-    private static final String WORD_SEPARATOR = "[^\\p{L}\\p{N}]+";
-
-    private final CoupleDashboardSnapshotService coupleDashboardSnapshotService;
-    private final ChatMessageRepository chatMessageRepository;
+    private final DashboardSnapshotRangeService snapshotRangeService;
     private final CoupleMemberRepository coupleMemberRepository;
     private final Clock dashboardClock;
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -54,25 +47,18 @@ public class DashboardWordService {
         int limit = normalizeLimit(requestedLimit);
         DateRange range = createRange(period, date);
 
-        List<FrequentWordItem> allWords;
-        LocalDateTime calculatedAt;
-        if (period == DashboardPeriod.DAY) {
-            CoupleDashboard dashboard = coupleDashboardSnapshotService.ensureSnapshot(
-                    roomId,
-                    userId,
-                    date
-            );
-            allWords = readWords(dashboard.getFrequentWords());
-            calculatedAt = dashboard.getCalculatedAt();
-        } else {
-            List<String> contents = chatMessageRepository.findRoomTextContents(
-                    roomId,
-                    range.startDate().atStartOfDay(),
-                    range.endExclusive().atStartOfDay()
-            );
-            allWords = createFrequentWords(contents);
-            calculatedAt = LocalDateTime.now(dashboardClock);
-        }
+        List<CoupleDashboard> snapshots = snapshotRangeService
+                .getCoupleSnapshots(
+                        roomId,
+                        userId,
+                        range.startDate(),
+                        range.endExclusive()
+                );
+        List<FrequentWordItem> allWords = mergeWords(snapshots);
+        LocalDateTime calculatedAt = snapshots.stream()
+                .map(CoupleDashboard::getCalculatedAt)
+                .max(Comparator.naturalOrder())
+                .orElseGet(() -> LocalDateTime.now(dashboardClock));
 
         List<FrequentWordItem> limitedWords = allWords.stream()
                 .limit(limit)
@@ -93,43 +79,45 @@ public class DashboardWordService {
         );
     }
 
-    private List<FrequentWordItem> createFrequentWords(
-            List<String> contents
+    private List<FrequentWordItem> mergeWords(
+            List<CoupleDashboard> snapshots
     ) {
-        Map<String, Long> counts = contents.stream()
-                .flatMap(content -> splitWords(content).stream())
-                .collect(Collectors.groupingBy(
-                        Function.identity(),
-                        Collectors.counting()
+        Map<String, Integer> counts = snapshots.stream()
+                .flatMap(snapshot -> readWords(
+                        snapshot.getFrequentWords()
+                ).stream())
+                .collect(Collectors.toMap(
+                        FrequentWordItem::word,
+                        FrequentWordItem::count,
+                        Integer::sum
                 ));
         return counts.entrySet().stream()
                 .sorted(Comparator
-                        .<Map.Entry<String, Long>>comparingLong(
+                        .<Map.Entry<String, Integer>>comparingInt(
                                 Map.Entry::getValue
                         )
                         .reversed()
                         .thenComparing(Map.Entry::getKey))
                 .map(entry -> new FrequentWordItem(
                         entry.getKey(),
-                        Math.toIntExact(entry.getValue())
+                        entry.getValue()
                 ))
                 .toList();
     }
 
-    private List<String> splitWords(String content) {
-        if (content == null || content.isBlank()) {
+    private List<FrequentWordItem> readWords(String json) {
+        if (json == null || json.isBlank()) {
             return List.of();
         }
-        String normalized = content
-                .toLowerCase(Locale.ROOT)
-                .replaceAll(WORD_SEPARATOR, " ")
-                .trim();
-        if (normalized.isEmpty()) {
-            return List.of();
+        try {
+            return objectMapper.readValue(
+                    json,
+                    new TypeReference<List<FrequentWordItem>>() {
+                    }
+            );
+        } catch (JsonProcessingException exception) {
+            throw new CustomException(ErrorCode.INTERNAL_ERROR);
         }
-        return Arrays.stream(normalized.split("\\s+"))
-                .filter(word -> !word.isBlank())
-                .toList();
     }
 
     private int normalizeLimit(Integer requestedLimit) {
@@ -140,18 +128,6 @@ public class DashboardWordService {
             throw new CustomException(ErrorCode.INVALID_INPUT);
         }
         return limit;
-    }
-
-    private List<FrequentWordItem> readWords(String json) {
-        try {
-            return objectMapper.readValue(
-                    json,
-                    new TypeReference<List<FrequentWordItem>>() {
-                    }
-            );
-        } catch (JsonProcessingException exception) {
-            throw new CustomException(ErrorCode.INTERNAL_ERROR);
-        }
     }
 
     private DateRange createRange(

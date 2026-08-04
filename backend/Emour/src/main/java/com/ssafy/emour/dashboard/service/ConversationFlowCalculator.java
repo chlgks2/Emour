@@ -8,9 +8,11 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Arrays;
 
 @Component
 public class ConversationFlowCalculator {
@@ -63,7 +65,18 @@ public class ConversationFlowCalculator {
                 messages.size(),
                 findBusiestHour(hourlyCounts),
                 calculateAverageSeconds(responseMillis, responseCount),
-                frequency
+                frequency,
+                Arrays.stream(hourlyCounts).boxed().toList(),
+                responseMillis,
+                responseCount,
+                messages.isEmpty() ? null : messages.get(0).getSenderId(),
+                messages.isEmpty() ? null : messages.get(0).getSentAt(),
+                messages.isEmpty()
+                        ? null
+                        : messages.get(messages.size() - 1).getSenderId(),
+                messages.isEmpty()
+                        ? null
+                        : messages.get(messages.size() - 1).getSentAt()
         );
     }
 
@@ -109,7 +122,14 @@ public class ConversationFlowCalculator {
             int totalMessageCount,
             Integer busiestHour,
             BigDecimal averageResponseSeconds,
-            List<ConversationFrequencyItem> dailyFrequency
+            List<ConversationFrequencyItem> dailyFrequency,
+            List<Integer> hourlyMessageCounts,
+            long responseTimeTotalMillis,
+            int responseCount,
+            Long firstSenderId,
+            LocalDateTime firstSentAt,
+            Long lastSenderId,
+            LocalDateTime lastSentAt
     ) {
     }
 }

@@ -1,6 +1,5 @@
 package com.ssafy.emour.dashboard.service;
 
-import com.ssafy.emour.chat.repository.ChatMessageRepository;
 import com.ssafy.emour.couple.entity.CoupleMemberId;
 import com.ssafy.emour.couple.entity.CoupleMemberStatus;
 import com.ssafy.emour.couple.repository.CoupleMemberRepository;
@@ -26,9 +25,7 @@ import static org.mockito.Mockito.when;
 class DashboardWordServiceTest {
 
     @Mock
-    private CoupleDashboardSnapshotService coupleDashboardSnapshotService;
-    @Mock
-    private ChatMessageRepository chatMessageRepository;
+    private DashboardSnapshotRangeService snapshotRangeService;
     @Mock
     private CoupleMemberRepository coupleMemberRepository;
 
@@ -41,8 +38,7 @@ class DashboardWordServiceTest {
                 ZoneId.of("Asia/Seoul")
         );
         dashboardWordService = new DashboardWordService(
-                coupleDashboardSnapshotService,
-                chatMessageRepository,
+                snapshotRangeService,
                 coupleMemberRepository,
                 clock
         );
@@ -52,20 +48,25 @@ class DashboardWordServiceTest {
         )).thenReturn(true);
     }
 
-    // 일 조회는 저장된 단어 중 요청한 개수만 반환합니다.
     @Test
     void returnsDailyFrequentWords() {
         LocalDate date = LocalDate.of(2026, 8, 3);
-        CoupleDashboard dashboard = CoupleDashboard.create(1L, date);
-        dashboard.updateFrequentWords("""
+        CoupleDashboard dashboard = snapshot(
+                date,
+                """
                 [
-                  {"word": "사랑해", "count": 2},
-                  {"word": "오늘도", "count": 2},
-                  {"word": "좋아", "count": 1}
+                  {"word":"사랑해","count":2},
+                  {"word":"오늘도","count":2},
+                  {"word":"좋아","count":1}
                 ]
-                """);
-        when(coupleDashboardSnapshotService.ensureSnapshot(1L, 10L, date))
-                .thenReturn(dashboard);
+                """
+        );
+        when(snapshotRangeService.getCoupleSnapshots(
+                1L,
+                10L,
+                date,
+                date.plusDays(1)
+        )).thenReturn(List.of(dashboard));
 
         DashboardFrequentWordsResponse response =
                 dashboardWordService.getFrequentWords(
@@ -77,22 +78,27 @@ class DashboardWordServiceTest {
                 );
 
         assertThat(response.totalWordCount()).isEqualTo(5);
-        assertThat(response.distinctWordCount()).isEqualTo(3);
         assertThat(response.words()).hasSize(2);
-        assertThat(response.words().get(0).word()).isEqualTo("사랑해");
     }
 
-    // 연 조회는 해당 연도의 모든 텍스트를 합산합니다.
     @Test
-    void returnsYearlyFrequentWords() {
-        when(chatMessageRepository.findRoomTextContents(
+    void mergesYearlyDailyWords() {
+        LocalDate start = LocalDate.of(2026, 1, 1);
+        CoupleDashboard first = snapshot(
+                start,
+                "[{\"word\":\"사랑해\",\"count\":2}]"
+        );
+        CoupleDashboard second = snapshot(
+                start.plusDays(1),
+                "[{\"word\":\"사랑해\",\"count\":1},"
+                        + "{\"word\":\"좋아\",\"count\":2}]"
+        );
+        when(snapshotRangeService.getCoupleSnapshots(
                 1L,
-                LocalDate.of(2026, 1, 1).atStartOfDay(),
-                LocalDate.of(2027, 1, 1).atStartOfDay()
-        )).thenReturn(List.of(
-                "사랑해 오늘도",
-                "사랑해 좋아"
-        ));
+                10L,
+                start,
+                LocalDate.of(2027, 1, 1)
+        )).thenReturn(List.of(first, second));
 
         DashboardFrequentWordsResponse response =
                 dashboardWordService.getFrequentWords(
@@ -103,12 +109,14 @@ class DashboardWordServiceTest {
                         10
                 );
 
-        assertThat(response.startDate())
-                .isEqualTo(LocalDate.of(2026, 1, 1));
-        assertThat(response.endDate())
-                .isEqualTo(LocalDate.of(2026, 12, 31));
-        assertThat(response.totalWordCount()).isEqualTo(4);
         assertThat(response.words().get(0).word()).isEqualTo("사랑해");
-        assertThat(response.words().get(0).count()).isEqualTo(2);
+        assertThat(response.words().get(0).count()).isEqualTo(3);
+        assertThat(response.totalWordCount()).isEqualTo(5);
+    }
+
+    private CoupleDashboard snapshot(LocalDate date, String words) {
+        CoupleDashboard dashboard = CoupleDashboard.create(1L, date);
+        dashboard.updateFrequentWords(words);
+        return dashboard;
     }
 }

@@ -15,6 +15,11 @@ public interface CoupleRoomRepository extends JpaRepository<CoupleRoom, Long> {
 
     boolean existsByRoomCode(String roomCode);
 
+    /** 대시보드 스냅샷을 같은 방 단위로 안전하게 갱신하기 위한 DB 잠금입니다. */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select cr from CoupleRoom cr where cr.id = :roomId")
+    Optional<CoupleRoom> findByIdForUpdate(@Param("roomId") Long roomId);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select cr from CoupleRoom cr where cr.roomCode = :roomCode")
     Optional<CoupleRoom> findByRoomCodeForUpdate(@Param("roomCode") String roomCode);
