@@ -28,7 +28,7 @@ public class HomeImageSetting {
     @Column(name = "image_url", length = 2048)
     private String imageUrl;
 
-    @Column(name = "text_content", length = 255)
+    @Column(name = "text_content", length = 100)
     private String textContent;
 
     @Column(name = "text_position_x", precision = 5, scale = 2)
