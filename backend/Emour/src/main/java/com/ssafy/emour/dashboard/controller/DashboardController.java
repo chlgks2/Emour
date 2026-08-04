@@ -47,7 +47,8 @@ public class DashboardController {
     public DashboardCountResponse getCounts(
             @RequestParam Long roomId,
             @RequestParam(defaultValue = "DAY") DashboardPeriod period,
-            @RequestParam
+            @Parameter(description = "ALL 조회에서는 생략할 수 있습니다.")
+            @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
             LocalDate date
     ) {
@@ -67,7 +68,8 @@ public class DashboardController {
     public MemberDashboardCountResponse getMemberCounts(
             @RequestParam Long roomId,
             @RequestParam(defaultValue = "DAY") DashboardPeriod period,
-            @RequestParam
+            @Parameter(description = "ALL 조회에서는 생략할 수 있습니다.")
+            @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
             LocalDate date
     ) {
@@ -87,7 +89,8 @@ public class DashboardController {
     public DashboardCoupleEmotionFlowResponse getCoupleEmotionFlow(
             @RequestParam Long roomId,
             @RequestParam(defaultValue = "DAY") DashboardPeriod period,
-            @RequestParam
+            @Parameter(description = "ALL 조회에서는 생략할 수 있습니다.")
+            @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
             LocalDate date
     ) {
@@ -107,7 +110,8 @@ public class DashboardController {
     public DashboardFrequentWordsResponse getFrequentWords(
             @RequestParam Long roomId,
             @RequestParam(defaultValue = "DAY") DashboardPeriod period,
-            @RequestParam
+            @Parameter(description = "ALL 조회에서는 생략할 수 있습니다.")
+            @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
             LocalDate date,
             @Parameter(description = "기본 10개, 최대 50개", example = "10")
@@ -130,7 +134,8 @@ public class DashboardController {
     public DashboardCoupleMainEmotionResponse getMainEmotions(
             @RequestParam Long roomId,
             @RequestParam(defaultValue = "DAY") DashboardPeriod period,
-            @RequestParam
+            @Parameter(description = "ALL 조회에서는 생략할 수 있습니다.")
+            @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
             LocalDate date
     ) {
@@ -150,7 +155,8 @@ public class DashboardController {
     public DashboardConversationFlowResponse getConversationFlow(
             @RequestParam Long roomId,
             @RequestParam(defaultValue = "DAY") DashboardPeriod period,
-            @RequestParam
+            @Parameter(description = "ALL 조회에서는 생략할 수 있습니다.")
+            @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
             LocalDate date
     ) {

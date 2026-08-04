@@ -141,6 +141,36 @@ class DashboardServiceTest {
     }
 
     @Test
+    void sumsAllSnapshotsWithoutSelectedDate() {
+        LocalDate firstDate = LocalDate.of(2026, 7, 1);
+        LocalDate today = LocalDate.of(2026, 8, 3);
+        CoupleDashboard first = CoupleDashboard.create(1L, firstDate);
+        first.updateCounts(20, 3, 2);
+        CoupleDashboard latest = CoupleDashboard.create(1L, today);
+        latest.updateCounts(30, 5, 4);
+        when(snapshotRangeService.findAllStartDate(1L))
+                .thenReturn(firstDate);
+        when(snapshotRangeService.getCoupleSnapshots(
+                1L,
+                10L,
+                firstDate,
+                today.plusDays(1)
+        )).thenReturn(List.of(first, latest));
+
+        DashboardCountResponse response = dashboardService.getCounts(
+                1L,
+                10L,
+                DashboardPeriod.ALL,
+                null
+        );
+
+        assertThat(response.period()).isEqualTo(DashboardPeriod.ALL);
+        assertThat(response.startDate()).isEqualTo(firstDate);
+        assertThat(response.endDate()).isEqualTo(today);
+        assertThat(response.messageCount()).isEqualTo(50);
+    }
+
+    @Test
     void sumsMemberBookmarks() {
         LocalDate date = LocalDate.of(2026, 8, 3);
         Dashboard dashboard = Dashboard.create(1L, 10L, date);

@@ -9,7 +9,8 @@ public enum DashboardPeriod {
     DAY,
     WEEK,
     MONTH,
-    YEAR;
+    YEAR,
+    ALL;
 
     /** 선택한 날짜가 포함된 기간의 시작일을 반환합니다. */
     public LocalDate startDate(LocalDate date) {
@@ -20,6 +21,9 @@ public enum DashboardPeriod {
             );
             case MONTH -> date.withDayOfMonth(1);
             case YEAR -> date.withDayOfYear(1);
+            case ALL -> throw new IllegalStateException(
+                    "전체 기간은 커플방의 첫 메시지를 기준으로 계산합니다."
+            );
         };
     }
 
@@ -30,6 +34,9 @@ public enum DashboardPeriod {
             case WEEK -> startDate.plusWeeks(1);
             case MONTH -> startDate.plusMonths(1);
             case YEAR -> startDate.plusYears(1);
+            case ALL -> throw new IllegalStateException(
+                    "전체 기간은 오늘까지 계산합니다."
+            );
         };
     }
 }
