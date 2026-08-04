@@ -99,6 +99,7 @@ class DashboardSnapshotServiceTest {
 
         assertThat(result.getAggregatedUntil()).isEqualTo(current);
         assertThat(result.getFinalizedUntil()).isNull();
+        assertThat(result.getEmotionSummary()).isNotBlank();
         verify(chatBookmarkRepository)
                 .countByRoomIdAndUserIdAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
                         1L,
@@ -132,6 +133,7 @@ class DashboardSnapshotServiceTest {
         dashboard.applyHourlySnapshot(
                 0,
                 "[]",
+                "{}",
                 boundary,
                 finalized,
                 boundary

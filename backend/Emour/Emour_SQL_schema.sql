@@ -185,6 +185,8 @@ CREATE TABLE `member_dashboard`
     `bookmark_count`      INT         NOT NULL DEFAULT 0,
     -- 사용자가 보낸 메시지의 2시간 단위 감정 흐름
     `emotion_flow`        JSON        NULL,
+    -- 사용자가 보낸 메시지의 감정 코드별 개수
+    `emotion_summary`     JSON        NULL,
     -- 이 시각 이전 데이터까지 시간 단위 집계 완료
     `aggregated_until`         DATETIME(6)      NULL,
     -- 이 시각 이전 데이터까지 5분 지연 확정 집계 완료
