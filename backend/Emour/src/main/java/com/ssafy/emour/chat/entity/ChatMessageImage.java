@@ -68,4 +68,9 @@ public class ChatMessageImage {
     public Integer getDisplayOrder() {
         return displayOrder;
     }
+
+    public ChatMessage getMessage() {
+        return message;
+    }
+
 }

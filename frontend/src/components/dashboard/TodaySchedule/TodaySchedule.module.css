@@ -7,36 +7,53 @@
  */
 
 /*
- * 기념일 — 타임라인 위, 세로선 바깥.
- * 시각이 없는 하루 전체의 일이라 시간 축에 얹지 않는다.
+ * 기념일 / 일정 묶음.
+ * 상자를 두르지 않고 작은 소제목으로만 가른다. 한 섹션 안에서 한쪽만 색 면을
+ * 갖고 있으면 그건 묶음이 아니라 끼어든 배너로 읽힌다.
+ */
+.group + .group {
+  margin-top: 16px;
+}
+
+.groupTitle {
+  margin-bottom: 8px;
+  color: var(--color-text-tertiary);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+/*
+ * 기념일 — 시각이 없는 하루 전체의 일이라 시간 축(왼쪽 세로선)에 얹지 않는다.
+ * 하트도 달지 않는다. 아래 일정의 로즈 점과 색이 겹쳐 무엇이 강조인지 흐려졌다.
+ * 이름 하나면 충분하고, 무엇의 목록인지는 위 소제목이 말한다.
+ */
+/*
+ * 왼쪽 여백은 아래 타임라인과 같은 18px 이다.
+ * 두 묶음의 점이 같은 세로선 위에 서야 한 섹션 안의 목록으로 읽힌다.
+ * 다만 여기에는 관통하는 세로선을 긋지 않는다. 기념일은 시각이 없어서
+ * 순서라는 것이 없고, 선은 "위에서 아래로 흐른다"는 뜻을 갖는다.
  */
 .anniversaryList {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  margin: 0 0 14px;
-  padding: 12px 14px;
-  border-radius: var(--radius-md);
-  background: var(--color-primary-faint);
+  padding-left: 18px;
   list-style: none;
+  margin: 0;
 }
 
+/*
+ * overflow: hidden 을 여기 두면 안 된다.
+ * 점은 왼쪽 바깥(left: -18px)에 절대배치라 그 경계에서 잘려 사라진다.
+ * 말줄임은 안쪽 .name 이 맡는다. (아래 일정 항목과 같은 구조)
+ */
 .anniversaryItem {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 8px;
   min-width: 0;
-  color: var(--color-primary);
-}
-
-.anniversaryName {
-  min-width: 0;
-  overflow: hidden;
-  color: var(--color-text-accent);
   font-size: 13px;
-  font-weight: 700;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .timeline {
@@ -71,7 +88,11 @@
   font-size: 13px;
 }
 
-/* 선 위에서 이 일정의 위치를 표시하는 점 */
+/*
+ * 항목 앞의 점. 기념일 목록과 일정 타임라인이 같은 점을 쓴다.
+ * 일정 쪽에서는 세로선 위에 얹히는 눈금이고, 기념일 쪽에서는 그냥 글머리다.
+ * 모양이 같아야 두 묶음이 한 섹션의 목록으로 읽힌다.
+ */
 .dot {
   position: absolute;
   left: -18px;

@@ -42,4 +42,5 @@ class ChatRealtimePublisherTest {
         assertThat(event.get("payload").get("messageId").asLong())
                 .isEqualTo(101L);
     }
+
 }

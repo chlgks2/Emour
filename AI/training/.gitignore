@@ -1,0 +1,18 @@
+# 대용량 데이터·모델은 커밋하지 않음 (데이터=각자 다운로드, 모델=HF Hub)
+data/
+*.csv
+*.xlsx
+*.xls
+*.json
+*.zip
+
+# 학습 산출물 (모델·체크포인트)
+emour-emotion-kcelectra*/
+*.safetensors
+*.bin
+checkpoint-*/
+runs/
+
+# 파이썬 캐시
+__pycache__/
+*.pyc

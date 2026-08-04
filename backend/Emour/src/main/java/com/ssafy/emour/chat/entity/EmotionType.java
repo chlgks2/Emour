@@ -55,15 +55,16 @@ public enum EmotionType {
             case "걱정", "불안", "ANXIETY" -> WORRY;
             case "놀람" -> SURPRISE;
             case "평범", "지루함", "BOREDOM" -> NEUTRAL;
-            case "당황" -> EMBARRASSMENT;
-            case "궁금함" -> CURIOSITY;
+            // AI 모델은 '당황'과 '부끄러움'을 구분하지만 백엔드에는 별도 값이 없어 함께 처리합니다.
+            case "당황", "부끄러움" -> EMBARRASSMENT;
+            case "궁금함", "궁금" -> CURIOSITY;
             case "슬픔" -> SADNESS;
             case "화남", "짜증", "ANNOYANCE" -> ANGER;
             case "혼란" -> CONFUSION;
-            case "괴로움" -> DISTRESS;
-            case "감사" -> GRATITUDE;
-            case "사과" -> APOLOGY;
-            case "상처" -> HURT;
+            case "괴로움", "힘듦" -> DISTRESS;
+            case "감사", "고마움" -> GRATITUDE;
+            case "사과", "미안함" -> APOLOGY;
+            case "상처", "서운함" -> HURT;
             default -> findEnglishType(normalized);
         };
     }

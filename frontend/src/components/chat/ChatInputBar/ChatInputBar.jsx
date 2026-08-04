@@ -10,11 +10,22 @@ export default function ChatInputBar({
   disabled,
 }) {
   const fileInputRef = useRef(null);
+  const messageInputRef = useRef(null);
+
+  const handleSend = () => {
+    onSend();
+
+    // 전송 버튼을 눌러도 다음 메시지를 바로 입력할 수 있게
+    // 포커스를 메시지 입력창으로 되돌린다.
+    requestAnimationFrame(() => {
+      messageInputRef.current?.focus();
+    });
+  };
 
   const handleKeyDown = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      onSend();
+      handleSend();
     }
   };
 
@@ -49,6 +60,7 @@ export default function ChatInputBar({
         tabIndex={-1}
       />
       <input
+        ref={messageInputRef}
         className={styles.input}
         value={value}
         onChange={(e) => onChange(e.target.value)}
@@ -56,12 +68,11 @@ export default function ChatInputBar({
         placeholder="메시지를 입력하세요"
         aria-label="메시지 입력"
         enterKeyHint="send"
-        disabled={disabled}
       />
       <button
         type="button"
         className={styles.sendBtn}
-        onClick={onSend}
+        onClick={handleSend}
         disabled={disabled || !value.trim()}
         aria-label="전송"
       >
