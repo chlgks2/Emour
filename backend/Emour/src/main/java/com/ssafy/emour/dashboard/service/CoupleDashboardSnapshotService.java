@@ -30,6 +30,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -45,6 +46,13 @@ public class CoupleDashboardSnapshotService {
     );
     private static final Pattern REPEATED_CHARACTER = Pattern.compile(
             "^(.)\\1{2,}$"
+    );
+    private static final Set<String> FREQUENT_WORD_STOP_WORDS = Set.of(
+            "그냥",
+            "아니",
+            "근데",
+            "진짜",
+            "ㄹㅇ"
     );
 
     private final CoupleDashboardRepository coupleDashboardRepository;
@@ -267,6 +275,8 @@ public class CoupleDashboardSnapshotService {
                 .filter(word -> !CHAT_NOISE.matcher(word).matches())
                 // 같은 글자만 세 번 이상 반복된 표현도 제외합니다.
                 .filter(word -> !REPEATED_CHARACTER.matcher(word).matches())
+                // 자주 쓰이지만 통계 의미가 적은 말은 집계에서 제외합니다.
+                .filter(word -> !FREQUENT_WORD_STOP_WORDS.contains(word))
                 .toList();
     }
 

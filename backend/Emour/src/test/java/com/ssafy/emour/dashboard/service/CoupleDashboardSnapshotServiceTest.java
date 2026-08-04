@@ -79,8 +79,8 @@ class CoupleDashboardSnapshotServiceTest {
         )).thenReturn(List.of("JOY", "JOY", "SADNESS"));
         when(chatMessageRepository.findRoomTextContents(1L, start, end))
                 .thenReturn(List.of(
-                        "love today ㅋㅋㅋㅋ 아아아아",
-                        "love together ㅎㅎㅎ ㅠㅠ"
+                        "love today 그냥 아니 근데 진짜 ㄹㅇ ㅋㅋㅋㅋ 아아아아",
+                        "love together ㅋㅋㅎㅋㅎㅎㅋㅋㅎㅎ ㅎㅎㅎ ㅠㅠ"
                 ));
         when(chatMessageRepository.findConversationMessages(1L, start, end))
                 .thenReturn(List.of());
@@ -102,7 +102,18 @@ class CoupleDashboardSnapshotServiceTest {
         assertThat(result.getEmotionSummary()).contains("\"JOY\":2");
         assertThat(result.getFrequentWords())
                 .contains("\"word\":\"love\"", "\"count\":2")
-                .doesNotContain("ㅋㅋㅋㅋ", "아아아아", "ㅎㅎㅎ", "ㅠㅠ");
+                .doesNotContain(
+                        "그냥",
+                        "아니",
+                        "근데",
+                        "진짜",
+                        "ㄹㅇ",
+                        "ㅋㅋㅋㅋ",
+                        "ㅋㅋㅎㅋㅎㅎㅋㅋㅎㅎ",
+                        "아아아아",
+                        "ㅎㅎㅎ",
+                        "ㅠㅠ"
+                );
         assertThat(result.getFinalizedUntil()).isEqualTo(end);
     }
 }
