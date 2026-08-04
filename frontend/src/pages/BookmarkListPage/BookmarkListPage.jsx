@@ -183,7 +183,21 @@ export default function BookmarkListPage() {
         {bookmarks.map((bookmark) => (
           <div key={bookmark.bookmarkId} className={styles.item}>
             <div className={styles.itemBody}>
-              <p className={styles.itemText}>{bookmark.content}</p>
+              {bookmark.content && (
+                <p className={styles.itemText}>{bookmark.content}</p>
+              )}
+              {bookmark.images.length > 0 && (
+                <div className={styles.imageGrid}>
+                  {bookmark.images.map((image, index) => (
+                    <img
+                      key={image.imageId ?? image.imageUrl}
+                      className={styles.image}
+                      src={image.imageUrl}
+                      alt={`북마크한 사진 ${index + 1}`}
+                    />
+                  ))}
+                </div>
+              )}
               <p className={styles.itemMeta}>
                 <time dateTime={bookmark.sentAt}>
                   {formatDate(bookmark.sentAt)} {formatTime(bookmark.sentAt)}

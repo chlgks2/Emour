@@ -49,6 +49,10 @@ export default function HomePage({
     top: `${position.yPercent}%`,
     textAlign: style.align,
     color: style.color,
+    fontSize: style.fontSizePx ? `${style.fontSizePx}px` : undefined,
+    background: style.backgroundTransparency !== undefined
+      ? `rgba(20, 20, 20, ${1 - Number(style.backgroundTransparency) / 100})`
+      : undefined,
   };
 
   const fontSizeClass =
@@ -116,7 +120,12 @@ export default function HomePage({
           className={`${styles.captionBox} ${fontSizeClass} ${boxToneClass}`}
           style={boxInlineStyle}
         >
-          <p className={styles.captionText}>{caption}</p>
+          <p
+            className={styles.captionText}
+            style={{ fontSize: style.fontSizePx ? `${style.fontSizePx}px` : undefined }}
+          >
+            {caption}
+          </p>
         </div>
       )}
 

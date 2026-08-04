@@ -100,12 +100,18 @@ async function resolveHomeImage(imageUrl) {
   return (await resolveProtectedImageUrl(imageUrl)) || homeBg;
 }
 
-function toClientTextSize(value) {
-  return { SMALL: "sm", MEDIUM: "md", LARGE: "lg" }[value] ?? "md";
+function rgbToHex(value) {
+  const match = String(value ?? "").match(/rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/i);
+  if (!match) return "#ffffff";
+  return `#${match.slice(1).map((channel) =>
+    Math.min(255, Number(channel)).toString(16).padStart(2, "0")
+  ).join("")}`;
 }
 
-function toClientBackground(value) {
-  return { TRANSLUCENT: "dim", DARK: "solid", NONE: "none" }[value] ?? "dim";
+function hexToRgb(value) {
+  const normalized = String(value ?? "#ffffff").replace("#", "");
+  const safe = /^[0-9a-f]{6}$/i.test(normalized) ? normalized : "ffffff";
+  return `rgb(${parseInt(safe.slice(0, 2), 16)}, ${parseInt(safe.slice(2, 4), 16)}, ${parseInt(safe.slice(4, 6), 16)})`;
 }
 
 async function mapHomeSetting(setting) {
@@ -119,10 +125,10 @@ async function mapHomeSetting(setting) {
       yPercent: Number(setting.textPositionY ?? 72),
     },
     captionStyle: {
-      fontSize: toClientTextSize(setting.textSize),
+      fontSizePx: Number(setting.textSize) || 24,
       align: (setting.textAlignment ?? "LEFT").toLowerCase(),
-      box: toClientBackground(setting.backgroundStyle),
-      color: setting.textColor === "BLACK" ? "#1c1c1c" : "#ffffff",
+      backgroundTransparency: Number(setting.backgroundTransparency ?? 80),
+      color: rgbToHex(setting.textColor),
     },
   };
 }
@@ -175,16 +181,21 @@ export async function saveHomeCustomization({
     await uploadHomeImage(imageFile);
   }
 
+  const fontSizePx = Math.min(48, Math.max(10, Number(captionStyle.fontSizePx) || 24));
+  const backgroundTransparency = Math.min(
+    100,
+    Math.max(0, Number(captionStyle.backgroundTransparency) || 0),
+  );
   const response = await apiRequest(HOME_SETTING_ENDPOINT, {
     method: "PUT",
     body: {
       textContent: caption,
       textPositionX: captionPosition.xPercent,
       textPositionY: captionPosition.yPercent,
-      textSize: { sm: "SMALL", md: "MEDIUM", lg: "LARGE" }[captionStyle.fontSize] ?? "MEDIUM",
+      textSize: fontSizePx,
       textAlignment: (captionStyle.align ?? "left").toUpperCase(),
-      backgroundStyle: { dim: "TRANSLUCENT", solid: "DARK", none: "NONE" }[captionStyle.box] ?? "TRANSLUCENT",
-      textColor: captionStyle.color === "#1c1c1c" ? "BLACK" : "WHITE",
+      backgroundTransparency,
+      textColor: hexToRgb(captionStyle.color),
     },
   });
 

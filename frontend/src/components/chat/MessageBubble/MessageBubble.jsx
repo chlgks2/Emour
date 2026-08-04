@@ -116,8 +116,9 @@ export default function MessageBubble({
       className={[
         styles.row,
         isMine ? styles.rowMine : styles.rowPartner,
-        // 리본은 말풍선 위로 튀어나오므로 붙은 메시지만 위쪽 여백을 넓힌다.
+        // 말풍선 밖으로 걸치는 표시가 다른 메시지와 겹치지 않게 여백을 확보한다.
         isBookmarked ? styles.rowBookmarked : "",
+        reactions.length > 0 ? styles.rowReacted : "",
       ]
         .filter(Boolean)
         .join(" ")}
@@ -182,14 +183,14 @@ export default function MessageBubble({
               </div>
             )}
           </div>
-        </div>
-      </div>
-      <div className={styles.metaColumn}>
-        {isMine && isReadByPartner && <span className={styles.readTag}>읽음</span>}
-        <div className={styles.metaLine}>
-          <span className={styles.time}>{formatTime(message.sentAt)}</span>
+
           {reactions.length > 0 && (
-            <span className={styles.reactionBadges}>
+            <span
+              className={[
+                styles.reactionBadges,
+                isMine ? styles.reactionBadgesMine : styles.reactionBadgesPartner,
+              ].join(" ")}
+            >
               {reactions.map((reaction) => {
                 const option = REACTION_MAP[reaction.reactionType];
                 if (!option) return null;
@@ -201,13 +202,17 @@ export default function MessageBubble({
                     style={{ background: option.color }}
                     aria-label={`${option.label}${reaction.userId === myUserId ? " (나)" : ""}`}
                   >
-                    <ReactionIcon size={10} color="#fff" />
+                    <ReactionIcon size={12} color="#fff" />
                   </span>
                 );
               })}
             </span>
           )}
         </div>
+      </div>
+      <div className={styles.metaColumn}>
+        {isMine && isReadByPartner && <span className={styles.readTag}>읽음</span>}
+        <span className={styles.time}>{formatTime(message.sentAt)}</span>
       </div>
     </div>
   );

@@ -102,6 +102,22 @@
   flex-shrink: 0;
 }
 
+.imageGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 112px));
+  gap: 5px;
+  margin-top: 6px;
+}
+
+.image {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  background: var(--color-sub-bg);
+}
+
 .moveBtn,
 .removeBtn {
   flex-shrink: 0;
