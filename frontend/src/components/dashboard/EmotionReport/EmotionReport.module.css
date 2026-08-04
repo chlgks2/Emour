@@ -93,3 +93,51 @@
     height: 6px;
   }
 }
+.reportWrapper {
+  display: grid;
+  gap: 12px;
+}
+
+.filterPanel summary {
+  width: fit-content;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  list-style: none;
+}
+
+.filterPanel summary::-webkit-details-marker {
+  display: none;
+}
+
+.filterOptions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 9px;
+}
+
+.filterChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 28px;
+  padding: 0 9px;
+  border: 1px solid var(--color-divider);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.48);
+  color: var(--color-text-sub);
+  font-size: 11px;
+  opacity: 0.55;
+}
+
+.filterChipActive {
+  border-color: var(--filter-emotion-color);
+  background: color-mix(in srgb, var(--filter-emotion-color) 16%, white);
+  color: var(--filter-emotion-color);
+  opacity: 1;
+}

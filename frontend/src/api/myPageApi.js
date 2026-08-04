@@ -398,6 +398,12 @@ export async function updateMyPageProfile({
     )
   }
 
+  if (trimmedNickname.length > 8) {
+    throw new Error(
+      '닉네임은 8자 이하로 입력해주세요.',
+    )
+  }
+
   if (USE_MOCK_API) {
     await wait()
 
@@ -469,10 +475,10 @@ export async function updatePartnerNickname({
   }
 
   if (
-    trimmedPartnerNickname.length > 20
+    trimmedPartnerNickname.length > 8
   ) {
     throw new Error(
-      '연인 애칭은 20자 이하로 입력해주세요.',
+      '연인 애칭은 8자 이하로 입력해주세요.',
     )
   }
 

@@ -69,9 +69,10 @@ function getCurrentSlot(setting, now) {
    * 예상과 다른 모양이면(개발 서버에서 프록시가 index.html 을 돌려주는 경우 등)
    * "매일 09시부터 켜져 있는 알림" 으로 읽혀서, 설정한 적도 없는 알림이 떴다.
    *
-   * settingId 는 서버가 만든 레코드에만 있으므로 진짜 설정인지 가려낼 수 있다.
+   * 최신 백엔드의 mood_notification 기본키는 room_id이고 응답에도 roomId만
+   * 포함된다. 따라서 roomId가 있어야 실제 서버 설정으로 판단한다.
    */
-  if (setting.settingId == null) {
+  if (setting.roomId == null) {
     return null
   }
 

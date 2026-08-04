@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import * as authApi from "../api/authApi";
 import { SESSION_EXPIRED_EVENT } from "../api/httpClient";
+import { getMyProfile } from "../api/memberApi";
 import { AuthContext } from "../hooks/useAuth";
 
 export function AuthProvider({ children }) {
@@ -13,9 +14,12 @@ export function AuthProvider({ children }) {
     authApi.isAuthenticated() ? authApi.getCurrentUser() : null
   );
 
-  // 지금은 동기 복원이라 항상 false. 나중에 서버에 토큰 검증(GET /auth/me)을 붙이면
-  // 그 응답을 기다리는 동안 true 로 두면 된다. (ProtectedRoute 가 이 값으로 로딩 화면을 띄운다)
-  const [initializing] = useState(false);
+  // 저장소에 토큰 문자열이 있다는 사실만으로 로그인 완료로 판단하지 않는다.
+  // 새로고침 때 서버가 토큰(필요하면 refresh token까지)을 검증하는 동안
+  // 보호된 화면의 라우팅을 잠시 보류한다.
+  const [initializing, setInitializing] = useState(() =>
+    authApi.isAuthenticated()
+  );
 
   /*
    * 토큰이 죽으면(갱신 실패) 여기서도 로그아웃 상태가 되어야 한다.
@@ -31,6 +35,43 @@ export function AuthProvider({ children }) {
     window.addEventListener(SESSION_EXPIRED_EVENT, handleSessionExpired);
     return () =>
       window.removeEventListener(SESSION_EXPIRED_EVENT, handleSessionExpired);
+  }, []);
+
+  useEffect(() => {
+    if (!authApi.isAuthenticated()) {
+      return undefined;
+    }
+
+    let cancelled = false;
+
+    const restoreSession = async () => {
+      try {
+        // apiRequest가 401을 받으면 refresh를 한 번 시도한다. refresh도 만료된
+        // 경우 토큰을 모두 지우고 SESSION_EXPIRED_EVENT를 발생시킨다.
+        const profile = await getMyProfile();
+
+        if (!cancelled && profile) {
+          const restoredUser = authApi.updateCurrentUserCache(profile);
+          setUser(restoredUser);
+        }
+      } catch {
+        // 인증 실패라면 httpClient가 이미 저장소와 AuthContext를 정리한다.
+        // 일시적인 네트워크/서버 오류에는 정상 세션을 임의로 로그아웃시키지 않는다.
+        if (!cancelled && !authApi.isAuthenticated()) {
+          setUser(null);
+        }
+      } finally {
+        if (!cancelled) {
+          setInitializing(false);
+        }
+      }
+    };
+
+    restoreSession();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const login = useCallback(async (payload) => {

@@ -128,23 +128,22 @@ export default function HomePage({
   );
 }
 
-/**
- * 프로필 사진이 아직 없을 수도 있어서(가입 직후 등) 빈 원이 그대로 보이지 않도록
- * 닉네임 이니셜 -> 사람 아이콘 순서로 대체한다.
- * (영문 닉네임은 대문자로 올려서 '민' / 'M' 처럼 크기가 비슷하게 보이도록 한다)
- */
+/** 사진이 없을 때는 기본 인물 아이콘을 사용하고, 애칭은 사진 하단에 표시한다. */
 function ProfileCircle({ imageUrl, name, fallbackLabel }) {
-  const initial = name?.trim()?.[0]?.toUpperCase() ?? "";
+  const displayName = name?.trim() || fallbackLabel;
 
   return (
-    <span className={styles.profileCircle}>
-      {imageUrl ? (
-        <img src={imageUrl} alt={`${name || fallbackLabel} 프로필 사진`} />
-      ) : (
-        <span className={styles.profileFallback} aria-label={`${name || fallbackLabel} 프로필 사진 없음`}>
-          {initial || <User size={26} aria-hidden="true" />}
-        </span>
-      )}
+    <span className={styles.profileCircle} aria-label={`${displayName} 프로필`}>
+      <span className={styles.profileAvatar}>
+        {imageUrl ? (
+          <img src={imageUrl} alt={`${displayName} 프로필 사진`} />
+        ) : (
+          <span className={styles.profileFallback} aria-hidden="true">
+            <User size={28} strokeWidth={1.7} />
+          </span>
+        )}
+      </span>
+      <span className={styles.profileNickname}>{displayName}</span>
     </span>
   );
 }
