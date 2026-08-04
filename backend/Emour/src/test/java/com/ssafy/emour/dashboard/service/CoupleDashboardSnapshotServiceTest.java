@@ -36,6 +36,8 @@ class CoupleDashboardSnapshotServiceTest {
     private ChatAnalysisRepository chatAnalysisRepository;
     @Mock
     private CoupleMemberRepository coupleMemberRepository;
+    @Mock
+    private DashboardSnapshotLockService snapshotLockService;
 
     @Test
     void aggregatesWholeRoomData() {
@@ -49,6 +51,7 @@ class CoupleDashboardSnapshotServiceTest {
                 chatAnalysisRepository,
                 coupleMemberRepository,
                 new ConversationFlowCalculator(),
+                snapshotLockService,
                 Clock.fixed(
                         Instant.parse("2026-08-03T04:05:00Z"),
                         ZoneId.of("Asia/Seoul")
