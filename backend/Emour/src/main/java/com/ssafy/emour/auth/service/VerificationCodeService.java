@@ -21,6 +21,9 @@ public class VerificationCodeService {
 
     private static final String KEY_PREFIX = "email-verify:";
     private static final Duration TTL = Duration.ofMinutes(5);
+    // 인증 통과한 이메일 표시. 회원가입 폼을 채울 시간을 고려해 코드보다 길게(30분) 둔다.
+    private static final String VERIFIED_PREFIX = "email-verified:";
+    private static final Duration VERIFIED_TTL = Duration.ofMinutes(30);
     private static final SecureRandom RANDOM = new SecureRandom();
 
     private final StringRedisTemplate redisTemplate;
@@ -43,8 +46,27 @@ public class VerificationCodeService {
         redisTemplate.delete(key(purpose, email));
     }
 
+    /** 코드 검증에 성공한 이메일을 '인증됨'으로 표시(회원가입 때 확인용) */
+    public void markVerified(String purpose, String email) {
+        redisTemplate.opsForValue().set(verifiedKey(purpose, email), "true", VERIFIED_TTL);
+    }
+
+    /** 이 이메일이 인증을 통과한 상태인지 */
+    public boolean isVerified(String purpose, String email) {
+        return Boolean.TRUE.equals(redisTemplate.hasKey(verifiedKey(purpose, email)));
+    }
+
+    /** 사용 완료된 인증 표시 삭제 */
+    public void clearVerified(String purpose, String email) {
+        redisTemplate.delete(verifiedKey(purpose, email));
+    }
+
     private String key(String purpose, String email) {
         return KEY_PREFIX + purpose + ":" + email;
+    }
+
+    private String verifiedKey(String purpose, String email) {
+        return VERIFIED_PREFIX + purpose + ":" + email;
     }
 
     private String generateCode() {
