@@ -1,12 +1,11 @@
-"""문구 추천 서비스 레이어.
+# 문구 추천 서비스 레이어.
 
-라우터(HTTP)와 LLM 호출을 분리하는 이유:
-- 이 파일은 FastAPI 없이도 import 해서 돌릴 수 있다 -> poc/ 실험 스크립트가 그대로 재사용.
-- 나중에 LLM 게이트웨이가 바뀌어도 라우터는 손대지 않는다.
+# 라우터(HTTP)와 LLM 호출을 분리하는 이유:
+# - 이 파일은 FastAPI 없이도 import 해서 돌릴 수 있다 -> poc/ 실험 스크립트가 그대로 재사용.
+# - 나중에 LLM 게이트웨이가 바뀌어도 라우터는 손대지 않는다.
 
-이 서비스는 무상태(stateless)다. DB/Redis 어느 쪽에도 쓰지 않는다.
-저장은 유저가 3개 중 하나를 선택해 "보내기"를 누른 뒤 BE가 처리한다.
-"""
+# 이 서비스는 무상태(stateless)다. DB/Redis 어느 쪽에도 쓰지 않는다.
+# 저장은 유저가 3개 중 하나를 선택해 "보내기"를 누른 뒤 BE가 처리한다.
 
 from __future__ import annotations
 
@@ -44,7 +43,7 @@ _client: Optional[AsyncOpenAI] = None
 
 
 def get_client() -> AsyncOpenAI:
-    """클라이언트는 프로세스당 1개만 만든다(커넥션 풀 재사용). FastAPI lifespan에서 미리 워밍업해도 된다."""
+    # 클라이언트는 프로세스당 1개만 만든다(커넥션 풀 재사용). FastAPI lifespan에서 미리 워밍업해도 된다.
     global _client
     if _client is None:
         _client = AsyncOpenAI(
@@ -72,7 +71,7 @@ _SENSITIVE_RE = re.compile("|".join(_SENSITIVE_PATTERNS))
 
 
 def screen_input(req: SuggestRequest) -> Optional[str]:
-    """차단 사유를 문자열로 반환. 문제 없으면 None."""
+    # 차단 사유를 문자열로 반환. 문제 없으면 None.
     if len(req.target_message.strip()) < 2:
         return "too_short"
     corpus = req.target_message + "\n" + "\n".join(t.text for t in req.history[-4:])
@@ -89,11 +88,10 @@ _FENCE_RE = re.compile(r"^```(?:json)?|```$", re.MULTILINE)
 
 
 def parse_llm_output(raw: str, template: PromptTemplate) -> dict[str, str]:
-    """LLM 원문 -> {style_key: text} 딕셔너리.
+    # LLM 원문 -> {style_key: text} 딕셔너리.
+    # JSON 모드를 켜도 모델이 코드펜스를 붙이거나 키를 빠뜨리는 일이 있다.
+    # 파싱 실패는 '예외 상황'이 아니라 '정상적으로 자주 일어나는 일'로 보고 방어한다.
 
-    JSON 모드를 켜도 모델이 코드펜스를 붙이거나 키를 빠뜨리는 일이 있다.
-    파싱 실패는 '예외 상황'이 아니라 '정상적으로 자주 일어나는 일'로 보고 방어한다.
-    """
     cleaned = _FENCE_RE.sub("", raw).strip()
     data: Any = json.loads(cleaned)  # 실패 시 JSONDecodeError -> 호출부에서 재시도
 
@@ -120,11 +118,10 @@ def parse_llm_output(raw: str, template: PromptTemplate) -> dict[str, str]:
 # ---------------------------------------------------------------------------
 
 async def generate_suggestions(req: SuggestRequest) -> SuggestResponse:
-    """message_id 는 저장하지 않고 응답에 그대로 echo 만 한다.
-
-    BE 는 이 message_id 로 원본 메시지와 응답을 매핑해서, 유저가 셋 중 하나를
-    선택했을 때 그 메시지를 최종 확정 저장하면 된다.
-    """
+    # message_id 는 저장하지 않고 응답에 그대로 echo 만 한다.
+    # BE 는 이 message_id 로 원본 메시지와 응답을 매핑해서, 유저가 셋 중 하나를
+    # 선택했을 때 그 메시지를 최종 확정 저장하면 된다.
+    
     started = time.perf_counter()
 
     block_reason = screen_input(req)
