@@ -43,6 +43,10 @@ const ENDPOINTS = {
     (photoId) =>
       `/photos/${photoId}`,
 
+  deleteChatPhoto:
+    (imageId) =>
+      `/chats/images/${imageId}`,
+
   updateAlbumPhotoMemo:
     (photoId) =>
       `/photos/${photoId}/memo`,
@@ -209,6 +213,7 @@ function toChatPhotoResponses(message) {
           image?.image_id ??
           `${message.messageId}-${order}`,
         messageId: message.messageId,
+        senderId: message.senderId,
         imageUrl,
         displayOrder:
           image?.displayOrder ??
@@ -515,8 +520,13 @@ export async function deleteChatPhoto(
     return
   }
 
-  throw new Error(
-    '채팅 사진 삭제 API는 아직 제공되지 않습니다.',
+  return apiRequest(
+    ENDPOINTS.deleteChatPhoto(
+      imageId,
+    ),
+    {
+      method: 'DELETE',
+    },
   )
 }
 

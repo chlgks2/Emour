@@ -39,13 +39,12 @@ export default function ChatHeader({ partner, onBack, onSearchClick, searchEnabl
         )}
       </div>
 
-      {/* 메시지 검색은 아직 미구현이라 비활성화 상태로 둔다. (구현 시 disabled 제거) */}
       <button
         type="button"
         className={styles.iconBtn}
         onClick={searchEnabled ? onSearchClick : undefined}
-        aria-label="메시지 검색 (준비 중)"
-        title="준비 중이에요"
+        aria-label="메시지 검색"
+        title="메시지 검색"
         disabled={!searchEnabled}
       >
         <Search size={20} />

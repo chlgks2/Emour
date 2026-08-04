@@ -6,6 +6,35 @@ import { REACTION_MAP } from "../../../constants/reactions";
 import { ANALYSIS_STATUS, MESSAGE_TYPE } from "../../../constants/enums";
 import styles from "./MessageBubble.module.css";
 
+function ChatImage({ image, imageIndex, imageUrls, canDelete, onOpenImages, onDeleteImage }) {
+  const imageUrl = typeof image === "string" ? image : image.imageUrl;
+  const imageId = typeof image === "string" ? null : image.imageId ?? image.image_id;
+  const longPressedRef = useRef(false);
+  const deleteHandlers = useLongPress(() => {
+    if (!canDelete || !imageId) return;
+    longPressedRef.current = true;
+    onDeleteImage?.({ imageId, imageUrl });
+  });
+
+  return (
+    <img
+      className={styles.chatImage}
+      src={imageUrl}
+      alt={canDelete ? "채팅으로 보낸 사진, 길게 눌러 삭제" : "채팅으로 보낸 사진"}
+      loading="lazy"
+      {...(canDelete && imageId ? deleteHandlers : {})}
+      onClick={(event) => {
+        event.stopPropagation();
+        if (longPressedRef.current) {
+          longPressedRef.current = false;
+          return;
+        }
+        onOpenImages?.(imageUrls, imageIndex);
+      }}
+    />
+  );
+}
+
 /**
  * @param {object} message - chat_message 기준
  *   { messageId, roomId, senderId, clientMessageId, messageType, content, sentAt, images, emotionType }
@@ -30,6 +59,7 @@ export default function MessageBubble({
   onLongPressMessage,
   onDoubleTapMessage,
   onOpenImages,
+  onDeleteImage,
 }) {
   const isMine = message.senderId === myUserId;
   const emotionStyle = message.emotionType ? getEmotionStyle(message.emotionType) : null;
@@ -142,21 +172,15 @@ export default function MessageBubble({
             {isTextMessage && message.content}
             {!isTextMessage && imageUrls.length > 0 && (
               <div className={styles.imageGrid}>
-                {imageUrls.map((imageUrl, imageIndex) => (
-                  <img
-                    key={imageUrl}
-                    className={styles.chatImage}
-                    src={imageUrl}
-                    alt="채팅으로 보낸 사진"
-                    loading="lazy"
-                    /*
-                      말풍선의 롱프레스(리액션·북마크)와 겹치지 않게
-                      클릭이 위로 올라가는 것을 막는다.
-                    */
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      onOpenImages?.(imageUrls, imageIndex);
-                    }}
+                {(message.images ?? []).map((image, imageIndex) => (
+                  <ChatImage
+                    key={typeof image === "string" ? image : image.imageId ?? image.imageUrl}
+                    image={image}
+                    imageIndex={imageIndex}
+                    imageUrls={imageUrls}
+                    canDelete={isMine}
+                    onOpenImages={onOpenImages}
+                    onDeleteImage={(target) => onDeleteImage?.(message, target)}
                   />
                 ))}
               </div>

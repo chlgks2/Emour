@@ -8,6 +8,8 @@ const CHAT_ENDPOINTS = {
   search: '/chats/search',
   bookmarks: '/chats/bookmarks',
   images: '/chats/images',
+  image: (imageId) =>
+    `/chats/images/${imageId}`,
   read: (messageId) =>
     `/chats/${messageId}/read`,
   bookmark: (messageId) =>
@@ -292,6 +294,17 @@ export async function removeChatReaction(
     {
       method: 'DELETE',
     },
+  )
+}
+
+export async function deleteChatImage(imageId) {
+  if (!imageId) {
+    throw new Error('삭제할 채팅 사진 정보가 없습니다.')
+  }
+
+  return apiRequest(
+    CHAT_ENDPOINTS.image(imageId),
+    { method: 'DELETE' },
   )
 }
 

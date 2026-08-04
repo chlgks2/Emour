@@ -116,6 +116,12 @@ export function mapChatPhoto(
       null,
     ),
 
+    senderId: getFirstValue(
+      response.senderId,
+      response.sender_id,
+      null,
+    ),
+
     imageUrl,
 
     displayOrder: Number(

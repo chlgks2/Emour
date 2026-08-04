@@ -1,6 +1,6 @@
 ﻿import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowDown, CloudOff, MessageCircleHeart } from "lucide-react";
+import { ArrowDown, CloudOff, MessageCircleHeart, Search, X } from "lucide-react";
 import EmptyState from "../../components/common/EmptyState/EmptyState";
 import ChatHeader from "../../components/chat/ChatHeader/ChatHeader";
 import MessageBubble from "../../components/chat/MessageBubble/MessageBubble";
@@ -9,6 +9,7 @@ import SuggestionChips from "../../components/chat/SuggestionChips/SuggestionChi
 import ChatInputBar from "../../components/chat/ChatInputBar/ChatInputBar";
 import MessageActionPopover from "../../components/chat/MessageActionPopover/MessageActionPopover";
 import ImageViewer from "../../components/chat/ImageViewer/ImageViewer";
+import ConfirmDialog from "../../components/common/ConfirmDialog/ConfirmDialog";
 import { useInfiniteScroll } from "../../hooks/useInfiniteScroll";
 import {
   fetchChatPartner,
@@ -19,6 +20,8 @@ import {
   sendMessage,
   uploadChatImages,
   fetchSuggestions,
+  deleteChatImage,
+  searchChatMessages,
 } from "../../api/chatApi";
 import { connectChatSocket } from "../../api/chatSocket.js";
 import { fetchBookmarkedMessageIds, toggleBookmark } from "../../api/bookmarkApi";
@@ -88,6 +91,14 @@ export default function ChatRoomPage() {
   const [actionTarget, setActionTarget] = useState(null);
   // 사진 크게 보기 { images, startIndex }. null 이면 닫힘.
   const [imageViewer, setImageViewer] = useState(null);
+  const [deleteImageTarget, setDeleteImageTarget] = useState(null);
+  const [deletingImage, setDeletingImage] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchKeyword, setSearchKeyword] = useState("");
+  const [searchedKeyword, setSearchedKeyword] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+  const [searchNextCursor, setSearchNextCursor] = useState(null);
+  const [searchLoading, setSearchLoading] = useState(false);
 
   const openImageViewer = useCallback((images, startIndex) => {
     setImageViewer({ images, startIndex });
@@ -563,6 +574,20 @@ export default function ChatRoomPage() {
   const handleSend = async () => {
     const content = inputValue.trim();
     if (!content || sending) return;
+
+    // 최초 방 조회가 연결 직후의 일시적인 null로 끝났더라도 전송 시점에 한 번 더
+    // 서버의 현재 방을 확인한다. roomId 없는 낙관적 메시지가 생기는 것도 막는다.
+    let targetRoomId = roomId;
+    if (!targetRoomId) {
+      targetRoomId = await resolveRoomId();
+      if (targetRoomId) setRoomId(targetRoomId);
+    }
+
+    if (!targetRoomId) {
+      showToast("현재 참여 중인 커플방을 확인하지 못했어요.", { tone: "error" });
+      return;
+    }
+
     setInputValue("");
     setSuggestions([]);
     setSending(true);
@@ -571,7 +596,7 @@ export default function ChatRoomPage() {
     const clientMessageId = createClientMessageId();
     const optimisticMessage = {
       messageId: null,
-      roomId,
+      roomId: targetRoomId,
       senderId: myUserId,
       clientMessageId,
       messageType: MESSAGE_TYPE.TEXT,
@@ -590,7 +615,15 @@ export default function ChatRoomPage() {
 
     try {
       // 서버 응답(messageId, 감정 분석 결과 등)으로 낙관적 메시지를 교체
-      const savedMessage = await sendMessage({ roomId, content, clientMessageId });
+      const savedMessage = await sendMessage({
+        roomId: targetRoomId,
+        content,
+        clientMessageId,
+      });
+
+      if (!savedMessage) {
+        throw new Error("서버가 저장된 메시지 정보를 반환하지 않았어요.");
+      }
       setMessages((prev) =>
         prev.map((m) =>
           m.clientMessageId === clientMessageId ||
@@ -608,12 +641,15 @@ export default function ChatRoomPage() {
             : m
         )
       );
-    } catch {
+    } catch (error) {
       // 전송 실패한 말풍선을 그대로 남기면 "보낸 것처럼" 보이므로 되돌리고,
       // 입력창에 문구를 복원해서 다시 보낼 수 있게 한다.
       setMessages((prev) => prev.filter((m) => m.clientMessageId !== clientMessageId));
       setInputValue((cur) => (cur ? cur : content));
-      showToast("메시지를 보내지 못했어요. 다시 시도해주세요.", { tone: "error" });
+      showToast(
+        error?.message || "메시지를 보내지 못했어요. 다시 시도해주세요.",
+        { tone: "error" },
+      );
     } finally {
       setSending(false);
     }
@@ -732,6 +768,71 @@ export default function ChatRoomPage() {
 
   const closeActionMenu = () => setActionTarget(null);
 
+  const requestImageDelete = (message, image) => {
+    if (
+      Number(message?.senderId) !== Number(myUserId) ||
+      !message?.messageId ||
+      !image?.imageId
+    ) {
+      return;
+    }
+
+    setDeleteImageTarget({
+      messageId: message.messageId,
+      imageId: image.imageId,
+    });
+  };
+
+  const handleDeleteImage = async () => {
+    if (!deleteImageTarget || deletingImage) return;
+
+    const { messageId, imageId } = deleteImageTarget;
+    setDeletingImage(true);
+
+    try {
+      const result = await deleteChatImage(imageId);
+      const messageHidden = result?.messageHidden === true;
+
+      setMessages((previous) =>
+        previous.flatMap((message) => {
+          if (Number(message.messageId) !== Number(messageId)) return [message];
+          if (messageHidden) return [];
+
+          const remainingImages = (message.images ?? []).filter((image) => {
+            const currentImageId =
+              typeof image === "string" ? null : image.imageId ?? image.image_id;
+            return Number(currentImageId) !== Number(imageId);
+          });
+
+          return remainingImages.length > 0
+            ? [{ ...message, images: remainingImages }]
+            : [];
+        }),
+      );
+
+      if (messageHidden) {
+        setBookmarkedMessageIds((previous) => {
+          const next = new Set(previous);
+          next.delete(messageId);
+          return next;
+        });
+        setReactions((previous) => {
+          const next = { ...previous };
+          delete next[messageId];
+          return next;
+        });
+      }
+
+      setImageViewer(null);
+      setDeleteImageTarget(null);
+      showToast("채팅 사진을 삭제했어요.", { tone: "success" });
+    } catch (error) {
+      showToast(error.message || "채팅 사진을 삭제하지 못했어요.", { tone: "error" });
+    } finally {
+      setDeletingImage(false);
+    }
+  };
+
   /**
    * 반응 남기기 / 취소.
    * 이미 같은 반응을 눌러둔 상태에서 다시 누르면 취소한다.
@@ -827,9 +928,91 @@ export default function ChatRoomPage() {
     navigate("/dashboard", { replace: true, state: { section: HOME_SECTION.DASHBOARD } });
   };
 
+  const closeSearch = () => {
+    setSearchOpen(false);
+    setSearchKeyword("");
+    setSearchedKeyword("");
+    setSearchResults([]);
+    setSearchNextCursor(null);
+  };
+
+  const runSearch = async ({ append = false } = {}) => {
+    const keyword = (append ? searchedKeyword : searchKeyword).trim();
+    if (!keyword || !roomId || searchLoading) return;
+
+    setSearchLoading(true);
+    try {
+      const response = await searchChatMessages({
+        roomId,
+        keyword,
+        beforeMessageId: append ? searchNextCursor : null,
+        size: 30,
+      });
+      const found = (response?.messages ?? [])
+        .map(normalizeChatMessage)
+        .filter(Boolean);
+
+      setSearchedKeyword(keyword);
+      setSearchResults((previous) =>
+        append ? dedupeChatMessages([...found, ...previous]) : found,
+      );
+      setSearchNextCursor(response?.hasNext ? response?.nextCursor ?? null : null);
+    } catch (error) {
+      showToast(error?.message || "채팅을 검색하지 못했어요.", { tone: "error" });
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
+  const displayedMessages = searchOpen && searchedKeyword ? searchResults : messages;
+
   return (
     <div className={`app-shell ${styles.container || ""}`}>
-      <ChatHeader partner={partner} onBack={handleBack} onSearchClick={() => {}} />
+      <ChatHeader
+        partner={partner}
+        onBack={handleBack}
+        onSearchClick={() => setSearchOpen(true)}
+        searchEnabled={Boolean(roomId)}
+      />
+
+      {searchOpen && (
+        <form
+          className={styles.searchBar}
+          onSubmit={(event) => {
+            event.preventDefault();
+            runSearch();
+          }}
+        >
+          <Search size={18} aria-hidden="true" />
+          <input
+            autoFocus
+            value={searchKeyword}
+            onChange={(event) => setSearchKeyword(event.target.value)}
+            placeholder="대화 내용 검색"
+            aria-label="대화 내용 검색"
+          />
+          {searchKeyword && (
+            <button
+              type="button"
+              className={styles.searchClearButton}
+              onClick={() => setSearchKeyword("")}
+              aria-label="검색어 지우기"
+            >
+              <X size={16} />
+            </button>
+          )}
+          <button
+            type="submit"
+            className={styles.searchSubmitButton}
+            disabled={!searchKeyword.trim() || searchLoading}
+          >
+            {searchLoading ? "검색 중" : "검색"}
+          </button>
+          <button type="button" className={styles.searchCloseButton} onClick={closeSearch}>
+            닫기
+          </button>
+        </form>
+      )}
 
       <div
         className={styles.messageArea}
@@ -853,7 +1036,15 @@ export default function ChatRoomPage() {
           />
         )}
 
-        {!initialLoading && !loadFailed && messages.length === 0 && (
+        {searchOpen && searchedKeyword && !searchLoading && searchResults.length === 0 && (
+          <EmptyState
+            icon={<Search size={22} />}
+            title="검색 결과가 없어요"
+            description={`‘${searchedKeyword}’이 포함된 대화를 찾지 못했어요.`}
+          />
+        )}
+
+        {!searchOpen && !initialLoading && !loadFailed && messages.length === 0 && (
           <EmptyState
             icon={<MessageCircleHeart size={22} />}
             title="아직 나눈 대화가 없어요"
@@ -861,17 +1052,28 @@ export default function ChatRoomPage() {
           />
         )}
 
-        {hasMore && (
+        {!searchOpen && hasMore && (
           <div ref={sentinelRef} className={styles.sentinel}>
             {loadingMore && <span className={styles.loadingText}>이전 대화를 불러오는 중...</span>}
           </div>
         )}
-        {!hasMore && !initialLoading && !loadFailed && messages.length > 0 && (
+        {!searchOpen && !hasMore && !initialLoading && !loadFailed && messages.length > 0 && (
           <p className={styles.chatStartText}>대화의 시작이에요</p>
         )}
 
-        {messages.map((message, idx) => {
-          const prevMessage = messages[idx - 1];
+        {searchOpen && searchedKeyword && searchNextCursor && (
+          <button
+            type="button"
+            className={styles.loadSearchButton}
+            onClick={() => runSearch({ append: true })}
+            disabled={searchLoading}
+          >
+            {searchLoading ? "검색 중..." : "이전 검색 결과 더 보기"}
+          </button>
+        )}
+
+        {displayedMessages.map((message, idx) => {
+          const prevMessage = displayedMessages[idx - 1];
           const showDateDivider = !prevMessage || !isSameDay(prevMessage.sentAt, message.sentAt);
           const isReadByPartner =
             message.messageId !== null &&
@@ -889,6 +1091,7 @@ export default function ChatRoomPage() {
                 onLongPressMessage={handleLongPressMessage}
                 onDoubleTapMessage={handleDoubleTapMessage}
                 onOpenImages={openImageViewer}
+                onDeleteImage={requestImageDelete}
               />
             </div>
           );
@@ -905,20 +1108,20 @@ export default function ChatRoomPage() {
         </button>
       )}
 
-      <SuggestionChips
+      {!searchOpen && <SuggestionChips
         suggestions={suggestions}
         onSelect={(content) => setInputValue(content)}
         onRefresh={handleRefreshSuggestions}
         loading={suggestLoading}
-      />
+      />}
 
-      <ChatInputBar
+      {!searchOpen && <ChatInputBar
         value={inputValue}
         onChange={handleInputChange}
         onSend={handleSend}
         onImagesSelect={handleImagesSelect}
         disabled={sending}
-      />
+      />}
 
       {/* 열려 있을 때만 마운트해서, 닫힌 동안 전역 리스너(바깥 클릭/스크롤)가 붙지 않게 한다 */}
       {actionTarget && (
@@ -942,6 +1145,19 @@ export default function ChatRoomPage() {
           onClose={() => setImageViewer(null)}
         />
       )}
+
+      <ConfirmDialog
+        open={Boolean(deleteImageTarget)}
+        title="이 사진을 삭제할까요?"
+        description="삭제한 사진은 채팅과 앨범에서 다시 볼 수 없습니다."
+        confirmLabel={deletingImage ? "삭제 중" : "삭제"}
+        cancelLabel="취소"
+        destructive
+        onConfirm={handleDeleteImage}
+        onCancel={() => {
+          if (!deletingImage) setDeleteImageTarget(null);
+        }}
+      />
     </div>
   );
 }

@@ -164,6 +164,46 @@ function createRelationshipMilestones(
   return occurrences
 }
 
+function createRelationshipStartAnniversary(
+  year,
+  month,
+  relationshipStartDate,
+) {
+  if (!relationshipStartDate) {
+    return []
+  }
+
+  const startDate = createLocalDate(
+    relationshipStartDate,
+  )
+  const occurrenceDate = new Date(
+    year,
+    startDate.getMonth(),
+    startDate.getDate(),
+  )
+
+  if (
+    occurrenceDate.getMonth() !== month - 1 ||
+    occurrenceDate < startDate
+  ) {
+    return []
+  }
+
+  return [{
+    scheduleId: `RELATIONSHIP-START-${year}`,
+    name: '처음 만난 날',
+    date: relationshipStartDate,
+    startDate: relationshipStartDate,
+    occurrenceDate: createDateKey(occurrenceDate),
+    occurrenceNumber: null,
+    time: '',
+    type: SCHEDULE_TYPE.ANNIVERSARY,
+    repeatType: ANNIVERSARY_REPEAT_TYPE.YEARLY,
+    yearlyRecurring: true,
+    isAutomaticAnniversary: true,
+  }]
+}
+
 async function fetchSchedules(year, month) {
   const query = new URLSearchParams({
     year: String(year),
@@ -229,6 +269,11 @@ export async function getMonthlyCalendar(
           year,
           month,
         ),
+    ),
+    ...createRelationshipStartAnniversary(
+      year,
+      month,
+      relationshipStartDate,
     ),
     ...createRelationshipMilestones(
       year,

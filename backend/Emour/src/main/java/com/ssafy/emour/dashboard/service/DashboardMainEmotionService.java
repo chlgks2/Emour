@@ -1,13 +1,16 @@
 package com.ssafy.emour.dashboard.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ssafy.emour.chat.entity.EmotionType;
-import com.ssafy.emour.chat.repository.ChatAnalysisRepository;
 import com.ssafy.emour.couple.entity.CoupleMemberId;
 import com.ssafy.emour.couple.entity.CoupleMemberStatus;
 import com.ssafy.emour.couple.repository.CoupleMemberRepository;
 import com.ssafy.emour.dashboard.dto.DashboardMainEmotionResponse;
 import com.ssafy.emour.dashboard.dto.DashboardPeriod;
 import com.ssafy.emour.dashboard.dto.EmotionSummaryItem;
+import com.ssafy.emour.dashboard.entity.CoupleDashboard;
 import com.ssafy.emour.global.exception.CustomException;
 import com.ssafy.emour.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +21,7 @@ import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -26,10 +30,10 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class DashboardMainEmotionService {
 
-    private final ChatAnalysisRepository chatAnalysisRepository;
+    private final DashboardSnapshotRangeService snapshotRangeService;
     private final CoupleMemberRepository coupleMemberRepository;
-    // 기존 생성자 호환성을 유지하며, 조회는 원본 데이터 직접 집계를 사용한다.
     private final Clock dashboardClock;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Transactional
     public DashboardMainEmotionResponse getMainEmotions(
@@ -41,18 +45,22 @@ public class DashboardMainEmotionService {
         validateRequest(roomId, userId, period, date);
         DateRange range = createRange(period, date);
 
-        List<String> storedEmotions =
-                chatAnalysisRepository.findCompletedRoomEmotionTypes(
+        List<CoupleDashboard> snapshots = snapshotRangeService
+                .getCoupleSnapshots(
                         roomId,
-                        range.startDate().atStartOfDay(),
-                        range.endExclusive().atStartOfDay()
+                        userId,
+                        range.startDate(),
+                        range.endExclusive()
                 );
         return createResponse(
                 roomId,
                 period,
                 range,
-                createCounts(storedEmotions),
-                LocalDateTime.now(dashboardClock)
+                createCounts(snapshots),
+                snapshots.stream()
+                        .map(CoupleDashboard::getCalculatedAt)
+                        .max(Comparator.naturalOrder())
+                        .orElseGet(() -> LocalDateTime.now(dashboardClock))
         );
     }
 
@@ -86,13 +94,34 @@ public class DashboardMainEmotionService {
     }
 
     private Map<EmotionType, Integer> createCounts(
-            List<String> storedEmotions
+            List<CoupleDashboard> snapshots
     ) {
         Map<EmotionType, Integer> counts = emptyCounts();
-        storedEmotions.stream()
-                .map(EmotionType::fromStoredValue)
-                .forEach(type -> counts.merge(type, 1, Integer::sum));
+        snapshots.stream()
+                .map(CoupleDashboard::getEmotionSummary)
+                .map(this::readEmotionCounts)
+                .forEach(daily -> daily.forEach((emotion, count) ->
+                        counts.merge(
+                                EmotionType.fromStoredValue(emotion),
+                                count,
+                                Integer::sum
+                        )));
         return counts;
+    }
+
+    private Map<String, Integer> readEmotionCounts(String json) {
+        if (json == null || json.isBlank()) {
+            return Map.of();
+        }
+        try {
+            return objectMapper.readValue(
+                    json,
+                    new TypeReference<Map<String, Integer>>() {
+                    }
+            );
+        } catch (JsonProcessingException exception) {
+            throw new CustomException(ErrorCode.INTERNAL_ERROR);
+        }
     }
 
     private Map<EmotionType, Integer> emptyCounts() {

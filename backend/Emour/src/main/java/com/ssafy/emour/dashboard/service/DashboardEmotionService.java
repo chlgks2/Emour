@@ -3,10 +3,6 @@ package com.ssafy.emour.dashboard.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ssafy.emour.chat.entity.ChatAnalysis;
-import com.ssafy.emour.chat.entity.EmotionPolarity;
-import com.ssafy.emour.chat.entity.EmotionType;
-import com.ssafy.emour.chat.repository.ChatAnalysisRepository;
 import com.ssafy.emour.couple.entity.CoupleMemberId;
 import com.ssafy.emour.couple.entity.CoupleMemberStatus;
 import com.ssafy.emour.couple.repository.CoupleMemberRepository;
@@ -26,6 +22,7 @@ import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -35,8 +32,7 @@ public class DashboardEmotionService {
     private static final int SLOT_HOURS = 2;
     private static final int SLOT_COUNT = 12;
 
-    private final DashboardSnapshotService dashboardSnapshotService;
-    private final ChatAnalysisRepository chatAnalysisRepository;
+    private final DashboardSnapshotRangeService snapshotRangeService;
     private final CoupleMemberRepository coupleMemberRepository;
     private final Clock dashboardClock;
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -51,36 +47,22 @@ public class DashboardEmotionService {
         validateRequest(roomId, userId, period, date);
         DateRange range = createRange(period, date);
 
-        if (period == DashboardPeriod.DAY) {
-            Dashboard dashboard = dashboardSnapshotService.ensureSnapshot(
-                    roomId,
-                    userId,
-                    date
-            );
-            return createResponse(
-                    roomId,
-                    userId,
-                    period,
-                    range,
-                    readFlow(dashboard.getEmotionFlow()),
-                    dashboard.getCalculatedAt()
-            );
-        }
-
-        List<ChatAnalysis> analyses = chatAnalysisRepository
-                .findCompletedDailyAnalyses(
+        List<Dashboard> snapshots = snapshotRangeService.getMemberSnapshots(
                         roomId,
                         userId,
-                        range.startDate().atStartOfDay(),
-                        range.endExclusive().atStartOfDay()
-                );
+                        range.startDate(),
+                        range.endExclusive()
+        );
         return createResponse(
                 roomId,
                 userId,
                 period,
                 range,
-                createFlow(analyses),
-                LocalDateTime.now(dashboardClock)
+                mergeFlows(snapshots),
+                snapshots.stream()
+                        .map(Dashboard::getCalculatedAt)
+                        .max(Comparator.naturalOrder())
+                        .orElseGet(() -> LocalDateTime.now(dashboardClock))
         );
     }
 
@@ -158,22 +140,17 @@ public class DashboardEmotionService {
         );
     }
 
-    private List<EmotionFlowSlot> createFlow(
-            List<ChatAnalysis> analyses
+    private List<EmotionFlowSlot> mergeFlows(
+            List<Dashboard> snapshots
     ) {
         int[][] counts = new int[SLOT_COUNT][3];
-        for (ChatAnalysis analysis : analyses) {
-            int slotIndex = analysis.getMessage().getSentAt().getHour()
-                    / SLOT_HOURS;
-            EmotionPolarity polarity = EmotionType
-                    .fromStoredValue(analysis.getEmotionType())
-                    .getPolarity();
-            int polarityIndex = switch (polarity) {
-                case POSITIVE -> 0;
-                case NEGATIVE -> 1;
-                case NEUTRAL -> 2;
-            };
-            counts[slotIndex][polarityIndex]++;
+        for (Dashboard snapshot : snapshots) {
+            for (EmotionFlowSlot slot : readFlow(snapshot.getEmotionFlow())) {
+                int slotIndex = slot.startHour() / SLOT_HOURS;
+                counts[slotIndex][0] += slot.positiveCount();
+                counts[slotIndex][1] += slot.negativeCount();
+                counts[slotIndex][2] += slot.neutralCount();
+            }
         }
 
         List<EmotionFlowSlot> flow = new ArrayList<>(SLOT_COUNT);
@@ -191,6 +168,9 @@ public class DashboardEmotionService {
     }
 
     private List<EmotionFlowSlot> readFlow(String json) {
+        if (json == null || json.isBlank()) {
+            return List.of();
+        }
         try {
             return objectMapper.readValue(
                     json,

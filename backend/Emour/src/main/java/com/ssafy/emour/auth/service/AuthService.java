@@ -45,18 +45,28 @@ public class AuthService {
             throw new CustomException(ErrorCode.EMAIL_ALREADY_EXISTS);
         }
 
-        // 2) 비밀번호 BCrypt 해시
+        // 2) 이메일 인증을 먼저 통과한 이메일만 가입 허용
+        //    (인증 전에는 회원을 만들지 않는다 — 인증 없이 계정이 생기는 문제 방지)
+        if (!verificationCodeService.isVerified(PURPOSE_SIGN_UP, request.email())) {
+            throw new CustomException(ErrorCode.EMAIL_NOT_VERIFIED);
+        }
+
+        // 3) 비밀번호 BCrypt 해시
         String encodedPassword = passwordEncoder.encode(request.password());
 
-        // 3) 회원 생성 + 저장
+        // 4) 회원 생성 + 저장 (이미 이메일 인증 완료 상태로)
         Member member = Member.builder()
                 .email(request.email())
                 .passwordHash(encodedPassword)
                 .nickname(request.nickname())
                 .build();
+        member.verifyEmail();
         Member saved = memberRepository.save(member);
 
-        // 4) 안전한 응답 DTO 로 변환
+        // 5) 사용한 인증 표시 정리(재사용 방지)
+        verificationCodeService.clearVerified(PURPOSE_SIGN_UP, request.email());
+
+        // 6) 안전한 응답 DTO 로 변환
         return SignUpResponse.from(saved);
     }
 
@@ -197,6 +207,10 @@ public class AuthService {
      * 6자리 코드를 만들어 Redis(5분)에 저장하고 이메일로 보낸다(지금은 콘솔 출력).
      */
     public void sendSignUpVerificationCode(String email) {
+        // 이미 가입된 이메일이면 인증코드를 보내지 않는다.
+        if (memberRepository.existsByEmail(email)) {
+            throw new CustomException(ErrorCode.EMAIL_ALREADY_EXISTS);
+        }
         String code = verificationCodeService.generateAndStore(PURPOSE_SIGN_UP, email);
         emailSender.send(
                 email,
@@ -207,20 +221,17 @@ public class AuthService {
 
     /**
      * 이메일 인증코드 확인.
-     * 코드가 맞으면 해당 회원의 is_email_verified 를 true 로 바꾼다.
-     * (Member 를 조회해 verifyEmail() 만 호출하면 트랜잭션 종료 시 JPA 가 자동 UPDATE)
+     * 코드가 맞으면 이 이메일을 '인증됨'으로 표시만 한다(회원은 아직 만들지 않는다).
+     * 실제 회원 생성은 signUp() 에서, 이 인증 표시를 확인한 뒤에 이뤄진다.
      */
-    @Transactional
     public void verifySignUpCode(String email, String code) {
         // 1) 코드 검증
         if (!verificationCodeService.verify(PURPOSE_SIGN_UP, email, code)) {
             throw new CustomException(ErrorCode.INVALID_VERIFICATION_CODE);
         }
 
-        // 2) 회원의 이메일 인증 상태를 true 로
-        Member member = memberRepository.findByEmail(email)
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-        member.verifyEmail();
+        // 2) 이 이메일을 인증됨으로 표시(회원가입 때 확인)
+        verificationCodeService.markVerified(PURPOSE_SIGN_UP, email);
 
         // 3) 사용한 코드는 삭제(재사용 방지)
         verificationCodeService.delete(PURPOSE_SIGN_UP, email);

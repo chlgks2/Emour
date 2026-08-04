@@ -114,3 +114,44 @@
   border: 1px solid rgba(0, 0, 0, 0.08); /* 구글 버튼은 화이트 배경이므로 깔끔한 소프트 보더 추가 */
   color: #1f1f1f;
 }
+
+.googleButtonShell {
+  position: relative;
+  width: 100%;
+  min-height: 44px;
+  display: flex;
+  justify-content: center;
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+
+.googleButton {
+  width: 100%;
+  min-height: 44px;
+  display: flex;
+  justify-content: center;
+}
+
+.buttonBlocker {
+  position: absolute;
+  inset: 0;
+  cursor: not-allowed;
+  background: rgba(255, 255, 255, 0.45);
+}
+
+.googleButtonShell.disabled {
+  opacity: 0.6;
+}
+
+.googleButtonShell.loading {
+  opacity: 1;
+  animation: pulse 1s var(--ease-out) infinite;
+}
+
+.setupError {
+  margin: 0;
+  color: var(--color-danger);
+  font-size: var(--font-caption);
+  line-height: 1.45;
+  text-align: center;
+}

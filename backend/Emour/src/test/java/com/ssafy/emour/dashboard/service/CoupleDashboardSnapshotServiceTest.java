@@ -36,6 +36,8 @@ class CoupleDashboardSnapshotServiceTest {
     private ChatAnalysisRepository chatAnalysisRepository;
     @Mock
     private CoupleMemberRepository coupleMemberRepository;
+    @Mock
+    private DashboardSnapshotLockService snapshotLockService;
 
     @Test
     void aggregatesWholeRoomData() {
@@ -49,6 +51,7 @@ class CoupleDashboardSnapshotServiceTest {
                 chatAnalysisRepository,
                 coupleMemberRepository,
                 new ConversationFlowCalculator(),
+                snapshotLockService,
                 Clock.fixed(
                         Instant.parse("2026-08-03T04:05:00Z"),
                         ZoneId.of("Asia/Seoul")
@@ -75,7 +78,10 @@ class CoupleDashboardSnapshotServiceTest {
                 end
         )).thenReturn(List.of("JOY", "JOY", "SADNESS"));
         when(chatMessageRepository.findRoomTextContents(1L, start, end))
-                .thenReturn(List.of("love today", "love together"));
+                .thenReturn(List.of(
+                        "love today 그냥 아니 근데 진짜 ㄹㅇ ㅋㅋㅋㅋ 아아아아",
+                        "love together ㅋㅋㅎㅋㅎㅎㅋㅋㅎㅎ ㅎㅎㅎ ㅠㅠ"
+                ));
         when(chatMessageRepository.findConversationMessages(1L, start, end))
                 .thenReturn(List.of());
         when(coupleDashboardRepository.findByRoomIdAndSummaryDate(1L, date))
@@ -95,7 +101,19 @@ class CoupleDashboardSnapshotServiceTest {
         assertThat(result.getReactionCount()).isEqualTo(3);
         assertThat(result.getEmotionSummary()).contains("\"JOY\":2");
         assertThat(result.getFrequentWords())
-                .contains("\"word\":\"love\"", "\"count\":2");
+                .contains("\"word\":\"love\"", "\"count\":2")
+                .doesNotContain(
+                        "그냥",
+                        "아니",
+                        "근데",
+                        "진짜",
+                        "ㄹㅇ",
+                        "ㅋㅋㅋㅋ",
+                        "ㅋㅋㅎㅋㅎㅎㅋㅋㅎㅎ",
+                        "아아아아",
+                        "ㅎㅎㅎ",
+                        "ㅠㅠ"
+                );
         assertThat(result.getFinalizedUntil()).isEqualTo(end);
     }
 }
