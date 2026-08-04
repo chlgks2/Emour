@@ -628,6 +628,10 @@ export default function DashboardPage() {
                 series={moodTrend.series}
                 axis={moodTrend.axis}
                 emptyText={"기분을 기록하면\n두 사람의 흐름이 나란히 그려져요."}
+                onPointSelect={(point) => {
+                  setMoodPeriod(point.targetPeriod);
+                  setMoodDate(parseDateKey(point.targetDate));
+                }}
               />
             </div>
           </div>
