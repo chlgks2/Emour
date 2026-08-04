@@ -18,8 +18,9 @@ build:web:
       changes: [frontend/**/*]
   script:
     - docker build --build-arg VITE_API_BASE_URL=/api --build-arg VITE_WS_BASE_URL=/ws
-        -t emour-web:$CI_PIPELINE_IID -t emour-web:latest ./frontend
-
+        --build-arg VITE_GOOGLE_CLIENT_ID=$VITE_GOOGLE_CLIENT_ID
+        -t emour-web:$CI_PIPELINE_IID ./frontend
+        
 deploy:web:dev:
   stage: deploy
   tags: [emour-ec2]
