@@ -35,6 +35,12 @@
   stroke-width: 1.6;
 }
 
+.splitDot > circle {
+  fill: none;
+  stroke: var(--color-surface);
+  stroke-width: 1.6;
+}
+
 .legend {
   display: flex;
   justify-content: center;
