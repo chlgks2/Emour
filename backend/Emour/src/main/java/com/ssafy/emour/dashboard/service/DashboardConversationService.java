@@ -177,17 +177,11 @@ public class DashboardConversationService {
             DashboardPeriod period,
             LocalDate date
     ) {
-        return switch (period) {
-            case DAY -> new DateRange(date, date.plusDays(1));
-            case MONTH -> {
-                LocalDate start = date.withDayOfMonth(1);
-                yield new DateRange(start, start.plusMonths(1));
-            }
-            case YEAR -> {
-                LocalDate start = date.withDayOfYear(1);
-                yield new DateRange(start, start.plusYears(1));
-            }
-        };
+        LocalDate startDate = period.startDate(date);
+        return new DateRange(
+                startDate,
+                period.endExclusive(startDate)
+        );
     }
 
     private void validateRequest(
