@@ -1,10 +1,7 @@
 package com.ssafy.emour.home.dto.response;
 
-import com.ssafy.emour.home.entity.HomeBackgroundStyle;
 import com.ssafy.emour.home.entity.HomeImageSetting;
 import com.ssafy.emour.home.entity.HomeTextAlignment;
-import com.ssafy.emour.home.entity.HomeTextColor;
-import com.ssafy.emour.home.entity.HomeTextSize;
 
 import java.math.BigDecimal;
 
@@ -14,10 +11,10 @@ public record HomeSettingResponse(
         String textContent,
         BigDecimal textPositionX,
         BigDecimal textPositionY,
-        HomeTextSize textSize,
+        Integer textSize,
         HomeTextAlignment textAlignment,
-        HomeBackgroundStyle backgroundStyle,
-        HomeTextColor textColor
+        Integer backgroundTransparency,
+        String textColor
 ) {
     public static HomeSettingResponse from(HomeImageSetting setting) {
         return new HomeSettingResponse(
@@ -28,7 +25,7 @@ public record HomeSettingResponse(
                 setting.getTextPositionY(),
                 setting.getTextSize(),
                 setting.getTextAlignment(),
-                setting.getBackgroundStyle(),
+                setting.getBackgroundTransparency(),
                 setting.getTextColor()
         );
     }
