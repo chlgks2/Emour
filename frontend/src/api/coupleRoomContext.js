@@ -46,7 +46,12 @@ async function fetchCoupleRoom(userId) {
       ? saveCurrentCoupleRoom(room, userId)
       : null
 
-    cachedEntry = { userId, room: resolvedRoom }
+    // 방 조회가 잠깐 실패하거나 연결 직후 아직 null을 반환한 값을 계속 캐시하면
+    // 채팅 화면은 이후에도 roomId 없이 전송을 시도하게 된다. 실제 방이 확인된
+    // 경우만 캐시하고, null은 다음 호출에서 서버에 다시 확인한다.
+    cachedEntry = resolvedRoom
+      ? { userId, room: resolvedRoom }
+      : null
 
     return resolvedRoom
   } catch {

@@ -64,18 +64,21 @@ export default function LoginPage() {
     }
   };
 
-  const handleSocial = async (provider) => {
+  const handleSocial = async (provider, idToken) => {
     setSocialLoading(provider);
     setError("");
     try {
-      await loginWithSocial(provider);
+      const user = await loginWithSocial(provider, idToken);
+      showToast(`${user.nickname}님, 환영해요!`, { tone: "success" });
       const postLoginPath =
         await getPostLoginPath();
       navigate(postLoginPath, {
         replace: true,
       });
-    } catch {
-      setError("소셜 로그인에 실패했어요. 잠시 후 다시 시도해주세요.");
+    } catch (socialError) {
+      setError(
+        socialError.message || "소셜 로그인에 실패했어요. 잠시 후 다시 시도해주세요.",
+      );
     } finally {
       setSocialLoading(null);
     }

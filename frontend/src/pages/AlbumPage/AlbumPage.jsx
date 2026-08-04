@@ -25,6 +25,7 @@ import {
 
 import BottomNavigation from '../../components/common/BottomNavigation/BottomNavigation.jsx'
 import { useLiveSync } from '../../hooks/useLiveSync.js'
+import { getCurrentUser } from '../../api/authApi.js'
 
 import './AlbumPage.css'
 
@@ -80,6 +81,7 @@ function formatPhotoDate(value) {
 
 function AlbumPage() {
   const fileInputRef = useRef(null)
+  const currentUserId = getCurrentUser()?.userId ?? null
 
   const [activeTab, setActiveTab] =
     useState('ALBUM')
@@ -418,7 +420,7 @@ function AlbumPage() {
         'CHAT'
       ) {
         showNotice(
-          '사진이 삭제되었습니다. 채팅에서는 삭제된 이미지로 표시됩니다.',
+          '채팅 사진이 삭제되었습니다.',
         )
       } else {
         showNotice(
@@ -882,24 +884,27 @@ function AlbumPage() {
               </p>
             )}
 
-            <button
-              type="button"
-              className="album-photo-delete-button"
-              disabled={isDeleting}
-              onClick={() =>
-                openDeleteConfirm(
-                  selectedPhoto,
-                )
-              }
-            >
-              <Trash2
-                size={17}
-                strokeWidth={1.9}
-                aria-hidden="true"
-              />
+            {(selectedPhoto.source !== 'CHAT' ||
+              Number(selectedPhoto.senderId) === Number(currentUserId)) && (
+              <button
+                type="button"
+                className="album-photo-delete-button"
+                disabled={isDeleting}
+                onClick={() =>
+                  openDeleteConfirm(
+                    selectedPhoto,
+                  )
+                }
+              >
+                <Trash2
+                  size={17}
+                  strokeWidth={1.9}
+                  aria-hidden="true"
+                />
 
-              <span>사진 삭제</span>
-            </button>
+                <span>사진 삭제</span>
+              </button>
+            )}
           </section>
         </div>
       )}
