@@ -122,6 +122,7 @@ class DashboardSnapshotRangeServiceTest {
         incomplete.applyHourlySnapshot(
                 0,
                 null,
+                "{}",
                 date.plusDays(1).atStartOfDay(),
                 true,
                 date.plusDays(1).atStartOfDay()
@@ -130,6 +131,48 @@ class DashboardSnapshotRangeServiceTest {
         repaired.applyHourlySnapshot(
                 0,
                 "[]",
+                "{}",
+                date.plusDays(1).atStartOfDay(),
+                true,
+                date.plusDays(1).atStartOfDay()
+        );
+        DashboardSnapshotRangeService service = serviceAtNoon();
+
+        when(dashboardRepository
+                .findAllByRoomIdAndUserIdAndSummaryDateGreaterThanEqualAndSummaryDateLessThanOrderBySummaryDateAsc(
+                        1L,
+                        10L,
+                        date,
+                        date.plusDays(1)
+                )).thenReturn(List.of(incomplete));
+        when(memberSnapshotService.ensureSnapshot(1L, 10L, date))
+                .thenReturn(repaired);
+
+        assertThat(service.getMemberSnapshots(
+                1L,
+                10L,
+                date,
+                date.plusDays(1)
+        )).containsExactly(repaired);
+    }
+
+    @Test
+    void refreshesPastMemberSnapshotWhenEmotionSummaryIsNull() {
+        LocalDate date = LocalDate.of(2026, 8, 3);
+        Dashboard incomplete = Dashboard.create(1L, 10L, date);
+        incomplete.applyHourlySnapshot(
+                0,
+                "[]",
+                null,
+                date.plusDays(1).atStartOfDay(),
+                true,
+                date.plusDays(1).atStartOfDay()
+        );
+        Dashboard repaired = Dashboard.create(1L, 10L, date);
+        repaired.applyHourlySnapshot(
+                0,
+                "[]",
+                "{}",
                 date.plusDays(1).atStartOfDay(),
                 true,
                 date.plusDays(1).atStartOfDay()

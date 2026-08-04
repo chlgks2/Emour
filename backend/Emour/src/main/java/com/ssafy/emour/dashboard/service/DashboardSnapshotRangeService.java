@@ -131,6 +131,8 @@ public class DashboardSnapshotRangeService {
                 || date.equals(LocalDate.now(dashboardClock))
                 || dashboard.getEmotionFlow() == null
                 || dashboard.getEmotionFlow().isBlank()
+                || dashboard.getEmotionSummary() == null
+                || dashboard.getEmotionSummary().isBlank()
                 || dashboard.getAggregatedUntil() == null
                 || dashboard.getAggregatedUntil()
                 .isBefore(date.plusDays(1).atStartOfDay());
