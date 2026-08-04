@@ -116,10 +116,8 @@ export default function MessageBubble({
       className={[
         styles.row,
         isMine ? styles.rowMine : styles.rowPartner,
-        // 리본은 말풍선 위로, 리액션 뱃지는 아래로 튀어나온다.
-        // 붙은 쪽만 여백을 넓혀서 옆 메시지와 겹치거나 누를 곳이 좁아지지 않게 한다.
+        // 리본은 말풍선 위로 튀어나오므로 붙은 메시지만 위쪽 여백을 넓힌다.
         isBookmarked ? styles.rowBookmarked : "",
-        reactions.length > 0 ? styles.rowReacted : "",
       ]
         .filter(Boolean)
         .join(" ")}
@@ -144,8 +142,6 @@ export default function MessageBubble({
         )}
 
         <div className={styles.bubbleWrap}>
-          {/* 색은 CSS(.bookmarkRibbon)에서 준다. fill/color prop 은 SVG presentation
-              attribute 로 들어가 var() 가 해석되지 않는다. */}
           {isBookmarked && (
             <Bookmark size={20} className={styles.bookmarkRibbon} aria-label="북마크됨" />
           )}
@@ -186,14 +182,14 @@ export default function MessageBubble({
               </div>
             )}
           </div>
-
+        </div>
+      </div>
+      <div className={styles.metaColumn}>
+        {isMine && isReadByPartner && <span className={styles.readTag}>읽음</span>}
+        <div className={styles.metaLine}>
+          <span className={styles.time}>{formatTime(message.sentAt)}</span>
           {reactions.length > 0 && (
-            <span
-              className={[
-                styles.reactionBadges,
-                isMine ? styles.reactionBadgesMine : styles.reactionBadgesPartner,
-              ].join(" ")}
-            >
+            <span className={styles.reactionBadges}>
               {reactions.map((reaction) => {
                 const option = REACTION_MAP[reaction.reactionType];
                 if (!option) return null;
@@ -205,17 +201,13 @@ export default function MessageBubble({
                     style={{ background: option.color }}
                     aria-label={`${option.label}${reaction.userId === myUserId ? " (나)" : ""}`}
                   >
-                    <ReactionIcon size={12} color="#fff" />
+                    <ReactionIcon size={10} color="#fff" />
                   </span>
                 );
               })}
             </span>
           )}
         </div>
-      </div>
-      <div className={styles.metaColumn}>
-        {isMine && isReadByPartner && <span className={styles.readTag}>읽음</span>}
-        <span className={styles.time}>{formatTime(message.sentAt)}</span>
       </div>
     </div>
   );

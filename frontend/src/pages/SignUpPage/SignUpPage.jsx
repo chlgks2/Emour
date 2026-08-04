@@ -306,6 +306,7 @@ export default function SignUpPage() {
                   type="button"
                   variant="chip"
                   fullWidth={false}
+                  className={styles.resendButton}
                   loading={resending}
                   disabled={resendSeconds > 0}
                   onClick={handleResendCode}

@@ -138,10 +138,11 @@
      lucide 의 color prop 은 SVG presentation attribute(stroke) 로 들어가는데
      거기서는 var() 가 해석되지 않아 토큰으로 뺄 수 없다. */
 
-  /* 북마크는 브랜드 로즈(말린 장미)를 유지한다. 리액션과 역할이 달라
-     굳이 같은 채도로 맞추지 않고 브랜드 색으로 남긴다. */
-  --color-bookmark: var(--color-primary);
-  --color-bookmark-strong: var(--color-primary-strong);
+  /* 북마크는 하단 공감 아이콘보다 한 톤 차분한 로즈를 쓴다.
+     기존 말린 장미색은 작은 리본을 꽉 채웠을 때 탁해 보였고,
+     공감 하트(#ff6f91)를 그대로 쓰면 지나치게 발랄해져 중간 채도로 맞춘다. */
+  --color-bookmark: #e8a9b8;
+  --color-bookmark-strong: #dc91a3;
 
   /* ----------------------------------------------------------------
      4. 레이아웃

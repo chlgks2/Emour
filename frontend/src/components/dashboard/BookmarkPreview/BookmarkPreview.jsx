@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, MessageSquareText } from "lucide-react";
 import { fetchRecentBookmarks } from "../../../api/bookmarkApi";
 import { formatDate, formatTime } from "../../../utils/emotions";
 import styles from "./BookmarkPreview.module.css";
@@ -77,11 +77,21 @@ export default function BookmarkPreview() {
           {bookmarks.map((bookmark) => (
             <li key={bookmark.bookmarkId} className={styles.item}>
               <p className={styles.itemText}>{bookmark.content}</p>
-              <p className={styles.itemMeta}>
+              <div className={styles.itemFooter}>
                 <time dateTime={bookmark.sentAt}>
                   {formatDate(bookmark.sentAt)} {formatTime(bookmark.sentAt)}
                 </time>
-              </p>
+                <button
+                  type="button"
+                  className={styles.moveButton}
+                  onClick={() => navigate("/chat", {
+                    state: { focusMessageId: bookmark.messageId },
+                  })}
+                >
+                  <MessageSquareText size={12} aria-hidden="true" />
+                  대화로 이동
+                </button>
+              </div>
             </li>
           ))}
         </ul>

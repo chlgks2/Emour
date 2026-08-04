@@ -15,6 +15,21 @@
   overscroll-behavior: contain;
 }
 
+.focusedMessage {
+  border-radius: var(--radius-md);
+  animation: bookmarked-message-focus 2.1s ease-out;
+}
+
+@keyframes bookmarked-message-focus {
+  0%,
+  35% {
+    background: color-mix(in srgb, var(--color-primary-soft) 45%, transparent);
+  }
+  100% {
+    background: transparent;
+  }
+}
+
 .sentinel {
   display: flex;
   justify-content: center;
