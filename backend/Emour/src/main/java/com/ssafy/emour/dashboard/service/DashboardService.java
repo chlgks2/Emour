@@ -36,7 +36,7 @@ public class DashboardService {
             LocalDate date
     ) {
         validateRequest(roomId, userId, period, date);
-        DateRange range = createRange(period, date);
+        DateRange range = createRange(roomId, period, date);
 
         List<CoupleDashboard> snapshots = snapshotRangeService
                 .getCoupleSnapshots(
@@ -71,7 +71,7 @@ public class DashboardService {
             LocalDate date
     ) {
         validateRequest(roomId, userId, period, date);
-        DateRange range = createRange(period, date);
+        DateRange range = createRange(roomId, period, date);
         List<Dashboard> snapshots = snapshotRangeService.getMemberSnapshots(
                 roomId,
                 userId,
@@ -90,9 +90,16 @@ public class DashboardService {
     }
 
     private DateRange createRange(
+            Long roomId,
             DashboardPeriod period,
             LocalDate date
     ) {
+        if (period == DashboardPeriod.ALL) {
+            return new DateRange(
+                    snapshotRangeService.findAllStartDate(roomId),
+                    LocalDate.now(dashboardClock).plusDays(1)
+            );
+        }
         LocalDate startDate = period.startDate(date);
         return new DateRange(
                 startDate,
@@ -106,11 +113,11 @@ public class DashboardService {
             DashboardPeriod period,
             LocalDate date
     ) {
-        if (roomId == null || userId == null
-                || period == null || date == null) {
+        if (roomId == null || userId == null || period == null
+                || (period != DashboardPeriod.ALL && date == null)) {
             throw new CustomException(ErrorCode.INVALID_INPUT);
         }
-        if (createRange(period, date).startDate()
+        if (createRange(roomId, period, date).startDate()
                 .isAfter(LocalDate.now(dashboardClock))) {
             throw new CustomException(ErrorCode.INVALID_INPUT);
         }
