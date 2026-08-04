@@ -116,7 +116,6 @@ export default function HomePage({
           className={`${styles.captionBox} ${fontSizeClass} ${boxToneClass}`}
           style={boxInlineStyle}
         >
-          <span className={styles.quoteMark}>&ldquo;</span>
           <p className={styles.captionText}>{caption}</p>
         </div>
       )}

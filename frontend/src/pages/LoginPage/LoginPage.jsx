@@ -86,7 +86,7 @@ export default function LoginPage() {
 
   return (
     <div className="app-shell">
-      <AuthHeader fallbackTo="/login" />
+      <AuthHeader showBack={false} />
       <form className={styles.content} onSubmit={handleSubmit} noValidate>
         <img src={logoWordmark} alt="Emour" className={styles.logo} />
         <h1 className={styles.title}>다시 만나서 반가워요</h1>

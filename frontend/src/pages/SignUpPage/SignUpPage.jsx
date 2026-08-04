@@ -21,6 +21,7 @@ const NICKNAME_MAX_LENGTH = 20;
 const EMAIL_MAX_LENGTH = 255; // user.email VARCHAR(255)
 const VERIFICATION_CODE_LENGTH = 6;
 const RESEND_COOLDOWN_SECONDS = 60;
+const VERIFICATION_VALID_SECONDS = 5 * 60;
 
 export default function SignUpPage() {
   const navigate = useNavigate();
@@ -42,6 +43,7 @@ export default function SignUpPage() {
   const [verificationCode, setVerificationCode] = useState("");
   const [verificationError, setVerificationError] = useState("");
   const [resendSeconds, setResendSeconds] = useState(0);
+  const [verificationSeconds, setVerificationSeconds] = useState(0);
   const [resending, setResending] = useState(false);
 
   useEffect(() => {
@@ -53,6 +55,16 @@ export default function SignUpPage() {
 
     return () => window.clearInterval(timer);
   }, [resendSeconds]);
+
+  useEffect(() => {
+    if (verificationSeconds <= 0) return undefined;
+
+    const timer = window.setInterval(() => {
+      setVerificationSeconds((seconds) => Math.max(0, seconds - 1));
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [verificationSeconds]);
 
   const updateField = (key) => (e) => {
     setForm((prev) => ({ ...prev, [key]: e.target.value }));
@@ -106,6 +118,7 @@ export default function SignUpPage() {
         setVerificationCode("");
         setVerificationError("");
         setResendSeconds(RESEND_COOLDOWN_SECONDS);
+        setVerificationSeconds(VERIFICATION_VALID_SECONDS);
         setStep("VERIFY");
         showToast("인증 코드를 이메일로 전송했어요.", { tone: "success" });
       } catch (err) {
@@ -122,6 +135,11 @@ export default function SignUpPage() {
     if (step === "VERIFY") {
       if (verificationCode.length !== VERIFICATION_CODE_LENGTH) {
         setVerificationError("6자리 인증 코드를 입력해주세요.");
+        return;
+      }
+
+      if (verificationSeconds <= 0) {
+        setVerificationError("인증 시간이 만료되었어요. 인증 코드를 다시 받아주세요.");
         return;
       }
 
@@ -180,6 +198,7 @@ export default function SignUpPage() {
     try {
       await sendEmailCode(form.email);
       setResendSeconds(RESEND_COOLDOWN_SECONDS);
+      setVerificationSeconds(VERIFICATION_VALID_SECONDS);
       showToast("인증 코드를 다시 전송했어요.", { tone: "success" });
     } catch (err) {
       setVerificationError(err.message || "인증 코드 재전송에 실패했어요.");
@@ -291,12 +310,14 @@ export default function SignUpPage() {
                   disabled={resendSeconds > 0}
                   onClick={handleResendCode}
                 >
-                  {resendSeconds > 0 ? `${resendSeconds}초` : "재전송"}
+                  {resendSeconds > 0 ? `재전송 ${resendSeconds}초` : "재전송"}
                 </Button>
               }
             />
             <p className={styles.verificationHint}>
-              인증 코드는 5분 동안 유효합니다. 메일이 보이지 않으면 스팸함도 확인해주세요.
+              인증 코드 유효시간 {String(Math.floor(verificationSeconds / 60)).padStart(2, "0")}:
+              {String(verificationSeconds % 60).padStart(2, "0")}
+              <br />메일이 보이지 않으면 스팸함도 확인해주세요.
             </p>
           </div>
         )}
@@ -317,6 +338,7 @@ export default function SignUpPage() {
               setStep("EMAIL");
               setVerificationCode("");
               setVerificationError("");
+              setVerificationSeconds(0);
             }}
           >
             이메일 다시 입력하기
