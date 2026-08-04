@@ -11,7 +11,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 #       --extra-index-url https://download.pytorch.org/whl/cpu \
 #       -r requirements.txt
 
-# ⭐ KOTE 모델을 빌드 시점에 미리 다운로드 (컨테이너 뜰 때마다 받지 않게)
+# KOTE 모델을 빌드 시점에 미리 다운로드
 # RUN python -c "\
 # from transformers import AutoTokenizer, AutoModelForSequenceClassification; \
 # m='searle-j/kote_for_easygoing_people'; \
