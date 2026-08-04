@@ -22,7 +22,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -31,7 +30,6 @@ import java.util.List;
 @RequiredArgsConstructor
 public class DashboardSnapshotService {
 
-    private static final int FINALIZE_MINUTE = 5;
     private static final int EMOTION_SLOT_HOURS = 2;
     private static final int EMOTION_SLOT_COUNT = 12;
 
@@ -39,6 +37,7 @@ public class DashboardSnapshotService {
     private final ChatBookmarkRepository chatBookmarkRepository;
     private final ChatAnalysisRepository chatAnalysisRepository;
     private final CoupleMemberRepository coupleMemberRepository;
+    private final DashboardSnapshotLockService snapshotLockService;
     private final Clock dashboardClock;
     private final ObjectMapper objectMapper =
             new ObjectMapper().findAndRegisterModules();
@@ -54,6 +53,7 @@ public class DashboardSnapshotService {
         if (date == null || date.isAfter(today)) {
             throw new CustomException(ErrorCode.INVALID_INPUT);
         }
+        snapshotLockService.lockRoom(roomId);
 
         LocalDateTime snapshotUntil;
         boolean shouldFinalize;
@@ -62,8 +62,8 @@ public class DashboardSnapshotService {
             shouldFinalize = true;
         } else {
             LocalDateTime now = LocalDateTime.now(dashboardClock);
-            snapshotUntil = now.truncatedTo(ChronoUnit.HOURS);
-            shouldFinalize = now.getMinute() >= FINALIZE_MINUTE;
+            snapshotUntil = now;
+            shouldFinalize = false;
         }
 
         Dashboard dashboard = dashboardRepository
@@ -91,6 +91,7 @@ public class DashboardSnapshotService {
     ) {
         validateMember(roomId, userId);
         validateRange(date, snapshotUntil);
+        snapshotLockService.lockRoom(roomId);
         LocalDateTime start = date.atStartOfDay();
         LocalDateTime calculatedAt = LocalDateTime.now(dashboardClock);
 
@@ -142,6 +143,7 @@ public class DashboardSnapshotService {
     ) {
         return dashboard != null
                 && dashboard.getEmotionFlow() != null
+                && !dashboard.getEmotionFlow().isBlank()
                 && dashboard.getAggregatedUntil() != null
                 && dashboard.getAggregatedUntil().isAfter(snapshotUntil);
     }
@@ -153,6 +155,7 @@ public class DashboardSnapshotService {
     ) {
         if (dashboard == null
                 || dashboard.getEmotionFlow() == null
+                || dashboard.getEmotionFlow().isBlank()
                 || dashboard.getAggregatedUntil() == null
                 || dashboard.getAggregatedUntil().isBefore(snapshotUntil)) {
             return true;

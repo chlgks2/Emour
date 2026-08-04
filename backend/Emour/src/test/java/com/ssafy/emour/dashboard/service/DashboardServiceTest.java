@@ -1,14 +1,13 @@
 package com.ssafy.emour.dashboard.service;
 
-import com.ssafy.emour.chat.repository.ChatBookmarkRepository;
-import com.ssafy.emour.chat.repository.ChatMessageRepository;
-import com.ssafy.emour.chat.repository.ChatReactionRepository;
 import com.ssafy.emour.couple.entity.CoupleMemberId;
 import com.ssafy.emour.couple.entity.CoupleMemberStatus;
 import com.ssafy.emour.couple.repository.CoupleMemberRepository;
 import com.ssafy.emour.dashboard.dto.DashboardCountResponse;
 import com.ssafy.emour.dashboard.dto.DashboardPeriod;
+import com.ssafy.emour.dashboard.dto.MemberDashboardCountResponse;
 import com.ssafy.emour.dashboard.entity.CoupleDashboard;
+import com.ssafy.emour.dashboard.entity.Dashboard;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -19,6 +18,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
@@ -27,15 +27,7 @@ import static org.mockito.Mockito.when;
 class DashboardServiceTest {
 
     @Mock
-    private CoupleDashboardSnapshotService coupleDashboardSnapshotService;
-    @Mock
-    private DashboardSnapshotService memberDashboardSnapshotService;
-    @Mock
-    private ChatMessageRepository chatMessageRepository;
-    @Mock
-    private ChatReactionRepository chatReactionRepository;
-    @Mock
-    private ChatBookmarkRepository chatBookmarkRepository;
+    private DashboardSnapshotRangeService snapshotRangeService;
     @Mock
     private CoupleMemberRepository coupleMemberRepository;
 
@@ -48,11 +40,7 @@ class DashboardServiceTest {
                 ZoneId.of("Asia/Seoul")
         );
         dashboardService = new DashboardService(
-                coupleDashboardSnapshotService,
-                memberDashboardSnapshotService,
-                chatMessageRepository,
-                chatReactionRepository,
-                chatBookmarkRepository,
+                snapshotRangeService,
                 coupleMemberRepository,
                 clock
         );
@@ -62,14 +50,17 @@ class DashboardServiceTest {
         )).thenReturn(true);
     }
 
-    // 일 조회는 저장된 커플 합계 스냅샷을 반환합니다.
     @Test
-    void returnsDailyCounts() {
+    void returnsDailyCountsFromSnapshot() {
         LocalDate date = LocalDate.of(2026, 8, 3);
         CoupleDashboard dashboard = CoupleDashboard.create(1L, date);
         dashboard.updateCounts(5, 3, 2);
-        when(coupleDashboardSnapshotService.ensureSnapshot(1L, 10L, date))
-                .thenReturn(dashboard);
+        when(snapshotRangeService.getCoupleSnapshots(
+                1L,
+                10L,
+                date,
+                date.plusDays(1)
+        )).thenReturn(List.of(dashboard));
 
         DashboardCountResponse response = dashboardService.getCounts(
                 1L,
@@ -78,33 +69,31 @@ class DashboardServiceTest {
                 date
         );
 
-        assertThat(response.period()).isEqualTo(DashboardPeriod.DAY);
         assertThat(response.messageCount()).isEqualTo(5);
         assertThat(response.imageCount()).isEqualTo(3);
         assertThat(response.reactionCount()).isEqualTo(2);
     }
 
-    // 월 조회는 방에 속한 두 사람의 기록을 기간 전체에서 합산합니다.
     @Test
-    void returnsMonthlyCoupleCounts() {
+    void sumsMonthlyDailySnapshots() {
         LocalDate date = LocalDate.of(2026, 7, 15);
-        when(chatMessageRepository
-                .countByRoomIdAndSentAtGreaterThanEqualAndSentAtLessThan(
-                        1L,
-                        LocalDate.of(2026, 7, 1).atStartOfDay(),
-                        LocalDate.of(2026, 8, 1).atStartOfDay()
-                )).thenReturn(50L);
-        when(chatMessageRepository.countRoomImages(
+        CoupleDashboard first = CoupleDashboard.create(
                 1L,
-                LocalDate.of(2026, 7, 1).atStartOfDay(),
-                LocalDate.of(2026, 8, 1).atStartOfDay()
-        )).thenReturn(8L);
-        when(chatReactionRepository
-                .countByRoomIdAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
-                        1L,
-                        LocalDate.of(2026, 7, 1).atStartOfDay(),
-                        LocalDate.of(2026, 8, 1).atStartOfDay()
-                )).thenReturn(6L);
+                LocalDate.of(2026, 7, 1)
+        );
+        first.updateCounts(20, 3, 2);
+        CoupleDashboard second = CoupleDashboard.create(
+                1L,
+                LocalDate.of(2026, 7, 2)
+        );
+        second.updateCounts(30, 5, 4);
+        when(snapshotRangeService.getCoupleSnapshots(
+                1L,
+                10L,
+                LocalDate.of(2026, 7, 1),
+                LocalDate.of(2026, 8, 1)
+        )).thenReturn(List.of(first, second));
+
         DashboardCountResponse response = dashboardService.getCounts(
                 1L,
                 10L,
@@ -112,12 +101,31 @@ class DashboardServiceTest {
                 date
         );
 
-        assertThat(response.startDate())
-                .isEqualTo(LocalDate.of(2026, 7, 1));
-        assertThat(response.endDate())
-                .isEqualTo(LocalDate.of(2026, 7, 31));
         assertThat(response.messageCount()).isEqualTo(50);
         assertThat(response.imageCount()).isEqualTo(8);
         assertThat(response.reactionCount()).isEqualTo(6);
+    }
+
+    @Test
+    void sumsMemberBookmarks() {
+        LocalDate date = LocalDate.of(2026, 8, 3);
+        Dashboard dashboard = Dashboard.create(1L, 10L, date);
+        dashboard.updateBookmarkCount(4);
+        when(snapshotRangeService.getMemberSnapshots(
+                1L,
+                10L,
+                date,
+                date.plusDays(1)
+        )).thenReturn(List.of(dashboard));
+
+        MemberDashboardCountResponse response =
+                dashboardService.getMemberCounts(
+                        1L,
+                        10L,
+                        DashboardPeriod.DAY,
+                        date
+                );
+
+        assertThat(response.bookmarkCount()).isEqualTo(4);
     }
 }

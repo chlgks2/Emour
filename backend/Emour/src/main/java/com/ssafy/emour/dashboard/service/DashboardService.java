@@ -1,8 +1,5 @@
 package com.ssafy.emour.dashboard.service;
 
-import com.ssafy.emour.chat.repository.ChatBookmarkRepository;
-import com.ssafy.emour.chat.repository.ChatMessageRepository;
-import com.ssafy.emour.chat.repository.ChatReactionRepository;
 import com.ssafy.emour.couple.entity.CoupleMemberId;
 import com.ssafy.emour.couple.entity.CoupleMemberStatus;
 import com.ssafy.emour.couple.repository.CoupleMemberRepository;
@@ -20,16 +17,14 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Comparator;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class DashboardService {
 
-    private final CoupleDashboardSnapshotService coupleDashboardSnapshotService;
-    private final DashboardSnapshotService memberDashboardSnapshotService;
-    private final ChatMessageRepository chatMessageRepository;
-    private final ChatReactionRepository chatReactionRepository;
-    private final ChatBookmarkRepository chatBookmarkRepository;
+    private final DashboardSnapshotRangeService snapshotRangeService;
     private final CoupleMemberRepository coupleMemberRepository;
     private final Clock dashboardClock;
 
@@ -43,54 +38,26 @@ public class DashboardService {
         validateRequest(roomId, userId, period, date);
         DateRange range = createRange(period, date);
 
-        if (period == DashboardPeriod.DAY) {
-            CoupleDashboard dashboard = coupleDashboardSnapshotService.ensureSnapshot(
-                    roomId,
-                    userId,
-                    date
-            );
-            return new DashboardCountResponse(
-                    dashboard.getDashboardId(),
-                    dashboard.getRoomId(),
-                    period,
-                    range.startDate(),
-                    range.endDate(),
-                    range.startDate(),
-                    dashboard.getMessageCount(),
-                    dashboard.getImageCount(),
-                    dashboard.getReactionCount(),
-                    dashboard.getCalculatedAt(),
-                    dashboard.getUpdatedAt()
-            );
-        }
-
-        LocalDateTime start = range.startDate().atStartOfDay();
-        LocalDateTime end = range.endExclusive().atStartOfDay();
-        LocalDateTime calculatedAt = LocalDateTime.now(dashboardClock);
+        List<CoupleDashboard> snapshots = snapshotRangeService
+                .getCoupleSnapshots(
+                        roomId,
+                        userId,
+                        range.startDate(),
+                        range.endExclusive()
+                );
+        LocalDateTime calculatedAt = latestCoupleCalculation(snapshots);
         return new DashboardCountResponse(
-                null,
+                period == DashboardPeriod.DAY
+                        ? snapshots.get(0).getDashboardId()
+                        : null,
                 roomId,
                 period,
                 range.startDate(),
                 range.endDate(),
                 range.startDate(),
-                toInt(chatMessageRepository
-                        .countByRoomIdAndSentAtGreaterThanEqualAndSentAtLessThan(
-                                roomId,
-                                start,
-                                end
-                        )),
-                toInt(chatMessageRepository.countRoomImages(
-                        roomId,
-                        start,
-                        end
-                )),
-                toInt(chatReactionRepository
-                        .countByRoomIdAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
-                                roomId,
-                                start,
-                                end
-                        )),
+                snapshots.stream().mapToInt(CoupleDashboard::getMessageCount).sum(),
+                snapshots.stream().mapToInt(CoupleDashboard::getImageCount).sum(),
+                snapshots.stream().mapToInt(CoupleDashboard::getReactionCount).sum(),
                 calculatedAt,
                 calculatedAt
         );
@@ -105,39 +72,20 @@ public class DashboardService {
     ) {
         validateRequest(roomId, userId, period, date);
         DateRange range = createRange(period, date);
-        if (period == DashboardPeriod.DAY) {
-            Dashboard dashboard = memberDashboardSnapshotService.ensureSnapshot(
-                    roomId,
-                    userId,
-                    date
-            );
-            return new MemberDashboardCountResponse(
-                    roomId,
-                    userId,
-                    period,
-                    range.startDate(),
-                    range.endDate(),
-                    dashboard.getBookmarkCount(),
-                    dashboard.getCalculatedAt()
-            );
-        }
-
-        LocalDateTime start = range.startDate().atStartOfDay();
-        LocalDateTime end = range.endExclusive().atStartOfDay();
+        List<Dashboard> snapshots = snapshotRangeService.getMemberSnapshots(
+                roomId,
+                userId,
+                range.startDate(),
+                range.endExclusive()
+        );
         return new MemberDashboardCountResponse(
                 roomId,
                 userId,
                 period,
                 range.startDate(),
                 range.endDate(),
-                toInt(chatBookmarkRepository
-                        .countByRoomIdAndUserIdAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
-                                roomId,
-                                userId,
-                                start,
-                                end
-                        )),
-                LocalDateTime.now(dashboardClock)
+                snapshots.stream().mapToInt(Dashboard::getBookmarkCount).sum(),
+                latestMemberCalculation(snapshots)
         );
     }
 
@@ -181,8 +129,22 @@ public class DashboardService {
         }
     }
 
-    private int toInt(long count) {
-        return Math.toIntExact(count);
+    private LocalDateTime latestCoupleCalculation(
+            List<CoupleDashboard> snapshots
+    ) {
+        return snapshots.stream()
+                .map(CoupleDashboard::getCalculatedAt)
+                .max(Comparator.naturalOrder())
+                .orElseGet(() -> LocalDateTime.now(dashboardClock));
+    }
+
+    private LocalDateTime latestMemberCalculation(
+            List<Dashboard> snapshots
+    ) {
+        return snapshots.stream()
+                .map(Dashboard::getCalculatedAt)
+                .max(Comparator.naturalOrder())
+                .orElseGet(() -> LocalDateTime.now(dashboardClock));
     }
 
     private record DateRange(
