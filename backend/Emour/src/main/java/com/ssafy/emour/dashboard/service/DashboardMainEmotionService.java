@@ -45,7 +45,7 @@ public class DashboardMainEmotionService {
             LocalDate date
     ) {
         validateRequest(roomId, userId, period, date);
-        DateRange range = createRange(period, date);
+        DateRange range = createRange(roomId, period, date);
         Long partnerUserId = findPartnerUserId(roomId, userId);
         MemberAggregation me = aggregateMember(
                 roomId,
@@ -180,9 +180,16 @@ public class DashboardMainEmotionService {
     }
 
     private DateRange createRange(
+            Long roomId,
             DashboardPeriod period,
             LocalDate date
     ) {
+        if (period == DashboardPeriod.ALL) {
+            return new DateRange(
+                    snapshotRangeService.findAllStartDate(roomId),
+                    LocalDate.now(dashboardClock).plusDays(1)
+            );
+        }
         LocalDate startDate = period.startDate(date);
         return new DateRange(
                 startDate,
@@ -196,12 +203,12 @@ public class DashboardMainEmotionService {
             DashboardPeriod period,
             LocalDate date
     ) {
-        if (roomId == null || userId == null
-                || period == null || date == null) {
+        if (roomId == null || userId == null || period == null
+                || (period != DashboardPeriod.ALL && date == null)) {
             throw new CustomException(ErrorCode.INVALID_INPUT);
         }
 
-        DateRange range = createRange(period, date);
+        DateRange range = createRange(roomId, period, date);
         if (range.startDate().isAfter(LocalDate.now(dashboardClock))) {
             throw new CustomException(ErrorCode.INVALID_INPUT);
         }

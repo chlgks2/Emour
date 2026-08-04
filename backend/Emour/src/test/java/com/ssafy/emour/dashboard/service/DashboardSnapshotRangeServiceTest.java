@@ -1,5 +1,6 @@
 package com.ssafy.emour.dashboard.service;
 
+import com.ssafy.emour.chat.repository.ChatMessageRepository;
 import com.ssafy.emour.dashboard.entity.CoupleDashboard;
 import com.ssafy.emour.dashboard.entity.Dashboard;
 import com.ssafy.emour.dashboard.repository.CoupleDashboardRepository;
@@ -12,8 +13,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.never;
@@ -33,6 +36,8 @@ class DashboardSnapshotRangeServiceTest {
     private DashboardSnapshotService memberSnapshotService;
     @Mock
     private DashboardSnapshotLockService snapshotLockService;
+    @Mock
+    private ChatMessageRepository chatMessageRepository;
 
     @Test
     void refreshesOnlyTodayWhenPastSnapshotIsComplete() {
@@ -47,6 +52,7 @@ class DashboardSnapshotRangeServiceTest {
                 coupleSnapshotService,
                 memberSnapshotService,
                 snapshotLockService,
+                chatMessageRepository,
                 Clock.fixed(
                         Instant.parse("2026-08-04T03:00:00Z"),
                         ZoneId.of("Asia/Seoul")
@@ -204,11 +210,24 @@ class DashboardSnapshotRangeServiceTest {
                 coupleSnapshotService,
                 memberSnapshotService,
                 snapshotLockService,
+                chatMessageRepository,
                 Clock.fixed(
                         Instant.parse("2026-08-04T03:00:00Z"),
                         ZoneId.of("Asia/Seoul")
                 )
         );
+    }
+
+    @Test
+    void findsAllPeriodStartFromFirstMessage() {
+        LocalDateTime firstSentAt = LocalDateTime.of(
+                2026, 7, 1, 8, 30
+        );
+        when(chatMessageRepository.findEarliestSentAtByRoomId(1L))
+                .thenReturn(Optional.of(firstSentAt));
+
+        assertThat(serviceAtNoon().findAllStartDate(1L))
+                .isEqualTo(LocalDate.of(2026, 7, 1));
     }
 
     private CoupleDashboard completeSnapshot(LocalDate date) {
