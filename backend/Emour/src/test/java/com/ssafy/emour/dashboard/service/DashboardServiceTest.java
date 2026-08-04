@@ -107,6 +107,40 @@ class DashboardServiceTest {
     }
 
     @Test
+    void sumsWeeklySnapshotsFromSundayToSaturday() {
+        LocalDate sunday = LocalDate.of(2026, 8, 2);
+        CoupleDashboard sundaySnapshot = CoupleDashboard.create(
+                1L,
+                sunday
+        );
+        sundaySnapshot.updateCounts(3, 1, 2);
+        CoupleDashboard mondaySnapshot = CoupleDashboard.create(
+                1L,
+                sunday.plusDays(1)
+        );
+        mondaySnapshot.updateCounts(4, 2, 1);
+        when(snapshotRangeService.getCoupleSnapshots(
+                1L,
+                10L,
+                sunday,
+                sunday.plusWeeks(1)
+        )).thenReturn(List.of(sundaySnapshot, mondaySnapshot));
+
+        DashboardCountResponse response = dashboardService.getCounts(
+                1L,
+                10L,
+                DashboardPeriod.WEEK,
+                LocalDate.of(2026, 8, 3)
+        );
+
+        assertThat(response.startDate()).isEqualTo(sunday);
+        assertThat(response.endDate()).isEqualTo(sunday.plusDays(6));
+        assertThat(response.messageCount()).isEqualTo(7);
+        assertThat(response.imageCount()).isEqualTo(3);
+        assertThat(response.reactionCount()).isEqualTo(3);
+    }
+
+    @Test
     void sumsMemberBookmarks() {
         LocalDate date = LocalDate.of(2026, 8, 3);
         Dashboard dashboard = Dashboard.create(1L, 10L, date);
