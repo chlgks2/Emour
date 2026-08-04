@@ -370,9 +370,18 @@ export async function fetchDashboard() {
         calcAverageResponseSeconds(messages)
       ),
       // EmotionReport 는 배열/맵 둘 다 받는다. (utils/emotions.js buildEmotionReport)
-      emotionSummary: mainEmotions?.emotions ?? [],
-      dominantEmotion: mainEmotions?.dominantEmotion ?? null,
-      analyzedMessageCount: mainEmotions?.analyzedMessageCount ?? 0,
+      myEmotionSummary: mainEmotions?.me?.emotions ?? [],
+      partnerEmotionSummary: mainEmotions?.partner?.emotions ?? [],
+      emotionSummary: mergeCounted(
+        [
+          ...(mainEmotions?.me?.emotions ?? []),
+          ...(mainEmotions?.partner?.emotions ?? []),
+        ],
+        "emotionType",
+      ),
+      analyzedMessageCount:
+        (mainEmotions?.me?.analyzedMessageCount ?? 0) +
+        (mainEmotions?.partner?.analyzedMessageCount ?? 0),
       // 날짜별 커플 메시지 수
       dailyFrequency: conversationFlow?.dailyFrequency ?? [],
       frequentWords:
@@ -426,9 +435,18 @@ export async function fetchDashboardPeriod({
     date: dateKey,
     startDate: counts?.startDate ?? mainEmotions?.startDate ?? dateKey,
     endDate: counts?.endDate ?? mainEmotions?.endDate ?? dateKey,
-    emotionSummary: mainEmotions?.emotions ?? [],
-    dominantEmotion: mainEmotions?.dominantEmotion ?? null,
-    analyzedMessageCount: mainEmotions?.analyzedMessageCount ?? 0,
+    myEmotionSummary: mainEmotions?.me?.emotions ?? [],
+    partnerEmotionSummary: mainEmotions?.partner?.emotions ?? [],
+    emotionSummary: mergeCounted(
+      [
+        ...(mainEmotions?.me?.emotions ?? []),
+        ...(mainEmotions?.partner?.emotions ?? []),
+      ],
+      "emotionType",
+    ),
+    analyzedMessageCount:
+      (mainEmotions?.me?.analyzedMessageCount ?? 0) +
+      (mainEmotions?.partner?.analyzedMessageCount ?? 0),
     /*
      * 기간별 집계는 이제 전부 서버가 준다.
      * 예전에는 이 함수가 일간 대화 원본을 따로 받아와 사진·공감을 직접 세고
@@ -522,8 +540,11 @@ async function aggregateWeek(roomId, dateKeys) {
         bookmarkCount: memberCounts?.bookmarkCount ?? 0,
         busiestHour: conversationFlow?.busiestHour ?? null,
         averageResponseSeconds: conversationFlow?.averageResponseSeconds ?? null,
-        emotions: mainEmotions?.emotions ?? [],
-        analyzedMessageCount: mainEmotions?.analyzedMessageCount ?? 0,
+        myEmotions: mainEmotions?.me?.emotions ?? [],
+        partnerEmotions: mainEmotions?.partner?.emotions ?? [],
+        analyzedMessageCount:
+          (mainEmotions?.me?.analyzedMessageCount ?? 0) +
+          (mainEmotions?.partner?.analyzedMessageCount ?? 0),
         words: frequentWords?.words ?? [],
       };
     }),
@@ -560,7 +581,18 @@ async function aggregateWeek(roomId, dateKeys) {
     date: dateKeys[0],
     startDate: dateKeys[0],
     endDate: dateKeys.at(-1),
-    emotionSummary: mergeCounted(days.flatMap((day) => day.emotions), "emotionType"),
+    myEmotionSummary: mergeCounted(
+      days.flatMap((day) => day.myEmotions),
+      "emotionType",
+    ),
+    partnerEmotionSummary: mergeCounted(
+      days.flatMap((day) => day.partnerEmotions),
+      "emotionType",
+    ),
+    emotionSummary: mergeCounted(
+      days.flatMap((day) => [...day.myEmotions, ...day.partnerEmotions]),
+      "emotionType",
+    ),
     dominantEmotion: null,
     analyzedMessageCount: sum((day) => day.analyzedMessageCount),
     messageCount,

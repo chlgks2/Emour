@@ -165,6 +165,13 @@ function ProfileEditPage() {
     const trimmedNickname =
       nickname.trim()
 
+    if (trimmedNickname.length > 8) {
+      window.alert(
+        '닉네임은 8자 이하로 입력해주세요.',
+      )
+      return
+    }
+
     if (
       !trimmedNickname ||
       isProcessing
@@ -299,7 +306,7 @@ function ProfileEditPage() {
                 <input
                   type="text"
                   value={nickname}
-                  maxLength={20}
+                  maxLength={8}
                   disabled={isProcessing}
                   placeholder="닉네임을 입력해주세요"
                   onChange={(event) =>
@@ -310,7 +317,7 @@ function ProfileEditPage() {
                 />
 
                 <span className="profile-edit-count">
-                  {nickname.length}/20
+                  {nickname.length}/8
                 </span>
               </label>
 

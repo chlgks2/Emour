@@ -36,9 +36,9 @@ function PartnerNicknameModal({
       return
     }
 
-    if (trimmedNickname.length > 20) {
+    if (trimmedNickname.length > 8) {
       setErrorMessage(
-        '연인 애칭은 20자 이하로 입력해주세요.',
+        '연인 애칭은 8자 이하로 입력해주세요.',
       )
       return
     }
@@ -124,7 +124,7 @@ function PartnerNicknameModal({
             <input
               type="text"
               value={nickname}
-              maxLength={20}
+              maxLength={8}
               disabled={isSaving}
               autoFocus
               placeholder="연인 애칭을 입력해주세요"
@@ -151,7 +151,7 @@ function PartnerNicknameModal({
             </span>
 
             <strong>
-              {nickname.length}/20
+              {nickname.length}/8
             </strong>
           </div>
 

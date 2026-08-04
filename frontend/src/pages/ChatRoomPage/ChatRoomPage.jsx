@@ -122,7 +122,6 @@ export default function ChatRoomPage() {
 
   const hasMore = nextBeforeMessageId !== null;
   const justPrependedRef = useRef(false);
-  const suggestTimerRef = useRef(null);
   const chatSocketRef = useRef(null);
   const latestPartnerMessageIdRef = useRef(null);
   const reportedReadMessageIdRef = useRef(null);
@@ -531,44 +530,58 @@ export default function ChatRoomPage() {
     }
   }, [messages, restoreScrollPosition]);
 
-  // 입력값이 바뀔 때마다 AI 문장 다듬기 추천을 (debounce로) 요청
-  useEffect(() => {
-    clearTimeout(suggestTimerRef.current);
-    if (!inputValue.trim()) {
-      return;
-    }
-    suggestTimerRef.current = setTimeout(async () => {
-      setSuggestLoading(true);
-      try {
-        setSuggestions(await fetchSuggestions(inputValue));
-      } catch {
-        // 문장 추천은 보조 기능이라 실패해도 조용히 비운다.
-        setSuggestions([]);
-      } finally {
-        setSuggestLoading(false);
-      }
-    }, 500);
-    return () => clearTimeout(suggestTimerRef.current);
-  }, [inputValue]);
-
   const handleInputChange = (content) => {
     setInputValue(content);
-    if (!content.trim()) {
-      setSuggestions([]);
-    }
+    // 추천을 받은 뒤 원문을 다시 수정하면 이전 추천은 더 이상 유효하지 않다.
+    setSuggestions([]);
   };
 
-  // 추천 새로고침도 실패를 삼키지 않고 로딩 상태를 표시한다.
-  const handleRefreshSuggestions = async () => {
+  const requestSuggestions = async () => {
     if (!inputValue.trim()) return;
+
+    // 추천 API는 대화 문맥의 기준점으로 내가 저장한 메시지 ID를 요구한다.
+    const latestOwnMessage = [...messages]
+      .reverse()
+      .find(
+        (message) =>
+          message.messageId &&
+          Number(message.senderId) === Number(myUserId),
+      );
+
+    if (!latestOwnMessage) {
+      showToast(
+        "문구 교정은 메시지를 한 번 이상 보낸 뒤 사용할 수 있어요.",
+        { tone: "error" },
+      );
+      return;
+    }
+
     setSuggestLoading(true);
     try {
-      setSuggestions(await fetchSuggestions(inputValue));
-    } catch {
-      showToast("추천 문장을 불러오지 못했어요.", { tone: "error" });
+      const correctedSuggestions = await fetchSuggestions({
+        messageId: latestOwnMessage.messageId,
+        targetMessage: inputValue,
+      });
+
+      setSuggestions(correctedSuggestions);
+
+      if (!correctedSuggestions.length) {
+        showToast("추천할 문구를 찾지 못했어요.");
+      }
+    } catch (error) {
+      setSuggestions([]);
+      showToast(
+        error?.message || "추천 문장을 불러오지 못했어요.",
+        { tone: "error" },
+      );
     } finally {
       setSuggestLoading(false);
     }
+  };
+
+  const handleSelectSuggestion = (content) => {
+    setInputValue(content);
+    setSuggestions([]);
   };
 
   const handleSend = async () => {
@@ -1110,8 +1123,8 @@ export default function ChatRoomPage() {
 
       {!searchOpen && <SuggestionChips
         suggestions={suggestions}
-        onSelect={(content) => setInputValue(content)}
-        onRefresh={handleRefreshSuggestions}
+        onSelect={handleSelectSuggestion}
+        onRefresh={requestSuggestions}
         loading={suggestLoading}
       />}
 
@@ -1119,8 +1132,10 @@ export default function ChatRoomPage() {
         value={inputValue}
         onChange={handleInputChange}
         onSend={handleSend}
+        onCorrect={requestSuggestions}
         onImagesSelect={handleImagesSelect}
         disabled={sending}
+        correcting={suggestLoading}
       />}
 
       {/* 열려 있을 때만 마운트해서, 닫힌 동안 전역 리스너(바깥 클릭/스크롤)가 붙지 않게 한다 */}

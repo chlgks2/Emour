@@ -1,5 +1,21 @@
-import { buildEmotionReport } from "../../../utils/emotions";
+import { useState } from "react";
+import { SlidersHorizontal } from "lucide-react";
+import { useAuth } from "../../../hooks/useAuth";
+import { buildEmotionReport, EMOTION_TYPES } from "../../../utils/emotions";
 import styles from "./EmotionReport.module.css";
+
+function recalculateRatios(items) {
+  const total = items.reduce((sum, item) => sum + item.count, 0);
+  if (!total) return [];
+
+  const recalculated = items.map((item) => ({
+    ...item,
+    ratio: Math.round((item.count / total) * 100),
+  }));
+  const difference = 100 - recalculated.reduce((sum, item) => sum + item.ratio, 0);
+  if (difference) recalculated[0].ratio += difference;
+  return recalculated;
+}
 
 /**
  * 도넛 + 범례.
@@ -20,21 +36,43 @@ export default function EmotionReport({
   emotionSummary,
   segments,
   emptyText = "아직 분석된 대화가 없어요.\n대화를 나누면 감정이 채워져요.",
+  excludedEmotionCodes,
+  onExcludedEmotionCodesChange,
+  showFilter = true,
+  filterOnly = false,
 }) {
-  const report = segments ?? buildEmotionReport(emotionSummary);
+  const { user } = useAuth();
+  const filterEnabled = !segments;
+  const storageKey = `dashboardEmotionFilter:${user?.userId ?? "guest"}`;
+  const [excludedEmotions, setExcludedEmotions] = useState(() => {
+    try {
+      return new Set(JSON.parse(localStorage.getItem(storageKey) ?? "[]"));
+    } catch {
+      return new Set();
+    }
+  });
 
-  if (report.length === 0) {
-    return (
-      <p className={`empty-note ${styles.emptyText}`}>
-        {emptyText.split("\n").map((line, index) => (
-          <span key={line}>
-            {index > 0 && <br />}
-            {line}
-          </span>
-        ))}
-      </p>
-    );
-  }
+  const activeExcludedEmotions = excludedEmotionCodes ?? excludedEmotions;
+  const fullReport = [...(segments ?? buildEmotionReport(emotionSummary))]
+    .sort((first, second) => second.ratio - first.ratio);
+  const report = filterEnabled
+    ? recalculateRatios(
+        fullReport.filter((item) => !activeExcludedEmotions.has(item.emotionCode)),
+      ).sort((first, second) => second.ratio - first.ratio)
+    : fullReport;
+
+  const toggleEmotion = (emotionCode) => {
+    const next = new Set(activeExcludedEmotions);
+    if (next.has(emotionCode)) next.delete(emotionCode);
+    else next.add(emotionCode);
+
+    if (onExcludedEmotionCodesChange) {
+      onExcludedEmotionCodesChange(next);
+    } else {
+      localStorage.setItem(storageKey, JSON.stringify([...next]));
+      setExcludedEmotions(next);
+    }
+  };
 
   // 도넛(conic-gradient)용 구간 문자열: 앞 항목들의 ratio 누적값을 시작점으로 사용
   const stops = report
@@ -45,27 +83,70 @@ export default function EmotionReport({
     .join(", ");
 
   return (
-    <div className={styles.body}>
-      <div
-        className={styles.donut}
-        style={{ background: `conic-gradient(${stops})` }}
-        role="img"
-        aria-label={report.map((item) => `${item.label} ${item.ratio}%`).join(", ")}
-      >
-        <div className={styles.donutHole} />
-      </div>
-      <ul className={styles.legend}>
-        {report.map((item) => (
-          <li key={item.emotionCode ?? item.key} className={styles.legendItem}>
-            <span
-              className={styles.dot}
-              style={{ background: item.color }}
-              aria-hidden="true"
-            />
-            {item.label} {item.ratio}%
-          </li>
-        ))}
-      </ul>
+    <div className={styles.reportWrapper}>
+      {filterEnabled && showFilter && (
+        <details className={styles.filterPanel}>
+          <summary>
+            <SlidersHorizontal size={14} aria-hidden="true" />
+            집계할 감정 선택
+          </summary>
+          <div className={styles.filterOptions}>
+            {EMOTION_TYPES.map((emotion) => {
+              const included = !activeExcludedEmotions.has(emotion.code);
+              return (
+                <button
+                  key={emotion.code}
+                  type="button"
+                  role="switch"
+                  aria-checked={included}
+                  className={`${styles.filterChip} ${included ? styles.filterChipActive : ""}`}
+                  style={{ "--filter-emotion-color": emotion.color }}
+                  onClick={() => toggleEmotion(emotion.code)}
+                >
+                  <emotion.Icon size={13} aria-hidden="true" />
+                  {emotion.label}
+                </button>
+              );
+            })}
+          </div>
+        </details>
+      )}
+
+      {filterOnly ? null : report.length === 0 ? (
+        <p className={`empty-note ${styles.emptyText}`}>
+          {(fullReport.length > 0 ? "집계할 감정을 하나 이상 선택해주세요." : emptyText)
+            .split("\n")
+            .map((line, index) => (
+              <span key={line}>
+                {index > 0 && <br />}
+                {line}
+              </span>
+            ))}
+        </p>
+      ) : (
+        <div className={styles.body}>
+          <div
+            className={styles.donut}
+            style={{ background: `conic-gradient(${stops})` }}
+            role="img"
+            aria-label={report.map((item) => `${item.label} ${item.ratio}%`).join(", ")}
+          >
+            <div className={styles.donutHole} />
+          </div>
+          <ul className={styles.legend}>
+            {report.map((item) => (
+              <li key={item.emotionCode ?? item.key} className={styles.legendItem}>
+                <span
+                  className={styles.dot}
+                  style={{ background: item.color }}
+                  aria-hidden="true"
+                />
+                {item.label} {item.ratio}%
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }
