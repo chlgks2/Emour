@@ -18,14 +18,17 @@ export default function SuggestionChips({ suggestions, onSelect, onRefresh, load
       <div className={styles.chipRow}>
         {loading
           ? Array.from({ length: 3 }).map((_, i) => <div key={i} className={styles.skeletonChip} />)
-          : suggestions.map((text) => (
+          : suggestions.map((suggestion) => (
               <button
-                key={text}
+                key={`${suggestion.style}-${suggestion.text}`}
                 type="button"
                 className={styles.chip}
-                onClick={() => onSelect(text)}
+                onClick={() => onSelect(suggestion.text)}
               >
-                {text}
+                {suggestion.label && (
+                  <span className={styles.chipLabel}>{suggestion.label}</span>
+                )}
+                <span>{suggestion.text}</span>
               </button>
             ))}
       </div>

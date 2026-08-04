@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 
 import { getCoupleStatus } from '../../api/coupleApi.js'
+import { useAuth } from '../../hooks/useAuth.js'
 import FullScreenLoader from '../common/FullScreenLoader/FullScreenLoader.jsx'
 
 const ACCESSIBLE_ROOM_STATUSES = new Set([
@@ -11,10 +12,15 @@ const ACCESSIBLE_ROOM_STATUSES = new Set([
 
 export default function CoupleRouteGuard({ children }) {
   const location = useLocation()
+  const { isAuthenticated, initializing } = useAuth()
   const [roomStatus, setRoomStatus] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    if (!isAuthenticated) {
+      return undefined
+    }
+
     let cancelled = false
 
     getCoupleStatus()
@@ -37,7 +43,23 @@ export default function CoupleRouteGuard({ children }) {
     return () => {
       cancelled = true
     }
-  }, [location.pathname])
+  }, [isAuthenticated, location.pathname])
+
+  if (initializing) {
+    return <FullScreenLoader label="로그인 상태를 확인하는 중" />
+  }
+
+  // 토큰 만료로 방 상태 조회가 401이 된 경우에는 방 생성 화면이 아니라
+  // 로그인 화면으로 돌아가야 한다.
+  if (!isAuthenticated) {
+    return (
+      <Navigate
+        to="/login"
+        replace
+        state={{ from: location.pathname }}
+      />
+    )
+  }
 
   if (loading) {
     return <FullScreenLoader label="커플방 상태를 확인하는 중" />

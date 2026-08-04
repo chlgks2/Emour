@@ -1,5 +1,7 @@
+import { useState } from "react";
 import EmotionReport from "../EmotionReport/EmotionReport";
 import HelpHint from "../../common/HelpHint/HelpHint";
+import { useAuth } from "../../../hooks/useAuth";
 import styles from "./DashboardStats.module.css";
 
 // 카드가 길어지지 않도록 상위 5개만 노출한다.
@@ -9,7 +11,7 @@ const FREQUENT_WORD_DISPLAY_COUNT = 5;
  * 대화 기록 카드. **커플 합산** 기준이다.
  *   메시지 / 사진 / 가장 활발했던 시간 / 평균 답장 시간 / 자주 쓴 말 : 두 사람 합산
  *   사진 / 공감 : 커플방에서 두 사람이 주고받은 합산 개수
- *   채팅 감정 도넛 : 두 사람이 함께 만든 대화 한 덩어리라 역시 합산
+ *   채팅 감정 도넛 : 로그인 사용자와 상대방을 각각 집계
  *
  * 위쪽 무드트래커 리포트는 반대로 나/상대를 갈라 그린다. 그쪽은 각자 자기 기분을
  * 고른 기록이라 합치면 뜻이 사라진다. (utils/moodReport 주석 참고)
@@ -27,6 +29,16 @@ export default function DashboardStats({
   emotionLabel = "오늘의 채팅 감정 분포 비율",
   periodControl = null,
 }) {
+  const { user } = useAuth();
+  const emotionFilterStorageKey = `dashboardEmotionFilter:${user?.userId ?? "guest"}`;
+  const [excludedEmotionCodes, setExcludedEmotionCodes] = useState(() => {
+    try {
+      return new Set(JSON.parse(localStorage.getItem(emotionFilterStorageKey) ?? "[]"));
+    } catch {
+      return new Set();
+    }
+  });
+
   if (!dashboard) return null;
 
   const {
@@ -37,6 +49,8 @@ export default function DashboardStats({
     averageResponseSeconds,
     frequentWords = [],
     emotionSummary = [],
+    myEmotionSummary = emotionSummary,
+    partnerEmotionSummary = [],
   } = dashboard;
 
   /*
@@ -69,6 +83,11 @@ export default function DashboardStats({
           : null,
     },
   ];
+
+  const updateExcludedEmotionCodes = (next) => {
+    localStorage.setItem(emotionFilterStorageKey, JSON.stringify([...next]));
+    setExcludedEmotionCodes(next);
+  };
 
   return (
     <section className="surface-plain" aria-labelledby="dashboard-stats-title">
@@ -121,7 +140,34 @@ export default function DashboardStats({
           <span>어떤 감정이 얼마나 오갔는지 모아봤어요</span>
         </p>
 
-        <EmotionReport emotionSummary={emotionSummary} />
+        <div className={styles.commonEmotionFilter}>
+          <EmotionReport
+            emotionSummary={[...myEmotionSummary, ...partnerEmotionSummary]}
+            excludedEmotionCodes={excludedEmotionCodes}
+            onExcludedEmotionCodesChange={updateExcludedEmotionCodes}
+            filterOnly
+          />
+        </div>
+
+        <div className={styles.emotionSide}>
+          <p className={styles.emotionSideLabel}>나</p>
+          <EmotionReport
+            emotionSummary={myEmotionSummary}
+            excludedEmotionCodes={excludedEmotionCodes}
+            showFilter={false}
+            emptyText="이 기간에 분석된 내 대화가 아직 없어요."
+          />
+        </div>
+
+        <div className={styles.emotionSide}>
+          <p className={styles.emotionSideLabel}>상대방</p>
+          <EmotionReport
+            emotionSummary={partnerEmotionSummary}
+            excludedEmotionCodes={excludedEmotionCodes}
+            showFilter={false}
+            emptyText="이 기간에 분석된 상대방 대화가 아직 없어요."
+          />
+        </div>
       </section>
 
 

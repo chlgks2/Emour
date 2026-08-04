@@ -410,6 +410,42 @@ export async function sendMessage({
   return normalizeChatMessage(message)
 }
 
-export async function fetchSuggestions() {
-  return []
+export async function fetchSuggestions({
+  messageId,
+  targetMessage,
+}) {
+  if (!messageId) {
+    throw new Error(
+      '문구 추천에 사용할 이전 메시지가 없습니다.',
+    )
+  }
+
+  const content = targetMessage?.trim()
+
+  if (!content) {
+    throw new Error('교정할 문구를 입력해주세요.')
+  }
+
+  const response = await apiRequest(
+    '/chats/suggest',
+    {
+      method: 'POST',
+      body: {
+        messageId,
+        targetMessage: content,
+      },
+    },
+  )
+  const result = response?.data ?? response
+
+  if (result?.blocked) {
+    throw new Error(
+      result.blockReason ||
+        '이 문구는 추천을 제공할 수 없습니다.',
+    )
+  }
+
+  return (result?.suggestions ?? []).filter(
+    (suggestion) => suggestion?.text,
+  )
 }
