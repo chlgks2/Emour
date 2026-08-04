@@ -12,7 +12,7 @@ import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 
 public record HomeSettingUpdateRequest(
-        @Size(max = 255, message = "홈 문구는 255자 이하여야 합니다.")
+        @Size(max = 100, message = "홈 문구는 100자 이하여야 합니다.")
         String textContent,
 
         @NotNull(message = "문구의 가로 위치가 필요합니다.")
