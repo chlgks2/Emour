@@ -8,7 +8,7 @@
  *
  * 기분 기록은 이미 프론트가 통째로 받아 두고 있어서(moodApi.fetchMoodSlots)
  * 일간·주간·월간을 서버에 다시 묻지 않고 여기서 잘라 쓴다.
- * 그래서 백엔드 DashboardPeriod(DAY/MONTH/YEAR)에 '주간'이 없어도 주간 리포트가 된다.
+ * 감정 리포트 기간 API와는 별개로 무드 기록 배열에서 필요한 기간만 잘라 쓴다.
  */
 import {
   MOOD_TYPES,
@@ -19,7 +19,7 @@ import {
   parseDateKey,
 } from "./moodEmotion";
 
-/** 리포트 기간 탭. 값은 프론트 전용이라 서버로 나가지 않는다. */
+/** 감정 리포트와 무드 리포트가 함께 사용하는 기간 탭. */
 export const MOOD_REPORT_PERIODS = [
   ["DAY", "일간"],
   ["WEEK", "주간"],

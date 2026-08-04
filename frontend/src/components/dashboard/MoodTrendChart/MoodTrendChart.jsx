@@ -18,6 +18,7 @@ const PLOT_WIDTH = VIEW_WIDTH - PADDING.left - PADDING.right;
 const PLOT_HEIGHT = VIEW_HEIGHT - PADDING.top - PADDING.bottom;
 
 const GRID_LINE_COUNT = 5;
+const DOT_RADIUS = 3.2;
 
 /**
  * 차트를 감싸는 껍데기.
@@ -120,6 +121,20 @@ export default function MoodTrendChart({
     points: s.points.map((p) => ({ ...p, cx: scaleX(p.x), cy: scaleY(p.y) })),
   }));
 
+  // 같은 시각에 같은 감정을 기록한 점은 위치를 옮기지 않고 한 원을 두 색으로 나눈다.
+  const dotGroups = projected.reduce((groups, s) => {
+    s.points.forEach((point) => {
+      const key = `${point.x}:${point.y}`;
+      const existing = groups.get(key);
+      if (existing) {
+        existing.colors.push(s.color);
+      } else {
+        groups.set(key, { ...point, key, colors: [s.color] });
+      }
+    });
+    return groups;
+  }, new Map());
+
   const gridValues = Array.from(
     { length: GRID_LINE_COUNT },
     (_, i) => axis.min + ((axis.max - axis.min) * i) / (GRID_LINE_COUNT - 1)
@@ -184,17 +199,23 @@ export default function MoodTrendChart({
           ) : null
         )}
 
-        {[...projected].reverse().map((s) =>
-          s.points.map((p) => (
+        {[...dotGroups.values()].map((p) =>
+          p.colors.length === 1 ? (
             <circle
-              key={`${s.key}-${p.x}`}
+              key={p.key}
               className={styles.dot}
               cx={p.cx}
               cy={p.cy}
-              r={3.2}
-              fill={s.color}
+              r={DOT_RADIUS}
+              fill={p.colors[0]}
             />
-          ))
+          ) : (
+            <g key={p.key} className={styles.splitDot}>
+              <path d={buildHalfDotPath(p.cx, p.cy, DOT_RADIUS, true)} fill={p.colors[0]} />
+              <path d={buildHalfDotPath(p.cx, p.cy, DOT_RADIUS, false)} fill={p.colors[1]} />
+              <circle cx={p.cx} cy={p.cy} r={DOT_RADIUS} />
+            </g>
+          )
         )}
 
         {/* 양 끝 눈금만 안쪽으로 당겨 잘리지 않게 한다 */}
@@ -264,6 +285,14 @@ function buildSmoothPath(points) {
 
 function round(value) {
   return Math.round(value * 100) / 100;
+}
+
+function buildHalfDotPath(cx, cy, radius, left) {
+  const top = `${cx} ${cy - radius}`;
+  const bottom = `${cx} ${cy + radius}`;
+  return left
+    ? `M ${top} A ${radius} ${radius} 0 0 0 ${bottom} Z`
+    : `M ${top} A ${radius} ${radius} 0 0 1 ${bottom} Z`;
 }
 
 function describe(series, axis) {

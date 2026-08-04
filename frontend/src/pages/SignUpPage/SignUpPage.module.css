@@ -48,10 +48,20 @@
 .verificationHint {
   padding: 14px 16px;
   border-radius: var(--radius-sm);
-  background: var(--color-primary-soft);
+  background: var(--color-primary-faint);
   color: var(--color-text-secondary);
   font-size: var(--font-caption);
   line-height: 1.55;
+}
+
+/*
+ * 입력 행은 높이 52px, 재전송 알약은 36px라 위·아래 여백이 각각 8px이다.
+ * 공용 입력창의 오른쪽 padding(18px)만 그대로 남으면 알약 뒤가 넓어 보이므로
+ * 이 버튼만 10px 당겨 왼쪽 gap까지 포함한 네 방향 여백을 8px로 맞춘다.
+ */
+.resendButton {
+  margin-right: -10px;
+  white-space: nowrap;
 }
 
 .verifiedEmail {

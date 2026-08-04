@@ -1,5 +1,5 @@
 ﻿import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { ArrowDown, CloudOff, MessageCircleHeart, Search, X } from "lucide-react";
 import EmptyState from "../../components/common/EmptyState/EmptyState";
 import ChatHeader from "../../components/chat/ChatHeader/ChatHeader";
@@ -40,6 +40,7 @@ export default function ChatRoomPage() {
   const { user } = useAuth();
   const { showToast } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
   // 내 메시지 판별은 senderId === 내 userId 로 한다.
   // 목업 상수(MY_USER_ID = 1)로 폴백하던 코드가 있었는데, 세션이 비어 있으면
   // 남의 메시지가 내 것으로 보이는 문제가 있어 없앴다. 로그인 값만 쓴다.
@@ -99,6 +100,7 @@ export default function ChatRoomPage() {
   const [searchResults, setSearchResults] = useState([]);
   const [searchNextCursor, setSearchNextCursor] = useState(null);
   const [searchLoading, setSearchLoading] = useState(false);
+  const [focusedMessageId, setFocusedMessageId] = useState(null);
 
   const openImageViewer = useCallback((images, startIndex) => {
     setImageViewer({ images, startIndex });
@@ -127,6 +129,8 @@ export default function ChatRoomPage() {
   const reportedReadMessageIdRef = useRef(null);
   // 이전 페이지 요청 중복 방지 (state 는 비동기라 ref 로 즉시 잠근다)
   const fetchingMoreRef = useRef(false);
+  const messageElementRefs = useRef(new Map());
+  const handledFocusMessageIdRef = useRef(null);
 
   const markLatestPartnerMessageAsRead =
     useCallback(() => {
@@ -529,6 +533,89 @@ export default function ChatRoomPage() {
       justPrependedRef.current = false;
     }
   }, [messages, restoreScrollPosition]);
+
+  useEffect(() => {
+    const targetMessageId = Number(location.state?.focusMessageId);
+
+    if (
+      initialLoading ||
+      !roomId ||
+      !Number.isFinite(targetMessageId) ||
+      handledFocusMessageIdRef.current === targetMessageId
+    ) {
+      return;
+    }
+
+    handledFocusMessageIdRef.current = targetMessageId;
+
+    const focusBookmarkedMessage = async () => {
+      let collectedMessages = [...messages];
+      let cursor = nextBeforeMessageId;
+      const visitedCursors = new Set();
+
+      while (
+        !collectedMessages.some(
+          (message) => Number(message.messageId) === targetMessageId,
+        ) &&
+        cursor != null &&
+        !visitedCursors.has(cursor)
+      ) {
+        visitedCursors.add(cursor);
+        const page = await fetchMessages({
+          roomId,
+          beforeMessageId: cursor,
+        });
+        collectedMessages = dedupeChatMessages([
+          ...page.messages,
+          ...collectedMessages,
+        ]);
+        cursor = page.nextBeforeMessageId;
+      }
+
+      const messageFound = collectedMessages.some(
+        (message) => Number(message.messageId) === targetMessageId,
+      );
+
+      if (!messageFound) {
+        showToast("북마크한 메시지를 찾지 못했어요.", { tone: "error" });
+        return;
+      }
+
+      setMessages(collectedMessages);
+      setNextBeforeMessageId(cursor);
+      setFocusedMessageId(targetMessageId);
+    };
+
+    focusBookmarkedMessage().catch(() => {
+      showToast("북마크한 메시지 위치로 이동하지 못했어요.", { tone: "error" });
+    });
+  }, [
+    initialLoading,
+    location.state,
+    messages,
+    nextBeforeMessageId,
+    roomId,
+    showToast,
+  ]);
+
+  useEffect(() => {
+    if (!focusedMessageId) return undefined;
+
+    const scrollTimer = window.setTimeout(() => {
+      messageElementRefs.current
+        .get(focusedMessageId)
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 50);
+    const highlightTimer = window.setTimeout(
+      () => setFocusedMessageId(null),
+      2200,
+    );
+
+    return () => {
+      window.clearTimeout(scrollTimer);
+      window.clearTimeout(highlightTimer);
+    };
+  }, [focusedMessageId, messages]);
 
   const handleInputChange = (content) => {
     setInputValue(content);
@@ -1093,7 +1180,20 @@ export default function ChatRoomPage() {
             partnerLastReadMessageId !== null &&
             message.messageId <= partnerLastReadMessageId;
           return (
-            <div key={message.messageId ?? message.clientMessageId}>
+            <div
+              key={message.messageId ?? message.clientMessageId}
+              ref={(element) => {
+                const messageId = Number(message.messageId);
+                if (!Number.isFinite(messageId)) return;
+                if (element) messageElementRefs.current.set(messageId, element);
+                else messageElementRefs.current.delete(messageId);
+              }}
+              className={
+                Number(message.messageId) === focusedMessageId
+                  ? styles.focusedMessage
+                  : undefined
+              }
+            >
               {showDateDivider && <DateDivider dateTime={message.sentAt} />}
               <MessageBubble
                 message={message}

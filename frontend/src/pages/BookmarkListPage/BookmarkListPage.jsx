@@ -1,6 +1,6 @@
 ﻿import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Bookmark, ChevronLeft, CloudOff } from "lucide-react";
+import { Bookmark, ChevronLeft, CloudOff, MessageSquareText } from "lucide-react";
 import ConfirmDialog from "../../components/common/ConfirmDialog/ConfirmDialog";
 import EmptyState from "../../components/common/EmptyState/EmptyState";
 import Skeleton from "../../components/common/Skeleton/Skeleton";
@@ -190,13 +190,25 @@ export default function BookmarkListPage() {
                 </time>
               </p>
             </div>
-            <button
-              type="button"
-              className={styles.removeBtn}
-              onClick={() => setPendingRemoveMessageId(bookmark.messageId)}
-            >
-              해제
-            </button>
+            <div className={styles.itemActions}>
+              <button
+                type="button"
+                className={styles.moveBtn}
+                onClick={() => navigate("/chat", {
+                  state: { focusMessageId: bookmark.messageId },
+                })}
+              >
+                <MessageSquareText size={12} aria-hidden="true" />
+                대화로 이동
+              </button>
+              <button
+                type="button"
+                className={styles.removeBtn}
+                onClick={() => setPendingRemoveMessageId(bookmark.messageId)}
+              >
+                해제
+              </button>
+            </div>
           </div>
         ))}
 
