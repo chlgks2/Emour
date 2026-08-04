@@ -41,14 +41,17 @@ class DashboardSnapshotServiceTest {
     @Mock
     private CoupleMemberRepository coupleMemberRepository;
 
-    // 같은 정각 구간이 이미 집계됐다면 원본 데이터를 다시 계산하지 않습니다.
+    @Mock
+    private DashboardSnapshotLockService snapshotLockService;
+
+    // 과거 날짜가 하루 끝까지 확정됐다면 원본 데이터를 다시 계산하지 않습니다.
     @Test
-    void reusesHourlySnapshot() {
+    void reusesCompletedPastSnapshot() {
         LocalDate date = LocalDate.of(2026, 7, 31);
-        LocalDateTime boundary = date.atTime(13, 0);
-        Dashboard dashboard = snapshot(date, boundary, false);
+        LocalDateTime boundary = date.plusDays(1).atStartOfDay();
+        Dashboard dashboard = snapshot(date, boundary, true);
         DashboardSnapshotService service = serviceAt(
-                "2026-07-31T04:02:00Z"
+                "2026-08-01T04:02:00Z"
         );
 
         allowMember();
@@ -61,16 +64,17 @@ class DashboardSnapshotServiceTest {
         Dashboard result = service.ensureSnapshot(1L, 10L, date);
 
         assertThat(result.getAggregatedUntil()).isEqualTo(boundary);
-        assertThat(result.getFinalizedUntil()).isNull();
+        assertThat(result.getFinalizedUntil()).isEqualTo(boundary);
         verify(chatAnalysisRepository, never())
                 .findCompletedDailyAnalyses(any(), any(), any(), any());
     }
 
-    // 다음 시간 5분 이후에는 같은 종료 시각으로 다시 계산하고 최종 확정합니다.
+    // 오늘 조회는 정각 경계가 아니라 현재 시각까지 즉시 다시 계산합니다.
     @Test
-    void finalizesAfterFiveMinutes() {
+    void refreshesTodayAtQueryTime() {
         LocalDate date = LocalDate.of(2026, 7, 31);
         LocalDateTime boundary = date.atTime(13, 0);
+        LocalDateTime current = date.atTime(13, 6);
         Dashboard dashboard = snapshot(date, boundary, false);
         DashboardSnapshotService service = serviceAt(
                 "2026-07-31T04:06:00Z"
@@ -86,21 +90,21 @@ class DashboardSnapshotServiceTest {
                 1L,
                 10L,
                 date.atStartOfDay(),
-                boundary
+                current
         )).thenReturn(List.of());
         when(dashboardRepository.save(any(Dashboard.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         Dashboard result = service.ensureSnapshot(1L, 10L, date);
 
-        assertThat(result.getAggregatedUntil()).isEqualTo(boundary);
-        assertThat(result.getFinalizedUntil()).isEqualTo(boundary);
+        assertThat(result.getAggregatedUntil()).isEqualTo(current);
+        assertThat(result.getFinalizedUntil()).isNull();
         verify(chatBookmarkRepository)
                 .countByRoomIdAndUserIdAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
                         1L,
                         10L,
                         date.atStartOfDay(),
-                        boundary
+                        current
                 );
     }
 
@@ -114,6 +118,7 @@ class DashboardSnapshotServiceTest {
                 chatBookmarkRepository,
                 chatAnalysisRepository,
                 coupleMemberRepository,
+                snapshotLockService,
                 clock
         );
     }

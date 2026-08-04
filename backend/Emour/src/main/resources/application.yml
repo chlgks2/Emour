@@ -26,6 +26,23 @@ spring:
       max-file-size: 10MB      # 파일 1개 최대 크기
       max-request-size: 10MB   # 요청 전체 최대 크기
 
+  # ===== 이메일(SMTP) 발송 설정 =====
+  # 실제 값(계정/앱 비밀번호)은 .env 의 환경변수로 주입합니다. 기본은 Gmail SMTP.
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+
 # ===== 파일 저장 (팀 배포 규약) =====
 # app.upload.dir : 파일이 저장될 실제 디렉토리
 #   - 로컬  : 기본값 ./uploads
@@ -33,6 +50,14 @@ spring:
 app:
   upload:
     dir: ${APP_UPLOAD_DIR:./uploads}
+  # 이메일 발송 방식: console(기본, 콘솔 출력) | smtp(실제 발송)
+  email:
+    mode: ${EMAIL_MODE:console}
+    from: ${MAIL_USERNAME:}
+  # 구글 소셜 로그인: 프론트가 보낸 ID 토큰의 aud 검증에 사용 (secret 불필요)
+  oauth:
+    google:
+      client-id: ${GOOGLE_CLIENT_ID:}
 
 # ===== JWT 설정 =====
 # secret 은 실제로는 환경변수(JWT_SECRET)로 주입. 없으면 아래 기본값 사용(로컬 전용).
@@ -72,3 +97,8 @@ management:
   endpoint:
     health:
       show-details: never
+  health:
+    # 메일(SMTP) 서버 접속 가능 여부는 앱 생존과 무관하므로 health 에서 제외.
+    # (안 끄면 /actuator/health 마다 smtp 접속을 시도해, 메일 계정 없는 환경에서 health 가 DOWN 이 됨)
+    mail:
+      enabled: false

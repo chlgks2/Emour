@@ -41,6 +41,10 @@ export default defineConfig({
         target: 'http://localhost:8080',
         changeOrigin: true,
       },
+      '/home': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+      },
       '/schedules': {
         target: 'http://localhost:8080',
         changeOrigin: true,

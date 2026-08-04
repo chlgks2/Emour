@@ -11,6 +11,7 @@ import com.ssafy.emour.couple.entity.CoupleMemberId;
 import com.ssafy.emour.couple.entity.CoupleMemberStatus;
 import com.ssafy.emour.couple.repository.CoupleMemberRepository;
 import com.ssafy.emour.dashboard.dto.FrequentWordItem;
+import com.ssafy.emour.dashboard.dto.ConversationSnapshotData;
 import com.ssafy.emour.dashboard.entity.CoupleDashboard;
 import com.ssafy.emour.dashboard.repository.CoupleDashboardRepository;
 import com.ssafy.emour.global.exception.CustomException;
@@ -22,7 +23,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.EnumMap;
@@ -38,7 +38,6 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class CoupleDashboardSnapshotService {
 
-    private static final int FINALIZE_MINUTE = 5;
     private static final String WORD_SEPARATOR = "[^\\p{L}\\p{N}]+";
 
     private final CoupleDashboardRepository coupleDashboardRepository;
@@ -47,6 +46,7 @@ public class CoupleDashboardSnapshotService {
     private final ChatAnalysisRepository chatAnalysisRepository;
     private final CoupleMemberRepository coupleMemberRepository;
     private final ConversationFlowCalculator conversationFlowCalculator;
+    private final DashboardSnapshotLockService snapshotLockService;
     private final Clock dashboardClock;
     private final ObjectMapper objectMapper =
             new ObjectMapper().findAndRegisterModules();
@@ -62,6 +62,7 @@ public class CoupleDashboardSnapshotService {
         if (date == null || date.isAfter(today)) {
             throw new CustomException(ErrorCode.INVALID_INPUT);
         }
+        snapshotLockService.lockRoom(roomId);
 
         LocalDateTime snapshotUntil;
         boolean shouldFinalize;
@@ -70,8 +71,8 @@ public class CoupleDashboardSnapshotService {
             shouldFinalize = true;
         } else {
             LocalDateTime now = LocalDateTime.now(dashboardClock);
-            snapshotUntil = now.truncatedTo(ChronoUnit.HOURS);
-            shouldFinalize = now.getMinute() >= FINALIZE_MINUTE;
+            snapshotUntil = now;
+            shouldFinalize = false;
         }
 
         CoupleDashboard dashboard = coupleDashboardRepository
@@ -96,6 +97,7 @@ public class CoupleDashboardSnapshotService {
             boolean finalized
     ) {
         validateRange(roomId, date, snapshotUntil);
+        snapshotLockService.lockRoom(roomId);
         LocalDateTime start = date.atStartOfDay();
         LocalDateTime calculatedAt = LocalDateTime.now(dashboardClock);
 
@@ -161,7 +163,7 @@ public class CoupleDashboardSnapshotService {
                 toJson(frequentWords),
                 conversation.averageResponseSeconds(),
                 conversation.busiestHour(),
-                toJson(conversation.dailyFrequency()),
+                toJson(ConversationSnapshotData.from(conversation)),
                 snapshotUntil,
                 finalized,
                 calculatedAt
@@ -175,8 +177,12 @@ public class CoupleDashboardSnapshotService {
     ) {
         return dashboard != null
                 && dashboard.getEmotionSummary() != null
+                && !dashboard.getEmotionSummary().isBlank()
                 && dashboard.getFrequentWords() != null
-                && dashboard.getConversationFrequency() != null
+                && !dashboard.getFrequentWords().isBlank()
+                && isCurrentConversationSnapshot(
+                        dashboard.getConversationFrequency()
+                )
                 && dashboard.getAggregatedUntil() != null
                 && dashboard.getAggregatedUntil().isAfter(snapshotUntil);
     }
@@ -188,8 +194,12 @@ public class CoupleDashboardSnapshotService {
     ) {
         if (dashboard == null
                 || dashboard.getEmotionSummary() == null
+                || dashboard.getEmotionSummary().isBlank()
                 || dashboard.getFrequentWords() == null
-                || dashboard.getConversationFrequency() == null
+                || dashboard.getFrequentWords().isBlank()
+                || !isCurrentConversationSnapshot(
+                        dashboard.getConversationFrequency()
+                )
                 || dashboard.getAggregatedUntil() == null
                 || dashboard.getAggregatedUntil().isBefore(snapshotUntil)) {
             return true;
@@ -260,6 +270,22 @@ public class CoupleDashboardSnapshotService {
             return objectMapper.writeValueAsString(value);
         } catch (JsonProcessingException exception) {
             throw new CustomException(ErrorCode.INTERNAL_ERROR);
+        }
+    }
+
+    boolean isCurrentConversationSnapshot(String json) {
+        if (json == null || json.isBlank()) {
+            return false;
+        }
+        try {
+            ConversationSnapshotData snapshot = objectMapper.readValue(
+                    json,
+                    ConversationSnapshotData.class
+            );
+            return snapshot.version()
+                    == ConversationSnapshotData.CURRENT_VERSION;
+        } catch (JsonProcessingException exception) {
+            return false;
         }
     }
 

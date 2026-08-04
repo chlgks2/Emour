@@ -79,6 +79,9 @@ CREATE TABLE `mood_notification`
 CREATE TABLE `home_image_setting` (
     `room_id` BIGINT NOT NULL PRIMARY KEY,
     `image_url` VARCHAR(2048) NULL,
+    `text_content` VARCHAR(100) NULL,
+    `text_position_x` DECIMAL(5,2) NULL,
+    `text_position_y` DECIMAL(5,2) NULL,
     `text_size` ENUM('SMALL', 'MEDIUM', 'LARGE') NOT NULL DEFAULT 'MEDIUM',
     `text_alignment` ENUM('LEFT', 'CENTER', 'RIGHT') NOT NULL DEFAULT 'LEFT',
     `background_style` ENUM('TRANSLUCENT', 'DARK', 'NONE') NOT NULL DEFAULT 'TRANSLUCENT',
