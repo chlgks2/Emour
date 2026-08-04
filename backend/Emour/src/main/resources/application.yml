@@ -97,3 +97,8 @@ management:
   endpoint:
     health:
       show-details: never
+  health:
+    # 메일(SMTP) 서버 접속 가능 여부는 앱 생존과 무관하므로 health 에서 제외.
+    # (안 끄면 /actuator/health 마다 smtp 접속을 시도해, 메일 계정 없는 환경에서 health 가 DOWN 이 됨)
+    mail:
+      enabled: false
