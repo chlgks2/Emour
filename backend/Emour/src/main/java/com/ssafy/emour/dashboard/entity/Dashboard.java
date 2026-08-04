@@ -42,6 +42,9 @@ public class Dashboard {
     @Column(name = "emotion_flow", columnDefinition = "json")
     private String emotionFlow;
 
+    @Column(name = "emotion_summary", columnDefinition = "json")
+    private String emotionSummary;
+
     @Column(name = "aggregated_until")
     private LocalDateTime aggregatedUntil;
 
@@ -74,12 +77,14 @@ public class Dashboard {
     public void applyHourlySnapshot(
             int bookmarkCount,
             String emotionFlow,
+            String emotionSummary,
             LocalDateTime snapshotUntil,
             boolean finalized,
             LocalDateTime calculatedAt
     ) {
         this.bookmarkCount = bookmarkCount;
         this.emotionFlow = emotionFlow;
+        this.emotionSummary = emotionSummary;
         this.aggregatedUntil = snapshotUntil;
         if (finalized) {
             this.finalizedUntil = snapshotUntil;
@@ -137,6 +142,10 @@ public class Dashboard {
 
     public String getEmotionFlow() {
         return emotionFlow;
+    }
+
+    public String getEmotionSummary() {
+        return emotionSummary;
     }
 
     public LocalDateTime getAggregatedUntil() {
