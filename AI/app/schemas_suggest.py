@@ -110,9 +110,13 @@ class SuggestResponse(BaseModel):
     message_id: str  # 요청의 message_id 를 그대로 echo. BE가 원본 메시지와 매핑하는 키.
     suggestions: List[Suggestion] = Field(default_factory=list)
 
-    # 가드레일에 걸려 추천을 생성하지 않은 경우
+    # 추천을 생성하지 않은 경우의 사유.
+    #   too_short   : 초안이 너무 짧음 (가드레일)
+    #   safety      : 민감 내용 감지 (가드레일)
+    #   disabled    : SUGGEST_ENABLED=false 로 기능이 꺼져 있음 (킬스위치)
+    #   llm_failure : LLM 호출/파싱 실패 (원인 세분화는 하지 않기로 함)
     blocked: bool = False
-    block_reason: Optional[Literal["safety", "too_short", "llm_failure"]] = None
+    block_reason: Optional[Literal["safety", "too_short", "disabled", "llm_failure"]] = None
 
     # 관측용 메타데이터. 실험 로그와 프로덕션 로그를 같은 형태로 남기기 위함.
     model: Optional[str] = None
