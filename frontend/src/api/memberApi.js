@@ -8,11 +8,19 @@ const MEMBER_ENDPOINTS = {
   profileImages: '/users/profile-img',
   partnerProfileImage: '/users/partner/profile-img',
   partnerNickname: '/users/partner-nickname',
+  partnerStatusMessage: '/users/status-message',
 }
 
 export async function getPartnerNickname() {
   const response = await apiRequest(
     MEMBER_ENDPOINTS.partnerNickname,
+  )
+  return response?.data ?? response ?? null
+}
+
+export async function getPartnerStatusMessage() {
+  const response = await apiRequest(
+    MEMBER_ENDPOINTS.partnerStatusMessage,
   )
   return response?.data ?? response ?? null
 }

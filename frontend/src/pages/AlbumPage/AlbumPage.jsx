@@ -56,7 +56,7 @@ const ALLOWED_IMAGE_TYPES = [
 const MAX_IMAGE_SIZE =
   10 * 1024 * 1024
 
-const MAX_MEMO_LENGTH = 500
+const MAX_MEMO_LENGTH = 100
 
 function formatPhotoDate(value) {
   if (!value) {

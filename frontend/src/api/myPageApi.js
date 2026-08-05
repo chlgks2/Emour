@@ -23,6 +23,7 @@ import {
 import {
   getMyProfile,
   getPartnerNickname,
+  getPartnerStatusMessage,
   getProfileImages,
   updateMyProfile,
   updatePartnerNickname as updatePartnerNicknameOnServer,
@@ -352,12 +353,14 @@ export async function getMyPageProfile() {
   })
 
   let partner = null
+  let partnerStatus = null
   if (profile.isCoupleConnected) {
-    try {
-      partner = await getPartnerNickname()
-    } catch {
-      // 상대방 이름만 실패해도 마이페이지의 나머지 정보는 표시한다.
-    }
+    const [partnerResult, statusResult] = await Promise.allSettled([
+      getPartnerNickname(),
+      getPartnerStatusMessage(),
+    ])
+    if (partnerResult.status === 'fulfilled') partner = partnerResult.value
+    if (statusResult.status === 'fulfilled') partnerStatus = statusResult.value
   }
 
   /*
@@ -369,6 +372,8 @@ export async function getMyPageProfile() {
     partnerNickname:
       partner?.partnerNickname ??
       profile.partnerNickname,
+    partnerStatusMessage:
+      partnerStatus?.statusMessage ?? '',
     profileImageUrl:
       profileImages?.myProfileImageUrl ??
       (await resolveProtectedImageUrl(
