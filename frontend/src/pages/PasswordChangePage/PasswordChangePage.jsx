@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ChevronLeft, KeyRound } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
 import { changeMyPassword } from '../../api/memberApi.js'
+import { useAuth } from '../../hooks/useAuth.js'
 
 import './PasswordChangePage.css'
 
@@ -10,6 +11,17 @@ const PASSWORD_MIN_LENGTH = 8
 
 function PasswordChangePage() {
   const navigate = useNavigate()
+  const { user } = useAuth()
+  const isSocialLogin =
+    user?.authProvider === 'GOOGLE'
+
+  useEffect(() => {
+    if (isSocialLogin) {
+      navigate('/mypage', {
+        replace: true,
+      })
+    }
+  }, [isSocialLogin, navigate])
 
   const [currentPassword, setCurrentPassword] =
     useState('')
@@ -97,6 +109,10 @@ function PasswordChangePage() {
       setter(event.target.value)
       setErrorMessage('')
     }
+
+  if (isSocialLogin) {
+    return null
+  }
 
   return (
     <div className="password-change-page">
