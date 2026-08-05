@@ -5,6 +5,9 @@ import com.ssafy.emour.auth.dto.request.SignUpRequest;
 import com.ssafy.emour.auth.dto.response.LoginResponse;
 import com.ssafy.emour.auth.dto.response.SignUpResponse;
 import com.ssafy.emour.auth.dto.response.TokenResponse;
+import com.ssafy.emour.auth.entity.SocialLogin;
+import com.ssafy.emour.auth.entity.SocialProvider;
+import com.ssafy.emour.auth.repository.SocialLoginRepository;
 import com.ssafy.emour.global.email.EmailSender;
 import com.ssafy.emour.global.exception.CustomException;
 import com.ssafy.emour.global.exception.ErrorCode;
@@ -34,6 +37,7 @@ public class AuthService {
     private final VerificationCodeService verificationCodeService; // 이메일 인증코드 관리
     private final EmailSender emailSender;                       // 이메일 발송
     private final GoogleTokenVerifier googleTokenVerifier;      // 구글 ID 토큰 검증
+    private final SocialLoginRepository socialLoginRepository;
 
     /**
      * 이메일 회원가입.
@@ -129,8 +133,7 @@ public class AuthService {
     public LoginResponse loginWithGoogle(String idToken) {
         GoogleUserInfo info = googleTokenVerifier.verify(idToken);
 
-        Member member = memberRepository.findByEmail(info.email())
-                .orElseGet(() -> registerGoogleMember(info));
+        Member member = findOrRegisterGoogleMember(info);
 
         // 탈퇴한 회원은 로그인 불가
         if (member.getStatus() == MemberStatus.WITHDRAWN) {
@@ -156,6 +159,49 @@ public class AuthService {
                 .build();
         member.verifyEmail();                    // 구글이 이미 검증한 이메일
         return memberRepository.save(member);
+    }
+
+    private Member findOrRegisterGoogleMember(GoogleUserInfo info) {
+        return socialLoginRepository.findByProviderAndProviderId(
+                        SocialProvider.GOOGLE,
+                        info.providerId()
+                )
+                .map(SocialLogin::getMember)
+                .orElseGet(() -> linkGoogleAccount(info));
+    }
+
+    /**
+     * 기존 이메일 회원 또는 과거에 app_user만 생성된 구글 회원에도
+     * social_login 행을 생성해 소셜 계정 연결을 보정합니다.
+     */
+    private Member linkGoogleAccount(GoogleUserInfo info) {
+        Member member = memberRepository.findByEmail(info.email())
+                .orElseGet(() -> registerGoogleMember(info));
+
+        socialLoginRepository.findByMemberId(member.getId())
+                .ifPresentOrElse(
+                        socialLogin -> validateGoogleAccount(
+                                socialLogin,
+                                info.providerId()
+                        ),
+                        () -> socialLoginRepository.save(
+                                SocialLogin.google(
+                                        member,
+                                        info.providerId()
+                                )
+                        )
+                );
+        return member;
+    }
+
+    private void validateGoogleAccount(
+            SocialLogin socialLogin,
+            String providerId
+    ) {
+        if (socialLogin.getProvider() != SocialProvider.GOOGLE
+                || !socialLogin.getProviderId().equals(providerId)) {
+            throw new CustomException(ErrorCode.SOCIAL_ACCOUNT_CONFLICT);
+        }
     }
 
     private String resolveGoogleNickname(GoogleUserInfo info) {
