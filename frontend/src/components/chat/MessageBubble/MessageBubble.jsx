@@ -144,7 +144,15 @@ export default function MessageBubble({
 
         <div className={styles.bubbleWrap}>
           {isBookmarked && (
-            <Bookmark size={20} className={styles.bookmarkRibbon} aria-label="북마크됨" />
+            <>
+              <Bookmark
+                size={19}
+                className={styles.bookmarkRibbon}
+                aria-hidden="true"
+                focusable="false"
+              />
+              <span className="sr-only">북마크됨</span>
+            </>
           )}
 
           {/*
