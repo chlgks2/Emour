@@ -4,6 +4,7 @@ import com.ssafy.emour.chat.dto.AiSuggestionItem;
 import com.ssafy.emour.chat.dto.AiSuggestionRequest;
 import com.ssafy.emour.chat.dto.AiSuggestionResponse;
 import com.ssafy.emour.chat.dto.ChatSuggestionRequest;
+import com.ssafy.emour.chat.dto.ChatSuggestionResponse;
 import com.ssafy.emour.chat.entity.ChatMessage;
 import com.ssafy.emour.chat.repository.ChatMessageRepository;
 import com.ssafy.emour.couple.entity.CoupleMemberId;
@@ -81,13 +82,15 @@ class ChatSuggestionServiceTest {
         when(aiSuggestionClient.suggest(org.mockito.ArgumentMatchers.any()))
                 .thenReturn(response(true));
 
-        AiSuggestionResponse result = service.suggest(
+        ChatSuggestionResponse result = service.suggest(
                 21L,
                 new ChatSuggestionRequest(101L, "문장")
         );
 
         assertThat(result.blocked()).isTrue();
-        assertThat(result.blockReason()).isEqualTo("안전 정책");
+        assertThat(result.blockReason()).isEqualTo("safety");
+        assertThat(result.guideMessage())
+                .isEqualTo("민감한 내용이 감지되어 추천을 만들지 못했어요.");
         assertThat(result.suggestions()).isEmpty();
     }
 
@@ -132,7 +135,7 @@ class ChatSuggestionServiceTest {
                         "추천 문장"
                 )),
                 blocked,
-                blocked ? "안전 정책" : null
+                blocked ? "safety" : null
         );
     }
 }
