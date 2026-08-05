@@ -18,7 +18,7 @@ class ChatSuggestionResponseTest {
             String expectedGuideMessage
     ) {
         AiSuggestionResponse aiResponse = new AiSuggestionResponse(
-                "101",
+                "request-101",
                 List.of(new AiSuggestionItem(
                         "gentle",
                         "부드럽게",

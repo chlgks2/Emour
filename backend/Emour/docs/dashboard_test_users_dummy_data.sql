@@ -24,7 +24,7 @@ VALUES
     (
         'test1@ssafy.com',
         '$2a$10$QPnJeVv2CJwbn8gzDPUGIuEJ8elPb.wdMZ0cYJZOZ3v60J54f5SbS',
-        '테스트하나',
+        '하나',
         '1999-01-15',
         'https://placehold.co/300x300/png?text=Test+1',
         '오늘도 행복한 하루',
@@ -37,7 +37,7 @@ VALUES
     (
         'test2@ssafy.com',
         '$2a$10$QPnJeVv2CJwbn8gzDPUGIuEJ8elPb.wdMZ0cYJZOZ3v60J54f5SbS',
-        '테스트둘',
+        '두리',
         '2000-05-20',
         'https://placehold.co/300x300/png?text=Test+2',
         '함께라서 즐거워',

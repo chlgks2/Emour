@@ -5,9 +5,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 
 public record ChatSuggestionResponse(
-        @JsonProperty("message_id")
-        String messageId,
-
         List<AiSuggestionItem> suggestions,
 
         boolean blocked,
@@ -22,7 +19,6 @@ public record ChatSuggestionResponse(
     public static ChatSuggestionResponse from(AiSuggestionResponse response) {
         if (!response.blocked()) {
             return new ChatSuggestionResponse(
-                    response.messageId(),
                     response.suggestions(),
                     false,
                     response.blockReason(),
@@ -31,7 +27,6 @@ public record ChatSuggestionResponse(
         }
 
         return new ChatSuggestionResponse(
-                response.messageId(),
                 List.of(),
                 true,
                 response.blockReason(),

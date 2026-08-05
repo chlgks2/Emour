@@ -5,11 +5,9 @@ import com.ssafy.emour.chat.dto.AiSuggestionRequest;
 import com.ssafy.emour.chat.dto.AiSuggestionResponse;
 import com.ssafy.emour.chat.dto.ChatSuggestionRequest;
 import com.ssafy.emour.chat.dto.ChatSuggestionResponse;
-import com.ssafy.emour.chat.entity.ChatMessage;
 import com.ssafy.emour.chat.exception.ChatException;
 import com.ssafy.emour.chat.repository.ChatMessageRepository;
-import com.ssafy.emour.couple.entity.CoupleMemberId;
-import com.ssafy.emour.couple.entity.CoupleMemberStatus;
+import com.ssafy.emour.couple.entity.CoupleMember;
 import com.ssafy.emour.couple.repository.CoupleMemberRepository;
 import com.ssafy.emour.global.exception.CustomException;
 import com.ssafy.emour.global.exception.ErrorCode;
@@ -21,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -37,24 +36,18 @@ public class ChatSuggestionService {
             ChatSuggestionRequest request
     ) {
         validateInput(userId, request);
-        ChatMessage target = chatMessageRepository
-                .findByMessageId(request.messageId())
-                .orElseThrow(() -> new ChatException(
-                        "메시지를 찾을 수 없습니다."
-                ));
-        validateUser(userId, target);
+        Long roomId = getActiveRoomId(userId);
 
-        List<ChatMessage> recentMessages = new ArrayList<>(
-                chatMessageRepository.findRecentTextMessagesBefore(
-                        target.getRoomId(),
-                        target.getMessageId(),
+        var recentMessages = new ArrayList<>(
+                chatMessageRepository.findRecentTextMessages(
+                        roomId,
                         PageRequest.of(0, HISTORY_LIMIT)
                 )
         );
         Collections.reverse(recentMessages);
 
         AiSuggestionRequest aiRequest = new AiSuggestionRequest(
-                String.valueOf(target.getMessageId()),
+                UUID.randomUUID().toString(),
                 String.valueOf(userId),
                 request.targetMessage().trim(),
                 recentMessages.stream()
@@ -74,7 +67,6 @@ public class ChatSuggestionService {
             ChatSuggestionRequest request
     ) {
         if (userId == null || request == null
-                || request.messageId() == null
                 || request.targetMessage() == null
                 || request.targetMessage().isBlank()
                 || request.targetMessage().length() > 2000) {
@@ -82,32 +74,24 @@ public class ChatSuggestionService {
         }
     }
 
-    private void validateUser(Long userId, ChatMessage message) {
-        boolean activeMember = coupleMemberRepository.existsByIdAndStatus(
-                new CoupleMemberId(userId, message.getRoomId()),
-                CoupleMemberStatus.ACTIVE
+    private Long getActiveRoomId(Long userId) {
+        List<CoupleMember> memberships =
+                coupleMemberRepository.findActiveMembershipsByUserId(
+                        userId,
+                        PageRequest.of(0, 1)
         );
-        if (!activeMember) {
-            throw new ChatException(
-                    "해당 채팅방에 참여 중인 사용자가 아닙니다."
-            );
+        if (memberships.isEmpty()) {
+            throw new CustomException(ErrorCode.ACTIVE_COUPLE_NOT_FOUND);
         }
-        if (!message.getSenderId().equals(userId)) {
-            throw new ChatException(
-                    "본인이 보낸 메시지만 답장을 추천받을 수 있습니다."
-            );
-        }
+        return memberships.get(0).getId().getRoomId();
     }
 
     private void validateResponse(
-            String requestedMessageId,
+            String requestId,
             AiSuggestionResponse response
     ) {
         if (response == null
-                || !Objects.equals(
-                        requestedMessageId,
-                        response.messageId()
-                )
+                || !Objects.equals(requestId, response.messageId())
                 || (!response.blocked()
                 && (response.suggestions() == null
                 || response.suggestions().isEmpty()))) {
