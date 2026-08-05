@@ -45,11 +45,7 @@ class ChatSuggestionServiceTest {
                 PageRequest.of(0, 12)
         )).thenReturn(List.of(newer, older));
         when(aiSuggestionClient.suggest(org.mockito.ArgumentMatchers.any()))
-                .thenAnswer(invocation -> response(
-                        false,
-                        invocation.<AiSuggestionRequest>getArgument(0)
-                                .messageId()
-                ));
+                .thenReturn(response(false));
 
         service.suggest(
                 21L,
@@ -60,7 +56,6 @@ class ChatSuggestionServiceTest {
                 ArgumentCaptor.forClass(AiSuggestionRequest.class);
         verify(aiSuggestionClient).suggest(captor.capture());
         AiSuggestionRequest request = captor.getValue();
-        assertThat(request.messageId()).isNotBlank();
         assertThat(request.speakerId()).isEqualTo("21");
         assertThat(request.targetMessage()).isEqualTo("오늘 만날래?");
         assertThat(request.history())
@@ -78,11 +73,7 @@ class ChatSuggestionServiceTest {
                 PageRequest.of(0, 12)
         )).thenReturn(List.of());
         when(aiSuggestionClient.suggest(org.mockito.ArgumentMatchers.any()))
-                .thenAnswer(invocation -> response(
-                        true,
-                        invocation.<AiSuggestionRequest>getArgument(0)
-                                .messageId()
-                ));
+                .thenReturn(response(true));
 
         ChatSuggestionResponse result = service.suggest(
                 21L,
@@ -118,12 +109,8 @@ class ChatSuggestionServiceTest {
         return message;
     }
 
-    private AiSuggestionResponse response(
-            boolean blocked,
-            String requestId
-    ) {
+    private AiSuggestionResponse response(boolean blocked) {
         return new AiSuggestionResponse(
-                requestId,
                 List.of(new AiSuggestionItem(
                         "gentle",
                         "상냥하게",

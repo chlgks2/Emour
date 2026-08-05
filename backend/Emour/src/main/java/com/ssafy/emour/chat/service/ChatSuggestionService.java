@@ -18,8 +18,6 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -47,7 +45,6 @@ public class ChatSuggestionService {
         Collections.reverse(recentMessages);
 
         AiSuggestionRequest aiRequest = new AiSuggestionRequest(
-                UUID.randomUUID().toString(),
                 String.valueOf(userId),
                 request.targetMessage().trim(),
                 recentMessages.stream()
@@ -58,7 +55,7 @@ public class ChatSuggestionService {
                         .toList()
         );
         AiSuggestionResponse response = aiSuggestionClient.suggest(aiRequest);
-        validateResponse(aiRequest.messageId(), response);
+        validateResponse(response);
         return ChatSuggestionResponse.from(response);
     }
 
@@ -86,12 +83,8 @@ public class ChatSuggestionService {
         return memberships.get(0).getId().getRoomId();
     }
 
-    private void validateResponse(
-            String requestId,
-            AiSuggestionResponse response
-    ) {
+    private void validateResponse(AiSuggestionResponse response) {
         if (response == null
-                || !Objects.equals(requestId, response.messageId())
                 || (!response.blocked()
                 && (response.suggestions() == null
                 || response.suggestions().isEmpty()))) {

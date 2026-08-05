@@ -32,7 +32,6 @@ class AiSuggestionClientTest {
                 ))
                 .andExpect(content().json("""
                         {
-                          "message_id": "request-101",
                           "speaker_id": "21",
                           "target_message": "오늘 만날래?",
                           "history": [
@@ -43,7 +42,6 @@ class AiSuggestionClientTest {
                 .andRespond(withSuccess(
                         """
                                 {
-                                  "message_id": "request-101",
                                   "suggestions": [
                                     {
                                       "style": "gentle",
@@ -60,7 +58,6 @@ class AiSuggestionClientTest {
 
         AiSuggestionResponse response = client.suggest(
                 new AiSuggestionRequest(
-                        "request-101",
                         "21",
                         "오늘 만날래?",
                         List.of(new AiSuggestionHistory(
@@ -70,7 +67,6 @@ class AiSuggestionClientTest {
                 )
         );
 
-        assertThat(response.messageId()).isEqualTo("request-101");
         assertThat(response.suggestions()).hasSize(1);
         server.verify();
     }
