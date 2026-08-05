@@ -39,6 +39,13 @@ DEFAULT_MODEL = os.getenv("SUGGEST_MODEL", "gpt-4.1")
 DEFAULT_TEMPERATURE = float(os.getenv("SUGGEST_TEMPERATURE", "0.7"))
 LLM_TIMEOUT_SEC = float(os.getenv("SUGGEST_TIMEOUT_SEC", "8"))
 
+# 킬스위치. LLM_PROVIDER와 같은 발상 — 크레딧을 아끼거나 장애 대응 시,
+# 재배포 없이 .env 한 줄 + 컨테이너 재기동만으로 이 기능만 끌 수 있다.
+# 꺼져 있으면 LLM을 아예 호출하지 않고 즉시 blocked(disabled) 응답한다.
+SUGGEST_ENABLED = os.getenv("SUGGEST_ENABLED", "true").strip().lower() not in (
+    "0", "false", "no",
+)
+
 _client: Optional[AsyncOpenAI] = None
 
 
@@ -123,6 +130,14 @@ async def generate_suggestions(req: SuggestRequest) -> SuggestResponse:
     # 선택했을 때 그 메시지를 최종 확정 저장하면 된다.
     
     started = time.perf_counter()
+
+    if not SUGGEST_ENABLED:
+        return SuggestResponse(
+            message_id=req.message_id,
+            blocked=True,
+            block_reason="disabled",
+            latency_ms=int((time.perf_counter() - started) * 1000),
+        )
 
     block_reason = screen_input(req)
     if block_reason:
