@@ -4,10 +4,13 @@ import com.ssafy.emour.auth.service.RefreshTokenService;
 import com.ssafy.emour.couple.entity.CoupleMember;
 import com.ssafy.emour.couple.repository.CoupleMemberRepository;
 import com.ssafy.emour.global.storage.FileStorage;
+import com.ssafy.emour.global.exception.CustomException;
+import com.ssafy.emour.global.exception.ErrorCode;
 import com.ssafy.emour.member.dto.request.PartnerNicknameRequest;
 import com.ssafy.emour.member.dto.response.MemberProfileImageResponse;
 import com.ssafy.emour.member.dto.response.MemberProfileImagesResponse;
 import com.ssafy.emour.member.dto.response.PartnerNicknameResponse;
+import com.ssafy.emour.member.dto.response.PartnerStatusMessageResponse;
 import com.ssafy.emour.member.entity.Member;
 import com.ssafy.emour.member.entity.MemberStatus;
 import com.ssafy.emour.member.repository.MemberRepository;
@@ -24,6 +27,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
@@ -154,6 +158,44 @@ class MemberServiceTest {
         assertThat(response.userId()).isEqualTo(22L);
         assertThat(response.profileImageUrl())
                 .isEqualTo("https://example.com/partner.png");
+    }
+
+    @Test
+    void returnsPartnerStatusMessage() {
+        Member me = member(21L, null);
+        Member partner = member(22L, null);
+        when(memberRepository.findById(21L))
+                .thenReturn(Optional.of(me));
+        when(coupleMemberRepository.findActivePartnerUserIds(
+                eq(21L),
+                any(Pageable.class)
+        )).thenReturn(List.of(22L));
+        when(memberRepository.findById(22L))
+                .thenReturn(Optional.of(partner));
+        when(partner.getStatusMessage()).thenReturn("오늘도 좋은 하루!");
+
+        PartnerStatusMessageResponse response =
+                memberService.getPartnerStatusMessage(21L);
+
+        assertThat(response.partnerUserId()).isEqualTo(22L);
+        assertThat(response.statusMessage()).isEqualTo("오늘도 좋은 하루!");
+    }
+
+    @Test
+    void rejectsPartnerStatusMessageWithoutActiveCouple() {
+        Member me = member(21L, null);
+        when(memberRepository.findById(21L))
+                .thenReturn(Optional.of(me));
+        when(coupleMemberRepository.findActivePartnerUserIds(
+                eq(21L),
+                any(Pageable.class)
+        )).thenReturn(List.of());
+
+        assertThatThrownBy(() ->
+                memberService.getPartnerStatusMessage(21L))
+                .isInstanceOf(CustomException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.ACTIVE_COUPLE_NOT_FOUND);
     }
 
     // 업로드한 파일의 저장 주소를 내 프로필 이미지로 반영합니다.
