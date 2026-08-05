@@ -4,7 +4,7 @@ import {
   ChevronDown,
   Heart,
   Pencil,
-  User,
+  UserRound,
   X,
 } from "lucide-react";
 import styles from "./HomePage.module.css";
@@ -21,7 +21,7 @@ export default function HomePage({
   onEditStartDate,
   onViewDashboard,
 }) {
-  const [partnerProfileOpen, setPartnerProfileOpen] = useState(false);
+  const [partnerProfileOpen, setPartnerProfileOpen] = useState(true);
   // 로딩 중에 아무것도 렌더하지 않으면 검은 화면만 보이므로 최소한의 자리를 잡아둔다.
   if (!home) {
     return (
@@ -111,28 +111,30 @@ export default function HomePage({
             stroke="none"
             aria-hidden="true"
           />
-          <ProfileCircle
-            imageUrl={partnerProfileImageUrl}
-            name={partnerNickname}
-            fallbackLabel="상대방"
-            onClick={() => setPartnerProfileOpen((open) => !open)}
-            expanded={partnerProfileOpen}
-          />
+          <div className={styles.partnerProfileGroup}>
+            <ProfileCircle
+              imageUrl={partnerProfileImageUrl}
+              name={partnerNickname}
+              fallbackLabel="상대방"
+              onClick={() => setPartnerProfileOpen((open) => !open)}
+              expanded={partnerProfileOpen}
+            />
 
-          {partnerProfileOpen && (
-            <div className={styles.partnerProfilePopover} role="dialog" aria-label="상대방 프로필">
-              <button
-                type="button"
-                className={styles.partnerProfileClose}
-                aria-label="상대방 프로필 닫기"
-                onClick={() => setPartnerProfileOpen(false)}
-              >
-                <X size={14} aria-hidden="true" />
-              </button>
-              <strong>{partnerNickname?.trim() || "상대방"}</strong>
-              {partnerStatusMessage && <p>{partnerStatusMessage}</p>}
-            </div>
-          )}
+            {partnerProfileOpen && (
+              <div className={styles.partnerProfilePopover} role="dialog" aria-label="상대방 프로필">
+                <button
+                  type="button"
+                  className={styles.partnerProfileClose}
+                  aria-label="상대방 프로필 닫기"
+                  onClick={() => setPartnerProfileOpen(false)}
+                >
+                  <X size={14} aria-hidden="true" />
+                </button>
+                <strong>{partnerNickname?.trim() || "상대방"}</strong>
+                <p>{partnerStatusMessage?.trim() || "등록된 상태 메시지가 없어요."}</p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -174,7 +176,7 @@ function ProfileCircle({ imageUrl, name, fallbackLabel, onClick, expanded }) {
           <img src={imageUrl} alt={`${displayName} 프로필 사진`} />
         ) : (
           <span className={styles.profileFallback} aria-hidden="true">
-            <User size={28} strokeWidth={1.7} />
+            <UserRound size={28} strokeWidth={1.7} />
           </span>
         )}
       </span>
