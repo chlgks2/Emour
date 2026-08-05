@@ -61,7 +61,7 @@ export default function MessageBubble({
   onOpenImages,
   onDeleteImage,
 }) {
-  const isMine = message.senderId === myUserId;
+  const isMine = Number(message.senderId) === Number(myUserId);
   const emotionStyle = message.emotionType ? getEmotionStyle(message.emotionType) : null;
   const isTextMessage =
     message.messageType === MESSAGE_TYPE.TEXT;
@@ -200,7 +200,7 @@ export default function MessageBubble({
                     key={reaction.reactionId}
                     className={styles.reactionBadge}
                     style={{ background: option.color }}
-                    aria-label={`${option.label}${reaction.userId === myUserId ? " (나)" : ""}`}
+                    aria-label={`${option.label}${Number(reaction.userId) === Number(myUserId) ? " (나)" : ""}`}
                   >
                     <ReactionIcon size={12} color="#fff" />
                   </span>

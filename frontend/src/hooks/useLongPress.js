@@ -9,7 +9,7 @@ import { useCallback, useRef } from "react";
  *   delay: 몇 ms 눌러야 롱프레스로 인정할지 (기본 450ms)
  *   moveThreshold: 누른 채로 이 픽셀 이상 움직이면 취소 (스크롤과 구분하기 위함)
  */
-export function useLongPress(onLongPress, { delay = 450, moveThreshold = 10 } = {}) {
+export function useLongPress(onLongPress, { delay = 450, moveThreshold = 18 } = {}) {
   const timerRef = useRef(null);
   const startPosRef = useRef({ x: 0, y: 0 });
 
