@@ -4,6 +4,7 @@ import com.ssafy.emour.chat.dto.AiSuggestionHistory;
 import com.ssafy.emour.chat.dto.AiSuggestionRequest;
 import com.ssafy.emour.chat.dto.AiSuggestionResponse;
 import com.ssafy.emour.chat.dto.ChatSuggestionRequest;
+import com.ssafy.emour.chat.dto.ChatSuggestionResponse;
 import com.ssafy.emour.chat.entity.ChatMessage;
 import com.ssafy.emour.chat.exception.ChatException;
 import com.ssafy.emour.chat.repository.ChatMessageRepository;
@@ -31,7 +32,7 @@ public class ChatSuggestionService {
     private final CoupleMemberRepository coupleMemberRepository;
     private final AiSuggestionClient aiSuggestionClient;
 
-    public AiSuggestionResponse suggest(
+    public ChatSuggestionResponse suggest(
             Long userId,
             ChatSuggestionRequest request
     ) {
@@ -65,7 +66,7 @@ public class ChatSuggestionService {
         );
         AiSuggestionResponse response = aiSuggestionClient.suggest(aiRequest);
         validateResponse(aiRequest.messageId(), response);
-        return response.withoutBlockedSuggestions();
+        return ChatSuggestionResponse.from(response);
     }
 
     private void validateInput(

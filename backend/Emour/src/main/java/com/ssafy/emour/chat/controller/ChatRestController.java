@@ -11,7 +11,7 @@ import com.ssafy.emour.chat.dto.ChatReadResponse;
 import com.ssafy.emour.chat.dto.ChatReadStatusResponse;
 import com.ssafy.emour.chat.dto.ChatRestMessageRequest;
 import com.ssafy.emour.chat.dto.ChatUnreadCountResponse;
-import com.ssafy.emour.chat.dto.AiSuggestionResponse;
+import com.ssafy.emour.chat.dto.ChatSuggestionResponse;
 import com.ssafy.emour.chat.dto.ChatSuggestionRequest;
 import com.ssafy.emour.chat.messaging.ChatRealtimePublisher;
 import com.ssafy.emour.chat.service.ChatBookmarkService;
@@ -381,7 +381,7 @@ public class ChatRestController {
                     )
             )
     })
-    public AiSuggestionResponse suggestMessage(
+    public ChatSuggestionResponse suggestMessage(
             @Valid @RequestBody ChatSuggestionRequest request
     ) {
         return chatSuggestionService.suggest(
