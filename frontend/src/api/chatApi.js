@@ -443,9 +443,23 @@ export async function fetchSuggestions({
   const result = response?.data ?? response
 
   if (result?.blocked) {
+    const blockReason =
+      result.block_reason ?? result.blockReason
+    const guideMessage =
+      result.guide_message ?? result.guideMessage
+    const fallbackGuideByReason = {
+      too_short:
+        '메시지가 너무 짧아 추천을 만들지 못했어요.',
+      safety:
+        '민감한 내용이 감지되어 추천을 만들지 못했어요.',
+      llm_failure:
+        '일시적인 오류로 추천을 만들지 못했어요. 잠시 후 다시 시도해 주세요.',
+    }
+
     throw new Error(
-      result.blockReason ||
-        '이 문구는 추천을 제공할 수 없습니다.',
+      guideMessage ||
+        fallbackGuideByReason[blockReason] ||
+        '추천을 만들지 못했어요.',
     )
   }
 

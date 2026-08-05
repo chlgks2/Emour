@@ -7,6 +7,8 @@ import {
 
 import './ScheduleModal.css'
 
+const SCHEDULE_NAME_MAX_LENGTH = 100
+
 function ScheduleModal({
   mode,
   selectedDate,
@@ -128,10 +130,11 @@ function ScheduleModal({
           <label>
             이름
 
-            <input
+            <textarea
               name="name"
-              type="text"
               value={formData.name}
+              maxLength={SCHEDULE_NAME_MAX_LENGTH}
+              rows={2}
               disabled={isProcessing}
               placeholder={
                 formData.type ===
@@ -141,6 +144,10 @@ function ScheduleModal({
               }
               onChange={handleChange}
             />
+
+            <span className="schedule-modal-character-count">
+              {formData.name.length} / {SCHEDULE_NAME_MAX_LENGTH}
+            </span>
           </label>
 
           <div
