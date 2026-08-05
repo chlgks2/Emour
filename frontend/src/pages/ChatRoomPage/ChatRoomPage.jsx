@@ -628,28 +628,10 @@ export default function ChatRoomPage() {
   const requestSuggestions = async () => {
     if (!inputValue.trim()) return;
 
-    // 추천 API는 대화 문맥의 기준점으로 내가 저장한 메시지 ID를 요구한다.
-    const latestOwnMessage = [...messages]
-      .reverse()
-      .find(
-        (message) =>
-          message.messageId &&
-          Number(message.senderId) === Number(myUserId),
-      );
-
-    if (!latestOwnMessage) {
-      setSuggestions([]);
-      setSuggestGuideMessage(
-        "문구 교정은 메시지를 한 번 이상 보낸 뒤 사용할 수 있어요.",
-      );
-      return;
-    }
-
     setSuggestLoading(true);
     setSuggestGuideMessage("");
     try {
       const correctedSuggestions = await fetchSuggestions({
-        messageId: latestOwnMessage.messageId,
         targetMessage: inputValue,
       });
 
