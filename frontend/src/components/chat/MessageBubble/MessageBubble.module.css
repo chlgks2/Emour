@@ -181,20 +181,20 @@
 
 /* 북마크된 메시지 우상단에 걸리는 리본 아이콘 */
 /*
- * 북마크 리본은 말풍선 오른쪽 끝에 맞춘다.
- *
- * 10px 안쪽에 두었을 때는 리본이 말풍선 위에 얹힌 별개의 표시처럼 떠 보였다.
- * 끝선을 맞추면 말풍선 모서리에 꽂힌 것으로 읽힌다.
- * (짧은 메시지에서는 리본이 말풍선 폭 한가운데쯤에 오는 문제도 같이 없어진다)
+ * 기존처럼 말풍선 오른쪽 모서리에 맞춘다.
+ * SVG drop-shadow만 일부 모바일 GPU에서 검은색·보라색 줄로 깨져 사용하지 않는다.
  */
 .bookmarkRibbon {
   position: absolute;
   top: -6px;
   right: 0;
   z-index: 2;
+  display: block;
+  width: 19px;
+  height: 19px;
   fill: var(--color-bookmark);
   color: var(--color-bookmark-strong);
-  filter: drop-shadow(0 1px 2px color-mix(in srgb, var(--color-text-primary) 16%, transparent));
+  background: transparent;
   pointer-events: none;
 }
 
