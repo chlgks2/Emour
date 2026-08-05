@@ -2,6 +2,8 @@ import { X } from 'lucide-react'
 
 import './DiaryModal.css'
 
+const DIARY_MAX_LENGTH = 300
+
 /**
  * 한 줄 일기 작성·수정 시트.
  *
@@ -86,6 +88,7 @@ function DiaryModal({
 
             <textarea
               value={value}
+              maxLength={DIARY_MAX_LENGTH}
               rows={4}
               placeholder="오늘의 한 줄 일기를 작성해주세요"
               disabled={isProcessing}
@@ -94,6 +97,10 @@ function DiaryModal({
                 onChange(event.target.value)
               }
             />
+
+            <span className="diary-modal-character-count">
+              {value.length} / {DIARY_MAX_LENGTH}
+            </span>
           </label>
 
           <div className="diary-modal-actions">

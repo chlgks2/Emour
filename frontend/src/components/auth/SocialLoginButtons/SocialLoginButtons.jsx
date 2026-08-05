@@ -45,6 +45,36 @@ export default function SocialLoginButtons({ onSelect, disabled, loadingProvider
   }, [onSelect]);
 
   useEffect(() => {
+    let focusClearFrame;
+
+    const clearGoogleButtonFocus = () => {
+      const activeElement = document.activeElement;
+      if (
+        activeElement instanceof HTMLIFrameElement &&
+        googleButtonRef.current?.contains(activeElement)
+      ) {
+        activeElement.blur();
+      }
+    };
+
+    const scheduleGoogleButtonFocusClear = () => {
+      window.cancelAnimationFrame(focusClearFrame);
+      focusClearFrame = window.requestAnimationFrame(clearGoogleButtonFocus);
+    };
+
+    // Google 버튼은 iframe 내부 포커스가 남으면 파란 눌림 상태가 유지된다.
+    // 포커스 대상이 확정된 다음 프레임에 해제해야 브라우저별로 안정적으로 동작한다.
+    window.addEventListener("blur", scheduleGoogleButtonFocusClear);
+    window.addEventListener("focus", scheduleGoogleButtonFocusClear);
+
+    return () => {
+      window.cancelAnimationFrame(focusClearFrame);
+      window.removeEventListener("blur", scheduleGoogleButtonFocusClear);
+      window.removeEventListener("focus", scheduleGoogleButtonFocusClear);
+    };
+  }, []);
+
+  useEffect(() => {
     if (!GOOGLE_CLIENT_ID) {
       return undefined;
     }

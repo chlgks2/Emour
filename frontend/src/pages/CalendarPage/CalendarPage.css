@@ -665,6 +665,9 @@
   border-radius: var(--radius-sm);
   background: var(--color-background);
   font-size: var(--font-label);
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 /* =========================

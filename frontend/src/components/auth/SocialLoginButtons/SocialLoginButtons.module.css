@@ -118,23 +118,25 @@
 .googleButtonShell {
   position: relative;
   width: 100%;
-  min-height: 44px;
+  height: 52px;
   display: flex;
+  align-items: center;
   justify-content: center;
   border-radius: var(--radius-pill);
-  overflow: hidden;
+  transition: opacity var(--duration-fast) var(--ease-out);
 }
 
 .googleButton {
   width: 100%;
-  min-height: 44px;
   display: flex;
+  align-items: center;
   justify-content: center;
 }
 
 .buttonBlocker {
   position: absolute;
   inset: 0;
+  z-index: 2;
   cursor: not-allowed;
   background: rgba(255, 255, 255, 0.45);
 }
