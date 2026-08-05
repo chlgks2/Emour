@@ -1,5 +1,8 @@
 stages: [build, deploy]
 
+variables:
+  IMAGE_TAG: "${CI_COMMIT_REF_SLUG}-${CI_PIPELINE_IID}"
+
 workflow:
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
@@ -19,7 +22,7 @@ build:web:
   script:
     - docker build --build-arg VITE_API_BASE_URL=/api --build-arg VITE_WS_BASE_URL=/ws
         --build-arg VITE_GOOGLE_CLIENT_ID=$VITE_GOOGLE_CLIENT_ID
-        -t emour-web:$CI_PIPELINE_IID ./frontend
+        -t emour-web:$IMAGE_TAG ./frontend
 
 deploy:web:dev:
   stage: deploy
@@ -29,7 +32,7 @@ deploy:web:dev:
     - if: $CI_COMMIT_BRANCH =~ /^develop\//
       changes: [frontend/**/*]
   script:
-    - /opt/emour/scripts/deploy.sh dev web $CI_PIPELINE_IID
+    - /opt/emour/scripts/deploy.sh dev web $IMAGE_TAG
   environment: { name: development, url: "http://i15b208.p.ssafy.io:8080" }
 
 deploy:web:prod:
@@ -40,7 +43,7 @@ deploy:web:prod:
     - if: $CI_COMMIT_BRANCH == "master"
       changes: [frontend/**/*]
   script:
-    - /opt/emour/scripts/deploy.sh prod web $CI_PIPELINE_IID
+    - /opt/emour/scripts/deploy.sh prod web $IMAGE_TAG
   environment: { name: production, url: "https://i15b208.p.ssafy.io" }
 
 # ============ BACKEND ============
@@ -51,7 +54,7 @@ build:api:
     - if: ($CI_COMMIT_BRANCH =~ /^develop\// || $CI_COMMIT_BRANCH == "master")
       changes: [backend/**/*]
   script:
-    - docker build -t emour-api:$CI_PIPELINE_IID ./backend/Emour
+    - docker build -t emour-api:$IMAGE_TAG ./backend/Emour
 
 deploy:api:dev:
   stage: deploy
@@ -61,7 +64,7 @@ deploy:api:dev:
     - if: $CI_COMMIT_BRANCH =~ /^develop\//
       changes: [backend/**/*]
   script:
-    - /opt/emour/scripts/deploy.sh dev api $CI_PIPELINE_IID
+    - /opt/emour/scripts/deploy.sh dev api $IMAGE_TAG
   environment: { name: development }
 
 deploy:api:prod:
@@ -72,7 +75,7 @@ deploy:api:prod:
     - if: $CI_COMMIT_BRANCH == "master"
       changes: [backend/**/*]
   script:
-    - /opt/emour/scripts/deploy.sh prod api $CI_PIPELINE_IID
+    - /opt/emour/scripts/deploy.sh prod api $IMAGE_TAG
   environment: { name: production }
 
 # ============ AI ============
@@ -83,7 +86,7 @@ build:ai:
     - if: ($CI_COMMIT_BRANCH =~ /^develop\// || $CI_COMMIT_BRANCH == "master")
       changes: [AI/**/*]
   script:
-    - docker build -t emour-ai:$CI_PIPELINE_IID ./AI
+    - docker build -t emour-ai:$IMAGE_TAG ./AI
 
 deploy:ai:dev:
   stage: deploy
@@ -93,7 +96,7 @@ deploy:ai:dev:
     - if: $CI_COMMIT_BRANCH =~ /^develop\//
       changes: [AI/**/*]
   script:
-    - /opt/emour/scripts/deploy.sh dev ai $CI_PIPELINE_IID
+    - /opt/emour/scripts/deploy.sh dev ai $IMAGE_TAG
   environment: { name: development }
 
 deploy:ai:prod:
@@ -104,5 +107,5 @@ deploy:ai:prod:
     - if: $CI_COMMIT_BRANCH == "master"
       changes: [AI/**/*]
   script:
-    - /opt/emour/scripts/deploy.sh prod ai $CI_PIPELINE_IID
+    - /opt/emour/scripts/deploy.sh prod ai $IMAGE_TAG
   environment: { name: production }
