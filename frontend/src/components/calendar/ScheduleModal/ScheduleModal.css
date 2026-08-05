@@ -67,6 +67,7 @@
 }
 
 .schedule-modal-form input,
+.schedule-modal-form textarea,
 .schedule-modal-form select {
   width: 100%;
   height: 50px;
@@ -84,14 +85,34 @@
     box-shadow var(--duration-fast) var(--ease-out);
 }
 
-.schedule-modal-form input::placeholder {
+.schedule-modal-form textarea {
+  min-height: 72px;
+  height: auto;
+  padding: 13px 16px;
+  resize: none;
+  line-height: var(--leading-relaxed);
+  overflow-wrap: anywhere;
+}
+
+.schedule-modal-form input::placeholder,
+.schedule-modal-form textarea::placeholder {
   color: var(--color-text-placeholder);
 }
 
 .schedule-modal-form input:focus,
+.schedule-modal-form textarea:focus,
 .schedule-modal-form select:focus {
   border-color: var(--color-primary);
   box-shadow: var(--focus-ring);
+}
+
+.schedule-modal-character-count {
+  align-self: flex-end;
+  margin-top: -3px;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-caption);
+  font-weight: 500;
+  line-height: 1;
 }
 
 /* =========================
@@ -245,6 +266,7 @@
 
 .schedule-modal button:disabled,
 .schedule-modal input:disabled,
+.schedule-modal textarea:disabled,
 .schedule-modal select:disabled {
   cursor: not-allowed;
   opacity: 0.55;

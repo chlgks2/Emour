@@ -78,6 +78,9 @@
   font-size: var(--font-body);
   font-weight: 500;
   line-height: var(--leading-relaxed);
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
   transition:
     border-color var(--duration-fast) var(--ease-out),
     box-shadow var(--duration-fast) var(--ease-out);
@@ -90,6 +93,15 @@
 .diary-modal-form textarea:focus {
   border-color: var(--color-primary);
   box-shadow: var(--focus-ring);
+}
+
+.diary-modal-character-count {
+  align-self: flex-end;
+  margin-top: -3px;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-caption);
+  font-weight: 500;
+  line-height: 1;
 }
 
 .diary-modal-actions {

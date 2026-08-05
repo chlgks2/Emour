@@ -49,11 +49,52 @@ const DEFAULT_HOME = {
  * 신호만 보낸다.
  */
 const HOME_BACKGROUND_EVENT = "emour:home-background-changed";
+const HOME_BACKGROUND_PREVIEW_PREFIX = "emour:home-background-preview:";
 let currentHomeBackgroundUrl = homeBg;
+let cachedHomeImageSource = "";
+let cachedHomeImagePromise = null;
 
 /** 지금 홈 배경으로 쓰이는 사진 주소. 사용자가 바꾼 적 없으면 기본 사진. */
 export function getHomeBackgroundUrl() {
   return currentHomeBackgroundUrl;
+}
+
+export function getCachedHomeBackground(userId) {
+  if (!userId) return "";
+  try {
+    return localStorage.getItem(`${HOME_BACKGROUND_PREVIEW_PREFIX}${userId}`) ?? "";
+  } catch {
+    return "";
+  }
+}
+
+/** 새로고침 첫 프레임에 사용할 작은 사용자별 배경 미리보기를 저장한다. */
+export async function cacheHomeBackgroundPreview(imageUrl, userId) {
+  if (!imageUrl || !userId) return;
+
+  try {
+    const preview = await new Promise((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = 48;
+        canvas.height = 48;
+        const context = canvas.getContext("2d");
+        if (!context) {
+          reject(new Error("canvas context unavailable"));
+          return;
+        }
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL("image/jpeg", 0.72));
+      };
+      image.onerror = reject;
+      image.src = imageUrl;
+    });
+
+    localStorage.setItem(`${HOME_BACKGROUND_PREVIEW_PREFIX}${userId}`, preview);
+  } catch {
+    // 미리보기 캐시 실패는 실제 홈 이미지 표시를 막지 않는다.
+  }
 }
 
 export function subscribeHomeBackground(listener) {
@@ -62,8 +103,29 @@ export function subscribeHomeBackground(listener) {
 }
 
 function notifyHomeBackgroundChanged(imageUrl = homeBg) {
-  currentHomeBackgroundUrl = imageUrl || homeBg;
+  const nextImageUrl = imageUrl || homeBg;
+  if (currentHomeBackgroundUrl === nextImageUrl) return;
+  currentHomeBackgroundUrl = nextImageUrl;
   window.dispatchEvent(new CustomEvent(HOME_BACKGROUND_EVENT));
+}
+
+/** 외곽 배경 상태와 구독 중인 화면을 항상 같은 값으로 갱신한다. */
+export function applyHomeBackground(imageUrl) {
+  notifyHomeBackgroundChanged(imageUrl);
+}
+
+/**
+ * 홈 화면을 거치지 않고 새로고침한 경우에도 무대 배경을 서버 설정과 맞춘다.
+ * 보호 이미지 주소는 새로고침 전에 만든 blob URL을 재사용할 수 없으므로
+ * localStorage 대신 서버 경로를 다시 받아 매번 유효한 URL로 변환한다.
+ */
+export async function refreshHomeBackground() {
+  const sharedHome = await mapHomeSetting(await fetchHomeSetting());
+  return sharedHome.imageUrl;
+}
+
+export function resetHomeBackground() {
+  notifyHomeBackgroundChanged(homeBg);
 }
 
 export async function fetchHomeScreen() {
@@ -97,7 +159,20 @@ async function fetchHomeSetting() {
 }
 
 async function resolveHomeImage(imageUrl) {
-  return (await resolveProtectedImageUrl(imageUrl)) || homeBg;
+  if (!imageUrl) return homeBg;
+
+  // 같은 보호 이미지를 여러 화면이 동시에 조회해도 blob URL은 한 번만 만든다.
+  // 매번 새 object URL을 만들면 브라우저는 다른 이미지로 판단해 외부 배경이 깜빡인다.
+  if (cachedHomeImageSource === imageUrl && cachedHomeImagePromise) {
+    return cachedHomeImagePromise;
+  }
+
+  cachedHomeImageSource = imageUrl;
+  cachedHomeImagePromise = resolveProtectedImageUrl(imageUrl)
+    .then((resolvedUrl) => resolvedUrl || homeBg)
+    .catch(() => homeBg);
+
+  return cachedHomeImagePromise;
 }
 
 function rgbToHex(value) {
@@ -201,6 +276,7 @@ export async function saveHomeCustomization({
 
   const saved = await mapHomeSetting(response?.data ?? response);
   notifyHomeBackgroundChanged(saved.imageUrl);
+  cacheHomeBackgroundPreview(saved.imageUrl, getCurrentUser()?.userId);
   return saved;
 }
 
@@ -212,6 +288,10 @@ export async function uploadHomeImage(file) {
     method: "POST",
     body: formData,
   });
+
+  // 서버가 같은 파일 경로에 새 이미지를 저장할 수 있으므로 다음 조회는 다시 변환한다.
+  cachedHomeImageSource = "";
+  cachedHomeImagePromise = null;
 
   return response?.data ?? response ?? null;
 }

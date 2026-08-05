@@ -4,9 +4,15 @@ import {
   APP_DESIGN_WIDTH,
 } from './appViewport.js'
 import {
+  applyHomeBackground,
+  cacheHomeBackgroundPreview,
+  getCachedHomeBackground,
   getHomeBackgroundUrl,
+  refreshHomeBackground,
+  resetHomeBackground,
   subscribeHomeBackground,
 } from '../../api/homeApi.js'
+import { useAuth } from '../../hooks/useAuth.js'
 import './AppViewport.css'
 
 /*
@@ -27,6 +33,7 @@ const STAGE_PADDING = 0
  *    대신 뷰포트 좌표를 쓰는 코드는 appViewport.js 의 변환 헬퍼를 거쳐야 한다.
  */
 function AppViewport({ children }) {
+  const { isAuthenticated, user } = useAuth()
   const [scale, setScale] = useState(1)
 
   /*
@@ -35,7 +42,7 @@ function AppViewport({ children }) {
    * 계정이 바뀌면 홈 화면이 열릴 때 알림이 온다. 둘 다 다시 읽어서 갈아끼운다.
    */
   const [backdropUrl, setBackdropUrl] = useState(
-    getHomeBackgroundUrl,
+    () => getCachedHomeBackground(user?.userId) || getHomeBackgroundUrl(),
   )
 
   useEffect(
@@ -45,6 +52,37 @@ function AppViewport({ children }) {
       }),
     [],
   )
+
+  useEffect(() => {
+    let cancelled = false
+
+    if (!isAuthenticated || !user?.userId) {
+      resetHomeBackground()
+      return undefined
+    }
+
+    const cachedBackground = getCachedHomeBackground(user.userId)
+    if (cachedBackground) {
+      applyHomeBackground(cachedBackground)
+    }
+
+    refreshHomeBackground()
+      .then((imageUrl) => {
+        if (!cancelled) {
+          applyHomeBackground(imageUrl)
+          cacheHomeBackgroundPreview(imageUrl, user.userId)
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          resetHomeBackground()
+        }
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [isAuthenticated, user?.userId])
 
   useEffect(() => {
     const updateScale = () => {
