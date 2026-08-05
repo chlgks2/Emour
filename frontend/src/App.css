@@ -1,0 +1,22 @@
+/*
+ * 하단 내비게이션이 붙는 페이지의 골격.
+ *
+ * 예전에는 홈·대시보드만 별도 핑크 테마를 덮어썼지만,
+ * 이제 모든 화면이 tokens.css 의 CI 팔레트 하나만 쓰기 때문에
+ * 화면별 색상 오버라이드는 두지 않는다.
+ */
+.page-with-navigation {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  overflow: hidden;
+  background: var(--color-background);
+}
+
+.page-with-navigation-content {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}

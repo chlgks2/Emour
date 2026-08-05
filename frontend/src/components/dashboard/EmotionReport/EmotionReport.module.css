@@ -1,0 +1,143 @@
+/*
+ * 리포트 본문만 담당한다.
+ * 면(브랜드 로즈)과 제목·기간 선택은 감싸는 섹션(DashboardPage)이 갖는다.
+ */
+
+/* 한 줄을 다 쓰므로 도넛을 키우고 범례를 두 열로 편다 */
+.body {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+/* 서식은 공용 .empty-note 가 정한다. */
+.emptyText {
+  padding: 4px 0 6px;
+}
+
+.donut {
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/*
+ * 면 위에 올라가므로 구멍도 그 면과 같은 색이어야 도넛으로 보인다.
+ * 감정 리포트는 로즈 면 위(--panel-tint)지만 대화 기록 안에서는 흰 면 위라,
+ * 감싸는 쪽이 --donut-hole 로 바꿔 끼울 수 있게 열어 둔다.
+ */
+.donutHole {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--donut-hole, var(--panel-tint));
+}
+
+/* 폭이 넓어졌으니 한 줄로 길게 늘어놓지 않고 두 열로 접는다 */
+.legend {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 10px;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+@media (max-width: 420px) {
+  .body {
+    gap: 8px;
+  }
+
+  .donut {
+    width: 68px;
+    height: 68px;
+  }
+
+  .donutHole {
+    width: 36px;
+    height: 36px;
+  }
+
+  .legend {
+    gap: 5px 8px;
+  }
+
+  .legendItem {
+    gap: 4px;
+    /* 두 열로 접히므로 9px 까지 줄일 이유가 없다 (읽히는 하한을 지킨다) */
+    font-size: 11px;
+    white-space: nowrap;
+  }
+
+  .dot {
+    width: 6px;
+    height: 6px;
+  }
+}
+.reportWrapper {
+  display: grid;
+  gap: 12px;
+}
+
+.filterPanel summary {
+  width: fit-content;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  list-style: none;
+}
+
+.filterPanel summary::-webkit-details-marker {
+  display: none;
+}
+
+.filterOptions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 9px;
+}
+
+.filterChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 28px;
+  padding: 0 9px;
+  border: 1px solid var(--color-divider);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.48);
+  color: var(--color-text-sub);
+  font-size: 11px;
+  opacity: 0.55;
+}
+
+.filterChipActive {
+  border-color: var(--filter-emotion-color);
+  background: color-mix(in srgb, var(--filter-emotion-color) 16%, white);
+  color: var(--filter-emotion-color);
+  opacity: 1;
+}

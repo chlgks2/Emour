@@ -1,14 +1,39 @@
 services:
+  ai:
+    build:
+      # compose.yaml 위치를 기준으로 저장소의 AI 프로젝트를 빌드합니다.
+      context: ../../AI
+      dockerfile: Dockerfile
+    environment:
+      # 기본값은 Mock 분석기(API 키·모델 다운로드 없이 연동 확인용).
+      # 파인튜닝 KcELECTRA 모델로 테스트하려면 .env 에 LLM_PROVIDER=local 을 넣으세요.
+      LLM_PROVIDER: ${LLM_PROVIDER:-mock}
+      MOCK_STRATEGY: ${MOCK_STRATEGY:-hash}
+      # LLM_PROVIDER=local 일 때 사용. HF repo id(공개 repo면 토큰 불필요).
+      LOCAL_MODEL_PATH: ${LOCAL_MODEL_PATH:-chlgks/emour-emotion-kcelectra}
+      # 직전 대화(context) 사용 여부. 단일 문장 모델이므로 기본 false.
+      LOCAL_USE_CONTEXT: ${LOCAL_USE_CONTEXT:-false}
+      MAX_TARGET: ${AI_MAX_TARGET:-10}
+      MAX_CONTEXT: ${AI_MAX_CONTEXT:-10}
+    ports:
+      # 호스트의 8083 포트를 AI 컨테이너 내부 8000 포트에 연결합니다.
+      - '8083:8000'
+    restart: unless-stopped
+
   mysql:
     image: 'mysql:latest'
     environment:
-      - 'MYSQL_DATABASE=mydatabase'
-      - 'MYSQL_PASSWORD=secret'
-      - 'MYSQL_ROOT_PASSWORD=verysecret'
-      - 'MYSQL_USER=myuser'
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_USER: ${MYSQL_USER}
+    volumes:
+      # MySQL 데이터가 처음 만들어질 때 프로젝트 스키마를 자동 적용합니다.
+      - './Emour_SQL_schema.sql:/docker-entrypoint-initdb.d/01-emour-schema.sql:ro'
     ports:
+      # 기존 로컬 MySQL과 충돌하지 않도록 사용 가능한 호스트 포트를 자동 배정합니다.
       - '3306'
   redis:
     image: 'redis:latest'
     ports:
-      - '6379'
+      - '127.0.0.1:${REDIS_PORT:-6379}:6379'

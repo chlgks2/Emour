@@ -1,0 +1,731 @@
+.calendar-page {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-rows: var(--topbar-height) minmax(0, 1fr) auto;
+  overflow: hidden;
+  background: var(--color-background);
+}
+
+/* =========================
+   상단 헤더
+========================= */
+
+.calendar-header {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--color-divider);
+  background: color-mix(in srgb, var(--color-background) 86%, transparent);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+/* 채팅·앨범·마이페이지 상단바와 같은 서식 (tokens.css --font-topbar-title) */
+.calendar-header h1 {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: var(--font-topbar-title);
+  font-weight: 800;
+  text-align: center;
+}
+
+/* =========================
+   스크롤 영역
+========================= */
+
+.calendar-scroll-area {
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 16px var(--page-padding-x) 28px;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
+/* =========================
+   로딩 및 오류 메시지
+========================= */
+
+.calendar-status {
+  margin-bottom: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-tint);
+  color: var(--color-text-secondary);
+  font-size: var(--font-caption);
+  text-align: center;
+}
+
+.calendar-status-error {
+  border-color: var(--color-primary-soft);
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+}
+
+/* =========================
+   공통 카드
+========================= */
+
+/*
+ * 표면 규약(styles/surfaces.css)과 같은 결.
+ * 그림자로 띄우지 않고 헤어라인으로 경계만 만든다.
+ * 화면 안에 카드가 여러 장 떠 있으면 정보 위계가 사라진다.
+ */
+.calendar-month-section,
+.selected-day-card {
+  border: 1px solid var(--color-border);
+  border-radius: var(--card-radius);
+  background: var(--card-surface);
+}
+
+.calendar-month-section {
+  padding: 18px 14px 16px;
+}
+
+/* =========================
+   월 이동
+========================= */
+
+.calendar-month-navigation {
+  display: grid;
+  grid-template-columns: 38px 1fr 38px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+/* 달 이름 + 날짜 색 기준 물음표. 격자의 가운데 칸 안에서 나란히 선다. */
+.calendar-month-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.calendar-month-navigation h2 {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: var(--font-title);
+  font-weight: 800;
+  text-align: center;
+}
+
+.calendar-month-navigation button {
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-tint);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
+}
+
+.calendar-month-navigation button:hover:not(:disabled) {
+  background: var(--color-primary-faint);
+  color: var(--color-text-accent);
+}
+
+/* =========================
+   요일
+========================= */
+
+.calendar-weekdays,
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.calendar-weekdays {
+  gap: 5px;
+  margin-bottom: 8px;
+}
+
+.calendar-weekdays span {
+  color: var(--color-text-tertiary);
+  font-size: var(--font-micro);
+  font-weight: 700;
+  text-align: center;
+}
+
+.calendar-weekdays .weekday-sunday {
+  color: var(--color-primary);
+}
+
+.calendar-weekdays .weekday-saturday {
+  color: var(--color-info);
+}
+
+/* =========================
+   날짜 그리드
+========================= */
+
+.calendar-grid {
+  gap: 5px;
+}
+
+.calendar-day-cell {
+  position: relative;
+  isolation: isolate;
+  min-width: 0;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-sunken);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  transition: box-shadow var(--duration-fast) var(--ease-out);
+}
+
+/*
+  두 사람의 감정 색.
+  예전에는 셀을 좌/우 절반으로 딱 잘라 칠했는데, 경계선이 그대로 드러나
+  대시보드의 감정 원(부드러운 그라데이션)과 톤이 맞지 않았다.
+  이제 utils/moodEmotion.buildDayGradient() 가 만든 같은 그라데이션을
+  --day-mood-gradient 로 받아 쓴다. (좌상단=나, 우하단=상대방, oklch 보간)
+*/
+.calendar-day-cell::before {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  background: var(--day-mood-gradient);
+}
+
+/* 날짜와 표시 점을 배경보다 위에 배치 */
+.calendar-day-cell > * {
+  z-index: 1;
+}
+
+/*
+ * hover 는 칸을 띄우지 않고 색만 한 단계 어둡게 한다.
+ * 칸이 42개나 붙어 있어서 하나가 튀어오르면 격자 전체가 출렁이는 것처럼 보였다.
+ *
+ * 칸마다 배경이 다르므로(감정 그라데이션 / 빈 칸 회색) 고정 색을 지정하면
+ * 어떤 칸은 진해지고 어떤 칸은 오히려 흐려진다. 반투명 검정을 덧씌워
+ * 어떤 색 위에서든 같은 비율로 어두워지게 한다.
+ */
+.calendar-day-cell::after {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  background-color: transparent;
+  transition: background-color var(--duration-fast) var(--ease-out);
+}
+
+.calendar-day-cell:hover:not(:disabled)::after {
+  background-color: rgba(0, 0, 0, 0.08);
+}
+
+/*
+ * 선택 표시는 대시보드 감정 원(EmotionCalendarStrip .moodCircleSelected)과 같은 방식.
+ *
+ * 예전에는 안쪽 테두리 + 분홍 번짐 그림자였는데, 번짐이 셀 아래로 퍼져서
+ * 눌린 자리에 그라데이션이 낀 것처럼 보였다. 감정 색까지 얹히면 더 지저분하다.
+ *
+ * 대시보드 감정 원처럼 배경색으로 한 겹 띄우지는 않는다.
+ * 원 7개가 널찍이 떨어져 있는 스트립과 달리 여기는 칸이 5px 간격으로 붙어 있어서,
+ * 띄우는 2px 까지 더하면 링이 격자 간격을 거의 다 먹고 그 칸만 밖으로 삐져나온 것처럼 보였다.
+ * 칸에 딱 붙은 로즈 링 하나로 충분하다. (흰 카드 위라 얇아도 또렷하다)
+ */
+.calendar-day-cell-selected {
+  z-index: 1;
+  box-shadow: 0 0 0 2px var(--color-primary);
+}
+
+.calendar-day-cell-outside {
+  opacity: 0.36;
+}
+
+.calendar-day-number {
+  position: absolute;
+  top: 6px;
+  left: 0;
+  width: 100%;
+  font-size: var(--font-caption);
+  font-weight: 700;
+  text-align: center;
+  /* 감정 색 위에 올라가도 읽히도록 아주 옅은 흰 후광 */
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.55);
+}
+
+.calendar-day-number-sunday {
+  color: var(--color-primary-strong);
+}
+
+.calendar-day-number-saturday {
+  color: var(--color-info);
+}
+
+/* =========================
+   기념일·일정 표시 점
+========================= */
+
+.calendar-day-dots {
+  position: absolute;
+  right: 0;
+  bottom: 6px;
+  left: 0;
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+}
+
+.anniversary-dot,
+.schedule-dot {
+  display: inline-block;
+  flex-shrink: 0;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.7);
+}
+
+.anniversary-dot {
+  background: var(--color-primary);
+}
+
+.schedule-dot {
+  background: var(--emotion-gratitude);
+}
+
+/* =========================
+   섹션 편집 버튼
+========================= */
+
+/*
+ * 섹션 제목 줄 안의 작은 동작 버튼 (일정 / 기념일 / 한 줄 일기 옆의 '편집').
+ * 달력 아래 큰 버튼 두 개를 따로 두면 달력과 상세 사이가 끊기고,
+ * "무엇을 고치는 버튼인지"도 제목에서 떨어져 있어 한 번 더 읽어야 했다.
+ *
+ * 세 버튼은 여는 화면이 조금씩 다르지만(생성 모달 / 관리 시트 / 작성 시트)
+ * 제목 옆에서 하는 일은 "이 섹션을 손본다" 하나라 같은 말과 같은 아이콘을 쓴다.
+ */
+.section-action-button,
+.diary-edit-button {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-tint);
+  color: var(--color-text-secondary);
+  font-size: var(--font-micro);
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
+}
+
+.section-action-button:hover:not(:disabled) {
+  background: var(--color-primary-faint);
+  color: var(--color-text-accent);
+}
+
+/*
+ * 제목 옆 여닫기 화살표.
+ *
+ * 면도 테두리도 없이 화살표만 둔다. 알약은 이 화면에서 '다른 화면을 연다'
+ * 는 뜻으로 이미 쓰이고 있어서(추가·편집), 제자리에서 여닫는 조작에까지
+ * 같은 옷을 입히면 둘이 같은 종류로 보인다.
+ *
+ * 보이는 건 16px 화살표뿐이지만 padding 으로 눌리는 영역을 넓혀 둔다.
+ * 손가락으로 누르는 화면이라 아이콘 크기가 곧 터치 영역이면 너무 작다.
+ */
+.section-toggle-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px;
+  margin: -5px 0 -5px -1px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  transition:
+    color var(--duration-fast) var(--ease-out),
+    background-color var(--duration-fast) var(--ease-out);
+}
+
+.section-toggle-button:hover {
+  background: var(--color-surface-tint);
+  color: var(--color-text-accent);
+}
+
+/* 아이콘을 갈아끼우지 않고 돌린다 — 같은 것이 방향만 바꾼 것으로 읽힌다 */
+.section-toggle-button svg {
+  transition: transform var(--duration-base) var(--ease-out);
+}
+
+.section-toggle-button[aria-expanded='true'] svg {
+  transform: rotate(180deg);
+}
+
+/* =========================
+   선택 날짜 상세 카드
+========================= */
+
+.selected-day-card {
+  margin-top: 12px;
+  padding: 20px 18px;
+}
+
+/*
+ * 바로 아래 첫 섹션(.selected-day-section)의 border-top 이 이 제목의 밑줄처럼
+ * 보인다. 그런데 둘 사이에 여백이 없어서 선이 날짜에 붙어 있었다.
+ * (사이에 있던 .mood-summary 가 빠지면서 그 margin 도 같이 사라졌다)
+ */
+.selected-day-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.selected-day-header p {
+  margin: 0 0 3px;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-micro);
+  font-weight: 600;
+}
+
+.selected-day-header h2 {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: var(--font-heading);
+  font-weight: 800;
+}
+
+/* =========================
+   감정 요약
+========================= */
+
+.mood-summary {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  margin: 16px 0 4px;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-background);
+}
+
+.mood-summary-item {
+  padding: 13px 14px;
+}
+
+.mood-summary-item + .mood-summary-item {
+  border-left: 1px solid var(--color-border);
+}
+
+.mood-summary-item > span {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-micro);
+  font-weight: 700;
+}
+
+.mood-summary-item div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mood-summary-item i {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border: 1px solid color-mix(in srgb, var(--color-text-primary) 10%, transparent);
+  border-radius: 50%;
+}
+
+.mood-summary-item strong {
+  overflow: hidden;
+  color: var(--color-text-primary);
+  font-size: var(--font-label);
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* =========================
+   상세 공통 섹션
+========================= */
+
+.selected-day-section,
+.diary-section {
+  padding: 16px 0;
+  border-top: 1px solid var(--color-divider);
+}
+
+.diary-section {
+  padding-bottom: 0;
+}
+
+.selected-day-section-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 28px;
+  margin-bottom: 11px;
+}
+
+.selected-day-section-title h3 {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: var(--font-label);
+  font-weight: 700;
+}
+
+.selected-day-section-title h3 span {
+  min-width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 6px;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary-faint);
+  color: var(--color-text-accent);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+/* =========================
+   일정 목록
+========================= */
+
+.schedule-list {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.schedule-list-item {
+  width: 100%;
+  min-height: 42px;
+  display: grid;
+  grid-template-columns: 62px 1fr 18px;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--color-background);
+  color: var(--color-text-primary);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out);
+}
+
+.schedule-list-item:hover {
+  background: var(--color-surface-tint);
+}
+
+.schedule-list-item time {
+  color: var(--color-warning);
+  font-size: var(--font-micro);
+  font-weight: 700;
+}
+
+.schedule-list-item span {
+  min-width: 0;
+  overflow: hidden;
+  font-size: var(--font-label);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.schedule-list-chevron {
+  color: var(--color-text-placeholder);
+}
+
+/* =========================
+   기념일 목록
+========================= */
+
+.anniversary-list {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.anniversary-list-item {
+  width: 100%;
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 12px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary-faint);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out);
+}
+
+/*
+ * 호버는 "손이 닿았다"는 표시일 뿐이라, 두 목록에서 변화의 크기가 같아야 한다.
+ *
+ * 옅은 분홍(--color-primary-faint #fdeef2)에서 진한 분홍(--color-primary-soft
+ * #f0c3ce)으로 갈아끼우고 있었다. 바로 위 일정 항목은 #fbfaf9 -> #f3efee 로
+ * 거의 티가 안 나는데 기념일만 확 붉어져서, 손이 닿은 정도가 아니라 선택된
+ * 항목처럼 보였다.
+ *
+ * 다른 색으로 건너뛰지 않고 원래 면에 강조색을 조금 섞는다. 기준이 되는
+ * 토큰이 바뀌어도 변화의 폭은 그대로 8% 로 남는다.
+ */
+.anniversary-list-item:hover {
+  background: color-mix(in srgb, var(--color-primary-faint) 92%, var(--color-primary));
+}
+
+.anniversary-list-item strong {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--color-text-accent);
+  font-size: var(--font-label);
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.anniversary-list-item small {
+  flex-shrink: 0;
+  padding: 4px 8px;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--color-text-accent);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.anniversary-list-item > svg {
+  flex-shrink: 0;
+  color: var(--color-primary);
+}
+
+/* =========================
+   비어 있는 영역
+========================= */
+
+.diary-content {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-caption);
+  line-height: var(--leading-relaxed);
+}
+
+/* 빈 상태 문구 서식은 공용 .empty-note 를 따른다 (styles/surfaces.css) */
+/*
+ * 서식·색은 공용 .empty-note 가 정한다. 여백만 여기서.
+ *
+ * 예전에는 회색 면을 깔고 가운데 정렬한 상자였다. 대시보드의 같은 성격 문구
+ * ('아직 기록된 감정이 없어요.' 등)는 상자 없이 왼쪽에 그대로 놓이는데,
+ * 여기만 상자에 담겨 있으니 "뭔가 들어 있다가 비었다"처럼 읽혔다.
+ */
+.empty-section-message {
+  margin: 0;
+  padding: 2px 0 4px;
+}
+
+.diary-content {
+  padding: 14px;
+  border-radius: var(--radius-sm);
+  background: var(--color-background);
+  font-size: var(--font-label);
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+/* =========================
+   한 줄 일기
+========================= */
+
+/* 모양은 .section-action-button 과 함께 위에서 정의한다 (일정·기념일 버튼과 동일) */
+.diary-edit-button:hover:not(:disabled) {
+  background: var(--color-primary-faint);
+  color: var(--color-text-accent);
+}
+
+/*
+ * 인라인 편집기(.diary-editor / .diary-cancel-button / .diary-save-button)는
+ * 없앴다. 같은 카드 안의 일정·기념일은 시트로 여는데 일기만 제자리에서
+ * 펼쳐져서, 편집을 시작하면 아래 내용이 통째로 밀려 내려갔다.
+ * 이제 셋 다 같은 바텀 시트로 연다. (components/calendar/DiaryModal)
+ */
+
+/* =========================
+   비활성화 상태
+========================= */
+
+.calendar-month-navigation button:disabled,
+.calendar-day-cell:disabled,
+.section-action-button:disabled,
+.diary-edit-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* =========================
+   작은 화면 대응
+========================= */
+
+@media (max-width: 360px) {
+  .calendar-scroll-area {
+    padding-right: 14px;
+    padding-left: 14px;
+  }
+
+  .calendar-month-section {
+    padding-right: 10px;
+    padding-left: 10px;
+  }
+
+  .calendar-grid,
+  .calendar-weekdays {
+    gap: 3px;
+  }
+
+  .calendar-day-cell {
+    border-radius: var(--radius-xs);
+  }
+}
+
+/* 공용 Button(primary)과 동일한 눌림 피드백 — 앱 전체에서 버튼 반응이 같게 */
+.section-action-button:not(:disabled):active,
+.diary-edit-button:not(:disabled):active {
+  transform: scale(0.98);
+}

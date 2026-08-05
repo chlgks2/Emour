@@ -1,0 +1,12 @@
+﻿기능,METHOD,URL,담당자,상태
+이메일 회원가입,POST,/auth/signup,최 한,시작 전
+이메일 중복 확인,GET,/auth/email-check,최 한,시작 전
+이메일 로그인,POST,/auth/login,최 한,시작 전
+로그아웃,POST,/auth/logout,최 한,시작 전
+Access Token 재발급,POST,/auth/refresh,최 한,시작 전
+비밀번호 재설정 이메일 발송,POST,/auth/password/email,최 한,시작 전
+인증번호 확인,POST,/auth/password/verify,최 한,시작 전
+비밀번호 재설정,PATCH,/auth/password,최 한,시작 전
+이메일 인증코드 발송,POST,/auth/email/send,최 한,시작 전
+이메일 인증코드 확인,POST,/auth/email/verify,최 한,시작 전
+소셜 로그인 (카카오/네이버/구글),GET,/auth/social/{provider},최 한,시작 전

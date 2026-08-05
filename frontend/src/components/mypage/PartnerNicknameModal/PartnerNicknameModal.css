@@ -1,0 +1,223 @@
+/*
+ * 이 파일에는 '.mypage-partner-edit-button'(애칭 수정 버튼) 규칙도 들어 있었다.
+ * 버튼은 모달이 아니라 마이페이지 화면에 있는데 스타일만 여기 남아 있었고,
+ * 30x30 정사각형에 padding:0 으로 못박아 두는 바람에 MyPagePage.css 에서
+ * 프로필 '수정' 버튼과 같은 알약 모양으로 맞춰도 계속 되돌려졌다.
+ * (같은 특이도라 나중에 로드되는 이 파일이 이겼다)
+ * 이제 버튼 스타일은 MyPagePage.css 한 곳에만 있다.
+ */
+
+/* 모달 배경 */
+
+.partner-nickname-backdrop {
+  position: absolute;
+  z-index: 70;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: var(--color-scrim);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  animation: partner-nickname-fade var(--duration-base) var(--ease-out);
+}
+
+@keyframes partner-nickname-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .partner-nickname-backdrop {
+    animation: none;
+  }
+}
+
+/* 모달 */
+
+.partner-nickname-modal {
+  width: 100%;
+  padding: 22px;
+  border-radius: var(--card-radius);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-float);
+}
+
+.partner-nickname-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.partner-nickname-header > div {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.partner-nickname-icon {
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  background: var(--color-primary-faint);
+  color: var(--color-primary);
+}
+
+.partner-nickname-header h2 {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: var(--font-heading);
+  font-weight: 800;
+}
+
+.partner-nickname-header > button {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
+}
+
+.partner-nickname-header > button:hover:not(:disabled) {
+  background: var(--color-surface-sunken);
+  color: var(--color-text-primary);
+}
+
+/* 입력 폼 */
+
+.partner-nickname-form {
+  margin-top: 20px;
+}
+
+.partner-nickname-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.partner-nickname-form label > span {
+  color: var(--color-text-secondary);
+  font-size: var(--font-label);
+  font-weight: 600;
+}
+
+.partner-nickname-form input {
+  width: 100%;
+  height: 50px;
+  padding: 0 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  outline: none;
+  background: var(--color-background);
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: var(--font-body);
+  transition:
+    border-color var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out);
+}
+
+.partner-nickname-form input::placeholder {
+  color: var(--color-text-placeholder);
+}
+
+.partner-nickname-form input:focus {
+  border-color: var(--color-primary);
+  box-shadow: var(--focus-ring);
+}
+
+.partner-nickname-field-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 7px;
+}
+
+.partner-nickname-field-footer span,
+.partner-nickname-field-footer strong {
+  color: var(--color-text-tertiary);
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.partner-nickname-error {
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  border-radius: var(--radius-xs);
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+  font-size: var(--font-micro);
+}
+
+/* 버튼 */
+
+.partner-nickname-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-divider);
+}
+
+.partner-nickname-actions button {
+  height: 48px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  font-size: var(--font-label);
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out);
+}
+
+.partner-nickname-cancel {
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+}
+
+.partner-nickname-cancel:hover:not(:disabled) {
+  background: var(--color-surface-tint);
+  border-color: var(--color-primary-soft);
+}
+
+.partner-nickname-save {
+  background: var(--color-action);
+  color: var(--color-text-on-primary);
+}
+
+.partner-nickname-save:hover:not(:disabled) {
+  background: var(--color-action-hover);
+}
+
+.partner-nickname-actions button:disabled,
+.partner-nickname-header > button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* 공용 Button(primary)과 동일한 눌림 피드백 — 앱 전체에서 버튼 반응이 같게 */
+.partner-nickname-save:not(:disabled):active {
+  transform: scale(0.98);
+}

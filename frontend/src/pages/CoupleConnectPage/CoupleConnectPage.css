@@ -1,0 +1,160 @@
+/*
+ * 커플 연결 화면.
+ * 로그인/회원가입과 같은 "인증 흐름"의 마지막 단계이므로 톤앤매너도 그쪽에 맞춘다.
+ *  - 카드로 감싸지 않고 배경 위에 바로 올린다 (LoginPage/SignUpPage 와 동일)
+ *  - 버튼은 공용 Button, 입력창은 공용 TextField 컴포넌트를 쓴다
+ *  - 색/라디우스/그림자는 전부 토큰만 사용
+ */
+
+.couple-connect-page {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px var(--page-padding-x) calc(40px + var(--safe-bottom));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--color-background);
+}
+
+.couple-connect-content {
+  width: 100%;
+  margin: auto 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 28px;
+}
+
+.couple-connect-content > * {
+  flex-shrink: 0;
+}
+
+/* 상단 원형 하트 — 안쪽 그림자 없이 단색 + 옅은 링으로 정리 */
+.couple-heart-symbol {
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 22px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: var(--color-text-on-primary);
+  box-shadow: 0 0 0 8px var(--color-primary-faint);
+}
+
+.couple-connect-eyebrow {
+  margin: 0 0 10px;
+  color: var(--color-primary-strong);
+  font-size: var(--font-micro);
+  font-weight: 800;
+  letter-spacing: 0.14em;
+}
+
+.couple-connect-title {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: var(--font-display);
+  font-weight: 800;
+  line-height: 1.35;
+  letter-spacing: var(--tracking-tight);
+  text-align: center;
+}
+
+.couple-connect-description {
+  margin: 12px 0 26px;
+  color: var(--color-text-secondary);
+  font-size: var(--font-label);
+  line-height: var(--leading-relaxed);
+  text-align: center;
+}
+
+.couple-connect-cta {
+  width: 100%;
+}
+
+/* 또는 구분선 — LoginPage 의 .orDivider 와 같은 형태 */
+.connect-divider {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 24px 0 20px;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-caption);
+}
+
+.connect-divider span {
+  flex: 1;
+  height: 1px;
+  background: var(--color-divider);
+}
+
+/* 방 코드 입력 영역 */
+.room-code-form {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.room-code-title {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: var(--font-heading);
+  font-weight: 800;
+  text-align: center;
+}
+
+.room-code-description {
+  margin: 0 0 4px;
+  color: var(--color-text-secondary);
+  font-size: var(--font-caption);
+  line-height: var(--leading-normal);
+  text-align: center;
+}
+
+.room-code-submit {
+  margin-top: 4px;
+}
+
+/* 처리 결과 메시지 */
+.connect-feedback {
+  width: 100%;
+  margin: 0 0 16px;
+  padding: 11px 14px;
+  border-radius: var(--radius-md);
+  font-size: var(--font-label);
+  font-weight: 600;
+  line-height: var(--leading-normal);
+  text-align: center;
+}
+
+.connect-feedback-info {
+  background: var(--color-info-bg);
+  color: var(--color-info);
+}
+
+.connect-feedback-success {
+  background: var(--color-success-bg);
+  color: var(--color-success);
+}
+
+.connect-feedback-error {
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+}
+
+/* 작은 모바일 화면 */
+@media (max-width: 360px) {
+  .couple-connect-page {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .couple-connect-title {
+    font-size: 23px;
+  }
+}

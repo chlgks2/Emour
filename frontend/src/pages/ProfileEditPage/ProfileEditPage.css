@@ -1,0 +1,387 @@
+.profile-edit-page {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-rows: var(--topbar-height) minmax(0, 1fr);
+  overflow: hidden;
+  background: var(--color-background);
+}
+
+/* =========================
+   헤더
+========================= */
+
+.profile-edit-header {
+  position: relative;
+  z-index: 10;
+  display: grid;
+  grid-template-columns: 40px 1fr 40px;
+  align-items: center;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--color-divider);
+  background: color-mix(in srgb, var(--color-background) 86%, transparent);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.profile-edit-header h1 {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: var(--font-heading);
+  font-weight: 800;
+  text-align: center;
+}
+
+.profile-edit-back-button {
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
+}
+
+.profile-edit-back-button:hover:not(:disabled) {
+  background: var(--color-surface-tint);
+  color: var(--color-text-primary);
+}
+
+.profile-edit-header-spacer {
+  width: 40px;
+}
+
+/* =========================
+   스크롤 영역
+========================= */
+
+.profile-edit-scroll-area {
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 18px var(--page-padding-x) 28px;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
+/* =========================
+   수정 폼
+========================= */
+
+.profile-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 24px 18px;
+  /* 그림자 대신 헤어라인 (styles/surfaces.css 의 .surface-panel 과 같은 결) */
+  border: 1px solid var(--color-border);
+  border-radius: var(--card-radius);
+  background: var(--color-surface);
+}
+
+/* =========================
+   프로필 이미지
+========================= */
+
+.profile-edit-image-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.profile-edit-image {
+  width: 108px;
+  height: 108px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 3px solid var(--color-surface);
+  border-radius: 50%;
+  background: var(--color-primary-faint);
+  color: var(--color-primary);
+  box-shadow: 0 0 0 1px var(--color-border);
+}
+
+.profile-edit-image img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.profile-image-change-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  margin-top: 14px;
+  padding: 9px 16px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-tint);
+  color: var(--color-text-secondary);
+  font-size: var(--font-caption);
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
+}
+
+.profile-image-change-button:hover:not(:disabled) {
+  background: var(--color-primary-faint);
+  color: var(--color-text-accent);
+}
+
+.profile-image-file-input {
+  display: none;
+}
+
+.profile-image-help {
+  margin: 8px 0 0;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-micro);
+}
+
+/* =========================
+   입력 필드
+========================= */
+
+.profile-edit-field {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.profile-edit-field-label {
+  color: var(--color-text-secondary);
+  font-size: var(--font-label);
+  font-weight: 600;
+}
+
+.profile-edit-field input,
+.profile-edit-field textarea {
+  width: 100%;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  outline: none;
+  background: var(--color-background);
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: var(--font-body);
+  transition:
+    border-color var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out);
+}
+
+.profile-edit-field input {
+  height: 50px;
+  padding: 0 16px;
+}
+
+.profile-edit-field textarea {
+  min-height: 90px;
+  padding: 13px 16px;
+  resize: none;
+  line-height: var(--leading-normal);
+}
+
+.profile-edit-field input:focus,
+.profile-edit-field textarea:focus {
+  border-color: var(--color-primary);
+  box-shadow: var(--focus-ring);
+}
+
+.profile-edit-field input[readonly] {
+  color: var(--color-text-tertiary);
+  background: var(--color-surface-sunken);
+  cursor: default;
+}
+
+.profile-edit-field input[readonly]:focus {
+  border-color: var(--color-border);
+  box-shadow: none;
+}
+
+.profile-edit-field input::placeholder,
+.profile-edit-field textarea::placeholder {
+  color: var(--color-text-placeholder);
+}
+
+.profile-edit-help {
+  color: var(--color-text-tertiary);
+  font-size: var(--font-micro);
+  font-weight: 500;
+}
+
+.profile-edit-count {
+  align-self: flex-end;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-micro);
+  font-weight: 500;
+}
+
+/* =========================
+   하단 버튼
+========================= */
+
+.profile-edit-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+  padding-top: 6px;
+}
+
+/* 공용 Button 컴포넌트의 md 규격(52px pill)과 동일. 취소=outline / 저장=primary */
+.profile-edit-actions button {
+  height: 52px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  font-size: var(--font-body);
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out);
+}
+
+.profile-edit-actions button:not(:disabled):active {
+  transform: scale(0.98);
+}
+
+.profile-edit-cancel-button {
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+}
+
+.profile-edit-cancel-button:hover:not(:disabled) {
+  background: var(--color-surface-tint);
+  border-color: var(--color-primary-soft);
+}
+
+.profile-edit-save-button {
+  background: var(--color-action);
+  color: var(--color-text-on-primary);
+  box-shadow: var(--shadow-primary);
+}
+
+.profile-edit-save-button:hover:not(:disabled) {
+  background: var(--color-action-hover);
+}
+
+/* =========================
+   로딩 및 오류
+========================= */
+
+.profile-edit-status {
+  min-height: 260px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 30px 20px;
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--card-radius);
+  background: var(--color-surface);
+  text-align: center;
+}
+
+.profile-edit-status p {
+  margin: 14px 0 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-caption);
+}
+
+.profile-edit-status > button {
+  height: 40px;
+  margin-top: 16px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-tint);
+  color: var(--color-text-secondary);
+  font-size: var(--font-caption);
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease-out);
+}
+
+.profile-edit-status > button:hover:not(:disabled) {
+  background: var(--color-surface-sunken);
+}
+
+.profile-edit-loading-spinner {
+  width: 30px;
+  height: 30px;
+  border: 3px solid var(--color-surface-tint);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: profile-edit-spinner 0.8s linear infinite;
+}
+
+.profile-edit-status-error {
+  border-color: var(--color-primary-soft);
+  background: var(--color-danger-bg);
+}
+
+.profile-edit-status-error p {
+  color: var(--color-danger);
+}
+
+@keyframes profile-edit-spinner {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .profile-edit-loading-spinner {
+    animation-duration: 2.4s;
+  }
+}
+
+/* =========================
+   비활성화 상태
+========================= */
+
+.profile-edit-back-button:disabled,
+.profile-image-change-button:disabled,
+.profile-edit-field input:disabled,
+.profile-edit-field textarea:disabled,
+.profile-edit-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* =========================
+   작은 화면
+========================= */
+
+@media (max-width: 360px) {
+  .profile-edit-scroll-area {
+    padding-right: 14px;
+    padding-left: 14px;
+  }
+
+  .profile-edit-form {
+    padding-right: 15px;
+    padding-left: 15px;
+  }
+
+  .profile-edit-image {
+    width: 96px;
+    height: 96px;
+  }
+}
