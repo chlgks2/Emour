@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { Bookmark, BookmarkX } from "lucide-react";
+import { Bookmark } from "lucide-react";
 import { REACTION_OPTIONS } from "../../../constants/reactions";
 import { toAppViewportRect } from "../../../layouts/AppViewport/appViewport.js";
 import styles from "./MessageActionPopover.module.css";
@@ -142,13 +142,17 @@ export default function MessageActionPopover({
 
       <button
         type="button"
-        className={[styles.iconBtn, styles.bookmarkBtn].join(" ")}
+        className={[
+          styles.iconBtn,
+          styles.bookmarkBtn,
+          isBookmarked ? styles.bookmarkBtnActive : "",
+        ].join(" ")}
         onClick={onToggleBookmark}
         aria-label={isBookmarked ? "북마크 해제" : "북마크 하기"}
         aria-pressed={isBookmarked}
         title={isBookmarked ? "북마크 해제" : "북마크"}
       >
-        {isBookmarked ? <BookmarkX size={18} /> : <Bookmark size={18} />}
+        <Bookmark size={20} fill={isBookmarked ? "currentColor" : "none"} />
       </button>
     </div>
   );

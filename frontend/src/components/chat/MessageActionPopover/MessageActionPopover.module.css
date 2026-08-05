@@ -27,8 +27,8 @@
 .iconBtn {
   /* 브라우저 기본 버튼 padding 이 남으면 안쪽 아이콘이 눌린다 */
   padding: 0;
-  width: 34px;
-  height: 34px;
+  width: 44px;
+  height: 44px;
   flex-shrink: 0;
   border-radius: 50%;
   display: flex;
@@ -55,6 +55,14 @@
 
 .bookmarkBtn {
   color: var(--color-bookmark-strong);
+}
+
+.bookmarkBtnActive {
+  background: color-mix(in srgb, var(--color-bookmark) 20%, transparent);
+}
+
+.bookmarkBtnActive:hover {
+  background: color-mix(in srgb, var(--color-bookmark) 28%, transparent);
 }
 
 .divider {
