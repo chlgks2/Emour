@@ -125,15 +125,14 @@ def parse_llm_output(raw: str, template: PromptTemplate) -> dict[str, str]:
 # ---------------------------------------------------------------------------
 
 async def generate_suggestions(req: SuggestRequest) -> SuggestResponse:
-    # message_id 는 저장하지 않고 응답에 그대로 echo 만 한다.
-    # BE 는 이 message_id 로 원본 메시지와 응답을 매핑해서, 유저가 셋 중 하나를
-    # 선택했을 때 그 메시지를 최종 확정 저장하면 된다.
-    
+    # AI 서버는 요청/응답을 어디에도 저장하지 않는다 (무상태).
+    # BE 는 이 호출을 자기 쪽 원본 메시지와 동기적으로(요청 1번 -> 응답 1번) 매핑해서,
+    # 유저가 셋 중 하나를 선택했을 때 그 메시지를 최종 확정 저장하면 된다.
+
     started = time.perf_counter()
 
     if not SUGGEST_ENABLED:
         return SuggestResponse(
-            message_id=req.message_id,
             blocked=True,
             block_reason="disabled",
             latency_ms=int((time.perf_counter() - started) * 1000),
@@ -142,7 +141,6 @@ async def generate_suggestions(req: SuggestRequest) -> SuggestResponse:
     block_reason = screen_input(req)
     if block_reason:
         return SuggestResponse(
-            message_id=req.message_id,
             blocked=True,
             block_reason=block_reason,  # type: ignore[arg-type]
             latency_ms=int((time.perf_counter() - started) * 1000),
@@ -177,15 +175,16 @@ async def generate_suggestions(req: SuggestRequest) -> SuggestResponse:
             break
         except Exception as e:  # noqa: BLE001 - 파싱/네트워크/타임아웃 모두 동일 처리
             last_error = e
+            # message_id가 없어 요청 단위 완전 추적은 불가하다. speaker_id라도 남겨
+            # "누구 요청에서 실패가 몰리는지" 정도는 로그로 확인할 수 있게 한다.
             logger.warning(
-                "suggest attempt %d failed (message_id=%s, model=%s): %s",
-                attempt + 1, req.message_id, model, e,
+                "suggest attempt %d failed (speaker_id=%s, model=%s): %s",
+                attempt + 1, req.speaker_id, model, e,
             )
 
     if parsed is None:
-        logger.error("suggest failed message_id=%s: %s", req.message_id, last_error)
+        logger.error("suggest failed speaker_id=%s: %s", req.speaker_id, last_error)
         return SuggestResponse(
-            message_id=req.message_id,
             blocked=True,
             block_reason="llm_failure",
             model=model,
@@ -199,7 +198,6 @@ async def generate_suggestions(req: SuggestRequest) -> SuggestResponse:
     ]
 
     return SuggestResponse(
-        message_id=req.message_id,
         suggestions=suggestions,
         model=model,
         prompt_version=template.version,

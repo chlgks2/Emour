@@ -343,7 +343,7 @@ CREATE TABLE `chat_analysis`
                               -- 부정 감정
                               'SADNESS',
                               'ANGER',
-                              'CONFUSION',
+                              'SHYNESS',
                               'DISTRESS',
                               -- 관계 신호
                               'GRATITUDE',

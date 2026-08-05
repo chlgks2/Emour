@@ -99,14 +99,14 @@
   --emotion-worry: #8397bd;
   --emotion-surprise: #56b6d6;
   --emotion-plain: #a29a96;
-  --emotion-embarrassment: #bf94db;
+  --emotion-shyness: #d98fa8;
   --emotion-curiosity: #4fb3bf;
   --emotion-apology: #a396d2;
 
   /* NEGATIVE */
   --emotion-sadness: #5f86c4;
   --emotion-anger: #df6350;
-  --emotion-confusion: #93819f;
+  --emotion-embarrassment: #93819f;
   --emotion-distress: #9a5a83;
   --emotion-hurt: #c04361;
 
