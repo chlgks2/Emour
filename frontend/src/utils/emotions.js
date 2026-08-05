@@ -46,13 +46,13 @@ export const EMOTION_TYPES = [
   { code: "WORRY", label: "걱정", polarity: "NEUTRAL", color: "var(--emotion-worry)", Icon: CloudDrizzle },
   { code: "SURPRISE", label: "놀람", polarity: "NEUTRAL", color: "var(--emotion-surprise)", Icon: Zap },
   { code: "NEUTRAL", label: "평범", polarity: "NEUTRAL", color: "var(--emotion-plain)", Icon: Meh },
-  { code: "EMBARRASSMENT", label: "당황", polarity: "NEUTRAL", color: "var(--emotion-embarrassment)", Icon: CircleAlert },
+  { code: "SHYNESS", label: "부끄러움", polarity: "NEUTRAL", color: "var(--emotion-shyness)", Icon: Waves },
   { code: "CURIOSITY", label: "궁금함", polarity: "NEUTRAL", color: "var(--emotion-curiosity)", Icon: CircleHelp },
   { code: "APOLOGY", label: "사과", polarity: "NEUTRAL", color: "var(--emotion-apology)", Icon: HeartHandshake },
 
   { code: "SADNESS", label: "슬픔", polarity: "NEGATIVE", color: "var(--emotion-sadness)", Icon: CloudRain },
   { code: "ANGER", label: "화남", polarity: "NEGATIVE", color: "var(--emotion-anger)", Icon: Flame },
-  { code: "CONFUSION", label: "혼란", polarity: "NEGATIVE", color: "var(--emotion-confusion)", Icon: Waves },
+  { code: "EMBARRASSMENT", label: "당황", polarity: "NEGATIVE", color: "var(--emotion-embarrassment)", Icon: CircleAlert },
   { code: "DISTRESS", label: "괴로움", polarity: "NEGATIVE", color: "var(--emotion-distress)", Icon: CloudLightning },
   { code: "HURT", label: "상처", polarity: "NEGATIVE", color: "var(--emotion-hurt)", Icon: HeartCrack },
 ];
@@ -66,6 +66,10 @@ const FALLBACK_EMOTION = EMOTION_BY_CODE.NEUTRAL;
 function findEmotion(emotion) {
   if (!emotion) return null;
   const key = String(emotion).trim();
+  // 백엔드가 제거한 레거시 CONFUSION/혼란 값은 당황으로 호환 표시한다.
+  if (key.toUpperCase() === "CONFUSION" || key === "혼란") {
+    return EMOTION_BY_CODE.EMBARRASSMENT;
+  }
   return EMOTION_BY_CODE[key.toUpperCase()] ?? EMOTION_BY_LABEL[key] ?? null;
 }
 

@@ -11,12 +11,12 @@ public enum EmotionType {
     WORRY("걱정", EmotionPolarity.NEUTRAL),
     SURPRISE("놀람", EmotionPolarity.NEUTRAL),
     NEUTRAL("평범", EmotionPolarity.NEUTRAL),
-    EMBARRASSMENT("당황", EmotionPolarity.NEUTRAL),
+    SHYNESS("부끄러움", EmotionPolarity.NEUTRAL),
     CURIOSITY("궁금함", EmotionPolarity.NEUTRAL),
 
     SADNESS("슬픔", EmotionPolarity.NEGATIVE),
     ANGER("화남", EmotionPolarity.NEGATIVE),
-    CONFUSION("혼란", EmotionPolarity.NEGATIVE),
+    EMBARRASSMENT("당황", EmotionPolarity.NEGATIVE),
     DISTRESS("괴로움", EmotionPolarity.NEGATIVE),
 
     GRATITUDE("감사", EmotionPolarity.POSITIVE),
@@ -55,12 +55,13 @@ public enum EmotionType {
             case "걱정", "불안", "ANXIETY" -> WORRY;
             case "놀람" -> SURPRISE;
             case "평범", "지루함", "BOREDOM" -> NEUTRAL;
-            // AI 모델은 '당황'과 '부끄러움'을 구분하지만 백엔드에는 별도 값이 없어 함께 처리합니다.
-            case "당황", "부끄러움" -> EMBARRASSMENT;
+            case "부끄러움" -> SHYNESS;
+            case "당황" -> EMBARRASSMENT;
             case "궁금함", "궁금" -> CURIOSITY;
             case "슬픔" -> SADNESS;
             case "화남", "짜증", "ANNOYANCE" -> ANGER;
-            case "혼란" -> CONFUSION;
+            // 기존 DB에 남아 있을 수 있는 레거시 값은 가장 가까운 '당황'으로 읽습니다.
+            case "혼란", "CONFUSION" -> EMBARRASSMENT;
             case "괴로움", "힘듦" -> DISTRESS;
             case "감사", "고마움" -> GRATITUDE;
             case "사과", "미안함" -> APOLOGY;

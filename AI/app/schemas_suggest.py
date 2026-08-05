@@ -3,14 +3,13 @@
 # 프로덕션 계약
 # ------------
 # [BE -> AI] POST /v1/messages/suggest
-#     message_id  : BE가 이미 발급/저장한 메시지 식별자. AI는 새로 만들지 않고 그대로 돌려준다.
 #     speaker_id  : 지금 target_message 를 보내려는 사람의 실제 유저 식별자
 #     history     : 최근 대화 (turn마다 실제 화자 식별자 포함)
 #     target_message : 스타일을 바꿔 쓸 원본 문구
 
 # [AI -> BE] SuggestResponse
-#     message_id 를 그대로 포함해서 돌려준다 -> BE가 원본 메시지와 매핑하는 데 사용.
 #     AI 서버는 DB/Redis 어디에도 저장하지 않는다 (무상태). 저장은 BE가 유저의 최종 선택을 받은 뒤 처리.
+#     BE 쪽에서 원본 메시지와의 매핑이 필요하면, 요청/응답 순서(동기 호출 1:1 대응)로 직접 관리한다.
 
 # 설계 메모
 # ---------
@@ -71,7 +70,6 @@ class ChatTurn(BaseModel):
 class SuggestRequest(BaseModel):
     # [BE -> AI] 문구 추천 요청.
 
-    message_id: str = Field(..., min_length=1, max_length=100, description="BE가 발급한 메시지 식별자. 응답에 그대로 echo됨")
     speaker_id: str = Field(..., min_length=1, max_length=100, description="target_message 를 보내려는 사람(요청자)의 유저 식별자")
     target_message: str = Field(..., min_length=1, max_length=MAX_TARGET_CHARS, description="스타일을 바꿔 쓸 원본 문구")
     history: List[ChatTurn] = Field(default_factory=list, description="최근 대화(시간순 오름차순)")
@@ -107,7 +105,6 @@ class Suggestion(BaseModel):
 class SuggestResponse(BaseModel):
     # [AI -> BE] 문구 추천 응답. AI는 이 응답을 어디에도 저장하지 않는다.
 
-    message_id: str  # 요청의 message_id 를 그대로 echo. BE가 원본 메시지와 매핑하는 키.
     suggestions: List[Suggestion] = Field(default_factory=list)
 
     # 추천을 생성하지 않은 경우의 사유.
