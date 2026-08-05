@@ -130,10 +130,69 @@
 }
 
 .profiles {
+  position: relative;
   margin-top: 20px;
   display: flex;
   align-items: flex-start;
   gap: 10px;
+}
+
+.profileCircle:is(button) {
+  padding: 0;
+  color: inherit;
+}
+
+.profileCircle:is(button):focus-visible .profileAvatar {
+  outline: 2px solid #ffffff;
+  outline-offset: 3px;
+}
+
+.partnerProfilePopover {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  z-index: 5;
+  width: min(230px, calc(var(--app-max-width) - 48px));
+  max-width: calc(100vw - 48px);
+  padding: 14px 34px 14px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  border-radius: var(--radius-md);
+  background: rgba(34, 29, 28, 0.82);
+  color: #ffffff;
+  box-shadow: var(--shadow-float);
+  backdrop-filter: blur(12px);
+}
+
+.partnerProfilePopover strong {
+  display: block;
+  font-size: var(--font-label);
+}
+
+.partnerProfilePopover p {
+  max-width: 100%;
+  margin: 5px 0 0;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: var(--font-caption);
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.partnerProfileClose {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: rgba(255, 255, 255, 0.74);
+}
+
+.partnerProfileClose:hover {
+  background: rgba(255, 255, 255, 0.12);
 }
 
 .profileCircle {

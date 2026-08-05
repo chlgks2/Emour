@@ -1,9 +1,11 @@
+import { useState } from "react";
 import {
   CalendarHeart,
   ChevronDown,
   Heart,
   Pencil,
   User,
+  X,
 } from "lucide-react";
 import styles from "./HomePage.module.css";
 
@@ -19,6 +21,7 @@ export default function HomePage({
   onEditStartDate,
   onViewDashboard,
 }) {
+  const [partnerProfileOpen, setPartnerProfileOpen] = useState(false);
   // 로딩 중에 아무것도 렌더하지 않으면 검은 화면만 보이므로 최소한의 자리를 잡아둔다.
   if (!home) {
     return (
@@ -35,6 +38,7 @@ export default function HomePage({
     partnerNickname,
     myProfileImageUrl,
     partnerProfileImageUrl,
+    partnerStatusMessage,
     imageUrl,
     caption,
     captionPosition,
@@ -111,7 +115,24 @@ export default function HomePage({
             imageUrl={partnerProfileImageUrl}
             name={partnerNickname}
             fallbackLabel="상대방"
+            onClick={() => setPartnerProfileOpen((open) => !open)}
+            expanded={partnerProfileOpen}
           />
+
+          {partnerProfileOpen && (
+            <div className={styles.partnerProfilePopover} role="dialog" aria-label="상대방 프로필">
+              <button
+                type="button"
+                className={styles.partnerProfileClose}
+                aria-label="상대방 프로필 닫기"
+                onClick={() => setPartnerProfileOpen(false)}
+              >
+                <X size={14} aria-hidden="true" />
+              </button>
+              <strong>{partnerNickname?.trim() || "상대방"}</strong>
+              {partnerStatusMessage && <p>{partnerStatusMessage}</p>}
+            </div>
+          )}
         </div>
       </div>
 
@@ -138,11 +159,16 @@ export default function HomePage({
 }
 
 /** 사진이 없을 때는 기본 인물 아이콘을 사용하고, 애칭은 사진 하단에 표시한다. */
-function ProfileCircle({ imageUrl, name, fallbackLabel }) {
+function ProfileCircle({ imageUrl, name, fallbackLabel, onClick, expanded }) {
   const displayName = name?.trim() || fallbackLabel;
+  const Root = onClick ? "button" : "span";
 
   return (
-    <span className={styles.profileCircle} aria-label={`${displayName} 프로필`}>
+    <Root
+      {...(onClick ? { type: "button", onClick, "aria-expanded": expanded } : {})}
+      className={styles.profileCircle}
+      aria-label={`${displayName} 프로필`}
+    >
       <span className={styles.profileAvatar}>
         {imageUrl ? (
           <img src={imageUrl} alt={`${displayName} 프로필 사진`} />
@@ -153,7 +179,7 @@ function ProfileCircle({ imageUrl, name, fallbackLabel }) {
         )}
       </span>
       <span className={styles.profileNickname}>{displayName}</span>
-    </span>
+    </Root>
   );
 }
 

@@ -27,6 +27,7 @@ import { getCurrentUser } from "./authApi.js";
 import {
   getMyProfile,
   getPartnerNickname,
+  getPartnerStatusMessage,
   getProfileImages,
 } from "./memberApi.js";
 import { resolveProtectedImageUrl } from "../utils/protectedImageUrl.js";
@@ -129,11 +130,12 @@ export function resetHomeBackground() {
 }
 
 export async function fetchHomeScreen() {
-  const [datingStartDate, me, profileImages, partner, homeSetting] = await Promise.all([
+  const [datingStartDate, me, profileImages, partner, partnerStatus, homeSetting] = await Promise.all([
     getRelationshipStartDate(),
     fetchMe(),
     fetchProfileImages(),
     fetchPartnerNickname(),
+    fetchPartnerStatusMessage(),
     fetchHomeSetting(),
   ]);
 
@@ -149,6 +151,7 @@ export async function fetchHomeScreen() {
     myProfileImageUrl:
       profileImages?.myProfileImageUrl ?? me?.profileImageUrl ?? "",
     partnerNickname: partner?.partnerNickname ?? "",
+    partnerStatusMessage: partnerStatus?.statusMessage ?? "",
     partnerProfileImageUrl: profileImages?.partnerProfileImageUrl ?? "",
   };
 }
@@ -232,6 +235,14 @@ async function fetchProfileImages() {
 async function fetchPartnerNickname() {
   try {
     return await getPartnerNickname();
+  } catch {
+    return null;
+  }
+}
+
+async function fetchPartnerStatusMessage() {
+  try {
+    return await getPartnerStatusMessage();
   } catch {
     return null;
   }

@@ -564,6 +564,9 @@
   font: inherit;
   font-size: var(--font-label);
   line-height: var(--leading-relaxed);
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
   transition:
     border-color var(--duration-fast) var(--ease-out),
     box-shadow var(--duration-fast) var(--ease-out);
@@ -719,6 +722,7 @@
   line-height: var(--leading-relaxed);
   white-space: pre-wrap;
   word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .album-photo-delete-button {
