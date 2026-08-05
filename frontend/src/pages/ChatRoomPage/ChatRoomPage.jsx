@@ -79,6 +79,7 @@ export default function ChatRoomPage() {
   const [inputValue, setInputValue] = useState("");
   const [suggestions, setSuggestions] = useState([]);
   const [suggestLoading, setSuggestLoading] = useState(false);
+  const [suggestGuideMessage, setSuggestGuideMessage] = useState("");
 
   // 스크롤 다운 버튼 상태
   const [showScrollDown, setShowScrollDown] = useState(false);
@@ -621,6 +622,7 @@ export default function ChatRoomPage() {
     setInputValue(content);
     // 추천을 받은 뒤 원문을 다시 수정하면 이전 추천은 더 이상 유효하지 않다.
     setSuggestions([]);
+    setSuggestGuideMessage("");
   };
 
   const requestSuggestions = async () => {
@@ -636,14 +638,15 @@ export default function ChatRoomPage() {
       );
 
     if (!latestOwnMessage) {
-      showToast(
+      setSuggestions([]);
+      setSuggestGuideMessage(
         "문구 교정은 메시지를 한 번 이상 보낸 뒤 사용할 수 있어요.",
-        { tone: "error" },
       );
       return;
     }
 
     setSuggestLoading(true);
+    setSuggestGuideMessage("");
     try {
       const correctedSuggestions = await fetchSuggestions({
         messageId: latestOwnMessage.messageId,
@@ -653,13 +656,12 @@ export default function ChatRoomPage() {
       setSuggestions(correctedSuggestions);
 
       if (!correctedSuggestions.length) {
-        showToast("추천할 문구를 찾지 못했어요.");
+        setSuggestGuideMessage("추천할 문구를 찾지 못했어요.");
       }
     } catch (error) {
       setSuggestions([]);
-      showToast(
+      setSuggestGuideMessage(
         error?.message || "추천 문장을 불러오지 못했어요.",
-        { tone: "error" },
       );
     } finally {
       setSuggestLoading(false);
@@ -669,6 +671,7 @@ export default function ChatRoomPage() {
   const handleSelectSuggestion = (content) => {
     setInputValue(content);
     setSuggestions([]);
+    setSuggestGuideMessage("");
   };
 
   const handleSend = async () => {
@@ -1223,8 +1226,8 @@ export default function ChatRoomPage() {
 
       {!searchOpen && <SuggestionChips
         suggestions={suggestions}
+        guideMessage={suggestGuideMessage}
         onSelect={handleSelectSuggestion}
-        onRefresh={requestSuggestions}
         loading={suggestLoading}
       />}
 

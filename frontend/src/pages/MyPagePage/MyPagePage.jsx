@@ -823,31 +823,39 @@ function MyPagePage() {
                       무엇의 애칭을 고치는 버튼인지가 멀어진다.
                     */}
                     <div className="mypage-partner-info">
-                      <strong>
-                        {profile.isCoupleConnected
-                          ? `${profile.partnerNickname || '연인'}님`
-                          : isRoomEnded
-                            ? '연결이 끝났어요'
-                            : '아직 연결되지 않았어요'}
-                      </strong>
+                      <div className="mypage-partner-heading">
+                        <strong>
+                          {profile.isCoupleConnected
+                            ? `${profile.partnerNickname || '연인'}님`
+                            : isRoomEnded
+                              ? '연결이 끝났어요'
+                              : '아직 연결되지 않았어요'}
+                        </strong>
 
-                      {profile.isCoupleConnected && (
-                        <button
-                          type="button"
-                          className="mypage-partner-edit-button"
-                          disabled={isProcessing}
-                          onClick={
-                            openPartnerNicknameModal
-                          }
-                        >
-                          <Pencil
-                            size={13}
-                            strokeWidth={2}
-                            aria-hidden="true"
-                          />
+                        {profile.isCoupleConnected && (
+                          <button
+                            type="button"
+                            className="mypage-partner-edit-button"
+                            disabled={isProcessing}
+                            onClick={
+                              openPartnerNicknameModal
+                            }
+                          >
+                            <Pencil
+                              size={13}
+                              strokeWidth={2}
+                              aria-hidden="true"
+                            />
 
-                          <span>애칭 수정</span>
-                        </button>
+                            <span>애칭 수정</span>
+                          </button>
+                        )}
+                      </div>
+
+                      {profile.isCoupleConnected && profile.partnerStatusMessage && (
+                        <p className="mypage-partner-status-message">
+                          {profile.partnerStatusMessage}
+                        </p>
                       )}
 
                       {/*
