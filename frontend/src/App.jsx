@@ -9,6 +9,7 @@ import AppViewport from './layouts/AppViewport/AppViewport.jsx'
 import BottomNavigation from './components/common/BottomNavigation/BottomNavigation.jsx'
 import MoodNotificationPrompt from './components/mood/MoodNotificationPrompt/MoodNotificationPrompt.jsx'
 import CoupleRouteGuard from './components/routing/CoupleRouteGuard.jsx'
+import AuthRouteGuard from './components/routing/AuthRouteGuard.jsx'
 import { AuthProvider } from './context/AuthContext.jsx'
 import { ToastProvider } from './context/ToastProvider.jsx'
 import { useAuth } from './hooks/useAuth.js'
@@ -156,7 +157,11 @@ function App() {
 
         <Route
           path="/couple/connect"
-          element={<CoupleConnectPage />}
+          element={
+            <AuthRouteGuard>
+              <CoupleConnectPage />
+            </AuthRouteGuard>
+          }
         />
 
         <Route
@@ -170,7 +175,11 @@ function App() {
 
         <Route
           path="/mypage"
-          element={<MyPagePage />}
+          element={
+            <AuthRouteGuard>
+              <MyPagePage />
+            </AuthRouteGuard>
+          }
         />
 
         <Route
@@ -185,15 +194,27 @@ function App() {
 
         <Route
           path="/mypage/profile-edit"
-          element={<ProfileEditPage />}
+          element={
+            <AuthRouteGuard>
+              <ProfileEditPage />
+            </AuthRouteGuard>
+          }
         />
         <Route
           path="/mypage/notification-settings"
-          element={<NotificationSettingPage />}
+          element={
+            <AuthRouteGuard>
+              <NotificationSettingPage />
+            </AuthRouteGuard>
+          }
         />
         <Route
           path="/mypage/password-change"
-          element={<PasswordChangePage />}
+          element={
+            <AuthRouteGuard>
+              <PasswordChangePage />
+            </AuthRouteGuard>
+          }
         />
 
         <Route

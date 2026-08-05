@@ -45,7 +45,7 @@ public class DashboardEmotionService {
             LocalDate date
     ) {
         validateRequest(roomId, userId, period, date);
-        DateRange range = createRange(period, date);
+        DateRange range = createRange(roomId, period, date);
 
         List<Dashboard> snapshots = snapshotRangeService.getMemberSnapshots(
                         roomId,
@@ -183,20 +183,21 @@ public class DashboardEmotionService {
     }
 
     private DateRange createRange(
+            Long roomId,
             DashboardPeriod period,
             LocalDate date
     ) {
-        return switch (period) {
-            case DAY -> new DateRange(date, date.plusDays(1));
-            case MONTH -> {
-                LocalDate start = date.withDayOfMonth(1);
-                yield new DateRange(start, start.plusMonths(1));
-            }
-            case YEAR -> {
-                LocalDate start = date.withDayOfYear(1);
-                yield new DateRange(start, start.plusYears(1));
-            }
-        };
+        if (period == DashboardPeriod.ALL) {
+            return new DateRange(
+                    snapshotRangeService.findAllStartDate(roomId),
+                    LocalDate.now(dashboardClock).plusDays(1)
+            );
+        }
+        LocalDate startDate = period.startDate(date);
+        return new DateRange(
+                startDate,
+                period.endExclusive(startDate)
+        );
     }
 
     private void validateRequest(
@@ -205,11 +206,11 @@ public class DashboardEmotionService {
             DashboardPeriod period,
             LocalDate date
     ) {
-        if (roomId == null || userId == null
-                || period == null || date == null) {
+        if (roomId == null || userId == null || period == null
+                || (period != DashboardPeriod.ALL && date == null)) {
             throw new CustomException(ErrorCode.INVALID_INPUT);
         }
-        if (createRange(period, date).startDate()
+        if (createRange(roomId, period, date).startDate()
                 .isAfter(LocalDate.now(dashboardClock))) {
             throw new CustomException(ErrorCode.INVALID_INPUT);
         }

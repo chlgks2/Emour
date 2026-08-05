@@ -1,5 +1,5 @@
 ﻿import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { ArrowDown, CloudOff, MessageCircleHeart, Search, X } from "lucide-react";
 import EmptyState from "../../components/common/EmptyState/EmptyState";
 import ChatHeader from "../../components/chat/ChatHeader/ChatHeader";
@@ -40,6 +40,7 @@ export default function ChatRoomPage() {
   const { user } = useAuth();
   const { showToast } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
   // 내 메시지 판별은 senderId === 내 userId 로 한다.
   // 목업 상수(MY_USER_ID = 1)로 폴백하던 코드가 있었는데, 세션이 비어 있으면
   // 남의 메시지가 내 것으로 보이는 문제가 있어 없앴다. 로그인 값만 쓴다.
@@ -99,6 +100,7 @@ export default function ChatRoomPage() {
   const [searchResults, setSearchResults] = useState([]);
   const [searchNextCursor, setSearchNextCursor] = useState(null);
   const [searchLoading, setSearchLoading] = useState(false);
+  const [focusedMessageId, setFocusedMessageId] = useState(null);
 
   const openImageViewer = useCallback((images, startIndex) => {
     setImageViewer({ images, startIndex });
@@ -122,12 +124,13 @@ export default function ChatRoomPage() {
 
   const hasMore = nextBeforeMessageId !== null;
   const justPrependedRef = useRef(false);
-  const suggestTimerRef = useRef(null);
   const chatSocketRef = useRef(null);
   const latestPartnerMessageIdRef = useRef(null);
   const reportedReadMessageIdRef = useRef(null);
   // 이전 페이지 요청 중복 방지 (state 는 비동기라 ref 로 즉시 잠근다)
   const fetchingMoreRef = useRef(false);
+  const messageElementRefs = useRef(new Map());
+  const handledFocusMessageIdRef = useRef(null);
 
   const markLatestPartnerMessageAsRead =
     useCallback(() => {
@@ -531,44 +534,141 @@ export default function ChatRoomPage() {
     }
   }, [messages, restoreScrollPosition]);
 
-  // 입력값이 바뀔 때마다 AI 문장 다듬기 추천을 (debounce로) 요청
   useEffect(() => {
-    clearTimeout(suggestTimerRef.current);
-    if (!inputValue.trim()) {
+    const targetMessageId = Number(location.state?.focusMessageId);
+
+    if (
+      initialLoading ||
+      !roomId ||
+      !Number.isFinite(targetMessageId) ||
+      handledFocusMessageIdRef.current === targetMessageId
+    ) {
       return;
     }
-    suggestTimerRef.current = setTimeout(async () => {
-      setSuggestLoading(true);
-      try {
-        setSuggestions(await fetchSuggestions(inputValue));
-      } catch {
-        // 문장 추천은 보조 기능이라 실패해도 조용히 비운다.
-        setSuggestions([]);
-      } finally {
-        setSuggestLoading(false);
+
+    handledFocusMessageIdRef.current = targetMessageId;
+
+    const focusBookmarkedMessage = async () => {
+      let collectedMessages = [...messages];
+      let cursor = nextBeforeMessageId;
+      const visitedCursors = new Set();
+
+      while (
+        !collectedMessages.some(
+          (message) => Number(message.messageId) === targetMessageId,
+        ) &&
+        cursor != null &&
+        !visitedCursors.has(cursor)
+      ) {
+        visitedCursors.add(cursor);
+        const page = await fetchMessages({
+          roomId,
+          beforeMessageId: cursor,
+        });
+        collectedMessages = dedupeChatMessages([
+          ...page.messages,
+          ...collectedMessages,
+        ]);
+        cursor = page.nextBeforeMessageId;
       }
-    }, 500);
-    return () => clearTimeout(suggestTimerRef.current);
-  }, [inputValue]);
+
+      const messageFound = collectedMessages.some(
+        (message) => Number(message.messageId) === targetMessageId,
+      );
+
+      if (!messageFound) {
+        showToast("북마크한 메시지를 찾지 못했어요.", { tone: "error" });
+        return;
+      }
+
+      setMessages(collectedMessages);
+      setNextBeforeMessageId(cursor);
+      setFocusedMessageId(targetMessageId);
+    };
+
+    focusBookmarkedMessage().catch(() => {
+      showToast("북마크한 메시지 위치로 이동하지 못했어요.", { tone: "error" });
+    });
+  }, [
+    initialLoading,
+    location.state,
+    messages,
+    nextBeforeMessageId,
+    roomId,
+    showToast,
+  ]);
+
+  useEffect(() => {
+    if (!focusedMessageId) return undefined;
+
+    const scrollTimer = window.setTimeout(() => {
+      messageElementRefs.current
+        .get(focusedMessageId)
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 50);
+    const highlightTimer = window.setTimeout(
+      () => setFocusedMessageId(null),
+      2200,
+    );
+
+    return () => {
+      window.clearTimeout(scrollTimer);
+      window.clearTimeout(highlightTimer);
+    };
+  }, [focusedMessageId, messages]);
 
   const handleInputChange = (content) => {
     setInputValue(content);
-    if (!content.trim()) {
-      setSuggestions([]);
-    }
+    // 추천을 받은 뒤 원문을 다시 수정하면 이전 추천은 더 이상 유효하지 않다.
+    setSuggestions([]);
   };
 
-  // 추천 새로고침도 실패를 삼키지 않고 로딩 상태를 표시한다.
-  const handleRefreshSuggestions = async () => {
+  const requestSuggestions = async () => {
     if (!inputValue.trim()) return;
+
+    // 추천 API는 대화 문맥의 기준점으로 내가 저장한 메시지 ID를 요구한다.
+    const latestOwnMessage = [...messages]
+      .reverse()
+      .find(
+        (message) =>
+          message.messageId &&
+          Number(message.senderId) === Number(myUserId),
+      );
+
+    if (!latestOwnMessage) {
+      showToast(
+        "문구 교정은 메시지를 한 번 이상 보낸 뒤 사용할 수 있어요.",
+        { tone: "error" },
+      );
+      return;
+    }
+
     setSuggestLoading(true);
     try {
-      setSuggestions(await fetchSuggestions(inputValue));
-    } catch {
-      showToast("추천 문장을 불러오지 못했어요.", { tone: "error" });
+      const correctedSuggestions = await fetchSuggestions({
+        messageId: latestOwnMessage.messageId,
+        targetMessage: inputValue,
+      });
+
+      setSuggestions(correctedSuggestions);
+
+      if (!correctedSuggestions.length) {
+        showToast("추천할 문구를 찾지 못했어요.");
+      }
+    } catch (error) {
+      setSuggestions([]);
+      showToast(
+        error?.message || "추천 문장을 불러오지 못했어요.",
+        { tone: "error" },
+      );
     } finally {
       setSuggestLoading(false);
     }
+  };
+
+  const handleSelectSuggestion = (content) => {
+    setInputValue(content);
+    setSuggestions([]);
   };
 
   const handleSend = async () => {
@@ -1080,7 +1180,20 @@ export default function ChatRoomPage() {
             partnerLastReadMessageId !== null &&
             message.messageId <= partnerLastReadMessageId;
           return (
-            <div key={message.messageId ?? message.clientMessageId}>
+            <div
+              key={message.messageId ?? message.clientMessageId}
+              ref={(element) => {
+                const messageId = Number(message.messageId);
+                if (!Number.isFinite(messageId)) return;
+                if (element) messageElementRefs.current.set(messageId, element);
+                else messageElementRefs.current.delete(messageId);
+              }}
+              className={
+                Number(message.messageId) === focusedMessageId
+                  ? styles.focusedMessage
+                  : undefined
+              }
+            >
               {showDateDivider && <DateDivider dateTime={message.sentAt} />}
               <MessageBubble
                 message={message}
@@ -1110,8 +1223,8 @@ export default function ChatRoomPage() {
 
       {!searchOpen && <SuggestionChips
         suggestions={suggestions}
-        onSelect={(content) => setInputValue(content)}
-        onRefresh={handleRefreshSuggestions}
+        onSelect={handleSelectSuggestion}
+        onRefresh={requestSuggestions}
         loading={suggestLoading}
       />}
 
@@ -1119,8 +1232,10 @@ export default function ChatRoomPage() {
         value={inputValue}
         onChange={handleInputChange}
         onSend={handleSend}
+        onCorrect={requestSuggestions}
         onImagesSelect={handleImagesSelect}
         disabled={sending}
+        correcting={suggestLoading}
       />}
 
       {/* 열려 있을 때만 마운트해서, 닫힌 동안 전역 리스너(바깥 클릭/스크롤)가 붙지 않게 한다 */}

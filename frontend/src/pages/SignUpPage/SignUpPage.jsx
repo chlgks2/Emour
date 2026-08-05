@@ -17,7 +17,7 @@ import styles from "./SignUpPage.module.css";
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PASSWORD_MIN_LENGTH = 8;
 const NICKNAME_MIN_LENGTH = 2;
-const NICKNAME_MAX_LENGTH = 20;
+const NICKNAME_MAX_LENGTH = 8;
 const EMAIL_MAX_LENGTH = 255; // user.email VARCHAR(255)
 const VERIFICATION_CODE_LENGTH = 6;
 const RESEND_COOLDOWN_SECONDS = 60;
@@ -306,6 +306,7 @@ export default function SignUpPage() {
                   type="button"
                   variant="chip"
                   fullWidth={false}
+                  className={styles.resendButton}
                   loading={resending}
                   disabled={resendSeconds > 0}
                   onClick={handleResendCode}

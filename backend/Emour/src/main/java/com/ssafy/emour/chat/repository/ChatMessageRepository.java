@@ -19,6 +19,15 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
 
     Optional<ChatMessage> findByMessageId(Long messageId);
 
+    @Query("""
+            select min(message.sentAt)
+            from ChatMessage message
+            where message.roomId = :roomId
+            """)
+    Optional<LocalDateTime> findEarliestSentAtByRoomId(
+            @Param("roomId") Long roomId
+    );
+
     List<ChatMessage> findByRoomIdOrderByMessageIdDesc(
             Long roomId,
             Pageable pageable

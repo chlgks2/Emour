@@ -8,7 +8,7 @@
  *
  * 기분 기록은 이미 프론트가 통째로 받아 두고 있어서(moodApi.fetchMoodSlots)
  * 일간·주간·월간을 서버에 다시 묻지 않고 여기서 잘라 쓴다.
- * 그래서 백엔드 DashboardPeriod(DAY/MONTH/YEAR)에 '주간'이 없어도 주간 리포트가 된다.
+ * 감정 리포트 기간 API와는 별개로 무드 기록 배열에서 필요한 기간만 잘라 쓴다.
  */
 import {
   MOOD_TYPES,
@@ -19,11 +19,13 @@ import {
   parseDateKey,
 } from "./moodEmotion";
 
-/** 리포트 기간 탭. 값은 프론트 전용이라 서버로 나가지 않는다. */
+/** 감정 리포트와 무드 리포트가 함께 사용하는 기간 탭. */
 export const MOOD_REPORT_PERIODS = [
   ["DAY", "일간"],
   ["WEEK", "주간"],
   ["MONTH", "월간"],
+  ["YEAR", "연간"],
+  ["ALL", "전체"],
 ];
 
 const MOOD_LEVEL_BY_TYPE = Object.fromEntries(
@@ -59,6 +61,15 @@ export function buildPeriodDateKeys(period, date) {
     const lastDate = new Date(year, month + 1, 0).getDate();
     return Array.from({ length: lastDate }, (_, index) =>
       formatDateKey(new Date(year, month, index + 1)),
+    );
+  }
+
+  if (period === "YEAR") {
+    const year = date.getFullYear();
+    const lastDate = new Date(year, 11, 31);
+    const days = Math.round((lastDate - new Date(year, 0, 1)) / 86400000) + 1;
+    return Array.from({ length: days }, (_, index) =>
+      formatDateKey(new Date(year, 0, index + 1)),
     );
   }
 
@@ -162,6 +173,24 @@ export function buildMoodReportTrend(moodRecords, dateKeys, period) {
     };
   }
 
+  if (period === "YEAR" || period === "ALL") {
+    const buckets = buildLongPeriodBuckets(dateKeys, period);
+    return {
+      series: [
+        makeSeries("mine", "나", "var(--color-primary)", false,
+          toBucketPoints(moodRecords, buckets, "mySlots")),
+        makeSeries("partner", "상대방", "var(--emotion-surprise)", true,
+          toBucketPoints(moodRecords, buckets, "partnerSlots")),
+      ],
+      axis: {
+        ...MOOD_SCALE,
+        domain: buckets.length === 1 ? [0, 0] : [0, Math.max(buckets.length - 1, 1)],
+        ticks: buckets.map((bucket, index) => ({ x: index, label: bucket.label })),
+        formatX: (index) => buckets[Math.round(index)]?.detailLabel ?? "",
+      },
+    };
+  }
+
   const lastIndex = Math.max(dateKeys.length - 1, 1);
 
   return {
@@ -190,10 +219,69 @@ export function buildMoodReportTrend(moodRecords, dateKeys, period) {
               x: index,
               label: WEEKDAY_LABELS[parseDateKey(dateKey).getDay()],
             }))
-          : buildMonthTicks(dateKeys),
+          : buildLongPeriodTicks(dateKeys, period),
       formatX: (index) => formatDayIndex(dateKeys, index, period),
     },
   };
+}
+
+function buildLongPeriodBuckets(dateKeys, period) {
+  if (period === "YEAR") {
+    const year = parseDateKey(dateKeys[0] ?? formatDateKey(new Date())).getFullYear();
+    return Array.from({ length: 12 }, (_, month) => ({
+      key: `${year}-${String(month + 1).padStart(2, "0")}`,
+      label: `${month + 1}월`,
+      detailLabel: `${year}년 ${month + 1}월`,
+      dateKeys: dateKeys.filter((dateKey) => dateKey.startsWith(
+        `${year}-${String(month + 1).padStart(2, "0")}`,
+      )),
+      targetPeriod: "MONTH",
+      targetDate: `${year}-${String(month + 1).padStart(2, "0")}-01`,
+    }));
+  }
+
+  const years = [...new Set(dateKeys.map((dateKey) => dateKey.slice(0, 4)))].sort();
+  return years.map((year) => ({
+    key: year,
+    label: `${year}년`,
+    detailLabel: `${year}년`,
+    dateKeys: dateKeys.filter((dateKey) => dateKey.startsWith(`${year}-`)),
+    targetPeriod: "YEAR",
+    targetDate: `${year}-01-01`,
+  }));
+}
+
+function toBucketPoints(moodRecords, buckets, slotsKey) {
+  return buckets.map((bucket, index) => {
+    const records = bucket.dateKeys.flatMap((dateKey) =>
+      (moodRecords?.[dateKey]?.[slotsKey] ?? []).map((slot) => ({ slot, dateKey })),
+    );
+    const representative = pickRepresentativeMood(records);
+    if (!representative) return null;
+    return {
+      x: index,
+      y: MOOD_LEVEL_BY_TYPE[representative],
+      label: getMoodLabel(representative),
+      targetPeriod: bucket.targetPeriod,
+      targetDate: bucket.targetDate,
+    };
+  }).filter(Boolean);
+}
+
+function pickRepresentativeMood(records) {
+  const counted = new Map();
+  records.forEach(({ slot, dateKey }) => {
+    if (!slot?.moodType) return;
+    const previous = counted.get(slot.moodType) ?? { count: 0, latest: "" };
+    const latest = `${dateKey}-${String(slot.minutesOfDay ?? 0).padStart(4, "0")}`;
+    counted.set(slot.moodType, {
+      count: previous.count + 1,
+      latest: latest > previous.latest ? latest : previous.latest,
+    });
+  });
+  return [...counted.entries()].sort(([, first], [, second]) =>
+    second.count - first.count || second.latest.localeCompare(first.latest),
+  )[0]?.[0] ?? null;
 }
 
 /**
@@ -201,7 +289,24 @@ export function buildMoodReportTrend(moodRecords, dateKeys, period) {
  * 하루마다 붙이면 30개가 겹쳐 뭉개지고, 양 끝에만 붙이면 가운데 점이 며칠인지
  * 셀 수가 없다. 7일 간격이면 눈금이 곧 주 경계라 자리를 짐작하기도 쉽다.
  */
-function buildMonthTicks(dateKeys) {
+function buildLongPeriodTicks(dateKeys, period) {
+  if (period === "YEAR") {
+    return dateKeys
+      .map((dateKey, index) => ({ date: parseDateKey(dateKey), index }))
+      .filter(({ date }) => date.getDate() === 1)
+      .map(({ date, index }) => ({ x: index, label: `${date.getMonth() + 1}월` }));
+  }
+
+  if (period === "ALL") {
+    const step = Math.max(1, Math.ceil(dateKeys.length / 5));
+    return dateKeys
+      .filter((_, index) => index % step === 0 || index === dateKeys.length - 1)
+      .map((dateKey) => ({
+        x: dateKeys.indexOf(dateKey),
+        label: `${parseDateKey(dateKey).getFullYear()}년`,
+      }));
+  }
+
   const ticks = [];
   for (let index = 0; index < dateKeys.length; index += 7) {
     ticks.push({ x: index, label: `${index + 1}일` });
@@ -216,6 +321,9 @@ function formatDayIndex(dateKeys, index, period) {
   const date = parseDateKey(dateKey);
   if (period === "WEEK") {
     return `${date.getMonth() + 1}월 ${date.getDate()}일(${WEEKDAY_LABELS[date.getDay()]})`;
+  }
+  if (period === "YEAR" || period === "ALL") {
+    return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일`;
   }
   return `${date.getDate()}일`;
 }

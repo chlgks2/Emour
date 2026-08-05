@@ -1,6 +1,6 @@
 ﻿import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Bookmark, ChevronLeft, CloudOff } from "lucide-react";
+import { Bookmark, ChevronLeft, CloudOff, MessageSquareText } from "lucide-react";
 import ConfirmDialog from "../../components/common/ConfirmDialog/ConfirmDialog";
 import EmptyState from "../../components/common/EmptyState/EmptyState";
 import Skeleton from "../../components/common/Skeleton/Skeleton";
@@ -183,20 +183,46 @@ export default function BookmarkListPage() {
         {bookmarks.map((bookmark) => (
           <div key={bookmark.bookmarkId} className={styles.item}>
             <div className={styles.itemBody}>
-              <p className={styles.itemText}>{bookmark.content}</p>
+              {bookmark.content && (
+                <p className={styles.itemText}>{bookmark.content}</p>
+              )}
+              {bookmark.images.length > 0 && (
+                <div className={styles.imageGrid}>
+                  {bookmark.images.map((image, index) => (
+                    <img
+                      key={image.imageId ?? image.imageUrl}
+                      className={styles.image}
+                      src={image.imageUrl}
+                      alt={`북마크한 사진 ${index + 1}`}
+                    />
+                  ))}
+                </div>
+              )}
               <p className={styles.itemMeta}>
                 <time dateTime={bookmark.sentAt}>
                   {formatDate(bookmark.sentAt)} {formatTime(bookmark.sentAt)}
                 </time>
               </p>
             </div>
-            <button
-              type="button"
-              className={styles.removeBtn}
-              onClick={() => setPendingRemoveMessageId(bookmark.messageId)}
-            >
-              해제
-            </button>
+            <div className={styles.itemActions}>
+              <button
+                type="button"
+                className={styles.moveBtn}
+                onClick={() => navigate("/chat", {
+                  state: { focusMessageId: bookmark.messageId },
+                })}
+              >
+                <MessageSquareText size={12} aria-hidden="true" />
+                대화로 이동
+              </button>
+              <button
+                type="button"
+                className={styles.removeBtn}
+                onClick={() => setPendingRemoveMessageId(bookmark.messageId)}
+              >
+                해제
+              </button>
+            </div>
           </div>
         ))}
 

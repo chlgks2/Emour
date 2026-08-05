@@ -116,8 +116,7 @@ export default function MessageBubble({
       className={[
         styles.row,
         isMine ? styles.rowMine : styles.rowPartner,
-        // 리본은 말풍선 위로, 리액션 뱃지는 아래로 튀어나온다.
-        // 붙은 쪽만 여백을 넓혀서 옆 메시지와 겹치거나 누를 곳이 좁아지지 않게 한다.
+        // 말풍선 밖으로 걸치는 표시가 다른 메시지와 겹치지 않게 여백을 확보한다.
         isBookmarked ? styles.rowBookmarked : "",
         reactions.length > 0 ? styles.rowReacted : "",
       ]
@@ -144,8 +143,6 @@ export default function MessageBubble({
         )}
 
         <div className={styles.bubbleWrap}>
-          {/* 색은 CSS(.bookmarkRibbon)에서 준다. fill/color prop 은 SVG presentation
-              attribute 로 들어가 var() 가 해석되지 않는다. */}
           {isBookmarked && (
             <Bookmark size={20} className={styles.bookmarkRibbon} aria-label="북마크됨" />
           )}

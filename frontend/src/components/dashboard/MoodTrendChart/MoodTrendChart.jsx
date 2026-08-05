@@ -18,6 +18,7 @@ const PLOT_WIDTH = VIEW_WIDTH - PADDING.left - PADDING.right;
 const PLOT_HEIGHT = VIEW_HEIGHT - PADDING.top - PADDING.bottom;
 
 const GRID_LINE_COUNT = 5;
+const DOT_RADIUS = 3.2;
 
 /**
  * 차트를 감싸는 껍데기.
@@ -62,6 +63,7 @@ export default function MoodTrendChart({
   title = "기분 흐름",
   emptyText = "아직 기록된 기분이 없어요.\n기분을 기록하면 하루의 흐름이 그려져요.",
   bare = false,
+  onPointSelect,
 }) {
   const gradientId = useId();
 
@@ -119,6 +121,20 @@ export default function MoodTrendChart({
     ...s,
     points: s.points.map((p) => ({ ...p, cx: scaleX(p.x), cy: scaleY(p.y) })),
   }));
+
+  // 같은 시각에 같은 감정을 기록한 점은 위치를 옮기지 않고 한 원을 두 색으로 나눈다.
+  const dotGroups = projected.reduce((groups, s) => {
+    s.points.forEach((point) => {
+      const key = `${point.x}:${point.y}`;
+      const existing = groups.get(key);
+      if (existing) {
+        existing.colors.push(s.color);
+      } else {
+        groups.set(key, { ...point, key, colors: [s.color] });
+      }
+    });
+    return groups;
+  }, new Map());
 
   const gridValues = Array.from(
     { length: GRID_LINE_COUNT },
@@ -184,17 +200,44 @@ export default function MoodTrendChart({
           ) : null
         )}
 
-        {[...projected].reverse().map((s) =>
-          s.points.map((p) => (
+        {[...dotGroups.values()].map((p) =>
+          p.colors.length === 1 ? (
             <circle
-              key={`${s.key}-${p.x}`}
-              className={styles.dot}
+              key={p.key}
               cx={p.cx}
               cy={p.cy}
-              r={3.2}
-              fill={s.color}
+              r={DOT_RADIUS}
+              fill={p.colors[0]}
+              className={`${styles.dot} ${onPointSelect && p.targetPeriod ? styles.clickableDot : ""}`}
+              role={onPointSelect && p.targetPeriod ? "button" : undefined}
+              tabIndex={onPointSelect && p.targetPeriod ? 0 : undefined}
+              onClick={() => p.targetPeriod && onPointSelect?.(p)}
+              onKeyDown={(event) => {
+                if (p.targetPeriod && (event.key === "Enter" || event.key === " ")) {
+                  event.preventDefault();
+                  onPointSelect?.(p);
+                }
+              }}
             />
-          ))
+          ) : (
+            <g
+              key={p.key}
+              className={`${styles.splitDot} ${onPointSelect && p.targetPeriod ? styles.clickableDot : ""}`}
+              role={onPointSelect && p.targetPeriod ? "button" : undefined}
+              tabIndex={onPointSelect && p.targetPeriod ? 0 : undefined}
+              onClick={() => p.targetPeriod && onPointSelect?.(p)}
+              onKeyDown={(event) => {
+                if (p.targetPeriod && (event.key === "Enter" || event.key === " ")) {
+                  event.preventDefault();
+                  onPointSelect?.(p);
+                }
+              }}
+            >
+              <path d={buildHalfDotPath(p.cx, p.cy, DOT_RADIUS, true)} fill={p.colors[0]} />
+              <path d={buildHalfDotPath(p.cx, p.cy, DOT_RADIUS, false)} fill={p.colors[1]} />
+              <circle cx={p.cx} cy={p.cy} r={DOT_RADIUS} />
+            </g>
+          )
         )}
 
         {/* 양 끝 눈금만 안쪽으로 당겨 잘리지 않게 한다 */}
@@ -264,6 +307,14 @@ function buildSmoothPath(points) {
 
 function round(value) {
   return Math.round(value * 100) / 100;
+}
+
+function buildHalfDotPath(cx, cy, radius, left) {
+  const top = `${cx} ${cy - radius}`;
+  const bottom = `${cx} ${cy + radius}`;
+  return left
+    ? `M ${top} A ${radius} ${radius} 0 0 0 ${bottom} Z`
+    : `M ${top} A ${radius} ${radius} 0 0 1 ${bottom} Z`;
 }
 
 function describe(series, axis) {

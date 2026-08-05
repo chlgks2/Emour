@@ -1,13 +1,15 @@
 import { useRef } from "react";
-import { ImagePlus, Send } from "lucide-react";
+import { ImagePlus, Send, WandSparkles } from "lucide-react";
 import styles from "./ChatInputBar.module.css";
 
 export default function ChatInputBar({
   value,
   onChange,
   onSend,
+  onCorrect,
   onImagesSelect,
   disabled,
+  correcting = false,
 }) {
   const fileInputRef = useRef(null);
   const messageInputRef = useRef(null);
@@ -59,16 +61,29 @@ export default function ChatInputBar({
         onChange={handleFilesChange}
         tabIndex={-1}
       />
-      <input
-        ref={messageInputRef}
-        className={styles.input}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        onKeyDown={handleKeyDown}
-        placeholder="메시지를 입력하세요"
-        aria-label="메시지 입력"
-        enterKeyHint="send"
-      />
+      <div className={styles.inputWrap}>
+        <input
+          ref={messageInputRef}
+          className={styles.input}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="메시지를 입력하세요"
+          aria-label="메시지 입력"
+          enterKeyHint="send"
+        />
+        <button
+          type="button"
+          className={styles.correctBtn}
+          onClick={onCorrect}
+          disabled={disabled || correcting || !value.trim()}
+          aria-label="입력 문구 교정"
+          title="입력 문구 교정"
+        >
+          <WandSparkles size={14} />
+          <span>{correcting ? "교정 중" : "교정"}</span>
+        </button>
+      </div>
       <button
         type="button"
         className={styles.sendBtn}

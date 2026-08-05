@@ -35,6 +35,21 @@
   stroke-width: 1.6;
 }
 
+.splitDot > circle {
+  fill: none;
+  stroke: var(--color-surface);
+  stroke-width: 1.6;
+}
+
+.clickableDot {
+  cursor: pointer;
+  outline: none;
+}
+
+.clickableDot:focus-visible {
+  filter: drop-shadow(0 0 3px var(--color-action));
+}
+
 .legend {
   display: flex;
   justify-content: center;

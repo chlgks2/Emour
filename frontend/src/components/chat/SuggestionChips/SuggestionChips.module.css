@@ -64,6 +64,12 @@
     transform var(--duration-fast) var(--ease-out);
 }
 
+.chipLabel {
+  margin-right: 6px;
+  color: var(--color-action);
+  font-size: 10px;
+}
+
 .chip:hover {
   background: var(--color-sub-bg);
 }

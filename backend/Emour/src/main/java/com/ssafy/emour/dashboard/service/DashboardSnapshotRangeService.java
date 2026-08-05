@@ -1,5 +1,6 @@
 package com.ssafy.emour.dashboard.service;
 
+import com.ssafy.emour.chat.repository.ChatMessageRepository;
 import com.ssafy.emour.dashboard.entity.CoupleDashboard;
 import com.ssafy.emour.dashboard.entity.Dashboard;
 import com.ssafy.emour.dashboard.repository.CoupleDashboardRepository;
@@ -26,7 +27,16 @@ public class DashboardSnapshotRangeService {
     private final CoupleDashboardSnapshotService coupleSnapshotService;
     private final DashboardSnapshotService memberSnapshotService;
     private final DashboardSnapshotLockService snapshotLockService;
+    private final ChatMessageRepository chatMessageRepository;
     private final Clock dashboardClock;
+
+    /** 전체 조회의 시작일은 해당 방에서 가장 먼저 보낸 메시지 날짜입니다. */
+    @Transactional(readOnly = true)
+    public LocalDate findAllStartDate(Long roomId) {
+        return chatMessageRepository.findEarliestSentAtByRoomId(roomId)
+                .map(sentAt -> sentAt.toLocalDate())
+                .orElseGet(() -> LocalDate.now(dashboardClock));
+    }
 
     @Transactional
     public List<CoupleDashboard> getCoupleSnapshots(
@@ -131,6 +141,8 @@ public class DashboardSnapshotRangeService {
                 || date.equals(LocalDate.now(dashboardClock))
                 || dashboard.getEmotionFlow() == null
                 || dashboard.getEmotionFlow().isBlank()
+                || dashboard.getEmotionSummary() == null
+                || dashboard.getEmotionSummary().isBlank()
                 || dashboard.getAggregatedUntil() == null
                 || dashboard.getAggregatedUntil()
                 .isBefore(date.plusDays(1).atStartOfDay());

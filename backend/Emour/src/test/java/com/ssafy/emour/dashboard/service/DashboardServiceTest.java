@@ -107,6 +107,70 @@ class DashboardServiceTest {
     }
 
     @Test
+    void sumsWeeklySnapshotsFromSundayToSaturday() {
+        LocalDate sunday = LocalDate.of(2026, 8, 2);
+        CoupleDashboard sundaySnapshot = CoupleDashboard.create(
+                1L,
+                sunday
+        );
+        sundaySnapshot.updateCounts(3, 1, 2);
+        CoupleDashboard mondaySnapshot = CoupleDashboard.create(
+                1L,
+                sunday.plusDays(1)
+        );
+        mondaySnapshot.updateCounts(4, 2, 1);
+        when(snapshotRangeService.getCoupleSnapshots(
+                1L,
+                10L,
+                sunday,
+                sunday.plusWeeks(1)
+        )).thenReturn(List.of(sundaySnapshot, mondaySnapshot));
+
+        DashboardCountResponse response = dashboardService.getCounts(
+                1L,
+                10L,
+                DashboardPeriod.WEEK,
+                LocalDate.of(2026, 8, 3)
+        );
+
+        assertThat(response.startDate()).isEqualTo(sunday);
+        assertThat(response.endDate()).isEqualTo(sunday.plusDays(6));
+        assertThat(response.messageCount()).isEqualTo(7);
+        assertThat(response.imageCount()).isEqualTo(3);
+        assertThat(response.reactionCount()).isEqualTo(3);
+    }
+
+    @Test
+    void sumsAllSnapshotsWithoutSelectedDate() {
+        LocalDate firstDate = LocalDate.of(2026, 7, 1);
+        LocalDate today = LocalDate.of(2026, 8, 3);
+        CoupleDashboard first = CoupleDashboard.create(1L, firstDate);
+        first.updateCounts(20, 3, 2);
+        CoupleDashboard latest = CoupleDashboard.create(1L, today);
+        latest.updateCounts(30, 5, 4);
+        when(snapshotRangeService.findAllStartDate(1L))
+                .thenReturn(firstDate);
+        when(snapshotRangeService.getCoupleSnapshots(
+                1L,
+                10L,
+                firstDate,
+                today.plusDays(1)
+        )).thenReturn(List.of(first, latest));
+
+        DashboardCountResponse response = dashboardService.getCounts(
+                1L,
+                10L,
+                DashboardPeriod.ALL,
+                null
+        );
+
+        assertThat(response.period()).isEqualTo(DashboardPeriod.ALL);
+        assertThat(response.startDate()).isEqualTo(firstDate);
+        assertThat(response.endDate()).isEqualTo(today);
+        assertThat(response.messageCount()).isEqualTo(50);
+    }
+
+    @Test
     void sumsMemberBookmarks() {
         LocalDate date = LocalDate.of(2026, 8, 3);
         Dashboard dashboard = Dashboard.create(1L, 10L, date);

@@ -246,10 +246,10 @@ public class ChatRestController {
             @Parameter(description = "조회 개수, 최대 100개", example = "20")
             @RequestParam(required = false) Integer size,
 
-            @Parameter(description = "조회 단위: DAY, MONTH, YEAR")
+            @Parameter(description = "조회 단위: DAY, WEEK, MONTH, YEAR, ALL")
             @RequestParam(required = false) DashboardPeriod period,
 
-            @Parameter(description = "메시지를 보낸 기준 날짜. period와 함께 입력")
+            @Parameter(description = "메시지를 보낸 기준 날짜. ALL에서는 생략 가능")
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
             LocalDate date

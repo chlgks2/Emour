@@ -113,6 +113,7 @@ public class ChatBookmarkService {
         PageRequest page = PageRequest.of(0, size + 1);
 
         List<ChatBookmark> found = period == null
+                || period == DashboardPeriod.ALL
                 ? findAllBookmarks(
                         roomId,
                         userId,
@@ -203,6 +204,9 @@ public class ChatBookmarkService {
             DashboardPeriod period,
             LocalDate date
     ) {
+        if (period == DashboardPeriod.ALL) {
+            return;
+        }
         if ((period == null) != (date == null)) {
             throw new ChatException(
                     "기간 조회에서는 period와 date를 함께 입력해 주세요."
@@ -214,17 +218,11 @@ public class ChatBookmarkService {
             DashboardPeriod period,
             LocalDate date
     ) {
-        return switch (period) {
-            case DAY -> new DateRange(date, date.plusDays(1));
-            case MONTH -> {
-                LocalDate start = date.withDayOfMonth(1);
-                yield new DateRange(start, start.plusMonths(1));
-            }
-            case YEAR -> {
-                LocalDate start = date.withDayOfYear(1);
-                yield new DateRange(start, start.plusYears(1));
-            }
-        };
+        LocalDate startDate = period.startDate(date);
+        return new DateRange(
+                startDate,
+                period.endExclusive(startDate)
+        );
     }
 
     private ChatBookmarkResponse toResponse(ChatBookmark bookmark) {

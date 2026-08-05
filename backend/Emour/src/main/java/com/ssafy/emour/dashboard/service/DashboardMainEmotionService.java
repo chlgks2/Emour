@@ -7,10 +7,11 @@ import com.ssafy.emour.chat.entity.EmotionType;
 import com.ssafy.emour.couple.entity.CoupleMemberId;
 import com.ssafy.emour.couple.entity.CoupleMemberStatus;
 import com.ssafy.emour.couple.repository.CoupleMemberRepository;
-import com.ssafy.emour.dashboard.dto.DashboardMainEmotionResponse;
+import com.ssafy.emour.dashboard.dto.DashboardCoupleMainEmotionResponse;
 import com.ssafy.emour.dashboard.dto.DashboardPeriod;
 import com.ssafy.emour.dashboard.dto.EmotionSummaryItem;
-import com.ssafy.emour.dashboard.entity.CoupleDashboard;
+import com.ssafy.emour.dashboard.dto.MemberMainEmotion;
+import com.ssafy.emour.dashboard.entity.Dashboard;
 import com.ssafy.emour.global.exception.CustomException;
 import com.ssafy.emour.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,7 @@ import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -36,69 +38,84 @@ public class DashboardMainEmotionService {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Transactional
-    public DashboardMainEmotionResponse getMainEmotions(
+    public DashboardCoupleMainEmotionResponse getMainEmotions(
             Long roomId,
             Long userId,
             DashboardPeriod period,
             LocalDate date
     ) {
         validateRequest(roomId, userId, period, date);
-        DateRange range = createRange(period, date);
-
-        List<CoupleDashboard> snapshots = snapshotRangeService
-                .getCoupleSnapshots(
-                        roomId,
-                        userId,
-                        range.startDate(),
-                        range.endExclusive()
-                );
-        return createResponse(
+        DateRange range = createRange(roomId, period, date);
+        Long partnerUserId = findPartnerUserId(roomId, userId);
+        MemberAggregation me = aggregateMember(
                 roomId,
-                period,
-                range,
-                createCounts(snapshots),
-                snapshots.stream()
-                        .map(CoupleDashboard::getCalculatedAt)
-                        .max(Comparator.naturalOrder())
-                        .orElseGet(() -> LocalDateTime.now(dashboardClock))
+                userId,
+                range
         );
-    }
+        MemberAggregation partner = aggregateMember(
+                roomId,
+                partnerUserId,
+                range
+        );
+        LocalDateTime calculatedAt = me.calculatedAt()
+                .isAfter(partner.calculatedAt())
+                ? me.calculatedAt()
+                : partner.calculatedAt();
 
-    private DashboardMainEmotionResponse createResponse(
-            Long roomId,
-            DashboardPeriod period,
-            DateRange range,
-            Map<EmotionType, Integer> counts,
-            LocalDateTime calculatedAt
-    ) {
-        int totalCount = counts.values().stream()
-                .mapToInt(Integer::intValue)
-                .sum();
-        List<EmotionSummaryItem> summaries =
-                createSummaries(counts);
-        EmotionSummaryItem dominantEmotion = summaries.stream()
-                .filter(summary -> summary.count() > 0)
-                .findFirst()
-                .orElse(null);
-
-        return new DashboardMainEmotionResponse(
+        return new DashboardCoupleMainEmotionResponse(
                 roomId,
                 period,
                 range.startDate(),
                 range.endExclusive().minusDays(1),
-                totalCount,
-                dominantEmotion,
-                summaries,
+                me.summary(),
+                partner.summary(),
+                calculatedAt
+        );
+    }
+
+    private MemberAggregation aggregateMember(
+            Long roomId,
+            Long userId,
+            DateRange range
+    ) {
+        List<Dashboard> snapshots = snapshotRangeService.getMemberSnapshots(
+                roomId,
+                userId,
+                range.startDate(),
+                range.endExclusive()
+        );
+        Map<EmotionType, Integer> counts = createCounts(snapshots);
+        int totalCount = counts.values().stream()
+                .mapToInt(Integer::intValue)
+                .sum();
+        List<EmotionSummaryItem> summaries = createSummaries(counts);
+        EmotionSummaryItem dominantEmotion = summaries.stream()
+                .filter(summary -> summary.count() > 0)
+                .findFirst()
+                .orElse(null);
+        LocalDateTime calculatedAt = snapshots.stream()
+                .map(Dashboard::getCalculatedAt)
+                .filter(Objects::nonNull)
+                .max(Comparator.naturalOrder())
+                .orElseGet(() -> LocalDateTime.now(dashboardClock));
+
+        return new MemberAggregation(
+                new MemberMainEmotion(
+                        userId,
+                        totalCount,
+                        dominantEmotion,
+                        summaries
+                ),
                 calculatedAt
         );
     }
 
     private Map<EmotionType, Integer> createCounts(
-            List<CoupleDashboard> snapshots
+            List<Dashboard> snapshots
     ) {
         Map<EmotionType, Integer> counts = emptyCounts();
         snapshots.stream()
-                .map(CoupleDashboard::getEmotionSummary)
+                .map(Dashboard::getEmotionSummary)
                 .map(this::readEmotionCounts)
                 .forEach(daily -> daily.forEach((emotion, count) ->
                         counts.merge(
@@ -107,6 +124,19 @@ public class DashboardMainEmotionService {
                                 Integer::sum
                         )));
         return counts;
+    }
+
+    private Long findPartnerUserId(Long roomId, Long userId) {
+        return coupleMemberRepository.findAllByIdRoomId(roomId)
+                .stream()
+                .filter(member -> member.getStatus()
+                        == CoupleMemberStatus.ACTIVE)
+                .map(member -> member.getId().getUserId())
+                .filter(memberUserId -> !memberUserId.equals(userId))
+                .findFirst()
+                .orElseThrow(() -> new CustomException(
+                        ErrorCode.ACTIVE_COUPLE_NOT_FOUND
+                ));
     }
 
     private Map<String, Integer> readEmotionCounts(String json) {
@@ -150,20 +180,21 @@ public class DashboardMainEmotionService {
     }
 
     private DateRange createRange(
+            Long roomId,
             DashboardPeriod period,
             LocalDate date
     ) {
-        return switch (period) {
-            case DAY -> new DateRange(date, date.plusDays(1));
-            case MONTH -> {
-                LocalDate start = date.withDayOfMonth(1);
-                yield new DateRange(start, start.plusMonths(1));
-            }
-            case YEAR -> {
-                LocalDate start = date.withDayOfYear(1);
-                yield new DateRange(start, start.plusYears(1));
-            }
-        };
+        if (period == DashboardPeriod.ALL) {
+            return new DateRange(
+                    snapshotRangeService.findAllStartDate(roomId),
+                    LocalDate.now(dashboardClock).plusDays(1)
+            );
+        }
+        LocalDate startDate = period.startDate(date);
+        return new DateRange(
+                startDate,
+                period.endExclusive(startDate)
+        );
     }
 
     private void validateRequest(
@@ -172,12 +203,12 @@ public class DashboardMainEmotionService {
             DashboardPeriod period,
             LocalDate date
     ) {
-        if (roomId == null || userId == null
-                || period == null || date == null) {
+        if (roomId == null || userId == null || period == null
+                || (period != DashboardPeriod.ALL && date == null)) {
             throw new CustomException(ErrorCode.INVALID_INPUT);
         }
 
-        DateRange range = createRange(period, date);
+        DateRange range = createRange(roomId, period, date);
         if (range.startDate().isAfter(LocalDate.now(dashboardClock))) {
             throw new CustomException(ErrorCode.INVALID_INPUT);
         }
@@ -194,6 +225,12 @@ public class DashboardMainEmotionService {
     private record DateRange(
             LocalDate startDate,
             LocalDate endExclusive
+    ) {
+    }
+
+    private record MemberAggregation(
+            MemberMainEmotion summary,
+            LocalDateTime calculatedAt
     ) {
     }
 }

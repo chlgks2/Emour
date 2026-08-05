@@ -4,7 +4,7 @@ import com.ssafy.emour.dashboard.dto.DashboardConversationFlowResponse;
 import com.ssafy.emour.dashboard.dto.DashboardCoupleEmotionFlowResponse;
 import com.ssafy.emour.dashboard.dto.DashboardCountResponse;
 import com.ssafy.emour.dashboard.dto.DashboardFrequentWordsResponse;
-import com.ssafy.emour.dashboard.dto.DashboardMainEmotionResponse;
+import com.ssafy.emour.dashboard.dto.DashboardCoupleMainEmotionResponse;
 import com.ssafy.emour.dashboard.dto.DashboardPeriod;
 import com.ssafy.emour.dashboard.dto.MemberDashboardCountResponse;
 import com.ssafy.emour.dashboard.service.DashboardConversationService;
@@ -47,7 +47,8 @@ public class DashboardController {
     public DashboardCountResponse getCounts(
             @RequestParam Long roomId,
             @RequestParam(defaultValue = "DAY") DashboardPeriod period,
-            @RequestParam
+            @Parameter(description = "ALL 조회에서는 생략할 수 있습니다.")
+            @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
             LocalDate date
     ) {
@@ -67,7 +68,8 @@ public class DashboardController {
     public MemberDashboardCountResponse getMemberCounts(
             @RequestParam Long roomId,
             @RequestParam(defaultValue = "DAY") DashboardPeriod period,
-            @RequestParam
+            @Parameter(description = "ALL 조회에서는 생략할 수 있습니다.")
+            @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
             LocalDate date
     ) {
@@ -87,7 +89,8 @@ public class DashboardController {
     public DashboardCoupleEmotionFlowResponse getCoupleEmotionFlow(
             @RequestParam Long roomId,
             @RequestParam(defaultValue = "DAY") DashboardPeriod period,
-            @RequestParam
+            @Parameter(description = "ALL 조회에서는 생략할 수 있습니다.")
+            @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
             LocalDate date
     ) {
@@ -107,7 +110,8 @@ public class DashboardController {
     public DashboardFrequentWordsResponse getFrequentWords(
             @RequestParam Long roomId,
             @RequestParam(defaultValue = "DAY") DashboardPeriod period,
-            @RequestParam
+            @Parameter(description = "ALL 조회에서는 생략할 수 있습니다.")
+            @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
             LocalDate date,
             @Parameter(description = "기본 10개, 최대 50개", example = "10")
@@ -124,13 +128,14 @@ public class DashboardController {
 
     @GetMapping("/couple/main-emotions")
     @Operation(
-            summary = "기간별 커플 주요 감정 조회",
-            description = "커플 두 사람의 분석 완료 메시지를 감정별로 합산합니다."
+            summary = "기간별 사용자별 주요 감정 조회",
+            description = "로그인 사용자와 상대방의 주요 감정을 각각 집계해 반환합니다."
     )
-    public DashboardMainEmotionResponse getMainEmotions(
+    public DashboardCoupleMainEmotionResponse getMainEmotions(
             @RequestParam Long roomId,
             @RequestParam(defaultValue = "DAY") DashboardPeriod period,
-            @RequestParam
+            @Parameter(description = "ALL 조회에서는 생략할 수 있습니다.")
+            @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
             LocalDate date
     ) {
@@ -150,7 +155,8 @@ public class DashboardController {
     public DashboardConversationFlowResponse getConversationFlow(
             @RequestParam Long roomId,
             @RequestParam(defaultValue = "DAY") DashboardPeriod period,
-            @RequestParam
+            @Parameter(description = "ALL 조회에서는 생략할 수 있습니다.")
+            @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
             LocalDate date
     ) {

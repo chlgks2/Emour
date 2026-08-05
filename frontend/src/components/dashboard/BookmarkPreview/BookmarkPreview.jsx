@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, MessageSquareText } from "lucide-react";
 import { fetchRecentBookmarks } from "../../../api/bookmarkApi";
 import { formatDate, formatTime } from "../../../utils/emotions";
 import styles from "./BookmarkPreview.module.css";
@@ -76,12 +76,42 @@ export default function BookmarkPreview() {
         <ul className={styles.list}>
           {bookmarks.map((bookmark) => (
             <li key={bookmark.bookmarkId} className={styles.item}>
-              <p className={styles.itemText}>{bookmark.content}</p>
-              <p className={styles.itemMeta}>
+              {bookmark.content && (
+                <p className={styles.itemText}>{bookmark.content}</p>
+              )}
+              {bookmark.images.length > 0 && (
+                <div className={styles.imageGrid}>
+                  {bookmark.images.slice(0, 3).map((image, index) => (
+                    <div key={image.imageId ?? image.imageUrl} className={styles.imageWrap}>
+                      <img
+                        className={styles.image}
+                        src={image.imageUrl}
+                        alt={`북마크한 사진 ${index + 1}`}
+                      />
+                      {index === 2 && bookmark.images.length > 3 && (
+                        <span className={styles.moreImages}>
+                          +{bookmark.images.length - 3}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className={styles.itemFooter}>
                 <time dateTime={bookmark.sentAt}>
                   {formatDate(bookmark.sentAt)} {formatTime(bookmark.sentAt)}
                 </time>
-              </p>
+                <button
+                  type="button"
+                  className={styles.moveButton}
+                  onClick={() => navigate("/chat", {
+                    state: { focusMessageId: bookmark.messageId },
+                  })}
+                >
+                  <MessageSquareText size={12} aria-hidden="true" />
+                  대화로 이동
+                </button>
+              </div>
             </li>
           ))}
         </ul>

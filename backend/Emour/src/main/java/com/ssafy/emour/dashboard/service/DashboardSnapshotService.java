@@ -23,7 +23,11 @@ import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.EnumMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /** 개인 북마크 수와 감정 흐름을 집계합니다. */
 @Service
@@ -130,6 +134,7 @@ public class DashboardSnapshotService {
         dashboard.applyHourlySnapshot(
                 bookmarkCount,
                 toJson(createEmotionFlow(analyses)),
+                toJsonEmotionCounts(createEmotionCounts(analyses)),
                 snapshotUntil,
                 finalized,
                 calculatedAt
@@ -144,6 +149,8 @@ public class DashboardSnapshotService {
         return dashboard != null
                 && dashboard.getEmotionFlow() != null
                 && !dashboard.getEmotionFlow().isBlank()
+                && dashboard.getEmotionSummary() != null
+                && !dashboard.getEmotionSummary().isBlank()
                 && dashboard.getAggregatedUntil() != null
                 && dashboard.getAggregatedUntil().isAfter(snapshotUntil);
     }
@@ -156,6 +163,8 @@ public class DashboardSnapshotService {
         if (dashboard == null
                 || dashboard.getEmotionFlow() == null
                 || dashboard.getEmotionFlow().isBlank()
+                || dashboard.getEmotionSummary() == null
+                || dashboard.getEmotionSummary().isBlank()
                 || dashboard.getAggregatedUntil() == null
                 || dashboard.getAggregatedUntil().isBefore(snapshotUntil)) {
             return true;
@@ -195,6 +204,27 @@ public class DashboardSnapshotService {
             ));
         }
         return flow;
+    }
+
+    private Map<EmotionType, Integer> createEmotionCounts(
+            List<ChatAnalysis> analyses
+    ) {
+        Map<EmotionType, Integer> counts = new EnumMap<>(EmotionType.class);
+        Arrays.stream(EmotionType.values())
+                .forEach(type -> counts.put(type, 0));
+        analyses.stream()
+                .map(ChatAnalysis::getEmotionType)
+                .map(EmotionType::fromStoredValue)
+                .forEach(type -> counts.merge(type, 1, Integer::sum));
+        return counts;
+    }
+
+    private String toJsonEmotionCounts(
+            Map<EmotionType, Integer> counts
+    ) {
+        Map<String, Integer> values = new LinkedHashMap<>();
+        counts.forEach((type, count) -> values.put(type.name(), count));
+        return toJson(values);
     }
 
     private String toJson(Object value) {
