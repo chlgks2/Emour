@@ -419,16 +419,7 @@ export async function sendMessage({
   return normalizeChatMessage(message)
 }
 
-export async function fetchSuggestions({
-  messageId,
-  targetMessage,
-}) {
-  if (!messageId) {
-    throw new Error(
-      '문구 추천에 사용할 이전 메시지가 없습니다.',
-    )
-  }
-
+export async function fetchSuggestions({ targetMessage }) {
   const content = targetMessage?.trim()
 
   if (!content) {
@@ -440,7 +431,6 @@ export async function fetchSuggestions({
     {
       method: 'POST',
       body: {
-        messageId,
         targetMessage: content,
       },
     },
