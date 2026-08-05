@@ -17,7 +17,7 @@ build:web:
   stage: build
   tags: [emour-ec2]
   rules:
-    - if: ($CI_COMMIT_BRANCH =~ /^develop\// || $CI_COMMIT_BRANCH == "master")
+    - if: '$CI_COMMIT_BRANCH =~ /^develop\// || $CI_COMMIT_BRANCH == "master"'
       changes: [frontend/**/*]
   script:
     - docker build --build-arg VITE_API_BASE_URL=/api --build-arg VITE_WS_BASE_URL=/ws
@@ -51,7 +51,7 @@ build:api:
   stage: build
   tags: [emour-ec2]
   rules:
-    - if: ($CI_COMMIT_BRANCH =~ /^develop\// || $CI_COMMIT_BRANCH == "master")
+    - if: '$CI_COMMIT_BRANCH =~ /^develop\// || $CI_COMMIT_BRANCH == "master"'
       changes: [backend/**/*]
   script:
     - docker build -t emour-api:$IMAGE_TAG ./backend/Emour
@@ -83,7 +83,7 @@ build:ai:
   stage: build
   tags: [emour-ec2]
   rules:
-    - if: ($CI_COMMIT_BRANCH =~ /^develop\// || $CI_COMMIT_BRANCH == "master")
+    - if: '$CI_COMMIT_BRANCH =~ /^develop\// || $CI_COMMIT_BRANCH == "master"'
       changes: [AI/**/*]
   script:
     - docker build -t emour-ai:$IMAGE_TAG ./AI
