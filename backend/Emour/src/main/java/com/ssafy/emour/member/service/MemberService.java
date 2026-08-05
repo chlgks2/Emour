@@ -13,6 +13,7 @@ import com.ssafy.emour.member.dto.response.MemberProfileImageResponse;
 import com.ssafy.emour.member.dto.response.MemberProfileResponse;
 import com.ssafy.emour.member.dto.response.MemberProfileImagesResponse;
 import com.ssafy.emour.member.dto.response.PartnerNicknameResponse;
+import com.ssafy.emour.member.dto.response.PartnerStatusMessageResponse;
 import com.ssafy.emour.member.entity.Member;
 import com.ssafy.emour.member.entity.MemberStatus;
 import com.ssafy.emour.member.repository.MemberRepository;
@@ -94,6 +95,20 @@ public class MemberService {
         Member partner = getActivePartner(userId);
 
         return toPartnerNicknameResponse(membership, partner);
+    }
+
+    /** 현재 연결된 커플 상대방의 상태 메시지를 조회합니다. */
+    @Transactional(readOnly = true)
+    public PartnerStatusMessageResponse getPartnerStatusMessage(
+            Long userId
+    ) {
+        getActiveMember(userId);
+        Member partner = getActivePartner(userId);
+
+        return new PartnerStatusMessageResponse(
+                partner.getId(),
+                partner.getStatusMessage()
+        );
     }
 
     /** 로그인 사용자의 커플 멤버 행에 상대방 애칭을 저장합니다. */
