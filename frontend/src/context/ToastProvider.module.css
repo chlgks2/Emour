@@ -1,0 +1,51 @@
+.viewport {
+  position: fixed;
+  /* 하단 네비게이션과 홈 인디케이터 위에 뜨도록 */
+  bottom: calc(var(--bottom-nav-height) + var(--safe-bottom) + 16px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 200;
+  width: min(calc(var(--app-max-width) - 40px), calc(100% - 40px));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  /* 컨테이너 자체는 클릭을 통과시키고, 토스트만 클릭 가능하게 */
+  pointer-events: none;
+}
+
+.toast {
+  pointer-events: auto;
+  max-width: 100%;
+  min-height: 40px;
+  padding: 10px 18px;
+  border-radius: var(--radius-pill);
+  background: rgba(40, 34, 32, 0.92);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+  text-align: center;
+  box-shadow: var(--shadow-float);
+  backdrop-filter: blur(8px);
+  animation: toastIn var(--duration-base) var(--ease-spring);
+}
+
+.success {
+  background: rgba(58, 132, 100, 0.94);
+}
+
+.error {
+  background: rgba(190, 68, 84, 0.94);
+}
+
+@keyframes toastIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}

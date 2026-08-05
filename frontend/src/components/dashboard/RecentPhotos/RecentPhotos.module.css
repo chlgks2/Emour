@@ -1,0 +1,109 @@
+/*
+ * 사진을 화면 끝까지 흘리던(full-bleed) 것을 카드 안으로 되돌렸다.
+ *
+ * 액자를 없애면 사진이 주인공이 될 거라고 봤는데, 실제로는 232px 짜리 사진이
+ * 좌우 여백 없이 붙으면서 화면을 가로막는 벽처럼 보였다. 위아래 섹션이 모두
+ * 본문 기준선(--page-gutter) 안에 있어서 이 블록만 밖으로 튀어나온 것처럼
+ * 읽히기도 했다. 세로 리듬을 지키는 쪽이 낫다.
+ */
+.section {
+  margin: var(--section-gap) var(--page-gutter) 0;
+}
+
+.head {
+  margin-right: 0;
+  margin-left: 0;
+}
+
+/* 서식은 공용 .empty-note 가 정한다. */
+.emptyText {
+  padding: 4px 0 6px;
+}
+
+.viewport {
+  overflow: hidden;
+  /* 캘린더 카드·감정 리포트 패널과 같은 모서리 */
+  border-radius: var(--card-radius);
+  touch-action: pan-y;
+  cursor: grab;
+  user-select: none;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+.viewport:active {
+  cursor: grabbing;
+}
+
+.track {
+  display: flex;
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
+.slide {
+  flex-shrink: 0;
+  padding: 0;
+}
+
+.photo {
+  width: 100%;
+  /* 화면을 가로막지 않으면서 사진이 충분히 보이는 높이 */
+  height: 200px;
+  object-fit: cover;
+  pointer-events: none;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+.dots {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  /* 점 사이 여백은 버튼 좌우 padding 으로만 만든다 */
+  gap: 0;
+  margin-top: 10px;
+}
+
+/*
+ * ::before 로 보이는 점을 그리고, 버튼 자체는 투명한 히트 영역 역할을 한다.
+ * 점 사이 간격 = 좌우 padding 합(10px).
+ *
+ * padding: 0 을 반드시 명시할 것.
+ * 브라우저 기본 버튼 padding(1px 6px)이 남아 있으면 border-box 기준으로
+ * 안쪽 폭이 4px 밖에 남지 않아, 7px 점이 눌려 세로 타원으로 찌그러진다.
+ *
+ * 폭을 고정하지 않고 내용에 맞춰 늘어나게 두어야
+ * 활성 알약이 옆 점을 밀어내며 제대로 길어진다.
+ */
+.dot {
+  position: relative;
+  height: 24px;
+  padding: 0 5px;
+  border: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border-radius: var(--radius-pill);
+}
+
+.dot::before {
+  content: "";
+  /* 눌려서 찌그러지지 않도록 */
+  flex-shrink: 0;
+  width: 7px;
+  height: 7px;
+  border-radius: var(--radius-pill);
+  background: var(--color-border-strong);
+  transition: width var(--duration-base) var(--ease-out),
+    background-color var(--duration-base) var(--ease-out);
+}
+
+/* 활성 점만 가로로 긴 알약이 된다 (원 + 알약 조합) */
+.dotActive::before {
+  width: 18px;
+  background: var(--color-primary);
+}

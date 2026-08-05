@@ -1,0 +1,863 @@
+.album-page {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-rows: var(--topbar-height) minmax(0, 1fr) auto;
+  overflow: hidden;
+  background: var(--color-background);
+}
+
+/* =========================
+   헤더
+========================= */
+
+.album-header {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--color-divider);
+  background: color-mix(in srgb, var(--color-background) 86%, transparent);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+/* 채팅·캘린더·마이페이지 상단바와 같은 서식 (tokens.css --font-topbar-title) */
+.album-header h1 {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: var(--font-topbar-title);
+  font-weight: 800;
+  text-align: center;
+}
+
+/* 제목이 가운데 정렬을 유지하도록 동작 버튼은 흐름에서 빼서 오른쪽에 얹는다 */
+.album-add-button {
+  position: absolute;
+  top: 50%;
+  right: var(--page-padding-x);
+  transform: translateY(-50%);
+  height: 34px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 13px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--color-action);
+  color: var(--color-text-on-primary);
+  font-size: var(--font-caption);
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out);
+}
+
+.album-add-button:hover:not(:disabled) {
+  background: var(--color-action-hover);
+}
+
+.album-file-input {
+  display: none;
+}
+
+/* =========================
+   본문
+========================= */
+
+.album-content {
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 16px var(--page-padding-x) 28px;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
+/* =========================
+   탭
+========================= */
+
+ /* 대시보드 기간 탭과 같은 알약 모양 */
+.album-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 3px;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-sunken);
+}
+
+.album-tab {
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-text-tertiary);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
+}
+
+/* 알약 안의 알약(배지)은 알림처럼 보인다. 숫자만 흐리게 덧붙인다. */
+.album-tab strong {
+  color: var(--color-text-tertiary);
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.album-tab-active {
+  background: var(--color-surface);
+  color: var(--color-primary-strong);
+  box-shadow: var(--shadow-sm);
+}
+
+.album-tab-active strong {
+  color: var(--color-text-accent);
+}
+
+/* =========================
+   앨범 목록
+========================= */
+
+.album-section {
+  margin-top: 20px;
+}
+
+/* 섹션 제목·개수는 공용 .section-head / .section-title / .section-meta 를 쓴다 */
+
+/* =========================
+   사진 그리드
+========================= */
+
+/*
+ * 모자이크 그리드.
+ * 같은 크기 정사각형만 3열로 깔면 사진이 아니라 격자가 먼저 보이고,
+ * 어떤 사진도 눈에 들어오지 않는다. 주기적으로 큰 칸을 섞어 리듬을 준다.
+ * dense 를 켜야 큰 칸 옆에 생긴 빈자리를 뒤 사진이 메운다.
+ */
+.album-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-auto-flow: dense;
+  gap: 7px;
+}
+
+.album-photo-card {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  overflow: hidden;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-sunken);
+  cursor: pointer;
+}
+
+/*
+ * 7장마다 한 장을 2x2 로 키운다.
+ * 7은 3열 격자와 서로소라서 큰 칸이 매번 다른 열에 놓이고,
+ * 덕분에 패턴이 반복처럼 보이지 않는다.
+ */
+.album-grid > .album-photo-card:nth-child(7n + 1) {
+  grid-column: span 2;
+  grid-row: span 2;
+}
+
+/* 큰 칸은 라디우스도 한 단계 키워야 작은 칸과 같은 곡률로 보인다 */
+.album-grid > .album-photo-card:nth-child(7n + 1) {
+  border-radius: var(--radius-md);
+}
+
+/* 사진이 적을 때는 큰 칸 하나가 화면을 다 먹으므로 균등 격자로 되돌린다 */
+.album-grid-uniform > .album-photo-card:nth-child(7n + 1) {
+  grid-column: span 1;
+  grid-row: span 1;
+  border-radius: var(--radius-sm);
+}
+
+.album-photo-card img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  transition: transform var(--duration-slow) var(--ease-out);
+}
+
+.album-photo-card:hover img {
+  transform: scale(1.05);
+}
+
+.album-photo-overlay {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  overflow: hidden;
+  padding: 18px 7px 7px;
+  background: linear-gradient(transparent, rgba(46, 39, 37, 0.66));
+  color: var(--color-surface);
+  font-size: 9px;
+  font-weight: 500;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* =========================
+   로딩 및 빈 화면
+========================= */
+
+/*
+ * 점선 상자를 두르면 "여기 뭔가 빠졌다"는 인상이 강해지고,
+ * 대시보드의 조용한 빈 상태와도 어긋난다. 상자 없이 문구만 둔다.
+ */
+.album-status {
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 30px 20px;
+  color: var(--color-text-placeholder);
+  text-align: center;
+}
+
+.album-status h3 {
+  margin: 14px 0 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-label);
+  font-weight: 700;
+}
+
+/* 빈 상태 문구 서식은 공용 .empty-note 와 같다 */
+.album-status p {
+  margin: 7px 0 0;
+  color: var(--color-text-placeholder);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.album-status-error {
+  color: var(--color-danger);
+}
+
+.album-status-error h3,
+.album-status-error p {
+  color: var(--color-danger);
+}
+
+.album-loading-spinner {
+  width: 30px;
+  height: 30px;
+  border: 3px solid var(--color-surface-tint);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: album-spinner 0.8s linear infinite;
+}
+
+@keyframes album-spinner {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .album-loading-spinner {
+    animation-duration: 2.4s;
+  }
+}
+
+/* =========================
+   토스트
+========================= */
+
+.album-toast {
+  position: absolute;
+  z-index: 80;
+  right: 16px;
+  bottom: calc(var(--bottom-nav-height) + 16px);
+  left: 16px;
+  padding: 13px 16px;
+  border-radius: var(--radius-md);
+  background: rgba(62, 54, 51, 0.94);
+  color: var(--color-surface);
+  font-size: var(--font-caption);
+  font-weight: 500;
+  line-height: 1.45;
+  text-align: center;
+  box-shadow: var(--shadow-float);
+}
+
+/* =========================
+   모달 공통 배경
+========================= */
+
+.album-upload-backdrop,
+.album-modal-backdrop,
+.album-delete-backdrop {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: var(--color-scrim);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  animation: album-modal-fade var(--duration-base) var(--ease-out);
+}
+
+.album-upload-backdrop {
+  z-index: 75;
+}
+
+.album-modal-backdrop {
+  z-index: 60;
+}
+
+.album-delete-backdrop {
+  z-index: 85;
+}
+
+@keyframes album-modal-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .album-upload-backdrop,
+  .album-modal-backdrop,
+  .album-delete-backdrop {
+    animation: none;
+  }
+}
+
+/* =========================
+   사진 등록 모달
+========================= */
+
+.album-upload-modal,
+.album-photo-modal,
+.album-delete-modal {
+  width: 100%;
+  border-radius: var(--card-radius);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-float);
+}
+
+.album-upload-modal {
+  max-height: calc(100% - 24px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+.album-upload-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.album-upload-header p {
+  margin: 0 0 4px;
+  color: var(--color-primary);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.album-upload-header h2 {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: var(--font-heading);
+  font-weight: 800;
+}
+
+.album-upload-header > button {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
+}
+
+.album-upload-header > button:hover:not(:disabled) {
+  background: var(--color-surface-sunken);
+  color: var(--color-text-primary);
+}
+
+.album-upload-form {
+  margin-top: 18px;
+}
+
+/* =========================
+   사진 선택 및 미리보기
+========================= */
+
+.album-upload-preview {
+  width: 100%;
+  aspect-ratio: 16 / 11;
+  overflow: hidden;
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--color-background);
+}
+
+.album-upload-preview-selected {
+  border-style: solid;
+  border-color: var(--color-border);
+  background: var(--color-surface-sunken);
+}
+
+.album-upload-preview img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+}
+
+.album-upload-select-area {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 20px;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out);
+}
+
+.album-upload-select-area:hover:not(:disabled) {
+  background: var(--color-surface-tint);
+}
+
+.album-upload-select-icon {
+  width: 56px;
+  height: 56px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4px;
+  border-radius: var(--radius-lg);
+  background: var(--color-primary-faint);
+  color: var(--color-primary);
+}
+
+.album-upload-select-area strong {
+  color: var(--color-text-primary);
+  font-size: var(--font-label);
+  font-weight: 700;
+}
+
+.album-upload-select-description {
+  color: var(--color-text-tertiary);
+  font-size: var(--font-micro);
+}
+
+.album-upload-select-label {
+  min-width: 92px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 6px;
+  padding: 0 14px;
+  border-radius: var(--radius-pill);
+  background: var(--color-action);
+  color: var(--color-text-on-primary);
+  font-size: var(--font-micro);
+  font-weight: 700;
+}
+
+.album-upload-change-button {
+  width: 100%;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-background);
+  color: var(--color-text-secondary);
+  font-size: var(--font-caption);
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out);
+}
+
+.album-upload-change-button:hover:not(:disabled) {
+  border-color: var(--color-primary-soft);
+  background: var(--color-surface-tint);
+}
+
+/* =========================
+   메모 입력
+========================= */
+
+.album-upload-memo-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.album-upload-memo-field > span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-text-primary);
+  font-size: var(--font-label);
+  font-weight: 700;
+}
+
+.album-upload-memo-field textarea {
+  width: 100%;
+  min-height: 92px;
+  resize: none;
+  padding: 13px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  outline: none;
+  background: var(--color-background);
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: var(--font-label);
+  line-height: var(--leading-relaxed);
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  transition:
+    border-color var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out);
+}
+
+.album-upload-memo-field textarea:focus {
+  border-color: var(--color-primary);
+  box-shadow: var(--focus-ring);
+}
+
+.album-upload-memo-field textarea::placeholder {
+  color: var(--color-text-placeholder);
+}
+
+.album-upload-memo-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 7px;
+}
+
+.album-upload-memo-footer span,
+.album-upload-memo-footer strong {
+  color: var(--color-text-tertiary);
+  font-size: 10px;
+}
+
+.album-upload-memo-footer strong {
+  flex-shrink: 0;
+  font-weight: 700;
+}
+
+.album-upload-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-divider);
+}
+
+.album-upload-actions button,
+.album-delete-actions button {
+  height: 48px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  font-size: var(--font-label);
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out);
+}
+
+.album-upload-cancel,
+.album-delete-cancel {
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+}
+
+.album-upload-cancel:hover:not(:disabled),
+.album-delete-cancel:hover:not(:disabled) {
+  background: var(--color-surface-tint);
+  border-color: var(--color-primary-soft);
+}
+
+.album-upload-submit {
+  background: var(--color-action);
+  color: var(--color-text-on-primary);
+}
+
+.album-upload-submit:hover:not(:disabled) {
+  background: var(--color-action-hover);
+}
+
+/* =========================
+   사진 상세 모달
+========================= */
+
+.album-photo-modal {
+  max-height: calc(100% - 24px);
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.album-photo-modal > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 18px;
+}
+
+.album-photo-modal > header p {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: var(--font-label);
+  font-weight: 700;
+}
+
+.album-photo-modal > header span {
+  display: block;
+  margin-top: 3px;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-micro);
+}
+
+.album-photo-modal > header button {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
+}
+
+.album-photo-modal > header button:hover:not(:disabled) {
+  background: var(--color-surface-sunken);
+  color: var(--color-text-primary);
+}
+
+.album-photo-modal-image {
+  width: 100%;
+  aspect-ratio: 1;
+  overflow: hidden;
+  background: var(--color-surface-sunken);
+}
+
+.album-photo-modal-image img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+}
+
+.album-photo-memo {
+  margin: 0;
+  padding: 16px 18px 0;
+  color: var(--color-text-primary);
+  font-size: var(--font-label);
+  line-height: var(--leading-relaxed);
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.album-photo-delete-button {
+  width: calc(100% - 36px);
+  height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  margin: 16px 18px 18px;
+  border: 1px solid var(--color-primary-soft);
+  border-radius: var(--radius-pill);
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+  font-size: var(--font-label);
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out);
+}
+
+.album-photo-delete-button:hover:not(:disabled) {
+  background: var(--color-primary-soft);
+}
+
+/* =========================
+   삭제 확인 모달
+========================= */
+
+.album-delete-modal {
+  padding: 26px 22px 22px;
+  text-align: center;
+}
+
+.album-delete-icon {
+  width: 56px;
+  height: 56px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-lg);
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+}
+
+.album-delete-modal h2 {
+  margin: 16px 0 0;
+  color: var(--color-text-primary);
+  font-size: var(--font-heading);
+  font-weight: 800;
+}
+
+.album-delete-modal p {
+  margin: 10px 0 22px;
+  color: var(--color-text-secondary);
+  font-size: var(--font-label);
+  line-height: var(--leading-relaxed);
+  word-break: keep-all;
+}
+
+.album-delete-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+}
+
+.album-delete-submit {
+  background: var(--color-action);
+  color: var(--color-text-on-primary);
+}
+
+.album-delete-submit:hover:not(:disabled) {
+  background: var(--color-action-hover);
+}
+
+/* =========================
+   비활성화
+========================= */
+
+.album-page button:disabled,
+.album-page textarea:disabled {
+  cursor: not-allowed;
+  opacity: 0.52;
+}
+
+/* =========================
+   작은 화면
+========================= */
+
+@media (max-width: 360px) {
+  .album-content,
+  .album-header {
+    padding-right: 14px;
+    padding-left: 14px;
+  }
+
+  .album-add-button {
+    padding: 0 12px;
+  }
+
+  .album-grid {
+    gap: 5px;
+  }
+
+  .album-photo-card {
+    border-radius: var(--radius-xs);
+  }
+
+  .album-upload-modal {
+    padding: 16px;
+  }
+
+  .album-upload-select-area {
+    padding: 14px;
+  }
+
+  .album-upload-select-icon {
+    width: 50px;
+    height: 50px;
+  }
+}
+
+/*
+ * 공용 Button(primary)과 동일한 눌림 피드백 — 앱 전체에서 버튼 반응이 같게.
+ *
+ * '사진 추가' 버튼에는 걸지 않는다. 이 버튼은 transform: translateY(-50%) 로
+ * 세로 가운데를 맞추고 있어서, 여기에 scale 을 덮어쓰면 그 -50% 가 사라진다.
+ * 누를 때마다 버튼이 자기 높이의 절반만큼 아래로 뚝 떨어져 보였다.
+ * (같이 쓰려면 transform: translateY(-50%) scale(0.98) 처럼 합쳐 써야 하는데,
+ *  가운데 정렬 값이 바뀌면 이 규칙도 따라 고쳐야 해서 그냥 두지 않는다)
+ */
+.album-upload-submit:not(:disabled):active {
+  transform: scale(0.98);
+}
+.album-delete-submit:not(:disabled):active {
+  transform: scale(0.98);
+}

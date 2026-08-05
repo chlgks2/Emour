@@ -1,0 +1,47 @@
+.wrap {
+  flex: 1;
+  overflow: hidden;
+  padding-bottom: 24px;
+}
+
+.topBar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 18px 20px;
+}
+
+/*
+ * 스켈레톤은 실제 화면과 같은 형태로 보여야 한다.
+ * 흰 카드 그림자를 그대로 두면 로딩이 끝나는 순간 레이아웃이 달라 보인다.
+ */
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: var(--section-gap) var(--page-gutter) 0;
+  padding: 14px;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-sunken);
+}
+
+.circleRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 4px;
+}
+
+.gridRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: var(--section-gap) var(--page-gutter) 0;
+}
+
+.gridRow .card {
+  margin: 0;
+}
+
+.donut {
+  margin: 4px auto 0;
+}

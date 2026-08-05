@@ -1,0 +1,334 @@
+.overlay {
+  /* 데스크톱에서도 앱 프레임 폭 안에 머물도록 가운데 정렬 */
+  position: fixed;
+  inset: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: var(--app-max-width);
+  z-index: 260;
+  display: flex;
+  flex-direction: column;
+  background: #000;
+  /* 이 화면 안에서는 브라우저 UI가 다크인 편이 자연스럽다 */
+  color-scheme: dark;
+}
+
+.topBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: calc(14px + var(--safe-top)) 12px 14px;
+  flex-shrink: 0;
+}
+
+.iconBtn {
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--tap-target);
+  height: var(--tap-target);
+  border-radius: 50%;
+}
+
+.iconBtn:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.saveBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 38px;
+  min-width: 84px;
+  padding: 0 16px;
+  border-radius: var(--radius-pill);
+  background: var(--color-action);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  transition: background-color var(--duration-fast) var(--ease-out);
+}
+
+.saveBtn:not(:disabled):hover {
+  background: var(--color-primary-dark);
+}
+
+.saveBtn:disabled {
+  opacity: 0.6;
+}
+
+.stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  touch-action: none;
+}
+
+.stagePhoto {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.stageGradient {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.1) 0%,
+    rgba(0, 0, 0, 0.8) 100%
+  );
+}
+
+.captionBox {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: min(312px, calc(100% - 32px));
+  max-height: calc(100% - 32px);
+  box-sizing: border-box;
+  overflow: visible;
+  padding: 14px 16px;
+  border-radius: 12px;
+}
+
+.captionToolbar {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 8px);
+  transform: translateX(-50%);
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: max-content;
+  max-width: calc(100vw - 24px);
+  padding: 7px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 13px;
+  background: rgba(35, 31, 30, 0.92);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.36);
+  color: #fff;
+  backdrop-filter: blur(8px);
+}
+
+.captionToolbar::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  width: 10px;
+  height: 10px;
+  transform: translate(-50%, -5px) rotate(45deg);
+  background: rgba(35, 31, 30, 0.92);
+}
+
+.toolbarField,
+.colorField {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #cfc4c0;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.toolbarField {
+  height: 30px;
+  padding: 0 6px;
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.toolbarField > svg { color: #d9cdca; }
+
+.toolbarField input {
+  width: 28px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #fff;
+  font-size: 11px;
+  text-align: center;
+  appearance: textfield;
+}
+
+.toolbarField input::-webkit-inner-spin-button,
+.toolbarField input::-webkit-outer-spin-button { appearance: none; }
+
+.colorField input {
+  width: 30px;
+  height: 30px;
+  padding: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.toolbarDivider {
+  width: 1px;
+  height: 22px;
+  margin: 0 2px;
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.alignButtons {
+  display: flex;
+  gap: 1px;
+  padding: 2px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.alignButtons button {
+  display: grid;
+  place-items: center;
+  width: 27px;
+  height: 26px;
+  border-radius: 7px;
+  color: #bdb1ad;
+}
+
+.alignButtons button:hover { background: rgba(255, 255, 255, 0.1); }
+
+.alignButtons .toolbarButtonActive {
+  background: var(--color-action);
+  color: #fff;
+  box-shadow: 0 2px 6px color-mix(in srgb, var(--color-action) 40%, transparent);
+}
+
+.captionBoxDim {
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.captionBoxSolid {
+  background: rgba(20, 20, 20, 0.8);
+}
+
+.captionBoxNone {
+  background: transparent;
+}
+
+.captionInlineInput {
+  display: block;
+  width: 100%;
+  min-height: 1.4em;
+  max-height: 8.4em;
+  padding: 0;
+  resize: none;
+  field-sizing: content;
+  overflow-y: auto;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  white-space: pre-wrap;
+  font-weight: 700;
+  line-height: 1.4;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  text-align: inherit;
+  caret-color: currentColor;
+}
+
+.captionInlineInput::placeholder {
+  color: currentColor;
+  opacity: 0.68;
+}
+
+.captionMoveHandle {
+  position: absolute;
+  left: 50%;
+  bottom: -12px;
+  transform: translateX(-50%);
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 24px;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.92);
+  color: #6f6260;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.24);
+  cursor: grab;
+  touch-action: none;
+}
+
+.captionMoveHandle:active { cursor: grabbing; }
+
+.pickPhotoBtn {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: var(--radius-pill);
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  font-size: 13px;
+  backdrop-filter: blur(4px);
+}
+
+.pickPhotoBtn:hover {
+  background: rgba(0, 0, 0, 0.68);
+}
+
+.hiddenInput {
+  display: none;
+}
+
+.controls {
+  background: #2b2523;
+  padding: 14px 16px calc(20px + var(--safe-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  /* 컨트롤이 많아 화면을 넘칠 수 있으므로 스크롤 허용 */
+  max-height: 46%;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+
+.controlRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.controlLabel {
+  width: 44px;
+  font-size: 12px;
+  color: #a89b96;
+}
+
+.pill {
+  min-height: 34px;
+  padding: 0 14px;
+  border-radius: var(--radius-pill);
+  background: #3a3230;
+  color: #d6cbc7;
+  font-size: 12px;
+  transition: background-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
+}
+
+.pill:hover {
+  background: #4a4240;
+  color: #fff;
+}
+
+.pillActive,
+.pillActive:hover {
+  background: var(--color-action);
+  color: #fff;
+}

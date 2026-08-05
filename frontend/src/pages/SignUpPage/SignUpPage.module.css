@@ -1,0 +1,114 @@
+.content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 4px 24px calc(40px + var(--safe-bottom));
+  /* 필드가 늘어나 화면을 넘길 수 있으므로 폼 영역을 스크롤 가능하게 */
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.content > * {
+  flex-shrink: 0;
+}
+
+/* 하트 심볼 로고 — 원본 비율 596:499 */
+.heartIcon {
+  width: 54px;
+  height: auto;
+  margin: 16px 0 18px;
+}
+
+.title {
+  font-size: var(--font-title);
+  font-weight: 800;
+  letter-spacing: var(--tracking-tight);
+  text-align: center;
+}
+
+.subtitle {
+  font-size: var(--font-label);
+  color: var(--color-text-secondary);
+  margin-top: 8px;
+  margin-bottom: 26px;
+}
+
+.fields {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.submitBtn {
+  margin-top: 26px;
+}
+
+.verificationHint {
+  padding: 14px 16px;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary-faint);
+  color: var(--color-text-secondary);
+  font-size: var(--font-caption);
+  line-height: 1.55;
+}
+
+/*
+ * 입력 행은 높이 52px, 재전송 알약은 36px라 위·아래 여백이 각각 8px이다.
+ * 공용 입력창의 오른쪽 padding(18px)만 그대로 남으면 알약 뒤가 넓어 보이므로
+ * 이 버튼만 10px 당겨 왼쪽 gap까지 포함한 네 방향 여백을 8px로 맞춘다.
+ */
+.resendButton {
+  margin-right: -10px;
+  white-space: nowrap;
+}
+
+.verifiedEmail {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 14px 16px;
+  border: 1px solid var(--color-divider);
+  border-radius: 14px;
+  background: var(--color-sub-bg);
+}
+
+.verifiedEmail span {
+  font-size: 12px;
+  color: var(--color-text-sub);
+}
+
+.verifiedEmail strong {
+  font-size: 14px;
+  color: var(--color-primary);
+  overflow-wrap: anywhere;
+}
+
+.changeEmailButton {
+  align-self: center;
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--color-text-sub);
+  text-decoration: underline;
+}
+
+.loginLink {
+  margin-top: 20px;
+  font-size: var(--font-label);
+  color: var(--color-text-secondary);
+}
+
+.loginLink a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 6px;
+  border-radius: var(--radius-xs);
+  color: var(--color-primary-strong);
+  font-weight: 700;
+}
+
+.loginLink a:hover {
+  text-decoration: underline;
+}

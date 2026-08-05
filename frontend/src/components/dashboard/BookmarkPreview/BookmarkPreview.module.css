@@ -1,0 +1,118 @@
+/*
+ * 북마크 미리보기.
+ * 상자와 제목은 공용 표면 레이어(styles/surfaces.css)가 담당한다.
+ *
+ * 저장해둔 "말"이라서 목록보다 인용문에 가깝다.
+ * 흰 카드 안의 구분선 목록 대신, 왼쪽 괘선을 둔 인용 블록으로 보여준다.
+ * (카드가 줄줄이 이어지는 단조로움을 깨는 지점)
+ */
+
+.moreBtn {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  /* 텍스트 버튼도 손가락으로 누를 수 있게 최소 높이 확보 (여백은 음수 마진으로 상쇄) */
+  min-height: 32px;
+  margin: -6px -6px -6px 0;
+  padding: 0 6px;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-tertiary);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.moreBtn:hover {
+  background: var(--color-surface-tint);
+  color: var(--color-text-accent);
+}
+
+/* 서식은 공용 .empty-note 가 정한다. 여기서는 자리만 잡는다. */
+.stateText {
+  padding: 6px 0;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* 인용 블록 — 왼쪽 괘선 하나로 "인용"임을 알린다 */
+.item {
+  padding-left: 12px;
+  border-left: 2px solid var(--color-primary-faint);
+}
+
+.itemText {
+  color: var(--color-text-primary);
+  font-size: 15px;
+  line-height: 1.45;
+  /* 두 줄까지 보여준다. 한 줄 말줄임은 저장한 문장을 너무 잘라낸다 */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
+
+.itemFooter {
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--color-text-tertiary);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.imageGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 72px));
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.imageWrap {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 1;
+  border-radius: var(--radius-sm);
+  background: var(--color-sub-bg);
+}
+
+.image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.moreImages {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--color-text-primary) 55%, transparent);
+  color: var(--color-white);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.moveButton {
+  min-height: 28px;
+  padding: 0 7px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  border-radius: var(--radius-pill);
+  color: var(--color-text-accent);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.moveButton:hover {
+  background: var(--color-primary-faint);
+}

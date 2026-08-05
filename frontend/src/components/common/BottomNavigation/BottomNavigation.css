@@ -1,0 +1,98 @@
+.bottom-navigation {
+  position: relative;
+  z-index: 20;
+  flex-shrink: 0;
+  width: 100%;
+  min-height: var(--bottom-nav-height);
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  align-items: stretch;
+  padding: 8px 8px max(10px, var(--safe-bottom));
+  border-top: 1px solid var(--color-divider);
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.bottom-navigation-item {
+  position: relative;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  margin: 0;
+  padding: 6px 2px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text-tertiary);
+  font: inherit;
+  text-decoration: none;
+  cursor: pointer;
+  transition: color var(--duration-fast) var(--ease-out);
+}
+
+/*
+ * hover 는 색만 바꾼다. (배경을 깔면 활성 탭의 알약 배경(::before)과 겹쳐
+ * 어느 탭이 현재인지 흐려진다)
+ * 아이콘은 stroke="currentColor" 라서 아이템 색을 주면 라벨과 함께 반응한다.
+ * 활성 탭은 이미 자기 색이 있으므로 제외해 현재 위치 표시가 흔들리지 않게 한다.
+ */
+.bottom-navigation-item:hover:not(:disabled):not(.bottom-navigation-item-active) {
+  color: var(--color-primary);
+}
+
+/* 활성 탭: 아이콘 뒤에 알약 모양 배경을 깔아 현재 위치를 분명히 한다 */
+.bottom-navigation-item-active {
+  color: var(--color-primary-strong);
+}
+
+/*
+ * 활성 탭 아이콘을 1px 띄우지 않는다.
+ * 알약 배경이 이미 현재 위치를 말해주는데 아이콘까지 움직이면
+ * 그 탭만 다른 탭들과 줄이 안 맞아서 어긋나 보인다.
+ */
+
+.bottom-navigation-item-active::before {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  top: 3px;
+  width: 46px;
+  height: 30px;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary-faint);
+}
+
+.bottom-navigation-item:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.bottom-navigation-icon {
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+  transition:
+    transform var(--duration-base) var(--ease-spring),
+    color var(--duration-fast) var(--ease-out);
+}
+
+.bottom-navigation-label {
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
+  max-width: 100%;
+  font-size: var(--font-micro);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: var(--tracking-normal);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bottom-navigation-item-active .bottom-navigation-label {
+  font-weight: 800;
+}

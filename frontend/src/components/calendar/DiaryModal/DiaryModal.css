@@ -1,0 +1,154 @@
+/*
+ * 시트의 모양·움직임은 공용 .sheet-* (styles/surfaces.css) 가 갖는다.
+ * 여기서는 겹치는 순서와 안쪽 내용만 정한다.
+ * 일정 시트와 같은 층(50)에 둔다. 둘이 동시에 열리는 경로는 없다.
+ */
+.diary-modal-backdrop {
+  z-index: 50;
+}
+
+/* 아래 구조·간격은 일정 시트(.schedule-modal-*)와 같은 값이다 */
+.diary-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 22px;
+}
+
+.diary-modal-header p {
+  margin: 0 0 5px;
+  color: var(--color-text-secondary);
+  font-size: var(--font-caption);
+}
+
+.diary-modal-header h2 {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: var(--font-title);
+  font-weight: 800;
+}
+
+.diary-modal-close {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease-out);
+}
+
+.diary-modal-close:hover:not(:disabled) {
+  background: var(--color-surface-sunken);
+}
+
+.diary-modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.diary-modal-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: var(--color-text-secondary);
+  font-size: var(--font-label);
+  font-weight: 600;
+}
+
+.diary-modal-form textarea {
+  width: 100%;
+  padding: 13px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  outline: none;
+  resize: none;
+  background: var(--color-background);
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: var(--font-body);
+  font-weight: 500;
+  line-height: var(--leading-relaxed);
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  transition:
+    border-color var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out);
+}
+
+.diary-modal-form textarea::placeholder {
+  color: var(--color-text-placeholder);
+}
+
+.diary-modal-form textarea:focus {
+  border-color: var(--color-primary);
+  box-shadow: var(--focus-ring);
+}
+
+.diary-modal-character-count {
+  align-self: flex-end;
+  margin-top: -3px;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-caption);
+  font-weight: 500;
+  line-height: 1;
+}
+
+.diary-modal-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-divider);
+}
+
+.diary-modal-actions button {
+  flex: 1;
+  height: 50px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  font-size: var(--font-body);
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out);
+}
+
+.diary-modal-cancel {
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+}
+
+.diary-modal-cancel:hover:not(:disabled) {
+  background: var(--color-surface-tint);
+}
+
+.diary-modal-save {
+  background: var(--color-action);
+  color: var(--color-text-on-primary);
+}
+
+.diary-modal-save:hover:not(:disabled) {
+  background: var(--color-action-hover);
+}
+
+.diary-modal-save:not(:disabled):active {
+  transform: scale(0.98);
+}
+
+.diary-modal button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}

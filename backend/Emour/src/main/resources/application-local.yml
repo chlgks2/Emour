@@ -1,0 +1,23 @@
+# ===== 로컬 개발 환경 설정 =====
+# MySQL / Redis 접속 정보는 compose.yaml 기반으로 spring-boot-docker-compose 가 자동 주입합니다.
+# (앱을 실행하면 Docker 로 MySQL·Redis 가 자동으로 뜨고 연결됩니다. Docker Desktop 실행 필요)
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: update      # 엔티티 기준으로 테이블 자동 생성/변경 (개발 초기용)
+    show-sql: true          # 실행되는 SQL 을 콘솔에 출력
+    properties:
+      hibernate:
+        format_sql: true    # SQL 을 보기 좋게 정렬해서 출력
+    open-in-view: false     # 성능/트랜잭션 경계를 위해 끔 (권장 설정)
+
+logging:
+  level:
+    org.hibernate.SQL: debug
+
+# ===== 로컬 AI 감정 분석 서버 =====
+ai:
+  service:
+    # IntelliJ에서 백엔드와 AI 서버를 함께 실행할 때 사용하는 기본 주소입니다.
+    # AI_SERVICE_URL 환경변수를 설정하면 해당 주소가 우선 적용됩니다.
+    url: ${AI_SERVICE_URL:http://localhost:8083}

@@ -1,0 +1,281 @@
+/* ==========================================================================
+   Emour Design Tokens
+   --------------------------------------------------------------------------
+   출처: CI 가이드("CI 수정.pptx")의 4개 컬러 그룹을 그대로 토큰화한다.
+     · 배경 및 배경 요소   #FAF8F7 / #F4EDEC / #DAC2BC
+     · 버튼 및 하이라이트  #E2BEC6 / #CA8495
+     · 텍스트 요소         #625955 / #B85C73 / #FFFFFF
+     · 감정 요소(변경 가능) #B1A6D6 / #9ECCE6 / #BED399 / #F6E192 / #F7C291
+   로고(6.svg·8.svg)의 두 색 #625955(워드마크) / #CA8495(하트)이
+   각각 본문 텍스트와 프라이머리로 이어지므로 화면 전체가 로고와 같은 톤을 갖는다.
+   ========================================================================== */
+
+:root {
+  /* ----------------------------------------------------------------
+     1. CI 원색 (팔레트 원본. 이 블록의 값만 바꾸면 전체 톤이 바뀐다)
+
+     · 중성색에서 갈색기를 덜어내고 명도 폭을 넓혔다.
+       기존 팔레트는 배경(#FAF8F7)과 본문(#625955)이 모두 같은 갈색 계열이라
+       화면 전체에 옅은 갈색 막이 씌운 것처럼 탁하게 보였다.
+       hue 는 CI 그대로 두고 채도만 낮춘 회색을 써서 색이 아니라 대비로 읽히게 한다.
+     · 브랜드 로즈는 반대로 채도를 올려서 강조가 강조로 보이게 했다.
+     ---------------------------------------------------------------- */
+  --ci-bg-base: #fbfaf9;
+  --ci-bg-tint: #f5f0ef;
+  --ci-bg-deep: #e6dcda;
+
+  --ci-accent-soft: #f0c3ce;
+  --ci-accent: #d1748d;
+
+  --ci-ink: #352d2b;
+  --ci-ink-accent: #c14a67;
+  --ci-white: #ffffff;
+
+  /* ----------------------------------------------------------------
+     2. 역할 기반 컬러
+     ---------------------------------------------------------------- */
+
+  /* 브랜드 · 액션
+     --color-primary(#CA8495)는 로고 하트색이라 하이라이트·아이콘·활성표시에 쓴다.
+     흰 글씨를 얹는 "채워진 버튼"에는 --color-action 을 쓸 것.
+     #CA8495 위의 흰 글씨는 대비가 2.7:1 뿐이라 본문 크기 글자에는 부족하고,
+     같은 CI 팔레트의 #B85C73 을 쓰면 4.4:1 로 읽을 수 있게 된다. */
+  --color-primary: var(--ci-accent);
+  --color-primary-strong: var(--ci-ink-accent);
+  --color-primary-soft: var(--ci-accent-soft);
+  --color-primary-faint: #fdeef2;
+  --color-primary-contrast: var(--ci-white);
+
+  --color-action: var(--ci-ink-accent);
+  --color-action-hover: #a63a54;
+  --color-action-disabled: #e8cdd4;
+
+  /* 표면 */
+  --color-background: var(--ci-bg-base);
+  --color-surface: var(--ci-white);
+  --color-surface-tint: var(--ci-bg-tint);
+  --color-surface-sunken: #f2eeed;
+  --color-scrim: rgba(36, 29, 28, 0.48);
+
+  /* 경계선 — 분홍기를 빼고 중성 회색으로. 카드 윤곽이 색으로 보이지 않게 한다. */
+  --color-border: #eae5e3;
+  --color-border-strong: #d9d2cf;
+  --color-divider: #f1eceb;
+
+  /* 텍스트 — 4단계 모두 대비를 올려 "흐릿함"을 없앤다 (본문 12.5:1) */
+  --color-text-primary: var(--ci-ink);
+  --color-text-secondary: #6d6360;
+  --color-text-tertiary: #8f8681;
+  --color-text-placeholder: #a89f9b;
+  --color-text-on-primary: var(--ci-white);
+  --color-text-accent: var(--ci-ink-accent);
+
+  /* 상태 — 회색기를 덜어내 상태색이 상태로 읽히게 */
+  --color-success: #4f8a5b;
+  --color-success-bg: #e8f4ea;
+  --color-danger: #c93f4f;
+  --color-danger-bg: #fdeaec;
+  --color-warning: #b57724;
+  --color-warning-bg: #fdf2df;
+  --color-info: #3f7fa8;
+  --color-info-bg: #e7f2f8;
+
+  /* ----------------------------------------------------------------
+     3. 감정 컬러 — 백엔드 EmotionType 15종과 1:1
+        utils/emotions.js 의 EMOTION_TYPES 가 이 토큰을 참조한다.
+
+        도넛 차트 위에서 서로 구분돼야 하므로 CI 파스텔을 그대로 쓰지 않고
+        같은 hue 를 유지한 채 채도를 올리고 명도를 한 단계 낮췄다.
+        (기존 파스텔은 흰 배경에서 서로 뭉개져 어떤 감정인지 읽히지 않았다)
+     ---------------------------------------------------------------- */
+
+  /* POSITIVE */
+  --emotion-joy: #f0b23f;
+  --emotion-excitement: #ee7b9e;
+  --emotion-comfort: #64b98e;
+  --emotion-gratitude: #ef9a5b;
+
+  /* NEUTRAL */
+  --emotion-worry: #8397bd;
+  --emotion-surprise: #56b6d6;
+  --emotion-plain: #a29a96;
+  --emotion-embarrassment: #bf94db;
+  --emotion-curiosity: #4fb3bf;
+  --emotion-apology: #a396d2;
+
+  /* NEGATIVE */
+  --emotion-sadness: #5f86c4;
+  --emotion-anger: #df6350;
+  --emotion-confusion: #93819f;
+  --emotion-distress: #9a5a83;
+  --emotion-hurt: #c04361;
+
+  /* 감정 극성 요약(감정 흐름 그래프용) */
+  --emotion-positive: var(--emotion-joy);
+  --emotion-negative: var(--emotion-hurt);
+  --emotion-neutral: var(--emotion-plain);
+  --emotion-empty: #ebe6e4;
+
+  /* 옅은 배경 톤 */
+  --emotion-warm-bg: #fdf2e6;
+  --emotion-love-bg: var(--color-primary-faint);
+
+  /* ----------------------------------------------------------------
+     2-1. 패널 틴트
+        내용 블록(오늘의 일정 / 감정 리포트)에 까는 옅은 면.
+        회색으로 두면 가라앉아 보이고, 블록마다 다른 색을 쓰면 화면이 산만해진다.
+        브랜드 로즈 하나로 통일하고, 위계는 색이 아니라 크기·여백으로 만든다.
+     ---------------------------------------------------------------- */
+  --panel-tint: var(--color-primary-faint);
+  --panel-tint-line: var(--color-primary-soft);
+
+  /* ----------------------------------------------------------------
+     3-1. 채팅 액션 컬러 (리액션 · 북마크)
+        말풍선에 얹히는 작은 마크들. 서로 구분되면서 다 같이 발랄해야 한다.
+        북마크만 브랜드 로즈였던 탓에 리액션 3종 옆에서 혼자 가라앉아 보였다.
+     ---------------------------------------------------------------- */
+  /* 리액션 3색(#ff6f91 / #4caf82 / #ffa552)은 constants/reactions.jsx 에 있다.
+     lucide 의 color prop 은 SVG presentation attribute(stroke) 로 들어가는데
+     거기서는 var() 가 해석되지 않아 토큰으로 뺄 수 없다. */
+
+  /* 북마크는 하단 공감 아이콘보다 한 톤 차분한 로즈를 쓴다.
+     기존 말린 장미색은 작은 리본을 꽉 채웠을 때 탁해 보였고,
+     공감 하트(#ff6f91)를 그대로 쓰면 지나치게 발랄해져 중간 채도로 맞춘다. */
+  --color-bookmark: #e8a9b8;
+  --color-bookmark-strong: #dc91a3;
+
+  /* ----------------------------------------------------------------
+     4. 레이아웃
+     ---------------------------------------------------------------- */
+  /* 화면 설계 기준 크기. AppViewport 가 이 비율을 유지한 채 배율만 키운다.
+     (layouts/AppViewport/appViewport.js 의 APP_DESIGN_* 와 같은 값이어야 한다) */
+  --app-frame-width: 412px;
+  --app-frame-height: 892px;
+  --app-max-width: var(--app-frame-width);
+
+  --page-padding-x: 20px;
+  --page-padding-y: 24px;
+
+  --bottom-nav-height: 74px;
+  --topbar-height: 56px;
+  --tap-target: 44px;
+
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+
+  /* ----------------------------------------------------------------
+     5. 모서리
+     ---------------------------------------------------------------- */
+  --radius-xs: 8px;
+  --radius-sm: 12px;
+  --radius-md: 16px;
+  --radius-lg: 22px;
+  --radius-xl: 28px;
+  --radius-2xl: 34px;
+  --radius-pill: 999px;
+
+  /* ----------------------------------------------------------------
+     6. 그림자
+        갈색 그림자를 넓게 깔면 카드 주변이 누렇게 떠서 탁해 보인다.
+        중성에 가까운 그림자를 좁고 옅게(2단 레이어) 써서 깊이만 만든다.
+     ---------------------------------------------------------------- */
+  --shadow-xs: 0 1px 2px rgba(46, 38, 36, 0.05);
+  --shadow-card: 0 1px 2px rgba(46, 38, 36, 0.04), 0 4px 14px rgba(46, 38, 36, 0.06);
+  --shadow-raised: 0 2px 4px rgba(46, 38, 36, 0.05), 0 10px 24px rgba(46, 38, 36, 0.08);
+  --shadow-float: 0 4px 8px rgba(46, 38, 36, 0.06), 0 16px 36px rgba(46, 38, 36, 0.12);
+  --shadow-sheet: 0 -10px 30px rgba(46, 38, 36, 0.13);
+  --shadow-frame: 0 32px 70px rgba(50, 40, 38, 0.24), 0 6px 18px rgba(50, 40, 38, 0.1);
+  --shadow-primary: 0 6px 16px rgba(193, 74, 103, 0.24);
+
+  /* ----------------------------------------------------------------
+     7. 타이포그래피
+     ---------------------------------------------------------------- */
+  --font-family:
+    Pretendard, "Pretendard Variable", -apple-system, BlinkMacSystemFont,
+    "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", "Segoe UI", sans-serif;
+
+  --font-display: 26px;
+  --font-title: 20px;
+  --font-heading: 17px;
+
+  /* 상단바 제목 — 채팅(15px)과 캘린더·앨범·마이페이지(17px)의 가운데 값으로 합의.
+     화면을 옮겨 다닐 때 제목만 커졌다 작아졌다 하지 않게 한 곳에서 정한다. */
+  --font-topbar-title: 16px;
+
+  --font-body: 15px;
+  --font-label: 13px;
+  --font-caption: 12px;
+  --font-micro: 11px;
+
+  --leading-tight: 1.28;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.65;
+
+  --tracking-tight: -0.02em;
+  --tracking-normal: -0.01em;
+
+  /* ----------------------------------------------------------------
+     8. 모션
+     ---------------------------------------------------------------- */
+  --duration-fast: 130ms;
+  --duration-base: 220ms;
+  --duration-slow: 360ms;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+
+  --focus-ring: 0 0 0 3px rgba(209, 116, 141, 0.34);
+  --focus-ring-danger: 0 0 0 3px rgba(201, 63, 79, 0.3);
+
+  /* ----------------------------------------------------------------
+     8-1. 카드 표준
+
+     ⚠️ 카드는 이제 기본 레이아웃이 아니다.
+        표면 선택 규칙은 styles/surfaces.css 에 있다.
+          .surface-plain   상자 없음 — 읽기용 내용의 기본값
+          .surface-panel   헤어라인 — 묶인 조작 영역
+          .surface-feature 색 있는 면 — 화면당 하나
+        모든 블록을 흰 카드로 띄우면 위계가 사라지고 화면이 단조로워진다.
+
+     --card-shadow 는 진짜로 떠 있는 것(모달·시트·팝오버)에만 쓴다.
+     면을 나누기만 할 때는 그림자 대신 --color-border 헤어라인을 쓴다.
+     ---------------------------------------------------------------- */
+  --card-radius: var(--radius-lg);
+  --card-shadow: var(--shadow-card);
+  --card-surface: var(--color-surface);
+  --card-padding: 16px;
+
+  /* ----------------------------------------------------------------
+     9. 하위 호환 별칭
+        기존 화면들이 쓰던 이름을 새 토큰으로 연결해 두어
+        한 번에 고치지 못한 파일도 색이 깨지지 않게 한다.
+     ---------------------------------------------------------------- */
+  --color-secondary: var(--color-surface-tint);
+  --color-error: var(--color-danger);
+  --color-text: var(--color-text-primary);
+  --color-text-sub: var(--color-text-secondary);
+  --color-white: var(--color-surface);
+  --color-bg: var(--color-background);
+  --color-bg-elevated: var(--color-surface);
+  --color-sub: var(--color-surface-tint);
+  --color-sub-bg: var(--color-primary-faint);
+  --color-confirm: var(--color-success);
+  --color-cancel: var(--color-danger);
+  --color-primary-dark: var(--color-primary-strong);
+  --color-primary-light: var(--color-primary-soft);
+  --color-logo-heart: var(--ci-accent);
+  --color-logo-ink: var(--ci-ink);
+
+  --radius-small: var(--radius-sm);
+  --radius-medium: var(--radius-md);
+  --radius-large: var(--radius-xl);
+  --shadow-button: var(--shadow-primary);
+}
+
+/* 애니메이션 최소화를 요청한 사용자에게는 전환 효과를 걷어낸다. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-fast: 0ms;
+    --duration-base: 0ms;
+    --duration-slow: 0ms;
+  }
+}

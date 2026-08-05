@@ -1,0 +1,162 @@
+/* ==========================================================================
+   Emour 전역 베이스
+   토큰(styles/tokens.css) 다음에 로드된다.
+   ========================================================================== */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+}
+
+/*
+ * 화면의 최소 폭.
+ *
+ * 480px 아래에서는 앱이 배율을 걷고 창 폭을 그대로 쓴다(AppViewport.css).
+ * 그 아래로 계속 따라 줄어들면 어느 순간부터 안쪽이 무너진다. 무드 타임라인의
+ * 좌우 메모, 대화 기록의 3열 개수, 캘린더 7칸처럼 더는 못 좁히는 것들이 있다.
+ *
+ * 360px 에서 멈춘다. 안드로이드 기기의 사실상 하한이고, 아이폰 SE(375) 도
+ * 넉넉히 들어온다. 여기서 더 좁은 창은 레이아웃을 구겨 넣는 대신 가로로 밀어서 본다.
+ *
+ * overflow-x 를 auto 로 여는 것이 그 '밀어서 보기'다. 예전에는 hidden 이라
+ * 320px 아래에서 그냥 잘려 나갔다. 세로는 그대로 잠가 둔다. 앱 안쪽 영역들이
+ * 각자 스크롤을 갖고 있어서, 문서까지 세로로 움직이면 두 겹이 된다.
+ */
+body {
+  min-width: 360px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  color: var(--color-text-primary);
+  /* 무대 바깥 데스크톱 배경 — CI 배경색 계열의 한 단계 짙은 톤 */
+  background: var(--ci-bg-deep);
+  font-family: var(--font-family);
+  font-size: var(--font-body);
+  line-height: var(--leading-normal);
+  letter-spacing: var(--tracking-normal);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  word-break: keep-all;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  margin: 0;
+  font-weight: 700;
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-tight);
+}
+
+p {
+  margin: 0;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+}
+
+button {
+  border: 0;
+  background: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+ul,
+ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+img,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+textarea {
+  font-family: inherit;
+  resize: none;
+}
+
+/* 키보드 사용자에게만 포커스 링을 보여준다. */
+:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* 스크롤 영역 공통 — 얇고 눈에 띄지 않는 스크롤바 */
+.app-shell,
+[data-scroll] {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-strong) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  border-radius: var(--radius-pill);
+  background: var(--color-border-strong);
+}
+
+/* 화면 전체를 채우는 페이지 골격 */
+.app-shell {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--color-background);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

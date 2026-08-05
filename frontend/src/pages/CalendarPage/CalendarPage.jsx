@@ -1,0 +1,1520 @@
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react'
+
+import {
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Pencil,
+} from 'lucide-react'
+
+import {
+  createSchedule,
+  deleteSchedule,
+  getAnniversaries,
+  getMonthlyCalendar,
+  saveDiary,
+  updateSchedule,
+} from '../../api/calendarApi.js'
+
+import ScheduleModal from '../../components/calendar/ScheduleModal/ScheduleModal.jsx'
+import AnniversaryManager from '../../components/calendar/AnniversaryManager/AnniversaryManager.jsx'
+import DiaryModal from '../../components/calendar/DiaryModal/DiaryModal.jsx'
+import BottomNavigation from '../../components/common/BottomNavigation/BottomNavigation.jsx'
+import HelpHint from '../../components/common/HelpHint/HelpHint.jsx'
+
+import {
+  buildDayGradient,
+  formatDateKey,
+} from '../../utils/moodEmotion.js'
+import {
+  fetchMoodSlots,
+  saveMyMood,
+} from '../../api/moodApi.js'
+import MoodTimeline from '../../components/calendar/MoodTimeline/MoodTimeline.jsx'
+import { formatSlotTime } from '../../utils/moodSlotFormat.js'
+import { DEFAULT_MOOD_WINDOW } from '../../utils/moodSlotGrid.js'
+import { getMoodNotificationSetting } from '../../api/notificationSettingApi.js'
+import MoodFormModal from '../../components/dashboard/MoodFormModal/MoodFormModal.jsx'
+import { useLiveSync } from '../../hooks/useLiveSync.js'
+
+import {
+  createEmptyCalendarDay,
+  SCHEDULE_TYPE,
+} from '../../mappers/calendarMapper.js'
+
+import './CalendarPage.css'
+
+const TEMP_COUPLE_ROOM_ID = 1
+
+const WEEK_LABELS = [
+  '일',
+  '월',
+  '화',
+  '수',
+  '목',
+  '금',
+  '토',
+]
+
+function createDateKey(
+  year,
+  monthIndex,
+  day,
+) {
+  const month = String(
+    monthIndex + 1,
+  ).padStart(2, '0')
+
+  const date = String(day).padStart(2, '0')
+
+  return `${year}-${month}-${date}`
+}
+
+function createMonthCells(monthDate) {
+  const year = monthDate.getFullYear()
+  const monthIndex = monthDate.getMonth()
+
+  const firstWeekday = new Date(
+    year,
+    monthIndex,
+    1,
+  ).getDay()
+
+  const currentMonthDays = new Date(
+    year,
+    monthIndex + 1,
+    0,
+  ).getDate()
+
+  const previousMonthDays = new Date(
+    year,
+    monthIndex,
+    0,
+  ).getDate()
+
+  return Array.from(
+    { length: 42 },
+    (_, index) => {
+      const calculatedDay =
+        index - firstWeekday + 1
+
+      if (calculatedDay <= 0) {
+        const day =
+          previousMonthDays + calculatedDay
+
+        const previousMonthDate = new Date(
+          year,
+          monthIndex - 1,
+          day,
+        )
+
+        return {
+          day,
+          year:
+            previousMonthDate.getFullYear(),
+          monthIndex:
+            previousMonthDate.getMonth(),
+          dateKey: createDateKey(
+            previousMonthDate.getFullYear(),
+            previousMonthDate.getMonth(),
+            day,
+          ),
+          isCurrentMonth: false,
+          weekday: index % 7,
+        }
+      }
+
+      if (
+        calculatedDay > currentMonthDays
+      ) {
+        const day =
+          calculatedDay -
+          currentMonthDays
+
+        const nextMonthDate = new Date(
+          year,
+          monthIndex + 1,
+          day,
+        )
+
+        return {
+          day,
+          year:
+            nextMonthDate.getFullYear(),
+          monthIndex:
+            nextMonthDate.getMonth(),
+          dateKey: createDateKey(
+            nextMonthDate.getFullYear(),
+            nextMonthDate.getMonth(),
+            day,
+          ),
+          isCurrentMonth: false,
+          weekday: index % 7,
+        }
+      }
+
+      return {
+        day: calculatedDay,
+        year,
+        monthIndex,
+        dateKey: createDateKey(
+          year,
+          monthIndex,
+          calculatedDay,
+        ),
+        isCurrentMonth: true,
+        weekday: index % 7,
+      }
+    },
+  )
+}
+
+function formatSelectedDate(dateKey) {
+  const [year, month, day] = dateKey
+    .split('-')
+    .map(Number)
+
+  const weekday = new Date(
+    year,
+    month - 1,
+    day,
+  ).getDay()
+
+  return `${month}월 ${day}일 (${WEEK_LABELS[weekday]})`
+}
+
+function sortSchedules(schedules) {
+  return [...schedules].sort(
+    (first, second) =>
+      (first.time || '99:99').localeCompare(
+        second.time || '99:99',
+      ),
+  )
+}
+
+function formatAnniversaryRepeat(
+  anniversary,
+) {
+  if (
+    anniversary.isAutomaticAnniversary &&
+    anniversary.occurrenceNumber
+  ) {
+    return `${anniversary.occurrenceNumber}일`
+  }
+
+  return ''
+}
+
+function CalendarPage() {
+  /*
+   * 캘린더는 오늘을 보여주면서 열린다.
+   * (2026년 7월로 고정돼 있던 값이라 실제 날짜와 상관없이 7월 21일이 선택돼 있었다)
+   */
+  const [currentMonth, setCurrentMonth] =
+    useState(() => {
+      const now = new Date()
+      return new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        1,
+      )
+    })
+
+  const [selectedDate, setSelectedDate] =
+    useState(() =>
+      formatDateKey(new Date()),
+    )
+
+  const [calendarData, setCalendarData] =
+    useState({})
+
+  /*
+   * 무드트래커는 하루 1건이 아니라 시간대(슬롯) 단위라서 캘린더 월 조회와
+   * 별도로 불러온다. { 'YYYY-MM-DD': { mySlots, partnerSlots, myMood, partnerMood } }
+   */
+  const [moodSlots, setMoodSlots] =
+    useState({})
+
+  /*
+   * 무드 모달 상태.
+   *   null      -> 닫힘
+   *   { slot }  -> slot 이 있으면 수정, null 이면 '지금 기분 기록'(새로 등록)
+   * ('닫힘'과 '새로 등록'을 같은 null 로 두면 구분이 안 되므로 한 겹 감쌌다.)
+   */
+  const [moodModal, setMoodModal] =
+    useState(null)
+
+  const openMoodModal = ({
+    slot,
+    minutesOfDay,
+  }) =>
+    setMoodModal({
+      slot: slot ?? null,
+      minutesOfDay:
+        slot?.minutesOfDay ?? minutesOfDay,
+    })
+
+  const closeMoodModal = () =>
+    setMoodModal(null)
+
+  const [isLoading, setIsLoading] =
+    useState(true)
+
+  const [errorMessage, setErrorMessage] =
+    useState('')
+
+  const [isProcessing, setIsProcessing] =
+    useState(false)
+
+  const [isDiaryEditing, setIsDiaryEditing] =
+    useState(false)
+
+  // 무드트래커는 접은 채로 시작한다. (대시보드와 같은 기준)
+  const [
+    isMoodTrackerOpen,
+    setIsMoodTrackerOpen,
+  ] = useState(false)
+
+  const [diaryDraft, setDiaryDraft] =
+    useState('')
+
+  const [scheduleModal, setScheduleModal] =
+    useState({
+      isOpen: false,
+      mode: 'create',
+      entryType:
+        SCHEDULE_TYPE.SCHEDULE,
+      sourceDate: '',
+      schedule: null,
+    })
+
+  const [
+    anniversaryManager,
+    setAnniversaryManager,
+  ] = useState({
+    isOpen: false,
+    isLoading: false,
+    anniversaries: [],
+  })
+
+  const currentYear =
+    currentMonth.getFullYear()
+
+  const currentMonthNumber =
+    currentMonth.getMonth() + 1
+
+  const monthCells = useMemo(
+    () => createMonthCells(currentMonth),
+    [currentMonth],
+  )
+
+  const selectedDayData =
+    calendarData[selectedDate] ??
+    createEmptyCalendarDay(selectedDate)
+
+  const selectedDayMood =
+    moodSlots[selectedDate] ?? {
+      mySlots: [],
+      partnerSlots: [],
+      myMood: null,
+      partnerMood: null,
+    }
+
+  const [moodWindow, setMoodWindow] =
+    useState(DEFAULT_MOOD_WINDOW)
+
+  useEffect(() => {
+    getMoodNotificationSetting()
+      .then((setting) => {
+        if (setting?.startTime) {
+          setMoodWindow(setting)
+        }
+      })
+      .catch(() => {
+        // 설정 조회가 실패해도 기본 슬롯으로 동작한다.
+      })
+  }, [])
+
+  // 오늘을 보고 있을 때만 미래 시간대를 잠근다.
+  const selectedDayNowMinutes = useMemo(() => {
+    const now = new Date()
+
+    if (selectedDate !== formatDateKey(now)) {
+      return null
+    }
+
+    return (
+      now.getHours() * 60 + now.getMinutes()
+    )
+  }, [selectedDate])
+
+  const loadMoodSlots = useCallback(() => {
+    fetchMoodSlots()
+      .then(setMoodSlots)
+      .catch(() => {
+        // 기분 기록만 실패한 경우 캘린더 전체를 막지 않는다.
+        setMoodSlots({})
+      })
+  }, [])
+
+  useEffect(() => {
+    loadMoodSlots()
+  }, [loadMoodSlots])
+
+  const handleSaveMood = async ({
+    moodType,
+    reason,
+  }) => {
+    /*
+     * 저장은 서버에 바로 반영된다. 실패하면 알려야 한다.
+     * (예전에는 실패해도 조용히 이 브라우저에만 남아서, 상대 화면에는 없는
+     *  기록이 내 화면에만 저장된 것처럼 보였다)
+     * 기록 시각은 서버가 정하므로 슬롯 위치는 보내지 않는다.
+     */
+    try {
+      await saveMyMood({
+        moodId:
+          moodModal?.slot?.moodId ?? null,
+        moodType,
+        reason,
+        dateKey: selectedDate,
+      })
+    } catch (error) {
+      // 모달은 닫지 않는다. 입력값을 잃지 않고 바로 다시 시도할 수 있어야 한다.
+      setErrorMessage(
+        error.message ||
+          '기분을 저장하지 못했습니다.',
+      )
+
+      return
+    }
+
+    setErrorMessage('')
+    closeMoodModal()
+    loadMoodSlots()
+  }
+
+  const currentMonthLabel =
+    `${currentYear}년 ${currentMonthNumber}월`
+
+  useEffect(() => {
+    let isCancelled = false
+
+    getMonthlyCalendar(
+      TEMP_COUPLE_ROOM_ID,
+      currentYear,
+      currentMonthNumber,
+    )
+      .then((monthData) => {
+        if (isCancelled) {
+          return
+        }
+
+        setCalendarData(monthData)
+        setErrorMessage('')
+        setIsLoading(false)
+      })
+      .catch((error) => {
+        if (isCancelled) {
+          return
+        }
+
+        setErrorMessage(
+          error.message ||
+            '캘린더를 불러오지 못했습니다.',
+        )
+
+        setIsLoading(false)
+      })
+
+    return () => {
+      isCancelled = true
+    }
+  }, [currentMonthNumber, currentYear])
+
+  const refreshCalendar =
+    useCallback(async () => {
+      const results =
+        await Promise.allSettled([
+          getMonthlyCalendar(
+            TEMP_COUPLE_ROOM_ID,
+            currentYear,
+            currentMonthNumber,
+          ),
+          fetchMoodSlots(),
+        ])
+
+      if (
+        results[0].status ===
+        'fulfilled'
+      ) {
+        setCalendarData(
+          results[0].value,
+        )
+        setErrorMessage('')
+      }
+
+      if (
+        results[1].status ===
+        'fulfilled'
+      ) {
+        setMoodSlots(
+          results[1].value,
+        )
+      }
+    }, [
+      currentMonthNumber,
+      currentYear,
+    ])
+
+  // 상대방 무드 등록은 같은 브라우저 이벤트에 의존하지 않고,
+  // 주기적인 GET /moods 재조회로 반영한다.
+  useLiveSync(refreshCalendar, {
+    intervalMs: 3000,
+  })
+
+  const changeCurrentMonth = (
+    nextMonth,
+    nextSelectedDate,
+  ) => {
+    setIsLoading(true)
+    setErrorMessage('')
+    setCalendarData({})
+    setCurrentMonth(nextMonth)
+    setSelectedDate(nextSelectedDate)
+    setIsDiaryEditing(false)
+    setDiaryDraft('')
+  }
+
+  const handleMonthChange = (direction) => {
+    const nextMonth = new Date(
+      currentYear,
+      currentMonth.getMonth() +
+        direction,
+      1,
+    )
+
+    changeCurrentMonth(
+      nextMonth,
+      createDateKey(
+        nextMonth.getFullYear(),
+        nextMonth.getMonth(),
+        1,
+      ),
+    )
+  }
+
+  const handleDateSelect = (cell) => {
+    setSelectedDate(cell.dateKey)
+    setIsDiaryEditing(false)
+    setDiaryDraft('')
+
+    if (!cell.isCurrentMonth) {
+      changeCurrentMonth(
+        new Date(
+          cell.year,
+          cell.monthIndex,
+          1,
+        ),
+        cell.dateKey,
+      )
+    }
+  }
+
+  const openCreateScheduleModal = () => {
+    setScheduleModal({
+      isOpen: true,
+      mode: 'create',
+      entryType:
+        SCHEDULE_TYPE.SCHEDULE,
+      sourceDate: selectedDate,
+      schedule: null,
+    })
+  }
+
+  const openCreateAnniversaryModal =
+    () => {
+      setScheduleModal({
+        isOpen: true,
+        mode: 'create',
+        entryType:
+          SCHEDULE_TYPE.ANNIVERSARY,
+        sourceDate: selectedDate,
+        schedule: null,
+      })
+    }
+
+  const loadAnniversaries = async () => {
+    const anniversaries =
+      await getAnniversaries(
+        TEMP_COUPLE_ROOM_ID,
+      )
+
+    setAnniversaryManager(
+      (previous) => ({
+        ...previous,
+        isLoading: false,
+        anniversaries,
+      }),
+    )
+  }
+
+  const openAnniversaryManager =
+    async () => {
+      setAnniversaryManager(
+        (previous) => ({
+          ...previous,
+          isOpen: true,
+          isLoading: true,
+        }),
+      )
+
+      try {
+        await loadAnniversaries()
+      } catch (error) {
+        setAnniversaryManager(
+          (previous) => ({
+            ...previous,
+            isLoading: false,
+          }),
+        )
+
+        window.alert(
+          error.message ||
+            '기념일 목록을 불러오지 못했습니다.',
+        )
+      }
+    }
+
+  const closeAnniversaryManager =
+    () => {
+      if (isProcessing) {
+        return
+      }
+
+      setAnniversaryManager(
+        (previous) => ({
+          ...previous,
+          isOpen: false,
+        }),
+      )
+    }
+
+  const openEditScheduleModal = (
+    schedule,
+  ) => {
+    setScheduleModal({
+      isOpen: true,
+      mode: 'edit',
+      entryType: schedule.type,
+      sourceDate: selectedDate,
+      schedule,
+    })
+  }
+
+  const closeScheduleModal = () => {
+    if (isProcessing) {
+      return
+    }
+
+    setScheduleModal({
+      isOpen: false,
+      mode: 'create',
+      entryType:
+        SCHEDULE_TYPE.SCHEDULE,
+      sourceDate: '',
+      schedule: null,
+    })
+  }
+
+  const updateCalendarSchedule = (
+    savedSchedule,
+  ) => {
+    setCalendarData(
+      (previousCalendarData) => {
+        const nextCalendarData = {
+          ...previousCalendarData,
+        }
+
+        if (
+          scheduleModal.mode === 'edit' &&
+          scheduleModal.schedule
+        ) {
+          const sourceDay =
+            nextCalendarData[
+              scheduleModal.sourceDate
+            ] ??
+            createEmptyCalendarDay(
+              scheduleModal.sourceDate,
+            )
+
+          nextCalendarData[
+            scheduleModal.sourceDate
+          ] = {
+            ...sourceDay,
+            schedules:
+              sourceDay.schedules.filter(
+                (schedule) =>
+                  schedule.scheduleId !==
+                  savedSchedule.scheduleId,
+              ),
+            anniversaries:
+              sourceDay.anniversaries.filter(
+                (schedule) =>
+                  schedule.scheduleId !==
+                  savedSchedule.scheduleId,
+              ),
+          }
+        }
+
+        const targetDay =
+          nextCalendarData[
+            savedSchedule.date
+          ] ??
+          createEmptyCalendarDay(
+            savedSchedule.date,
+          )
+
+        if (
+          savedSchedule.type ===
+          SCHEDULE_TYPE.ANNIVERSARY
+        ) {
+          nextCalendarData[
+            savedSchedule.date
+          ] = {
+            ...targetDay,
+            anniversaries:
+              sortSchedules([
+                ...targetDay.anniversaries,
+                savedSchedule,
+              ]),
+          }
+        } else {
+          nextCalendarData[
+            savedSchedule.date
+          ] = {
+            ...targetDay,
+            schedules: sortSchedules([
+              ...targetDay.schedules,
+              savedSchedule,
+            ]),
+          }
+        }
+
+        return nextCalendarData
+      },
+    )
+  }
+
+  const handleScheduleSave = async (
+    scheduleInput,
+  ) => {
+    if (isProcessing) {
+      return
+    }
+
+    try {
+      setIsProcessing(true)
+
+      const savedSchedule =
+        scheduleModal.mode === 'edit' &&
+        scheduleModal.schedule
+          ? await updateSchedule(
+              scheduleModal.schedule
+                .scheduleId,
+              scheduleInput,
+            )
+          : await createSchedule({
+              coupleRoomId:
+                TEMP_COUPLE_ROOM_ID,
+              ...scheduleInput,
+            })
+
+      const [targetYear, targetMonth] =
+        savedSchedule.date
+          .split('-')
+          .map(Number)
+
+      const isSameMonth =
+        targetYear === currentYear &&
+        targetMonth ===
+          currentMonthNumber
+
+      if (
+        savedSchedule.type ===
+        SCHEDULE_TYPE.ANNIVERSARY
+      ) {
+        const refreshedCalendar =
+          await getMonthlyCalendar(
+            TEMP_COUPLE_ROOM_ID,
+            currentYear,
+            currentMonthNumber,
+          )
+
+        setCalendarData(
+          refreshedCalendar,
+        )
+
+        if (
+          anniversaryManager.isOpen
+        ) {
+          await loadAnniversaries()
+        }
+      } else if (isSameMonth) {
+        updateCalendarSchedule(
+          savedSchedule,
+        )
+
+        setSelectedDate(
+          savedSchedule.date,
+        )
+      } else {
+        changeCurrentMonth(
+          new Date(
+            targetYear,
+            targetMonth - 1,
+            1,
+          ),
+          savedSchedule.date,
+        )
+      }
+
+      setScheduleModal({
+        isOpen: false,
+        mode: 'create',
+        entryType:
+          SCHEDULE_TYPE.SCHEDULE,
+        sourceDate: '',
+        schedule: null,
+      })
+    } catch (error) {
+      window.alert(
+        error.message ||
+          '일정 저장에 실패했습니다.',
+      )
+    } finally {
+      setIsProcessing(false)
+    }
+  }
+
+  const handleScheduleDelete =
+    async () => {
+      if (
+        !scheduleModal.schedule ||
+        isProcessing
+      ) {
+        return
+      }
+
+      const shouldDelete =
+        window.confirm(
+          '선택한 기록을 삭제하시겠습니까?',
+        )
+
+      if (!shouldDelete) {
+        return
+      }
+
+      try {
+        setIsProcessing(true)
+
+        await deleteSchedule(
+          scheduleModal.schedule
+            .scheduleId,
+          scheduleModal.schedule.type,
+        )
+
+        if (
+          scheduleModal.schedule.type ===
+          SCHEDULE_TYPE.ANNIVERSARY
+        ) {
+          const refreshedCalendar =
+            await getMonthlyCalendar(
+              TEMP_COUPLE_ROOM_ID,
+              currentYear,
+              currentMonthNumber,
+            )
+
+          setCalendarData(
+            refreshedCalendar,
+          )
+        }
+
+        if (
+          scheduleModal.schedule.type ===
+            SCHEDULE_TYPE.ANNIVERSARY &&
+          anniversaryManager.isOpen
+        ) {
+          await loadAnniversaries()
+        }
+
+        setCalendarData(
+          (previousCalendarData) => {
+            const sourceDay =
+              previousCalendarData[
+                scheduleModal.sourceDate
+              ] ??
+              createEmptyCalendarDay(
+                scheduleModal.sourceDate,
+              )
+
+            return {
+              ...previousCalendarData,
+              [scheduleModal.sourceDate]: {
+                ...sourceDay,
+                schedules:
+                  sourceDay.schedules.filter(
+                    (schedule) =>
+                      schedule.scheduleId !==
+                      scheduleModal.schedule
+                        .scheduleId,
+                  ),
+                anniversaries:
+                  sourceDay.anniversaries.filter(
+                    (schedule) =>
+                      schedule.scheduleId !==
+                      scheduleModal.schedule
+                        .scheduleId,
+                  ),
+              },
+            }
+          },
+        )
+
+        setScheduleModal({
+          isOpen: false,
+          mode: 'create',
+          entryType:
+            SCHEDULE_TYPE.SCHEDULE,
+          sourceDate: '',
+          schedule: null,
+        })
+      } catch (error) {
+        window.alert(
+          error.message ||
+            '일정 삭제에 실패했습니다.',
+        )
+      } finally {
+        setIsProcessing(false)
+      }
+    }
+
+  const handleDiarySave = async () => {
+    if (isProcessing) {
+      return
+    }
+
+    try {
+      setIsProcessing(true)
+
+      const savedDiary =
+        await saveDiary({
+          coupleRoomId:
+            TEMP_COUPLE_ROOM_ID,
+          date: selectedDate,
+          content: diaryDraft,
+        })
+
+      setCalendarData(
+        (previousCalendarData) => {
+          const dayData =
+            previousCalendarData[
+              selectedDate
+            ] ??
+            createEmptyCalendarDay(
+              selectedDate,
+            )
+
+          return {
+            ...previousCalendarData,
+            [selectedDate]: {
+              ...dayData,
+              diary: savedDiary,
+            },
+          }
+        },
+      )
+
+      setDiaryDraft(savedDiary.content)
+      setIsDiaryEditing(false)
+    } catch (error) {
+      window.alert(
+        error.message ||
+          '한 줄 일기 저장에 실패했습니다.',
+      )
+    } finally {
+      setIsProcessing(false)
+    }
+  }
+
+  return (
+    <div className="calendar-page">
+      <header className="calendar-header">
+        <h1>캘린더</h1>
+      </header>
+
+      <div className="calendar-scroll-area">
+        {isLoading && (
+          <div className="calendar-status">
+            캘린더를 불러오고 있습니다.
+          </div>
+        )}
+
+        {!isLoading && errorMessage && (
+          <div className="calendar-status calendar-status-error">
+            {errorMessage}
+          </div>
+        )}
+
+        <section className="calendar-month-section">
+          <div className="calendar-month-navigation">
+            <button
+              type="button"
+              aria-label="이전 달"
+              disabled={isLoading}
+              onClick={() =>
+                handleMonthChange(-1)
+              }
+            >
+              <ChevronLeft
+                size={21}
+                strokeWidth={2}
+                aria-hidden="true"
+              />
+            </button>
+
+            <div className="calendar-month-title">
+              <h2>{currentMonthLabel}</h2>
+
+              {/*
+                날짜 칸의 색이 어떻게 정해지는지.
+                하루에 여러 번 기록하면 "왜 이 색이지?" 가 되는데, 규칙을 모르면
+                앞의 기록이 덮어씌워진 것으로 오해한다. (moodApi.getRepresentativeSlot)
+
+                카드 오른쪽 위 모서리에는 이미 '다음 달' 버튼이 서 있어서
+                달 이름 옆에 붙였다. 물음표는 자기가 설명하는 것 옆에 있어야 한다.
+              */}
+              <HelpHint label="날짜 색의 기준" align="center">
+                날짜 색은 그날 가장 많이 고른 기분이에요. 수가 같으면 더 늦게 기록한 쪽을 따라요.
+              </HelpHint>
+            </div>
+
+            <button
+              type="button"
+              aria-label="다음 달"
+              disabled={isLoading}
+              onClick={() =>
+                handleMonthChange(1)
+              }
+            >
+              <ChevronRight
+                size={21}
+                strokeWidth={2}
+                aria-hidden="true"
+              />
+            </button>
+          </div>
+
+          <div className="calendar-weekdays">
+            {WEEK_LABELS.map(
+              (weekday, index) => (
+                <span
+                  key={weekday}
+                  className={
+                    index === 0
+                      ? 'weekday-sunday'
+                      : index === 6
+                        ? 'weekday-saturday'
+                        : ''
+                  }
+                >
+                  {weekday}
+                </span>
+              ),
+            )}
+          </div>
+
+          <div className="calendar-grid">
+            {monthCells.map((cell) => {
+              const dayData =
+                calendarData[cell.dateKey] ??
+                createEmptyCalendarDay(
+                  cell.dateKey,
+                )
+
+              const isSelected =
+                selectedDate ===
+                cell.dateKey
+
+              const dayCellClassName = [
+                'calendar-day-cell',
+                !cell.isCurrentMonth
+                  ? 'calendar-day-cell-outside'
+                  : '',
+                isSelected
+                  ? 'calendar-day-cell-selected'
+                  : '',
+              ]
+                .filter(Boolean)
+                .join(' ')
+
+              const dayNumberClassName = [
+                'calendar-day-number',
+                cell.weekday === 0
+                  ? 'calendar-day-number-sunday'
+                  : '',
+                cell.weekday === 6
+                  ? 'calendar-day-number-saturday'
+                  : '',
+              ]
+                .filter(Boolean)
+                .join(' ')
+
+              return (
+                <button
+                  key={cell.dateKey}
+                  type="button"
+                  className={
+                    dayCellClassName
+                  }
+                  disabled={isLoading}
+                  style={{
+                    // 대시보드 감정 원과 같은 그라데이션 (반반 분할 대신).
+                    // 그날의 대표색은 무드트래커에서 가장 많이 입력된 무드를 쓴다.
+                    // 입력 횟수가 같으면 가장 최근 무드를 사용한다.
+                    '--day-mood-gradient':
+                      buildDayGradient(
+                        moodSlots[cell.dateKey]
+                          ?.myMood ??
+                          dayData.myMood,
+                        moodSlots[cell.dateKey]
+                          ?.partnerMood ??
+                          dayData.partnerMood,
+                      ),
+                  }}
+                  onClick={() =>
+                    handleDateSelect(cell)
+                  }
+                >
+                  <span
+                    className={
+                      dayNumberClassName
+                    }
+                  >
+                    {cell.day}
+                  </span>
+
+                  <span className="calendar-day-dots">
+                    {dayData
+                      .anniversaries
+                      .length > 0 && (
+                      <span className="anniversary-dot" />
+                    )}
+
+                    {dayData.schedules
+                      .length > 0 && (
+                      <span className="schedule-dot" />
+                    )}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+        </section>
+
+        {/*
+          '일정 추가' / '기념일 관리' 큰 버튼 두 개를 달력 아래 따로 두던 것을
+          각 섹션 제목 줄 안의 '편집' 버튼으로 옮겼다.
+          무엇을 고치는 버튼인지 제목 옆에서 바로 읽히고, 달력과 상세 사이를
+          가로막던 덩어리가 사라져 화면이 한 흐름으로 이어진다.
+        */}
+        <section className="selected-day-card">
+          <div className="selected-day-header">
+            <div>
+              <p>
+                {selectedDate.slice(0, 4)}
+                년
+              </p>
+
+              <h2>
+                {formatSelectedDate(
+                  selectedDate,
+                )}
+              </h2>
+            </div>
+
+          </div>
+
+          {/*
+            무드트래커 상세 — 가운데 축 타임라인(MoodTimeline).
+            대시보드의 감정 원 아래에 붙는 요약(MoodSlotList)과 달리, 여기서는
+            그날의 시간대를 전부 펼쳐 두 사람의 흐름을 나란히 읽는 것이 목적이다.
+          */}
+          <div className="selected-day-section">
+            <div className="selected-day-section-title">
+              {/*
+                펼치기/접기는 제목 바로 옆에 둔다.
+                줄 오른쪽 끝에 두면 무엇을 펼치는 버튼인지가 제목에서 멀어지고,
+                옆 섹션들의 '편집' 버튼과 같은 자리라 같은 성격으로 오해된다.
+                (저건 다른 화면을 여는 버튼이고 이건 이 자리에서 여닫는 버튼이다)
+
+                그래서 알약도 벗겼다. 알약은 '누르면 어디론가 간다'는 표시로
+                이 화면에서 이미 쓰이고 있다. 여닫기는 제목의 일부처럼 조용해야 한다.
+              */}
+              <h3>
+                무드트래커
+
+                <button
+                  type="button"
+                  className="section-toggle-button"
+                  aria-expanded={
+                    isMoodTrackerOpen
+                  }
+                  aria-label={
+                    isMoodTrackerOpen
+                      ? '무드트래커 접기'
+                      : '무드트래커 펼치기'
+                  }
+                  onClick={() =>
+                    setIsMoodTrackerOpen(
+                      (previous) => !previous,
+                    )
+                  }
+                >
+                  {/*
+                    화살표 두 개를 갈아끼우지 않고 하나를 돌린다.
+                    갈아끼우면 다른 아이콘이 튀어나온 것처럼 보이는데,
+                    돌리면 같은 것이 방향만 바꾼 것으로 읽힌다.
+                  */}
+                  <ChevronDown
+                    size={16}
+                    strokeWidth={2.2}
+                    aria-hidden="true"
+                  />
+                </button>
+              </h3>
+            </div>
+
+            {isMoodTrackerOpen && (
+              <MoodTimeline
+                mySlots={
+                  selectedDayMood.mySlots
+                }
+                partnerSlots={
+                  selectedDayMood.partnerSlots
+                }
+                window={moodWindow}
+                nowMinutes={
+                  selectedDayNowMinutes
+                }
+                onEditSlot={openMoodModal}
+              />
+            )}
+          </div>
+
+          <div className="selected-day-section">
+            <div className="selected-day-section-title">
+              <h3>
+                일정
+
+                <span>
+                  {
+                    selectedDayData
+                      .schedules.length
+                  }
+                </span>
+              </h3>
+
+              <button
+                type="button"
+                className="section-action-button"
+                disabled={
+                  isLoading || isProcessing
+                }
+                onClick={
+                  openCreateScheduleModal
+                }
+              >
+                <Pencil
+                  size={13}
+                  strokeWidth={2}
+                  aria-hidden="true"
+                />
+
+                <span>편집</span>
+              </button>
+            </div>
+
+            {selectedDayData.schedules
+              .length > 0 ? (
+              <div className="schedule-list">
+                {selectedDayData.schedules.map(
+                  (schedule) => (
+                    <button
+                      key={
+                        schedule.scheduleId
+                      }
+                      type="button"
+                      className="schedule-list-item"
+                      onClick={() =>
+                        openEditScheduleModal(
+                          schedule,
+                        )
+                      }
+                    >
+                      <time>
+                        {schedule.time ||
+                          '시간 미정'}
+                      </time>
+
+                      <span>
+                        {schedule.name}
+                      </span>
+
+                      <ChevronRight
+                        className="schedule-list-chevron"
+                        size={18}
+                        strokeWidth={1.8}
+                        aria-hidden="true"
+                      />
+                    </button>
+                  ),
+                )}
+              </div>
+            ) : (
+              <p className="empty-note empty-section-message">
+                등록된 일정이 없어요.
+              </p>
+            )}
+          </div>
+
+          <div className="selected-day-section">
+            <div className="selected-day-section-title">
+              <h3>
+                기념일
+
+                <span>
+                  {
+                    selectedDayData
+                      .anniversaries.length
+                  }
+                </span>
+              </h3>
+
+              <button
+                type="button"
+                className="section-action-button"
+                disabled={
+                  isLoading || isProcessing
+                }
+                onClick={
+                  openAnniversaryManager
+                }
+              >
+                <Pencil
+                  size={13}
+                  strokeWidth={2}
+                  aria-hidden="true"
+                />
+
+                <span>편집</span>
+              </button>
+            </div>
+
+            {selectedDayData.anniversaries
+              .length > 0 ? (
+              <div className="anniversary-list">
+                {selectedDayData
+                  .anniversaries
+                  .map((anniversary) => (
+                    <button
+                      key={
+                        anniversary.scheduleId
+                      }
+                      type="button"
+                      className="anniversary-list-item"
+                      onClick={() => {
+                        if (
+                          anniversary.isAutomaticAnniversary
+                        ) {
+                          openAnniversaryManager()
+                          return
+                        }
+
+                        openEditScheduleModal(
+                          anniversary,
+                        )
+                      }}
+                    >
+                      <span className="anniversary-dot" />
+
+                      <strong>
+                        {anniversary.name}
+                      </strong>
+
+                      {formatAnniversaryRepeat(
+                        anniversary,
+                      ) && (
+                        <small>
+                          {formatAnniversaryRepeat(
+                            anniversary,
+                          )}
+                        </small>
+                      )}
+
+                      <ChevronRight
+                        size={17}
+                        strokeWidth={1.8}
+                        aria-hidden="true"
+                      />
+                    </button>
+                  ))}
+              </div>
+            ) : (
+              <p className="empty-note empty-section-message">
+                등록된 기념일이 없어요.
+              </p>
+            )}
+          </div>
+
+          <div className="diary-section">
+            <div className="selected-day-section-title">
+              <h3>한 줄 일기</h3>
+
+              {/*
+                편집은 시트에서 하므로 이 버튼은 늘 자리를 지킨다.
+                (예전에는 인라인 편집이 열리면 버튼이 사라졌다)
+              */}
+              <button
+                type="button"
+                className="diary-edit-button"
+                disabled={isProcessing}
+                onClick={() => {
+                  setDiaryDraft(
+                    selectedDayData.diary
+                      .content ?? '',
+                  )
+                  setIsDiaryEditing(true)
+                }}
+              >
+                <Pencil
+                  size={13}
+                  strokeWidth={2}
+                  aria-hidden="true"
+                />
+
+                <span>편집</span>
+              </button>
+            </div>
+
+            {/*
+              비었을 때는 일정·기념일과 같은 공용 빈 상태 서식(.empty-note)을 쓴다.
+              내용용 서식(.diary-content)을 그대로 쓰면 안내 문구가 실제로 쓴 일기처럼
+              진하게 놓여 다른 섹션의 빈 상태와 어긋나 보였다.
+            */}
+            <p
+              className={
+                selectedDayData.diary
+                  .content
+                  ? 'diary-content'
+                  : 'empty-note empty-section-message'
+              }
+            >
+              {selectedDayData.diary
+                .content ||
+                '작성된 한 줄 일기가 없어요.'}
+            </p>
+          </div>
+        </section>
+      </div>
+
+      <BottomNavigation />
+
+      {isDiaryEditing && (
+        <DiaryModal
+          dateLabel={formatSelectedDate(
+            selectedDate,
+          )}
+          value={diaryDraft}
+          isProcessing={isProcessing}
+          onChange={setDiaryDraft}
+          onClose={() => {
+            setDiaryDraft('')
+            setIsDiaryEditing(false)
+          }}
+          onSave={handleDiarySave}
+        />
+      )}
+
+      {anniversaryManager.isOpen && (
+        <AnniversaryManager
+          anniversaries={
+            anniversaryManager.anniversaries
+          }
+          isLoading={
+            anniversaryManager.isLoading
+          }
+          isProcessing={isProcessing}
+          onClose={
+            closeAnniversaryManager
+          }
+          onCreate={
+            openCreateAnniversaryModal
+          }
+          onEdit={
+            openEditScheduleModal
+          }
+        />
+      )}
+
+      {scheduleModal.isOpen && (
+        <ScheduleModal
+          mode={scheduleModal.mode}
+          entryType={
+            scheduleModal.entryType
+          }
+          selectedDate={selectedDate}
+          schedule={scheduleModal.schedule}
+          isProcessing={isProcessing}
+          onClose={closeScheduleModal}
+          onSave={handleScheduleSave}
+          onDelete={
+            handleScheduleDelete
+          }
+        />
+      )}
+
+      {/*
+        무드트래커 등록/수정. 대시보드와 같은 모달을 쓰므로
+        어느 화면에서 수정하든 동작이 같다.
+      */}
+      {moodModal && (
+        <MoodFormModal
+          open
+          mode={
+            moodModal.slot
+              ? 'edit'
+              : 'create'
+          }
+          dateLabel={`${formatSelectedDate(selectedDate)} ${formatSlotTime(moodModal.minutesOfDay)}`}
+          initialMoodType={
+            moodModal.slot?.moodType ??
+            null
+          }
+          initialReason={
+            moodModal.slot?.reason ?? ''
+          }
+          onClose={closeMoodModal}
+          onSubmit={handleSaveMood}
+        />
+      )}
+    </div>
+  )
+}
+
+export default CalendarPage
