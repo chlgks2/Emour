@@ -64,16 +64,27 @@ public class GoogleTokenVerifier {
             throw new CustomException(ErrorCode.INVALID_TOKEN);
         }
 
+        String providerId = (String) claims.get("sub");
         String email = (String) claims.get("email");
-        if (email == null || email.isBlank()) {
+        if (providerId == null || providerId.isBlank()
+                || email == null || email.isBlank()) {
             throw new CustomException(ErrorCode.INVALID_TOKEN);
         }
 
         boolean emailVerified =
                 Boolean.parseBoolean(String.valueOf(claims.get("email_verified")));
+        if (!emailVerified) {
+            throw new CustomException(ErrorCode.INVALID_TOKEN);
+        }
         String name = (String) claims.get("name");
         String picture = (String) claims.get("picture");
 
-        return new GoogleUserInfo(email, name, picture, emailVerified);
+        return new GoogleUserInfo(
+                providerId,
+                email,
+                name,
+                picture,
+                true
+        );
     }
 }
