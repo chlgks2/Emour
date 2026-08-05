@@ -9,6 +9,7 @@ import com.ssafy.emour.member.dto.response.MemberProfileImageResponse;
 import com.ssafy.emour.member.dto.response.MemberProfileResponse;
 import com.ssafy.emour.member.dto.response.MemberProfileImagesResponse;
 import com.ssafy.emour.member.dto.response.PartnerNicknameResponse;
+import com.ssafy.emour.member.dto.response.PartnerStatusMessageResponse;
 import com.ssafy.emour.member.service.MemberService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -183,4 +184,24 @@ public class MemberController {
                 .status(HttpStatus.CREATED)
                 .body(ApiResponse.success("프로필 이미지가 업로드되었습니다.", response));
     }
+
+    @GetMapping("/status-message")
+    @Operation(
+            summary = "상대방 상태 메시지 조회",
+            description = """
+                    현재 연결된 커플 상대방의 회원 번호와 상태 메시지를 반환합니다.
+                    상대방이 상태 메시지를 등록하지 않았으면 statusMessage는 null입니다.
+                    활성 커플이 없으면 404를 반환합니다.
+                    """
+    )
+    public ResponseEntity<ApiResponse<PartnerStatusMessageResponse>>
+    getPartnerStatusMessage() {
+        Long userId = SecurityUtil.getCurrentUserId();
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        memberService.getPartnerStatusMessage(userId)
+                )
+        );
+    }
+
 }

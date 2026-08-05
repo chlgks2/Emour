@@ -122,6 +122,9 @@ class SwaggerDocumentationTest {
                 ).exists())
                 .andExpect(jsonPath(
                         "$.paths['/users/partner-nickname'].patch"
+                ).exists())
+                .andExpect(jsonPath(
+                        "$.paths['/users/status-message'].get"
                 ).exists());
     }
 
