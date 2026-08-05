@@ -177,7 +177,9 @@ function PartnerAvatar({ imageUrl, label }) {
 
 function MyPagePage() {
   const navigate = useNavigate()
-  const { logout } = useAuth()
+  const { logout, user } = useAuth()
+  const isSocialLogin =
+    user?.authProvider === 'GOOGLE'
 
   const [profile, setProfile] =
     useState(null)
@@ -1159,29 +1161,31 @@ function MyPagePage() {
                   />
                 </button>
 
-                <button
-                  type="button"
-                  className="mypage-menu-item"
-                  onClick={openPasswordChange}
-                >
-                  <span className="mypage-menu-icon">
-                    <KeyRound
-                      size={20}
-                      strokeWidth={1.8}
+                {!isSocialLogin && (
+                  <button
+                    type="button"
+                    className="mypage-menu-item"
+                    onClick={openPasswordChange}
+                  >
+                    <span className="mypage-menu-icon">
+                      <KeyRound
+                        size={20}
+                        strokeWidth={1.8}
+                        aria-hidden="true"
+                      />
+                    </span>
+
+                    <span className="mypage-menu-label">
+                      비밀번호 변경
+                    </span>
+
+                    <ChevronRight
+                      className="mypage-menu-chevron"
+                      size={18}
                       aria-hidden="true"
                     />
-                  </span>
-
-                  <span className="mypage-menu-label">
-                    비밀번호 변경
-                  </span>
-
-                  <ChevronRight
-                    className="mypage-menu-chevron"
-                    size={18}
-                    aria-hidden="true"
-                  />
-                </button>
+                  </button>
+                )}
 
                 <button
                   type="button"
