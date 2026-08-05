@@ -1005,15 +1005,16 @@ export default function ChatRoomPage() {
     // 내 메시지는 북마크하지 않는다. (메뉴가 열리지 않지만 방어적으로 한 번 더)
     if (Number(target.senderId) === Number(myUserId)) return;
     closeActionMenu();
-    const isCurrentlyBookmarked = bookmarkedMessageIds.has(target.messageId);
+    const targetMessageId = Number(target.messageId);
+    const isCurrentlyBookmarked = bookmarkedMessageIds.has(targetMessageId);
     try {
       await toggleBookmark(target, isCurrentlyBookmarked);
       setBookmarkedMessageIds((prev) => {
         const next = new Set(prev);
         if (isCurrentlyBookmarked) {
-          next.delete(target.messageId);
+          next.delete(targetMessageId);
         } else {
-          next.add(target.messageId);
+          next.add(targetMessageId);
         }
         return next;
       });
@@ -1201,7 +1202,7 @@ export default function ChatRoomPage() {
               <MessageBubble
                 message={message}
                 myUserId={myUserId}
-                isBookmarked={bookmarkedMessageIds.has(message.messageId)}
+                isBookmarked={bookmarkedMessageIds.has(Number(message.messageId))}
                 reactions={reactions[message.messageId] ?? []}
                 isReadByPartner={isReadByPartner}
                 onLongPressMessage={handleLongPressMessage}
@@ -1245,9 +1246,11 @@ export default function ChatRoomPage() {
       {actionTarget && (
         <MessageActionPopover
           anchorRect={actionTarget.anchorRect}
-          isBookmarked={bookmarkedMessageIds.has(actionTarget.message.messageId)}
+          isBookmarked={bookmarkedMessageIds.has(Number(actionTarget.message.messageId))}
           myReactionType={
-            reactions[actionTarget.message.messageId]?.find((r) => r.userId === myUserId)
+            reactions[actionTarget.message.messageId]?.find(
+              (r) => Number(r.userId) === Number(myUserId),
+            )
               ?.reactionType ?? null
           }
           onClose={closeActionMenu}

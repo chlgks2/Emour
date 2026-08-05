@@ -96,7 +96,7 @@ export async function fetchBookmarkedMessageIds(
 
   return new Set(
     result.bookmarks.map(
-      (bookmark) => bookmark.messageId,
+      (bookmark) => Number(bookmark.messageId),
     ),
   )
 }
