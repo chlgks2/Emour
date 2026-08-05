@@ -79,7 +79,10 @@ export async function login({
     },
   )
 
-  const loginData = response?.data
+  const loginData = {
+    ...response?.data,
+    authProvider: 'LOCAL',
+  }
 
   return saveLoginSession(loginData)
 }
@@ -164,7 +167,10 @@ export async function loginWithSocial(provider, idToken) {
     },
   )
 
-  return saveLoginSession(response?.data)
+  return saveLoginSession({
+    ...response?.data,
+    authProvider: provider,
+  })
 }
 
 export async function checkEmailAvailability(
