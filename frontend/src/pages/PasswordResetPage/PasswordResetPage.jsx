@@ -14,6 +14,7 @@ import styles from "./PasswordResetPage.module.css";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PASSWORD_MIN_LENGTH = 8;
+const PASSWORD_MAX_LENGTH = 64;
 
 export default function PasswordResetPage() {
   const navigate = useNavigate();
@@ -56,6 +57,10 @@ export default function PasswordResetPage() {
 
       if (newPassword.length < PASSWORD_MIN_LENGTH) {
         setError(`비밀번호는 ${PASSWORD_MIN_LENGTH}자 이상 입력해주세요.`);
+        return;
+      }
+      if (newPassword.length > PASSWORD_MAX_LENGTH) {
+        setError(`비밀번호는 ${PASSWORD_MAX_LENGTH}자 이하로 입력해주세요.`);
         return;
       }
       if (newPassword !== passwordConfirm) {
@@ -126,6 +131,7 @@ export default function PasswordResetPage() {
                 label="새 비밀번호"
                 type="password"
                 autoComplete="new-password"
+                maxLength={PASSWORD_MAX_LENGTH}
                 value={newPassword}
                 onChange={(event) => setNewPassword(event.target.value)}
               />
@@ -133,6 +139,7 @@ export default function PasswordResetPage() {
                 label="새 비밀번호 확인"
                 type="password"
                 autoComplete="new-password"
+                maxLength={PASSWORD_MAX_LENGTH}
                 value={passwordConfirm}
                 onChange={(event) => setPasswordConfirm(event.target.value)}
                 error={error}
