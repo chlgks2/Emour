@@ -2,6 +2,8 @@ import { useRef } from "react";
 import { ImagePlus, Send, WandSparkles } from "lucide-react";
 import styles from "./ChatInputBar.module.css";
 
+const MESSAGE_MAX_LENGTH = 2000;
+
 export default function ChatInputBar({
   value,
   onChange,
@@ -66,6 +68,7 @@ export default function ChatInputBar({
           ref={messageInputRef}
           className={styles.input}
           value={value}
+          maxLength={MESSAGE_MAX_LENGTH}
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="메시지를 입력하세요"
