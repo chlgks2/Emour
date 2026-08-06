@@ -14,3 +14,5 @@ pytest-asyncio
 --extra-index-url https://download.pytorch.org/whl/cpu
 torch==2.6.0+cpu
 transformers>=4.44,<6
+# 추론 전 띄어쓰기 교정("기분나빠"→"기분 나빠"). LOCAL_FIX_SPACING=false 로 끌 수 있음.
+kiwipiepy==0.23.2

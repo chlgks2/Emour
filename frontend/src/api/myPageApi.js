@@ -1,10 +1,4 @@
 import {
-  MOCK_MY_PAGE_MEMBER_RESPONSE,
-  MOCK_MY_PAGE_ROOM_RESPONSE,
-  MOCK_MY_PAGE_USER_RESPONSE,
-} from '../data/myPageMockData.js'
-
-import {
   mapMyPageResponse,
 } from '../mappers/myPageMapper.js'
 
@@ -45,114 +39,6 @@ import {
   saveCurrentCoupleRoom,
   savePendingCoupleRoom,
 } from '../utils/pendingCoupleRoom.js'
-
-/*
- * 기본값은 Mock API입니다.
- *
- * 백엔드 연결 후 .env에서
- * VITE_USE_MOCK_API=false로 바꾸면
- * 실제 Spring API를 호출합니다.
- */
-const USE_MOCK_API =
-  import.meta.env
-    .VITE_USE_MYPAGE_MOCK_API === 'true'
-
-const MOCK_DELAY = 250
-
-let mockUserResponse = {
-  ...MOCK_MY_PAGE_USER_RESPONSE,
-}
-
-let mockRoomResponse = {
-  ...MOCK_MY_PAGE_ROOM_RESPONSE,
-}
-
-let mockMemberResponse = {
-  ...MOCK_MY_PAGE_MEMBER_RESPONSE,
-}
-
-function wait(milliseconds = MOCK_DELAY) {
-  return new Promise((resolve) => {
-    setTimeout(resolve, milliseconds)
-  })
-}
-
-function readFileAsDataUrl(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-
-    reader.onload = () => {
-      resolve(reader.result)
-    }
-
-    reader.onerror = () => {
-      reject(
-        new Error(
-          '프로필 사진을 불러오지 못했습니다.',
-        ),
-      )
-    }
-
-    reader.readAsDataURL(file)
-  })
-}
-
-function createMappedMockResponse() {
-  const pendingRoom =
-    getPendingCoupleRoom()
-
-  return mapMyPageResponse({
-    userResponse: mockUserResponse,
-    roomResponse:
-      pendingRoom ?? mockRoomResponse,
-    memberResponse: pendingRoom
-      ? {
-          roomId: pendingRoom.roomId,
-          userId:
-            mockUserResponse.user_id,
-          status: 'ACTIVE',
-        }
-      : mockMemberResponse,
-  })
-}
-
-function createMockRoomCode() {
-  const characters =
-    'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
-
-  let randomCode = ''
-
-  for (
-    let index = 0;
-    index < 8;
-    index += 1
-  ) {
-    const randomIndex = Math.floor(
-      Math.random() *
-        characters.length,
-    )
-
-    randomCode +=
-      characters[randomIndex]
-  }
-
-  return `${randomCode.slice(
-    0,
-    4,
-  )}-${randomCode.slice(4)}`
-}
-
-function createFutureExpirationDate(
-  days = 7,
-) {
-  const expirationDate = new Date()
-
-  expirationDate.setDate(
-    expirationDate.getDate() + days,
-  )
-
-  return expirationDate.toISOString()
-}
 
 /**
  * 재결합 초대 코드 발급.
@@ -205,15 +91,6 @@ async function requestReconnectInvitation() {
 export async function resolveReconnectRoomCode(
   ownerUserId = null,
 ) {
-  if (USE_MOCK_API) {
-    await wait()
-
-    return (
-      createMappedMockResponse()
-        .roomCode || null
-    )
-  }
-
   const storedRoom =
     getPendingCoupleRoom()
 
@@ -237,12 +114,6 @@ export async function resolveReconnectRoomCode(
 }
 
 export async function getMyPageProfile() {
-  if (USE_MOCK_API) {
-    await wait()
-
-    return createMappedMockResponse()
-  }
-
   const [
     userResponse,
     fetchedServerRoom,
@@ -409,33 +280,6 @@ export async function updateMyPageProfile({
     )
   }
 
-  if (USE_MOCK_API) {
-    await wait()
-
-    let profileImageUrl =
-      mockUserResponse.profile_image_url
-
-    if (profileImageFile) {
-      profileImageUrl =
-        await readFileAsDataUrl(
-          profileImageFile,
-        )
-    }
-
-    mockUserResponse = {
-      ...mockUserResponse,
-      nickname: trimmedNickname,
-      status_message:
-        trimmedStatusMessage,
-      profile_image_url:
-        profileImageUrl,
-      updated_at:
-        new Date().toISOString(),
-    }
-
-    return createMappedMockResponse()
-  }
-
   /*
    * 사진은 POST /users/profile-img 로 올려 user.profile_image_url 에 저장한다.
    * 예전에는 이 자리에서 막아두고 목업만 data URL 을 들고 있어서,
@@ -487,30 +331,6 @@ export async function updatePartnerNickname({
     )
   }
 
-  if (USE_MOCK_API) {
-    await wait()
-
-    if (
-      !mockMemberResponse ||
-      mockMemberResponse.status !==
-        'ACTIVE' ||
-      mockRoomResponse?.status !==
-        'ACTIVE'
-    ) {
-      throw new Error(
-        '현재 연결된 연인이 없습니다.',
-      )
-    }
-
-    mockMemberResponse = {
-      ...mockMemberResponse,
-      partner_nickname:
-        trimmedPartnerNickname,
-    }
-
-    return createMappedMockResponse()
-  }
-
   await updatePartnerNicknameOnServer(
     trimmedPartnerNickname,
   )
@@ -519,42 +339,6 @@ export async function updatePartnerNickname({
 }
 
 export async function regenerateRoomCode() {
-  if (USE_MOCK_API) {
-    await wait()
-
-    if (
-      !mockRoomResponse ||
-      !mockMemberResponse ||
-      mockMemberResponse.status !==
-        'ACTIVE'
-    ) {
-      throw new Error(
-        '현재 참여 중인 방이 없습니다.',
-      )
-    }
-
-    if (
-      mockRoomResponse.status ===
-      'INACTIVE'
-    ) {
-      throw new Error(
-        '종료된 방의 코드는 재발급할 수 없습니다.',
-      )
-    }
-
-    mockRoomResponse = {
-      ...mockRoomResponse,
-      room_code:
-        createMockRoomCode(),
-      room_code_expires_at:
-        createFutureExpirationDate(7),
-      updated_at:
-        new Date().toISOString(),
-    }
-
-    return createMappedMockResponse()
-  }
-
   const [invitation, profile] =
     await Promise.all([
       createCoupleInvitation(),
@@ -572,37 +356,6 @@ export async function regenerateRoomCode() {
 }
 
 export async function leaveCoupleRoom() {
-  if (USE_MOCK_API) {
-    await wait()
-
-    if (
-      !mockRoomResponse ||
-      !mockMemberResponse ||
-      mockMemberResponse.status !==
-        'ACTIVE'
-    ) {
-      throw new Error(
-        '현재 참여 중인 방이 없습니다.',
-      )
-    }
-
-    mockMemberResponse = {
-      ...mockMemberResponse,
-      status: 'LEFT',
-      left_at:
-        new Date().toISOString(),
-    }
-
-    mockRoomResponse = {
-      ...mockRoomResponse,
-      status: 'WAITING',
-      updated_at:
-        new Date().toISOString(),
-    }
-
-    return createMappedMockResponse()
-  }
-
   await disconnectCouple()
   clearPendingCoupleRoom()
   // 방이 바뀌었으니 캐시해 둔 roomId 를 버린다. (안 그러면 끝난 방을 계속 조회한다)
@@ -612,48 +365,10 @@ export async function leaveCoupleRoom() {
 }
 
 export async function logoutCurrentUser() {
-  if (USE_MOCK_API) {
-    await wait()
-    return
-  }
-
   await logout()
 }
 
 export async function withdrawCurrentUser() {
-  if (USE_MOCK_API) {
-    await wait()
-
-    const withdrawalTime =
-      new Date().toISOString()
-
-    mockUserResponse = {
-      ...mockUserResponse,
-      status: 'WITHDRAWN',
-      updated_at: withdrawalTime,
-      deleted_at: withdrawalTime,
-    }
-
-    if (
-      mockMemberResponse?.status ===
-      'ACTIVE'
-    ) {
-      mockMemberResponse = {
-        ...mockMemberResponse,
-        status: 'LEFT',
-        left_at: withdrawalTime,
-      }
-
-      mockRoomResponse = {
-        ...mockRoomResponse,
-        status: 'WAITING',
-        updated_at: withdrawalTime,
-      }
-    }
-
-    return createMappedMockResponse()
-  }
-
   await withdrawMyAccount()
   clearPendingCoupleRoom()
   invalidateCoupleRoom()
