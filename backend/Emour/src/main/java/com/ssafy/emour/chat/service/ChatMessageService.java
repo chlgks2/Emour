@@ -2,8 +2,10 @@ package com.ssafy.emour.chat.service;
 
 import com.ssafy.emour.chat.dto.ChatHistoryResponse;
 import com.ssafy.emour.chat.dto.ChatImageResponse;
+import com.ssafy.emour.chat.dto.ChatMessageContextResponse;
 import com.ssafy.emour.chat.dto.ChatMessageRequest;
 import com.ssafy.emour.chat.dto.ChatMessageResponse;
+import com.ssafy.emour.chat.dto.ChatNewerHistoryResponse;
 import com.ssafy.emour.chat.dto.ChatReactionResponse;
 import com.ssafy.emour.chat.entity.ChatAnalysis;
 import com.ssafy.emour.chat.entity.ChatMessage;
@@ -34,6 +36,8 @@ public class ChatMessageService {
 
     private static final int DEFAULT_PAGE_SIZE = 50;
     private static final int MAX_PAGE_SIZE = 100;
+    private static final int DEFAULT_CONTEXT_SIZE = 30;
+    private static final int MAX_CONTEXT_SIZE = 50;
     private static final int MAX_IMAGE_COUNT = 10;
 
     private final ChatMessageRepository chatMessageRepository;
@@ -84,6 +88,102 @@ public class ChatMessageService {
                 );
 
         return toHistoryResponse(found, size);
+    }
+
+    /** 검색 위치에서 아래로 내려갈 때 기준 메시지보다 새로운 대화를 조회합니다. */
+    @Transactional(readOnly = true)
+    public ChatNewerHistoryResponse getNewerMessages(
+            Long roomId,
+            Long userId,
+            Long afterMessageId,
+            Integer requestedSize
+    ) {
+        validateActiveMember(userId, roomId);
+        if (afterMessageId == null) {
+            throw new ChatException("기준 메시지 번호는 꼭 필요합니다.");
+        }
+
+        int size = normalizePageSize(requestedSize);
+        List<ChatMessage> found = chatMessageRepository
+                .findByRoomIdAndMessageIdGreaterThanOrderByMessageIdAsc(
+                        roomId,
+                        afterMessageId,
+                        PageRequest.of(0, size + 1)
+                );
+
+        boolean hasNext = found.size() > size;
+        List<ChatMessage> pageMessages = new ArrayList<>(
+                found.subList(0, Math.min(found.size(), size))
+        );
+        List<ChatMessageResponse> responses = toResponses(pageMessages);
+        Long nextCursor = pageMessages.isEmpty()
+                ? null
+                : pageMessages.get(pageMessages.size() - 1).getMessageId();
+
+        return new ChatNewerHistoryResponse(
+                responses,
+                nextCursor,
+                hasNext
+        );
+    }
+
+    /** 검색 결과 메시지를 중심으로 이전·이후 대화를 함께 조회합니다. */
+    @Transactional(readOnly = true)
+    public ChatMessageContextResponse getMessageContext(
+            Long messageId,
+            Long userId,
+            Integer requestedBeforeSize,
+            Integer requestedAfterSize
+    ) {
+        ChatMessage target = findMessage(messageId);
+        validateActiveMember(userId, target.getRoomId());
+
+        int beforeSize = normalizeContextSize(requestedBeforeSize);
+        int afterSize = normalizeContextSize(requestedAfterSize);
+        PageRequest beforePage = PageRequest.of(0, beforeSize + 1);
+        PageRequest afterPage = PageRequest.of(0, afterSize + 1);
+
+        List<ChatMessage> beforeFound = chatMessageRepository
+                .findByRoomIdAndMessageIdLessThanOrderByMessageIdDesc(
+                        target.getRoomId(),
+                        messageId,
+                        beforePage
+                );
+        List<ChatMessage> afterFound = chatMessageRepository
+                .findByRoomIdAndMessageIdGreaterThanOrderByMessageIdAsc(
+                        target.getRoomId(),
+                        messageId,
+                        afterPage
+                );
+
+        boolean hasOlder = beforeFound.size() > beforeSize;
+        boolean hasNewer = afterFound.size() > afterSize;
+        List<ChatMessage> beforeMessages = new ArrayList<>(
+                beforeFound.subList(
+                        0,
+                        Math.min(beforeFound.size(), beforeSize)
+                )
+        );
+        Collections.reverse(beforeMessages);
+
+        List<ChatMessage> contextMessages = new ArrayList<>(
+                beforeMessages.size() + 1 + afterSize
+        );
+        contextMessages.addAll(beforeMessages);
+        contextMessages.add(target);
+        contextMessages.addAll(afterFound.subList(
+                0,
+                Math.min(afterFound.size(), afterSize)
+        ));
+
+        return new ChatMessageContextResponse(
+                messageId,
+                toResponses(contextMessages),
+                contextMessages.get(0).getMessageId(),
+                contextMessages.get(contextMessages.size() - 1).getMessageId(),
+                hasOlder,
+                hasNewer
+        );
     }
 
     /**
@@ -246,6 +346,16 @@ public class ChatMessageService {
         return requestedSize;
     }
 
+    private int normalizeContextSize(Integer requestedSize) {
+        if (requestedSize == null) {
+            return DEFAULT_CONTEXT_SIZE;
+        }
+        if (requestedSize < 1 || requestedSize > MAX_CONTEXT_SIZE) {
+            throw new ChatException("주변 메시지는 한 방향에 1개부터 50개까지 조회할 수 있습니다.");
+        }
+        return requestedSize;
+    }
+
     private List<String> safeImageUrls(List<String> imageUrls) {
         return imageUrls == null ? List.of() : imageUrls;
     }
@@ -319,7 +429,23 @@ public class ChatMessageService {
         // 검색 결과도 채팅 화면에서 읽기 쉽도록 오래된 순서로 돌려줍니다.
         Collections.reverse(pageMessages);
 
-        List<Long> messageIds = pageMessages.stream()
+        List<ChatMessageResponse> responses = toResponses(pageMessages);
+
+        Long nextCursor = pageMessages.isEmpty()
+                ? null
+                : pageMessages.get(0).getMessageId();
+
+        return new ChatHistoryResponse(responses, nextCursor, hasNext);
+    }
+
+    private List<ChatMessageResponse> toResponses(
+            List<ChatMessage> messages
+    ) {
+        if (messages.isEmpty()) {
+            return List.of();
+        }
+
+        List<Long> messageIds = messages.stream()
                 .map(ChatMessage::getMessageId)
                 .toList();
         Map<Long, ChatAnalysis> analysesByMessageId =
@@ -333,18 +459,12 @@ public class ChatMessageService {
                                 Function.identity()
                         ));
 
-        List<ChatMessageResponse> responses = pageMessages.stream()
+        return messages.stream()
                 .map(message -> toResponse(
                         message,
                         analysesByMessageId.get(message.getMessageId())
                 ))
                 .toList();
-
-        Long nextCursor = pageMessages.isEmpty()
-                ? null
-                : pageMessages.get(0).getMessageId();
-
-        return new ChatHistoryResponse(responses, nextCursor, hasNext);
     }
 
 }

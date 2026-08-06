@@ -252,6 +252,7 @@ CREATE TABLE `chat_message`
 
     UNIQUE (`sender_id`, `client_message_id`),
     UNIQUE (`message_id`, `room_id`),
+    INDEX `idx_chat_message_room_message` (`room_id`, `message_id`),
     INDEX `idx_chat_message_room_sent` (`room_id`, `sent_at`),
     INDEX `idx_chat_message_room_sender_sent` (`room_id`, `sender_id`, `sent_at`),
     FOREIGN KEY (`room_id`, `sender_id`) REFERENCES `couple_member` (`room_id`, `user_id`)
