@@ -39,6 +39,12 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
             Pageable pageable
     );
 
+    List<ChatMessage> findByRoomIdAndMessageIdGreaterThanOrderByMessageIdAsc(
+            Long roomId,
+            Long messageId,
+            Pageable pageable
+    );
+
     @Query("""
             select message
             from ChatMessage message

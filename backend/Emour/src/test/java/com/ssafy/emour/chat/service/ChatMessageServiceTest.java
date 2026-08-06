@@ -17,6 +17,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
 import java.util.Optional;
@@ -158,10 +160,99 @@ class ChatMessageServiceTest {
                 .hasMessage("해당 채팅방에 참여 중인 사용자가 아닙니다.");
     }
 
+    // 검색 위치에서 아래로 내리면 기준 번호보다 새로운 메시지를 시간 순서대로 반환합니다.
+    @Test
+    void returnsMessagesAfterCursor() {
+        allowActiveMember(10L, 1L);
+        when(chatMessageRepository
+                .findByRoomIdAndMessageIdGreaterThanOrderByMessageIdAsc(
+                        1L,
+                        100L,
+                        PageRequest.of(0, 3)
+                )).thenReturn(List.of(
+                        message(101L, "first"),
+                        message(102L, "second"),
+                        message(103L, "has next")
+                ));
+        when(chatAnalysisRepository.findByMessageMessageIdIn(any()))
+                .thenReturn(List.of());
+
+        var response = chatMessageService.getNewerMessages(
+                1L,
+                10L,
+                100L,
+                2
+        );
+
+        assertThat(response.messages())
+                .extracting(ChatMessageResponse::messageId)
+                .containsExactly(101L, 102L);
+        assertThat(response.nextCursor()).isEqualTo(102L);
+        assertThat(response.hasNext()).isTrue();
+    }
+
+    // 검색 결과를 누르면 선택한 메시지와 앞뒤 대화를 시간 순서대로 반환합니다.
+    @Test
+    void returnsContextAroundMessage() {
+        ChatMessage target = message(100L, "target");
+        when(chatMessageRepository.findByMessageId(100L))
+                .thenReturn(Optional.of(target));
+        allowActiveMember(10L, 1L);
+        when(chatMessageRepository
+                .findByRoomIdAndMessageIdLessThanOrderByMessageIdDesc(
+                        1L,
+                        100L,
+                        PageRequest.of(0, 3)
+                )).thenReturn(List.of(
+                        message(99L, "before 1"),
+                        message(98L, "before 2"),
+                        message(97L, "has older")
+                ));
+        when(chatMessageRepository
+                .findByRoomIdAndMessageIdGreaterThanOrderByMessageIdAsc(
+                        1L,
+                        100L,
+                        PageRequest.of(0, 3)
+                )).thenReturn(List.of(
+                        message(101L, "after 1"),
+                        message(102L, "after 2"),
+                        message(103L, "has newer")
+                ));
+        when(chatAnalysisRepository.findByMessageMessageIdIn(any()))
+                .thenReturn(List.of());
+
+        var response = chatMessageService.getMessageContext(
+                100L,
+                10L,
+                2,
+                2
+        );
+
+        assertThat(response.messages())
+                .extracting(ChatMessageResponse::messageId)
+                .containsExactly(98L, 99L, 100L, 101L, 102L);
+        assertThat(response.olderCursor()).isEqualTo(98L);
+        assertThat(response.newerCursor()).isEqualTo(102L);
+        assertThat(response.hasOlder()).isTrue();
+        assertThat(response.hasNewer()).isTrue();
+    }
+
     private void allowActiveMember(Long userId, Long roomId) {
         when(coupleMemberRepository.existsByIdAndStatus(
                 new CoupleMemberId(userId, roomId),
                 CoupleMemberStatus.ACTIVE
         )).thenReturn(true);
+    }
+
+    private ChatMessage message(Long messageId, String content) {
+        ChatMessage message = ChatMessage.create(
+                1L,
+                10L,
+                "00000000-0000-0000-0000-" + String.format("%012d", messageId),
+                MessageType.TEXT,
+                content
+        );
+        ReflectionTestUtils.setField(message, "messageId", messageId);
+        return message;
     }
 }

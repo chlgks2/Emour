@@ -9,6 +9,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
@@ -22,6 +23,10 @@ import java.util.List;
 @Entity
 @Table(
         name = "chat_message",
+        indexes = @Index(
+                name = "idx_chat_message_room_message",
+                columnList = "room_id, message_id"
+        ),
         uniqueConstraints = {
                 @UniqueConstraint(
                         name = "uq_chat_message_client",
