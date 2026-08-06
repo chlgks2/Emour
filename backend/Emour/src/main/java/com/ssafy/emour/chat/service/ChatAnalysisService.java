@@ -9,15 +9,12 @@ import com.ssafy.emour.chat.entity.ChatAnalysis;
 import com.ssafy.emour.chat.entity.ChatMessage;
 import com.ssafy.emour.chat.entity.EmotionType;
 import com.ssafy.emour.chat.repository.ChatAnalysisRepository;
-import com.ssafy.emour.chat.repository.PendingAnalysisRoomSummary;
 import com.ssafy.emour.dashboard.event.DashboardChangePublisher;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Clock;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -33,32 +30,24 @@ public class ChatAnalysisService {
     private static final int MAX_CONTEXT_COUNT = 10;
     private static final int MAX_TARGET_COUNT = 10;
     private static final int MAX_ROOM_SCAN_COUNT = 100;
-    private static final int IDLE_SECONDS = 10;
 
     private final ChatAnalysisRepository chatAnalysisRepository;
     private final AiAnalysisClient aiAnalysisClient;
-    private final Clock dashboardClock;
     private final DashboardChangePublisher dashboardChangePublisher;
 
     /**
-     * 분석할 준비가 된 방 하나를 골라 최대 10개의 메시지를 분석합니다.
+     * 대기(미분석) 메시지가 있는 방 하나를 골라, 최신 최대 10개를 '즉시' 분석합니다.
      *
-     * <p>대기 메시지가 10개이면 바로 분석합니다. 10개 미만이어도
-     * 마지막 메시지 이후 10초 동안 새 메시지가 없으면 분석합니다.</p>
+     * <p>대기 시간(타이머) 없이 폴링마다 바로 분석합니다. 맥락은 직전 최대 10개를
+     * 슬라이딩 윈도우로 함께 보냅니다. 한 번에 최대 10개까지 분석하고, 더 많으면
+     * 다음 폴링에서 이어서 처리합니다.</p>
      */
     @Transactional
     public Optional<ChatAnalysisBatchResponse> analyzeReadyBatch() {
-        LocalDateTime idleThreshold = LocalDateTime
-                .now(dashboardClock)
-                .minusSeconds(IDLE_SECONDS);
-
         return chatAnalysisRepository.findPendingRoomSummaries(
                         PageRequest.of(0, MAX_ROOM_SCAN_COUNT)
                 ).stream()
-                .filter(summary -> isReady(
-                        summary,
-                        idleThreshold
-                ))
+                .filter(summary -> summary.getPendingCount() >= 1)
                 .findFirst()
                 .map(summary -> analyzeRoom(summary.getRoomId()))
                 .filter(response -> response.analyzedCount() > 0);
@@ -184,18 +173,6 @@ public class ChatAnalysisService {
             );
         }
         return speakers;
-    }
-
-    private boolean isReady(
-            PendingAnalysisRoomSummary summary,
-            LocalDateTime idleThreshold
-    ) {
-        if (summary.getPendingCount() >= MAX_TARGET_COUNT) {
-            return true;
-        }
-
-        return summary.getLastSentAt() != null
-                && !summary.getLastSentAt().isAfter(idleThreshold);
     }
 
 }
