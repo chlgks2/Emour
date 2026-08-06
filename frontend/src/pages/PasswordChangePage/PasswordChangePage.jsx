@@ -169,6 +169,7 @@ function PasswordChangePage() {
             <input
               type="password"
               value={currentPassword}
+              maxLength={PASSWORD_MAX_LENGTH}
               autoComplete="current-password"
               placeholder="현재 비밀번호를 입력해주세요"
               disabled={isProcessing}
