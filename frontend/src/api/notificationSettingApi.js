@@ -1,42 +1,14 @@
 import {
-  MOCK_NOTIFICATION_SETTING_RESPONSE,
-} from '../data/notificationSettingMockData.js'
-
-import {
   mapNotificationSettingApiPayload,
-  mapNotificationSettingResponse,
 } from '../mappers/notificationSettingMapper.js'
 
 import {
   apiRequest,
 } from './httpClient.js'
 
-const USE_MOCK_API =
-  import.meta.env
-    .VITE_USE_NOTIFICATION_MOCK_API ===
-  'true'
-
-const MOCK_DELAY = 250
-
 const ENDPOINTS = {
   moodNotificationSetting:
     '/users/me/mood-notification-setting',
-}
-
-let mockNotificationSettingResponse = {
-  ...MOCK_NOTIFICATION_SETTING_RESPONSE,
-}
-
-function wait(milliseconds = MOCK_DELAY) {
-  return new Promise((resolve) => {
-    setTimeout(resolve, milliseconds)
-  })
-}
-
-function createMappedMockResponse() {
-  return mapNotificationSettingResponse(
-    mockNotificationSettingResponse,
-  )
 }
 
 function validateSetting({
@@ -110,12 +82,6 @@ function convertTimeToMinutes(time) {
 }
 
 export async function getMoodNotificationSetting() {
-  if (USE_MOCK_API) {
-    await wait()
-
-    return createMappedMockResponse()
-  }
-
   const response = await apiRequest(
     ENDPOINTS.moodNotificationSetting,
   )
@@ -136,23 +102,6 @@ export async function updateMoodNotificationSetting({
     endTime,
     intervalHours,
   })
-
-  if (USE_MOCK_API) {
-    await wait()
-
-    mockNotificationSettingResponse = {
-      ...mockNotificationSettingResponse,
-      is_enabled: Boolean(isEnabled),
-      start_time: `${startTime}:00`,
-      end_time: `${endTime}:00`,
-      interval_hours:
-        Number(intervalHours),
-      updated_at:
-        new Date().toISOString(),
-    }
-
-    return createMappedMockResponse()
-  }
 
   const response = await apiRequest(
     ENDPOINTS.moodNotificationSetting,

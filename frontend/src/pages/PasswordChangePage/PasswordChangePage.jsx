@@ -8,6 +8,7 @@ import { useAuth } from '../../hooks/useAuth.js'
 import './PasswordChangePage.css'
 
 const PASSWORD_MIN_LENGTH = 8
+const PASSWORD_MAX_LENGTH = 64
 
 function PasswordChangePage() {
   const navigate = useNavigate()
@@ -58,6 +59,16 @@ function PasswordChangePage() {
     ) {
       setErrorMessage(
         `새 비밀번호는 ${PASSWORD_MIN_LENGTH}자 이상 입력해주세요.`,
+      )
+      return
+    }
+
+    if (
+      newPassword.length >
+      PASSWORD_MAX_LENGTH
+    ) {
+      setErrorMessage(
+        `새 비밀번호는 ${PASSWORD_MAX_LENGTH}자 이하로 입력해주세요.`,
       )
       return
     }
@@ -172,6 +183,7 @@ function PasswordChangePage() {
             <input
               type="password"
               value={newPassword}
+              maxLength={PASSWORD_MAX_LENGTH}
               autoComplete="new-password"
               placeholder="새 비밀번호를 입력해주세요"
               disabled={isProcessing}
@@ -180,7 +192,7 @@ function PasswordChangePage() {
               )}
             />
             <small>
-              {PASSWORD_MIN_LENGTH}자 이상
+              {PASSWORD_MIN_LENGTH}~{PASSWORD_MAX_LENGTH}자로
               입력해주세요.
             </small>
           </label>
@@ -190,6 +202,7 @@ function PasswordChangePage() {
             <input
               type="password"
               value={newPasswordConfirm}
+              maxLength={PASSWORD_MAX_LENGTH}
               autoComplete="new-password"
               placeholder="새 비밀번호를 다시 입력해주세요"
               disabled={isProcessing}
