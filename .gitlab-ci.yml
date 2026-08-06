@@ -86,7 +86,7 @@ build:ai:
     - if: '$CI_COMMIT_BRANCH =~ /^develop\// || $CI_COMMIT_BRANCH == "master"'
       changes: [AI/**/*]
   script:
-    - docker build -t emour-ai:$IMAGE_TAG ./AI
+    - docker build --no-cache -t emour-ai:$IMAGE_TAG ./AI
 
 deploy:ai:dev:
   stage: deploy
