@@ -16,6 +16,8 @@ import {
   resolveCoupleRoom,
 } from "../../api/coupleRoomContext.js";
 
+const PASSWORD_MAX_LENGTH = 64;
+
 export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -115,6 +117,7 @@ export default function LoginPage() {
             type="password"
             name="password"
             autoComplete="current-password"
+            maxLength={PASSWORD_MAX_LENGTH}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             error={error}

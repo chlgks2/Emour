@@ -24,6 +24,10 @@ import { useAuth } from '../../hooks/useAuth.js'
 
 import './CoupleConnectPage.css'
 
+const ROOM_CODE_CHARACTERS = /[^ABCDEFGHJKLMNPQRSTUVWXYZ23456789]/g
+const ROOM_CODE_PATTERN = /^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{4}-[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{4}$/
+const ROOM_CODE_MAX_LENGTH = 9
+
 function CoupleConnectPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
@@ -36,7 +40,16 @@ function CoupleConnectPage() {
   })
 
   const handleRoomCodeChange = (event) => {
-    setRoomCode(event.target.value)
+    const codeCharacters = event.target.value
+      .toUpperCase()
+      .replace(ROOM_CODE_CHARACTERS, '')
+      .slice(0, 8)
+
+    setRoomCode(
+      codeCharacters.length > 4
+        ? `${codeCharacters.slice(0, 4)}-${codeCharacters.slice(4)}`
+        : codeCharacters,
+    )
 
     setFeedback({
       type: '',
@@ -194,6 +207,15 @@ function CoupleConnectPage() {
       return
     }
 
+    if (!ROOM_CODE_PATTERN.test(trimmedRoomCode)) {
+      setFeedback({
+        type: 'error',
+        message: '방 코드를 XXXX-XXXX 형식으로 입력해주세요.',
+      })
+
+      return
+    }
+
     try {
       setIsLoading(true)
       setFeedback({
@@ -318,6 +340,7 @@ function CoupleConnectPage() {
               name="roomCode"
               value={roomCode}
               placeholder="XXXX-XXXX"
+              maxLength={ROOM_CODE_MAX_LENGTH}
               autoComplete="off"
               disabled={isLoading}
               onChange={handleRoomCodeChange}
