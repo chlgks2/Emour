@@ -41,7 +41,9 @@ export default function PasswordResetPage() {
         }
         await sendPasswordResetCode(email);
         setStep("CODE");
-        showToast("인증 코드를 전송했어요.", { tone: "success" });
+        showToast("입력한 이메일로 가입된 계정이 있다면 인증 코드를 전송했어요.", {
+          tone: "success",
+        });
         return;
       }
 
@@ -97,7 +99,7 @@ export default function PasswordResetPage() {
           {step === "EMAIL"
             ? "가입한 이메일로 인증 코드를 보내드려요."
             : step === "CODE"
-              ? `${email}로 받은 인증 코드를 입력해주세요.`
+              ? `가입된 계정이 있다면 ${email}로 인증 코드를 전송했어요.`
               : "앞으로 사용할 새 비밀번호를 입력해주세요."}
         </p>
 
