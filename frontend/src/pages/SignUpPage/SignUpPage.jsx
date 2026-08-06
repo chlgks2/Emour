@@ -16,6 +16,7 @@ import styles from "./SignUpPage.module.css";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PASSWORD_MIN_LENGTH = 8;
+const PASSWORD_MAX_LENGTH = 64;
 const NICKNAME_MIN_LENGTH = 2;
 const NICKNAME_MAX_LENGTH = 8;
 const EMAIL_MAX_LENGTH = 255; // user.email VARCHAR(255)
@@ -82,6 +83,8 @@ export default function SignUpPage() {
     else if (!emailChecked) next.email = "이메일 중복확인을 먼저 진행해주세요.";
     if (form.password.length < PASSWORD_MIN_LENGTH) {
       next.password = `비밀번호는 ${PASSWORD_MIN_LENGTH}자 이상 입력해주세요.`;
+    } else if (form.password.length > PASSWORD_MAX_LENGTH) {
+      next.password = `비밀번호는 ${PASSWORD_MAX_LENGTH}자 이하로 입력해주세요.`;
     }
     if (form.passwordConfirm !== form.password) next.passwordConfirm = "비밀번호가 일치하지 않아요.";
     const nicknameLength = form.nickname.trim().length;
@@ -261,10 +264,11 @@ export default function SignUpPage() {
             type="password"
             name="password"
             autoComplete="new-password"
+            maxLength={PASSWORD_MAX_LENGTH}
             value={form.password}
             onChange={updateField("password")}
             error={errors.password}
-            hint={`${PASSWORD_MIN_LENGTH}자 이상 입력해주세요.`}
+            hint={`${PASSWORD_MIN_LENGTH}~${PASSWORD_MAX_LENGTH}자로 입력해주세요.`}
           />
           <TextField
             label="비밀번호 확인"
@@ -272,6 +276,7 @@ export default function SignUpPage() {
             type="password"
             name="passwordConfirm"
             autoComplete="new-password"
+            maxLength={PASSWORD_MAX_LENGTH}
             value={form.passwordConfirm}
             onChange={updateField("passwordConfirm")}
             error={errors.passwordConfirm}

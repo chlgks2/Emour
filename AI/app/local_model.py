@@ -41,6 +41,19 @@ class KcElectraEmotionLLM(EmotionLLM):
         # 맥락 사용 스위치. 기본 OFF(단일 문장 모델 보호). 맥락 학습 모델 배포 후 .env 에서 켠다.
         self.use_context = os.getenv("LOCAL_USE_CONTEXT", "false").lower() in ("1", "true", "yes")
 
+        # 띄어쓰기 교정 스위치(추론 전 정규화). 기본 ON. "기분나빠"→"기분 나빠" 로 고쳐
+        # subword 토크나이저가 붙임표기를 이상하게 쪼개는 문제를 방지한다.
+        # kiwipiepy 미설치면 자동 비활성화(서버는 정상 동작, 교정만 생략).
+        self.fix_spacing = os.getenv("LOCAL_FIX_SPACING", "true").lower() in ("1", "true", "yes")
+        self._kiwi = None
+        if self.fix_spacing:
+            try:
+                from kiwipiepy import Kiwi
+                self._kiwi = Kiwi()
+            except Exception as e:  # noqa: BLE001 - 어떤 로드 실패든 교정만 끄고 계속
+                logger.warning("kiwipiepy 로드 실패 → 띄어쓰기 교정 비활성화: %s", e)
+                self.fix_spacing = False
+
         self.tokenizer = AutoTokenizer.from_pretrained(path)
         self.model = (
             AutoModelForSequenceClassification.from_pretrained(path)
@@ -50,17 +63,26 @@ class KcElectraEmotionLLM(EmotionLLM):
         # 모델이 저장한 id2label 을 정본으로 사용
         self.id2label = {int(k): v for k, v in self.model.config.id2label.items()}
         logger.info(
-            "KcELECTRA 로드 완료 | path=%s | device=%s | labels=%d | use_context=%s",
-            path, self.device, len(self.id2label), self.use_context,
+            "KcELECTRA 로드 완료 | path=%s | device=%s | labels=%d | use_context=%s | fix_spacing=%s",
+            path, self.device, len(self.id2label), self.use_context, self.fix_spacing,
         )
 
-    @staticmethod
-    def _build_context_text(context: List[ContextMessage]) -> str:
+    def _space(self, text: str) -> str:
+        """추론 전 띄어쓰기 교정. 교정기 없으면 원문 그대로(안전)."""
+        if self._kiwi is None:
+            return text
+        try:
+            return self._kiwi.space(text)
+        except Exception:  # noqa: BLE001 - 교정 실패 시 원문 사용
+            return text
+
+    def _build_context_text(self, context: List[ContextMessage]) -> str:
         """직전 대화를 '발화자: 내용' 줄들로 이어 붙인다(시간 오름차순).
 
+        각 발화 내용에도 띄어쓰기 교정을 적용해 대상 문장과 형식을 맞춘다.
         ⚠️ 재학습 시에도 반드시 이 형식과 똑같이 맥락을 만들어야 추론과 일치한다.
         """
-        return "\n".join(f"{m.speaker}: {m.text}" for m in context)
+        return "\n".join(f"{m.speaker}: {self._space(m.text)}" for m in context)
 
     def _predict_sync(
         self, texts_a: List[str], texts_b: List[str] | None = None
@@ -89,7 +111,7 @@ class KcElectraEmotionLLM(EmotionLLM):
     ) -> List[Dict]:
         if not target:
             return []
-        texts_b = [t.text for t in target]
+        texts_b = [self._space(t.text) for t in target]  # 대상 문장 띄어쓰기 교정
         # 추론은 CPU/GPU 바운드라 이벤트 루프를 막지 않게 스레드로 오프로딩
         if self.use_context and context:
             # 같은 맥락을 각 대상 메시지에 짝지어 문장쌍 배치로 분류
