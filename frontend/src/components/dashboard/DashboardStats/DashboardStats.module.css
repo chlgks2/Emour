@@ -79,11 +79,6 @@
   margin-top: 12px;
 }
 
-.emotionSide + .emotionSide {
-  padding-top: 14px;
-  border-top: 1px solid var(--color-divider);
-}
-
 .emotionSideLabel {
   margin-bottom: 8px;
   color: var(--color-text-secondary);
