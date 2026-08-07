@@ -12,7 +12,11 @@ import {
   normalizeChatMessage,
 } from '../api/chatApi.js'
 import { connectChatSocket } from '../api/chatSocket.js'
-import { resolveRoomId } from '../api/coupleRoomContext.js'
+import { getCoupleStatus } from '../api/coupleApi.js'
+import {
+  COUPLE_ROOM_CHANGED_EVENT,
+  resolveRoomId,
+} from '../api/coupleRoomContext.js'
 import { useAuth } from '../hooks/useAuth.js'
 import { ChatUnreadContext } from '../hooks/useChatUnread.js'
 
@@ -25,6 +29,7 @@ export function ChatUnreadProvider({ children }) {
   const location = useLocation()
   const [unreadCount, setUnreadCount] = useState(0)
   const [roomId, setRoomId] = useState(null)
+  const [roomStatus, setRoomStatus] = useState(null)
   const pathnameRef = useRef(location.pathname)
   const realtimeRefreshTimerRef = useRef(null)
 
@@ -41,15 +46,25 @@ export function ChatUnreadProvider({ children }) {
     }
 
     const loadRoomId = async () => {
+      window.clearTimeout(retryTimerId)
+
       try {
         const resolvedRoomId = await resolveRoomId()
         if (cancelled) return
 
         setRoomId(resolvedRoomId)
 
-        // 로그인 직후 방 조회가 아직 준비되지 않았거나 일시적으로 실패해도
-        // Provider가 다시 마운트될 때까지 기다리지 않고 재조회한다.
-        if (!resolvedRoomId) {
+        const coupleStatus = resolvedRoomId
+          ? await getCoupleStatus().catch(() => null)
+          : null
+        if (cancelled) return
+
+        const resolvedStatus = coupleStatus?.status ?? null
+        setRoomStatus(resolvedStatus)
+
+        // 방 생성 직후 WAITING 상태에서는 WebSocket 구독이 서버에서 거부된다.
+        // 상대가 참여해 ACTIVE가 될 때까지 확인한 뒤 자동으로 구독을 시작한다.
+        if (!resolvedRoomId || resolvedStatus !== 'ACTIVE') {
           retryTimerId = window.setTimeout(
             loadRoomId,
             ROOM_RESOLVE_RETRY_MS,
@@ -59,6 +74,7 @@ export function ChatUnreadProvider({ children }) {
         if (cancelled) return
 
         setRoomId(null)
+        setRoomStatus(null)
         retryTimerId = window.setTimeout(
           loadRoomId,
           ROOM_RESOLVE_RETRY_MS,
@@ -67,10 +83,18 @@ export function ChatUnreadProvider({ children }) {
     }
 
     loadRoomId()
+    window.addEventListener(
+      COUPLE_ROOM_CHANGED_EVENT,
+      loadRoomId,
+    )
 
     return () => {
       cancelled = true
       window.clearTimeout(retryTimerId)
+      window.removeEventListener(
+        COUPLE_ROOM_CHANGED_EVENT,
+        loadRoomId,
+      )
     }
   }, [isAuthenticated, user?.userId])
 
@@ -109,7 +133,13 @@ export function ChatUnreadProvider({ children }) {
   }, [location.pathname, refreshUnreadCount, roomId])
 
   useEffect(() => {
-    if (!roomId || !isAuthenticated) return undefined
+    if (
+      !roomId ||
+      roomStatus !== 'ACTIVE' ||
+      !isAuthenticated
+    ) {
+      return undefined
+    }
 
     const socket = connectChatSocket({
       roomId,
@@ -168,7 +198,13 @@ export function ChatUnreadProvider({ children }) {
       document.removeEventListener('visibilitychange', handleVisibilityChange)
       socket?.disconnect()
     }
-  }, [isAuthenticated, refreshUnreadCount, roomId, user?.userId])
+  }, [
+    isAuthenticated,
+    refreshUnreadCount,
+    roomId,
+    roomStatus,
+    user?.userId,
+  ])
 
   const visibleUnreadCount =
     isAuthenticated && location.pathname !== '/chat'
