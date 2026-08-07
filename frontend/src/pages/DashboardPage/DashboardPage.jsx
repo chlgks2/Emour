@@ -162,6 +162,7 @@ function shiftPeriod(period, date, direction) {
 export default function DashboardPage() {
   const { showToast } = useToast();
   const scrollAreaRef = useRef(null);
+  const periodRequestIdRef = useRef(0);
   const [showTopScrollHint, setShowTopScrollHint] = useState(false);
 
   const updateScrollHints = useCallback(() => {
@@ -232,17 +233,24 @@ export default function DashboardPage() {
   }, []);
 
   const loadPeriodDashboard = useCallback(async () => {
+    const requestId = ++periodRequestIdRef.current;
     try {
       setPeriodLoading(true);
       const data = await fetchDashboardPeriod({
         period: reportPeriod,
         date: reportDate,
       });
-      setPeriodDashboard(data);
+      if (requestId === periodRequestIdRef.current) {
+        setPeriodDashboard(data);
+      }
     } catch {
-      showToast("기간별 대시보드를 불러오지 못했어요.", { tone: "error" });
+      if (requestId === periodRequestIdRef.current) {
+        showToast("기간별 대시보드를 불러오지 못했어요.", { tone: "error" });
+      }
     } finally {
-      setPeriodLoading(false);
+      if (requestId === periodRequestIdRef.current) {
+        setPeriodLoading(false);
+      }
     }
   }, [reportDate, reportPeriod, showToast]);
 
@@ -378,7 +386,6 @@ export default function DashboardPage() {
   };
 
   const changeReportPeriod = (period) => {
-    setPeriodDashboard(null);
     setReportPeriod(period);
     setReportDate(new Date());
   };
@@ -418,10 +425,8 @@ export default function DashboardPage() {
   );
 
   /* ── 대화 기록 (채팅 감정) ──────────────────────────────────────── */
-  const visiblePeriodDashboard =
-    periodDashboard?.period === reportPeriod
-      ? periodDashboard
-      : null;
+  // 새 기간 응답이 도착할 때까지 기존 리포트를 유지해 화면이 사라지지 않게 한다.
+  const visiblePeriodDashboard = periodDashboard;
 
   const reportPeriodName = {
     DAY: "일간",
