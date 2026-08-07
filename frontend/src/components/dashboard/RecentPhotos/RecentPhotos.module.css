@@ -23,6 +23,7 @@
 .viewport {
   overflow: hidden;
   /* 캘린더 카드·감정 리포트 패널과 같은 모서리 */
+  border: 1px solid var(--color-border);
   border-radius: var(--card-radius);
   touch-action: pan-y;
   cursor: grab;
