@@ -41,6 +41,30 @@ class ChatRedisSubscriberTest {
     }
 
     @Test
+    void forwardsImageDeleteEventToWebSocketSubscribers() {
+        Message message = redisMessage("""
+                {
+                  "destination": "/sub/chat/rooms/2/images",
+                  "payload": {
+                    "roomId": 2,
+                    "messageId": 101,
+                    "imageId": 10,
+                    "remainingImageCount": 1,
+                    "messageHidden": false
+                  }
+                }
+                """);
+
+        subscriber.onMessage(message, null);
+
+        verify(messagingTemplate).convertAndSend(
+                eq("/sub/chat/rooms/2/images"),
+                eq("{\"roomId\":2,\"messageId\":101,\"imageId\":10,"
+                        + "\"remainingImageCount\":1,\"messageHidden\":false}")
+        );
+    }
+
+    @Test
     void ignoresUnknownDestination() {
         Message message = redisMessage("""
                 {
