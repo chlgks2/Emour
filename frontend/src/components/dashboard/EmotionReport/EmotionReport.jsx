@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { SlidersHorizontal } from "lucide-react";
+import { ChevronDown, SlidersHorizontal } from "lucide-react";
 import { useAuth } from "../../../hooks/useAuth";
 import { buildEmotionReport, EMOTION_TYPES } from "../../../utils/emotions";
 import styles from "./EmotionReport.module.css";
@@ -88,7 +88,8 @@ export default function EmotionReport({
         <details className={styles.filterPanel}>
           <summary>
             <SlidersHorizontal size={14} aria-hidden="true" />
-            집계할 감정 선택
+            <span>집계할 감정 선택</span>
+            <ChevronDown className={styles.filterChevron} size={15} aria-hidden="true" />
           </summary>
           <div className={styles.filterOptions}>
             {EMOTION_TYPES.map((emotion) => {

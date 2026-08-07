@@ -113,7 +113,7 @@ function formatPeriodLabel(period, date) {
 
   if (period === "MONTH") return `${year}년 ${month}월`;
   if (period === "YEAR") return `${year}년`;
-  if (period === "ALL") return "전체 기간";
+  if (period === "ALL") return "전체";
 
   if (period === "WEEK") {
     const start = getWeekStart(date);
@@ -572,20 +572,24 @@ export default function DashboardPage() {
               label="무드트래커 리포트 기간 선택"
             />
 
-            {moodPeriod !== "ALL" && <div className={styles.periodNavigator}>
-              <button type="button" onClick={() => moveMoodDate(-1)} aria-label="이전 기간">
-                <ChevronLeft size={18} />
-              </button>
+            <div className={styles.periodNavigator}>
+              {moodPeriod === "ALL" ? <span aria-hidden="true" /> : (
+                <button type="button" onClick={() => moveMoodDate(-1)} aria-label="이전 기간">
+                  <ChevronLeft size={18} />
+                </button>
+              )}
               <strong>{formatPeriodLabel(moodPeriod, moodDate)}</strong>
-              <button
-                type="button"
-                onClick={() => moveMoodDate(1)}
-                disabled={isCurrentPeriod(moodPeriod, moodDate)}
-                aria-label="다음 기간"
-              >
-                <ChevronRight size={18} />
-              </button>
-            </div>}
+              {moodPeriod === "ALL" ? <span aria-hidden="true" /> : (
+                <button
+                  type="button"
+                  onClick={() => moveMoodDate(1)}
+                  disabled={isCurrentPeriod(moodPeriod, moodDate)}
+                  aria-label="다음 기간"
+                >
+                  <ChevronRight size={18} />
+                </button>
+              )}
+            </div>
 
             {/*
               한 상자 안에 그래프가 여럿이다. 같은 기간의 같은 기분을 보는데
@@ -657,20 +661,24 @@ export default function DashboardPage() {
                 label="대화 기록 리포트 기간 선택"
               />
 
-              {reportPeriod !== "ALL" && <div className={styles.periodNavigator}>
-                <button type="button" onClick={() => moveReportDate(-1)} aria-label="이전 기간">
-                  <ChevronLeft size={18} />
-                </button>
+              <div className={styles.periodNavigator}>
+                {reportPeriod === "ALL" ? <span aria-hidden="true" /> : (
+                  <button type="button" onClick={() => moveReportDate(-1)} aria-label="이전 기간">
+                    <ChevronLeft size={18} />
+                  </button>
+                )}
                 <strong>{formatPeriodLabel(reportPeriod, reportDate)}</strong>
-                <button
-                  type="button"
-                  onClick={() => moveReportDate(1)}
-                  disabled={isCurrentPeriod(reportPeriod, reportDate)}
-                  aria-label="다음 기간"
-                >
-                  <ChevronRight size={18} />
-                </button>
-              </div>}
+                {reportPeriod === "ALL" ? <span aria-hidden="true" /> : (
+                  <button
+                    type="button"
+                    onClick={() => moveReportDate(1)}
+                    disabled={isCurrentPeriod(reportPeriod, reportDate)}
+                    aria-label="다음 기간"
+                  >
+                    <ChevronRight size={18} />
+                  </button>
+                )}
+              </div>
             </div>
           }
         />

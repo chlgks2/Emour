@@ -1200,21 +1200,20 @@ function CalendarPage() {
               </h3>
             </div>
 
-            {isMoodTrackerOpen && (
-              <MoodTimeline
-                mySlots={
-                  selectedDayMood.mySlots
-                }
-                partnerSlots={
-                  selectedDayMood.partnerSlots
-                }
-                window={moodWindow}
-                nowMinutes={
-                  selectedDayNowMinutes
-                }
-                onEditSlot={openMoodModal}
-              />
-            )}
+            <MoodTimeline
+              mySlots={
+                selectedDayMood.mySlots
+              }
+              partnerSlots={
+                selectedDayMood.partnerSlots
+              }
+              window={moodWindow}
+              nowMinutes={
+                selectedDayNowMinutes
+              }
+              onEditSlot={openMoodModal}
+              currentOnly={!isMoodTrackerOpen}
+            />
           </div>
 
           <div className="selected-day-section">
