@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronRight, MessageSquareText } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { fetchRecentBookmarks } from "../../../api/bookmarkApi";
 import { formatDate, formatTime } from "../../../utils/emotions";
 import styles from "./BookmarkPreview.module.css";
@@ -10,6 +10,12 @@ import styles from "./BookmarkPreview.module.css";
  * 우상단 "더보기"를 누르면 전체 북마크 목록(무한스크롤) 페이지로 이동
  */
 const PREVIEW_SIZE = 3;
+const PREVIEW_TEXT_LIMIT = 60;
+
+function formatPreviewText(content) {
+  if (content.length <= PREVIEW_TEXT_LIMIT) return content;
+  return `${content.slice(0, PREVIEW_TEXT_LIMIT).trimEnd()}…`;
+}
 
 export default function BookmarkPreview() {
   const navigate = useNavigate();
@@ -77,7 +83,9 @@ export default function BookmarkPreview() {
           {bookmarks.map((bookmark) => (
             <li key={bookmark.bookmarkId} className={styles.item}>
               {bookmark.content && (
-                <p className={styles.itemText}>{bookmark.content}</p>
+                <p className={styles.itemText}>
+                  {formatPreviewText(bookmark.content)}
+                </p>
               )}
               {bookmark.images.length > 0 && (
                 <div className={styles.imageGrid}>
@@ -101,16 +109,6 @@ export default function BookmarkPreview() {
                 <time dateTime={bookmark.sentAt}>
                   {formatDate(bookmark.sentAt)} {formatTime(bookmark.sentAt)}
                 </time>
-                <button
-                  type="button"
-                  className={styles.moveButton}
-                  onClick={() => navigate("/chat", {
-                    state: { focusMessageId: bookmark.messageId },
-                  })}
-                >
-                  <MessageSquareText size={12} aria-hidden="true" />
-                  대화로 이동
-                </button>
               </div>
             </li>
           ))}

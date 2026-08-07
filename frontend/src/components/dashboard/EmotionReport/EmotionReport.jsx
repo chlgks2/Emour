@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { SlidersHorizontal } from "lucide-react";
+import { ChevronDown, SlidersHorizontal } from "lucide-react";
 import { useAuth } from "../../../hooks/useAuth";
 import { buildEmotionReport, EMOTION_TYPES } from "../../../utils/emotions";
 import styles from "./EmotionReport.module.css";
@@ -15,6 +15,17 @@ function recalculateRatios(items) {
   const difference = 100 - recalculated.reduce((sum, item) => sum + item.ratio, 0);
   if (difference) recalculated[0].ratio += difference;
   return recalculated;
+}
+
+function keepAtLeastOneEmotion(excludedEmotionCodes) {
+  const validCodes = new Set(EMOTION_TYPES.map((emotion) => emotion.code));
+  const next = new Set(
+    [...excludedEmotionCodes].filter((emotionCode) => validCodes.has(emotionCode)),
+  );
+  if (EMOTION_TYPES.every((emotion) => next.has(emotion.code))) {
+    next.delete(EMOTION_TYPES[0].code);
+  }
+  return next;
 }
 
 /**
@@ -52,7 +63,11 @@ export default function EmotionReport({
     }
   });
 
-  const activeExcludedEmotions = excludedEmotionCodes ?? excludedEmotions;
+  // 이전 저장값에서 모든 감정이 제외되어 있더라도 화면에는 최소 하나를 복구한다.
+  const activeExcludedEmotions = keepAtLeastOneEmotion(
+    excludedEmotionCodes ?? excludedEmotions,
+  );
+  const includedEmotionCount = EMOTION_TYPES.length - activeExcludedEmotions.size;
   const fullReport = [...(segments ?? buildEmotionReport(emotionSummary))]
     .sort((first, second) => second.ratio - first.ratio);
   const report = filterEnabled
@@ -63,8 +78,13 @@ export default function EmotionReport({
 
   const toggleEmotion = (emotionCode) => {
     const next = new Set(activeExcludedEmotions);
-    if (next.has(emotionCode)) next.delete(emotionCode);
-    else next.add(emotionCode);
+    if (next.has(emotionCode)) {
+      next.delete(emotionCode);
+    } else {
+      // 집계 기준이 완전히 비는 것을 막는다.
+      if (includedEmotionCount === 1) return;
+      next.add(emotionCode);
+    }
 
     if (onExcludedEmotionCodesChange) {
       onExcludedEmotionCodesChange(next);
@@ -87,18 +107,21 @@ export default function EmotionReport({
       {filterEnabled && showFilter && (
         <details className={styles.filterPanel}>
           <summary>
-            <SlidersHorizontal size={14} aria-hidden="true" />
-            집계할 감정 선택
+            <SlidersHorizontal className={styles.filterIcon} size={14} aria-hidden="true" />
+            <span>집계할 감정 선택</span>
+            <ChevronDown className={styles.filterChevron} size={15} aria-hidden="true" />
           </summary>
           <div className={styles.filterOptions}>
             {EMOTION_TYPES.map((emotion) => {
               const included = !activeExcludedEmotions.has(emotion.code);
+              const isLastIncluded = included && includedEmotionCount === 1;
               return (
                 <button
                   key={emotion.code}
                   type="button"
                   role="switch"
                   aria-checked={included}
+                  aria-disabled={isLastIncluded}
                   className={`${styles.filterChip} ${included ? styles.filterChipActive : ""}`}
                   style={{ "--filter-emotion-color": emotion.color }}
                   onClick={() => toggleEmotion(emotion.code)}
@@ -114,7 +137,7 @@ export default function EmotionReport({
 
       {filterOnly ? null : report.length === 0 ? (
         <p className={`empty-note ${styles.emptyText}`}>
-          {(fullReport.length > 0 ? "집계할 감정을 하나 이상 선택해주세요." : emptyText)
+          {(fullReport.length > 0 ? "선택한 감정의 대화가 아직 없어요." : emptyText)
             .split("\n")
             .map((line, index) => (
               <span key={line}>

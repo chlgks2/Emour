@@ -23,6 +23,7 @@ export async function getMoodEntries() {
 
 export async function createMoodEntry(
   moodType,
+  reason = '',
 ) {
   const response = await apiRequest(
     '/moods',
@@ -30,6 +31,7 @@ export async function createMoodEntry(
       method: 'POST',
       body: {
         moodType,
+        reason: reason.trim() || null,
       },
     },
   )

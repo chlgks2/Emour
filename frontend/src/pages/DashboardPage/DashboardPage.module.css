@@ -3,8 +3,25 @@
   justify-content: center;
 }
 
-.scrollArea {
+.scrollFrame {
+  position: relative;
   flex: 1;
+  min-height: 0;
+}
+
+.scrollHintTop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  height: 24px;
+  pointer-events: none;
+  background: linear-gradient(to bottom, var(--color-background), transparent);
+}
+
+.scrollArea {
+  height: 100%;
   overflow-y: auto;
   /* 하단 네비 + 홈 인디케이터 높이만큼 여유를 둬서 마지막 카드가 가리지 않게 */
   padding-bottom: calc(var(--bottom-nav-height) + var(--safe-bottom) + 26px);
@@ -163,6 +180,7 @@
   display: grid;
   grid-template-columns: 36px 1fr 36px;
   align-items: center;
+  min-height: 36px;
   margin-top: 8px;
 }
 

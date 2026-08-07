@@ -91,8 +91,8 @@ export default function LoginPage() {
       <AuthHeader showBack={false} />
       <form className={styles.content} onSubmit={handleSubmit} noValidate>
         <img src={logoWordmark} alt="Emour" className={styles.logo} />
-        <h1 className={styles.title}>다시 만나서 반가워요</h1>
-        <p className={styles.subtitle}>오늘 두 사람의 감정을 이어가 볼까요?</p>
+        <h1 className={styles.title}>함께 쌓아가는 감정 기록</h1>
+        <p className={styles.subtitle}>서로의 감정을 차곡차곡 쌓아볼까요?</p>
 
         {justSignedUp && (
           <p className={styles.noticeBanner} role="status">
@@ -165,12 +165,6 @@ export default function LoginPage() {
           아직 계정이 없으신가요? <Link to="/signup">회원가입</Link>
         </p>
 
-        {/* 목업 단계에서 데모 계정을 안내 (백엔드 연동 시 이 블록만 삭제) */}
-        {import.meta.env.DEV && (
-          <p className={styles.demoHint}>
-            데모 계정 · demo@emour.app / demo1234
-          </p>
-        )}
       </form>
     </div>
   );

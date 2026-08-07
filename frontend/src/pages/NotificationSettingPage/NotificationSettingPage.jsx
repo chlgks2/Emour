@@ -6,6 +6,7 @@ import {
 
 import {
   BellRing,
+  CalendarClock,
   ChevronLeft,
   Clock3,
   HeartPulse,
@@ -559,10 +560,19 @@ function NotificationSettingPage() {
 
             <section className="notification-setting-preview-card">
               <div className="notification-setting-preview-header">
-                <div>
-                  <p>NOTIFICATION PREVIEW</p>
+                <div className="notification-setting-section-title">
+                  <span>
+                    <CalendarClock
+                      size={18}
+                      strokeWidth={1.9}
+                      aria-hidden="true"
+                    />
+                  </span>
 
-                  <h2>알림 예정 시간</h2>
+                  <div>
+                    <h2>알림 예정 시간</h2>
+                    <p>설정한 알림 시간을 미리 확인해보세요.</p>
+                  </div>
                 </div>
 
                 <span>

@@ -47,6 +47,7 @@
   color: var(--color-text-primary);
   font-size: 15px;
   line-height: 1.45;
+  overflow-wrap: anywhere;
   /* 두 줄까지 보여준다. 한 줄 말줄임은 저장한 문장을 너무 잘라낸다 */
   display: -webkit-box;
   -webkit-box-orient: vertical;
@@ -59,8 +60,6 @@
   margin-top: 4px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 10px;
   color: var(--color-text-tertiary);
   font-size: 11px;
   font-variant-numeric: tabular-nums;
@@ -100,19 +99,3 @@
   font-weight: 700;
 }
 
-.moveButton {
-  min-height: 28px;
-  padding: 0 7px;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  flex-shrink: 0;
-  border-radius: var(--radius-pill);
-  color: var(--color-text-accent);
-  font-size: 11px;
-  font-weight: 700;
-}
-
-.moveButton:hover {
-  background: var(--color-primary-faint);
-}

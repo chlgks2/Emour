@@ -98,35 +98,88 @@
   gap: 12px;
 }
 
+.filterPanel {
+  width: 100%;
+}
+
 .filterPanel summary {
-  width: fit-content;
-  display: flex;
+  margin-left: auto;
+  width: 154px;
+  min-height: 36px;
+  display: grid;
+  grid-template-columns: 24px 1fr 22px;
   align-items: center;
-  gap: 5px;
-  color: var(--color-text-secondary);
+  gap: 4px;
+  padding: 0 6px;
+  border: 1px solid var(--color-sub-bg);
+  border-radius: var(--radius-pill);
+  background: var(--color-sub-bg);
+  color: var(--color-text-primary);
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
   list-style: none;
+  box-shadow: none;
+  transition: color var(--duration-fast) var(--ease-out);
 }
 
 .filterPanel summary::-webkit-details-marker {
   display: none;
 }
 
+.filterPanel summary span {
+  text-align: center;
+  white-space: nowrap;
+}
+
+.filterPanel summary:hover {
+  background: var(--color-sub-bg);
+}
+
+.filterPanel summary:active {
+  color: var(--color-text-accent);
+}
+
+.filterPanel[open] summary {
+  background: var(--color-sub-bg);
+  color: var(--color-text-accent);
+}
+
+.filterChevron {
+  justify-self: center;
+  color: var(--color-text-tertiary);
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+
+.filterIcon {
+  width: 24px;
+  height: 24px;
+  padding: 5px;
+  box-sizing: border-box;
+  border-radius: 50%;
+  background: var(--color-surface);
+  color: var(--color-text-accent);
+}
+
+.filterPanel[open] .filterChevron {
+  transform: rotate(180deg);
+}
+
 .filterOptions {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 6px;
   margin-top: 9px;
 }
 
 .filterChip {
-  display: inline-flex;
+  min-width: 0;
+  display: flex;
   align-items: center;
+  justify-content: center;
   gap: 4px;
   min-height: 28px;
-  padding: 0 9px;
+  padding: 0 4px;
   border: 1px solid var(--color-divider);
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.48);
@@ -140,4 +193,8 @@
   background: color-mix(in srgb, var(--filter-emotion-color) 16%, white);
   color: var(--filter-emotion-color);
   opacity: 1;
+}
+
+.filterChip[aria-disabled="true"] {
+  cursor: default;
 }

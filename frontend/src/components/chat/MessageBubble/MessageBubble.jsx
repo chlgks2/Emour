@@ -116,9 +116,6 @@ export default function MessageBubble({
       className={[
         styles.row,
         isMine ? styles.rowMine : styles.rowPartner,
-        // 말풍선 밖으로 걸치는 표시가 다른 메시지와 겹치지 않게 여백을 확보한다.
-        isBookmarked ? styles.rowBookmarked : "",
-        reactions.length > 0 ? styles.rowReacted : "",
       ]
         .filter(Boolean)
         .join(" ")}

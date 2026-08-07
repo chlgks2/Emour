@@ -42,6 +42,7 @@ export function connectChatSocket({
   roomId,
   onMessage,
   onReaction,
+  onImageDelete,
   onRead,
   onConnect,
   onError,
@@ -87,6 +88,16 @@ export function connectChatSocket({
         const event = parseFrame(frame)
         if (event) {
           onReaction?.(event)
+        }
+      },
+    )
+
+    client.subscribe(
+      `/sub/chat/rooms/${roomId}/images`,
+      (frame) => {
+        const event = parseFrame(frame)
+        if (event) {
+          onImageDelete?.(event)
         }
       },
     )
