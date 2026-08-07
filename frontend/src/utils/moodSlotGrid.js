@@ -13,7 +13,7 @@
 export const DEFAULT_MOOD_WINDOW = {
   startTime: "09:00:00",
   endTime: "21:00:00",
-  intervalHours: 3,
+  intervalHours: 2,
 };
 
 function toMinutes(timeString) {

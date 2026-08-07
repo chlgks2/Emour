@@ -75,7 +75,7 @@ export function mapNotificationSettingResponse(
       getFirstValue(
         response.intervalHours,
         response.interval_hours,
-        3,
+        2,
       ),
     ),
 

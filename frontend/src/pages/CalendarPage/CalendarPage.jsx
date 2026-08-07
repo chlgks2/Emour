@@ -39,6 +39,7 @@ import MoodTimeline from '../../components/calendar/MoodTimeline/MoodTimeline.js
 import { formatSlotTime } from '../../utils/moodSlotFormat.js'
 import { DEFAULT_MOOD_WINDOW } from '../../utils/moodSlotGrid.js'
 import { getMoodNotificationSetting } from '../../api/notificationSettingApi.js'
+import { getCoupleStatus } from '../../api/coupleApi.js'
 import MoodFormModal from '../../components/dashboard/MoodFormModal/MoodFormModal.jsx'
 import { useLiveSync } from '../../hooks/useLiveSync.js'
 
@@ -327,6 +328,8 @@ function CalendarPage() {
 
   const [moodWindow, setMoodWindow] =
     useState(DEFAULT_MOOD_WINDOW)
+  const [canEditMood, setCanEditMood] =
+    useState(false)
 
   useEffect(() => {
     getMoodNotificationSetting()
@@ -338,6 +341,14 @@ function CalendarPage() {
       .catch(() => {
         // 설정 조회가 실패해도 기본 슬롯으로 동작한다.
       })
+  }, [])
+
+  useEffect(() => {
+    getCoupleStatus()
+      .then((couple) => {
+        setCanEditMood(couple?.status === 'ACTIVE')
+      })
+      .catch(() => setCanEditMood(false))
   }, [])
 
   // 오늘을 보고 있을 때만 미래 시간대를 잠근다.
@@ -447,6 +458,7 @@ function CalendarPage() {
             currentMonthNumber,
           ),
           fetchMoodSlots(),
+          getCoupleStatus(),
         ])
 
       if (
@@ -466,6 +478,12 @@ function CalendarPage() {
         setMoodSlots(
           results[1].value,
         )
+      }
+
+      if (results[2].status === 'fulfilled') {
+        setCanEditMood(results[2].value?.status === 'ACTIVE')
+      } else {
+        setCanEditMood(false)
       }
     }, [
       currentMonthNumber,
@@ -1212,6 +1230,7 @@ function CalendarPage() {
                 selectedDayNowMinutes
               }
               onEditSlot={openMoodModal}
+              canEdit={canEditMood}
               currentOnly={!isMoodTrackerOpen}
             />
           </div>

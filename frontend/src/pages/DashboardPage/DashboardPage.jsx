@@ -33,6 +33,7 @@ import {
 } from "../../utils/moodReport";
 import { DEFAULT_MOOD_WINDOW } from "../../utils/moodSlotGrid";
 import { getMoodNotificationSetting } from "../../api/notificationSettingApi";
+import { getCoupleStatus } from "../../api/coupleApi";
 import { formatSlotTime } from "../../utils/moodSlotFormat";
 import { addDays, formatDateKey, getWeekStart, parseDateKey } from "../../utils/moodEmotion";
 import { useToast } from "../../hooks/useToast";
@@ -211,6 +212,7 @@ export default function DashboardPage() {
   // 감정 캘린더 상태
   const [weekStart, setWeekStart] = useState(() => getWeekStart(new Date()));
   const [moodRecords, setMoodRecords] = useState({}); // moodDate('YYYY-MM-DD') -> { myMood, partnerMood }
+  const [canEditMood, setCanEditMood] = useState(false);
   /*
    * 스트립에서 펼쳐진 날짜.
    * 오늘로 시작한다. null 로 두면 날짜 원을 한 번 눌러야 시간대 목록이 나와서,
@@ -221,6 +223,26 @@ export default function DashboardPage() {
   );
   // { mode, slot, initialMoodType, initialReason } — slot 이 없으면 지금 시간대에 새로 등록
   const [moodFormModal, setMoodFormModal] = useState(null);
+
+  const loadMoodEditAvailability = useCallback(async () => {
+    try {
+      const couple = await getCoupleStatus();
+      setCanEditMood(couple?.status === "ACTIVE");
+    } catch {
+      setCanEditMood(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      await Promise.resolve();
+      if (!cancelled) loadMoodEditAvailability();
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [loadMoodEditAvailability]);
 
   const loadDashboard = useCallback(async () => {
     try {
@@ -323,8 +345,9 @@ export default function DashboardPage() {
       loadPeriodDashboard(),
       loadMonth(weekStart),
       loadMonth(addDays(weekStart, 6)),
+      loadMoodEditAvailability(),
     ]);
-  }, [loadDashboard, loadMonth, loadPeriodDashboard, weekStart]);
+  }, [loadDashboard, loadMonth, loadMoodEditAvailability, loadPeriodDashboard, weekStart]);
 
   // 상대방이 다른 브라우저에서 무드를 등록해도 주기적으로 GET /moods를
   // 다시 호출해 내 화면에 반영한다.
@@ -562,6 +585,7 @@ export default function DashboardPage() {
           moodWindow={moodWindow}
           detailNowMinutes={detailNowMinutes}
           onEditSlot={openMoodForm}
+          canEditMood={canEditMood}
         />
 
         {/*
