@@ -24,7 +24,7 @@ public class ChatWebSocketAuthInterceptor implements ChannelInterceptor {
 
     private static final String BEARER_PREFIX = "Bearer ";
     private static final Pattern ROOM_DESTINATION = Pattern.compile(
-            "^/(pub|sub)/chat/rooms/(\\d+)/(messages|read|reactions|analysis)$"
+            "^/(pub|sub)/chat/rooms/(\\d+)/(messages|read|reactions|analysis|images)$"
     );
 
     private final JwtTokenProvider jwtTokenProvider;
@@ -111,7 +111,9 @@ public class ChatWebSocketAuthInterceptor implements ChannelInterceptor {
             throw new MessageDeliveryException("채팅은 /sub 주소만 구독할 수 있습니다.");
         }
         if (command == StompCommand.SEND
-                && ("reactions".equals(channel) || "analysis".equals(channel))) {
+                && ("reactions".equals(channel)
+                || "analysis".equals(channel)
+                || "images".equals(channel))) {
             throw new MessageDeliveryException("해당 이벤트는 서버만 전송할 수 있습니다.");
         }
 

@@ -3,7 +3,9 @@ package com.ssafy.emour.chat.controller;
 import com.ssafy.emour.chat.dto.ChatBookmarkListResponse;
 import com.ssafy.emour.chat.dto.ChatBookmarkResponse;
 import com.ssafy.emour.chat.dto.ChatHistoryResponse;
+import com.ssafy.emour.chat.dto.ChatMessageContextResponse;
 import com.ssafy.emour.chat.dto.ChatMessageResponse;
+import com.ssafy.emour.chat.dto.ChatNewerHistoryResponse;
 import com.ssafy.emour.chat.dto.ChatReactionEventResponse;
 import com.ssafy.emour.chat.dto.ChatReactionRequest;
 import com.ssafy.emour.chat.dto.ChatReactionResponse;
@@ -105,6 +107,54 @@ public class ChatRestController {
                 SecurityUtil.getCurrentUserId(),
                 beforeMessageId,
                 size
+        );
+    }
+
+    /** 검색 위치 등 과거 지점에서 아래로 내릴 때 더 새로운 메시지를 조회합니다. */
+    @GetMapping("/after")
+    @Operation(
+            summary = "기준 메시지 이후 채팅 조회",
+            description = "afterMessageId보다 새로운 메시지를 오래된 순서부터 조회합니다."
+    )
+    public ChatNewerHistoryResponse getNewerMessages(
+            @Parameter(description = "커플방 번호", example = "1")
+            @RequestParam Long roomId,
+
+            @Parameter(description = "기준 메시지 번호", example = "100")
+            @RequestParam Long afterMessageId,
+
+            @Parameter(description = "조회 개수, 최대 100개", example = "50")
+            @RequestParam(required = false) Integer size
+    ) {
+        return chatMessageService.getNewerMessages(
+                roomId,
+                SecurityUtil.getCurrentUserId(),
+                afterMessageId,
+                size
+        );
+    }
+
+    /** 검색 결과를 눌렀을 때 해당 메시지와 앞뒤 대화를 한 번에 조회합니다. */
+    @GetMapping("/{messageId}/context")
+    @Operation(
+            summary = "메시지 주변 대화 조회",
+            description = "선택한 메시지를 가운데에 두고 이전·이후 메시지를 함께 조회합니다."
+    )
+    public ChatMessageContextResponse getMessageContext(
+            @Parameter(description = "가운데에 표시할 메시지 번호", example = "100")
+            @PathVariable Long messageId,
+
+            @Parameter(description = "이전 메시지 개수, 최대 50개", example = "30")
+            @RequestParam(required = false) Integer beforeSize,
+
+            @Parameter(description = "이후 메시지 개수, 최대 50개", example = "30")
+            @RequestParam(required = false) Integer afterSize
+    ) {
+        return chatMessageService.getMessageContext(
+                messageId,
+                SecurityUtil.getCurrentUserId(),
+                beforeSize,
+                afterSize
         );
     }
 

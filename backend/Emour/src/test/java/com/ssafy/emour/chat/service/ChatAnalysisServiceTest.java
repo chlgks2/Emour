@@ -18,9 +18,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Pageable;
 
-import java.time.Clock;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -30,14 +28,12 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class ChatAnalysisServiceTest {
 
-    private static final ZoneId SEOUL = ZoneId.of("Asia/Seoul");
     private static final LocalDateTime NOW = LocalDateTime.of(
             2026,
             7,
@@ -60,23 +56,17 @@ class ChatAnalysisServiceTest {
 
     @BeforeEach
     void setUp() {
-        Clock clock = Clock.fixed(
-                NOW.atZone(SEOUL).toInstant(),
-                SEOUL
-        );
         chatAnalysisService = new ChatAnalysisService(
                 chatAnalysisRepository,
                 aiAnalysisClient,
-                clock,
                 dashboardChangePublisher
         );
     }
 
-    // 한 사람만 메시지를 보냈어도 10초간 새 메시지가 없으면 분석합니다.
+    // 대기 메시지가 있으면(타이머 없이) 바로 분석하고, 직전 맥락을 함께 보냅니다.
     @Test
-    void analyzesAfterIdle() {
-        // 두 번째 메시지가 정확히 현재 시각보다 10초 전이 되도록 맞춥니다.
-        LocalDateTime base = NOW.minusSeconds(11);
+    void analyzesPendingWithContext() {
+        LocalDateTime base = NOW.minusSeconds(5);
         ChatAnalysis oldContext = analysis(
                 90L,
                 1L,
@@ -163,7 +153,7 @@ class ChatAnalysisServiceTest {
         assertThat(firstTarget.getAnalyzedAt()).isNotNull();
     }
 
-    // 메시지가 10개 쌓이면 한 사람만 보냈어도 바로 분석합니다.
+    // 대기 메시지가 여러 개(예: 10개)여도 한 번에 최대 10개까지 바로 분석합니다.
     @Test
     void analyzesAtTenMessages() {
         ChatAnalysis target = analysis(
@@ -200,29 +190,6 @@ class ChatAnalysisServiceTest {
 
         assertThat(chatAnalysisService.analyzeReadyBatch()).isPresent();
         verify(aiAnalysisClient).analyze(any(AiAnalyzeRequest.class));
-    }
-
-    // 10개 미만이고 마지막 메시지 후 10초가 지나지 않았으면 기다립니다.
-    @Test
-    void waitsBeforeIdle() {
-        PendingAnalysisRoomSummary summary = roomSummary(
-                1L,
-                2,
-                NOW.minusSeconds(9)
-        );
-        when(chatAnalysisRepository.findPendingRoomSummaries(
-                any(Pageable.class)
-        )).thenReturn(List.of(summary));
-
-        assertThat(chatAnalysisService.analyzeReadyBatch()).isEmpty();
-        verify(
-                chatAnalysisRepository,
-                never()
-        ).findPendingTargets(any(), any(Pageable.class));
-        verify(
-                aiAnalysisClient,
-                never()
-        ).analyze(any(AiAnalyzeRequest.class));
     }
 
     private PendingAnalysisRoomSummary roomSummary(
