@@ -12,6 +12,7 @@ import CoupleRouteGuard from './components/routing/CoupleRouteGuard.jsx'
 import AuthRouteGuard from './components/routing/AuthRouteGuard.jsx'
 import { AuthProvider } from './context/AuthContext.jsx'
 import { ToastProvider } from './context/ToastProvider.jsx'
+import { ChatUnreadProvider } from './context/ChatUnreadProvider.jsx'
 import { useAuth } from './hooks/useAuth.js'
 
 import AlbumPage from './pages/AlbumPage/AlbumPage.jsx'
@@ -86,7 +87,8 @@ function App() {
   return (
     <AuthProvider>
       <ToastProvider>
-        <AppViewport>
+        <ChatUnreadProvider>
+          <AppViewport>
           <Routes>
         <Route
           path="/"
@@ -228,7 +230,8 @@ function App() {
         />
           </Routes>
           <AuthenticatedMoodNotification />
-        </AppViewport>
+          </AppViewport>
+        </ChatUnreadProvider>
       </ToastProvider>
     </AuthProvider>
   )

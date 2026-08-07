@@ -40,11 +40,9 @@ export default function MoodSlotList({
 
   return (
     <>
-      {!hasEditableSlot && (
+      {!hasEditableSlot && nowMinutes !== null && (
         <p className={`empty-note ${styles.emptyText}`}>
-          {nowMinutes === null
-            ? "지난 날짜는 볼 수만 있어요."
-            : "지금은 기록할 수 있는 시간대가 아니에요."}
+          지금은 기록할 수 있는 시간대가 아니에요.
         </p>
       )}
 

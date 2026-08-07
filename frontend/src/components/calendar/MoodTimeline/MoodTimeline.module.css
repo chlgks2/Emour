@@ -30,14 +30,30 @@
   letter-spacing: 0.04em;
 }
 
+/* 접힌 상태는 현재 슬롯 한 줄뿐이므로 전체 타임라인의 넓은 행 간격을 쓰지 않는다. */
+.timelineCompact .row {
+  padding-top: 3px;
+  padding-bottom: 3px;
+}
+
+.timelineCompact .rows::before {
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    var(--color-divider) 18%,
+    var(--color-divider) 82%,
+    transparent 100%
+  );
+}
+
 .headMine {
   text-align: right;
-  padding-right: 4px;
+  padding-right: 10px;
 }
 
 .headPartner {
   text-align: left;
-  padding-left: 4px;
+  padding-left: 10px;
 }
 
 /* 축(세로선). 줄마다 그으면 칸 사이에서 끊겨 흐름이 아니라 눈금처럼 보인다. */
@@ -49,9 +65,9 @@
   content: "";
   position: absolute;
   left: 50%;
-  /* 첫 줄의 시각 라벨 아래에서 시작해 마지막 원까지만 */
-  top: 14px;
-  bottom: 18px;
+  /* 제목 아래 여백부터 마지막 행의 수정 버튼 하단까지 축을 이어준다. */
+  top: -11px;
+  bottom: 0;
   width: 1px;
   transform: translateX(-0.5px);
   background: var(--color-divider);
@@ -96,6 +112,8 @@
 }
 
 .time {
+  position: relative;
+  z-index: 1;
   color: var(--color-text-secondary);
   font-size: 10px;
   font-weight: 800;
@@ -167,10 +185,13 @@
 }
 
 .reason {
+  max-width: 100%;
   color: var(--color-text-secondary);
   font-size: var(--font-micro);
   line-height: 1.5;
-  word-break: keep-all;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 /*
