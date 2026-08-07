@@ -30,6 +30,16 @@
   letter-spacing: 0.04em;
 }
 
+/* 접힌 상태는 현재 슬롯 한 줄뿐이므로 전체 타임라인의 넓은 행 간격을 쓰지 않는다. */
+.timelineCompact .row {
+  padding-top: 3px;
+  padding-bottom: 3px;
+}
+
+.timelineCompact .rows::before {
+  display: none;
+}
+
 .headMine {
   text-align: right;
   padding-right: 4px;

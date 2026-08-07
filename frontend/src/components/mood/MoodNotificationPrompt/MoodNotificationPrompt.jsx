@@ -27,6 +27,7 @@ import {
 import styles from './MoodNotificationPrompt.module.css'
 
 const CHECK_INTERVAL_MS = 30_000
+const REASON_MAX_LENGTH = 100
 const DISMISSED_SLOT_KEY =
   'dismissedMoodNotificationSlot'
 const NOTIFIED_SLOT_KEY =
@@ -140,6 +141,8 @@ export default function MoodNotificationPrompt() {
     useState(null)
   const [selectedMood, setSelectedMood] =
     useState(null)
+  const [reason, setReason] =
+    useState('')
   const [isSubmitting, setIsSubmitting] =
     useState(false)
   const [errorMessage, setErrorMessage] =
@@ -331,6 +334,7 @@ export default function MoodNotificationPrompt() {
     )
     setSlotKey(null)
     setSelectedMood(null)
+    setReason('')
     setErrorMessage('')
   }
 
@@ -348,6 +352,7 @@ export default function MoodNotificationPrompt() {
 
       await createMoodEntry(
         selectedMood,
+        reason,
       )
 
       window.dispatchEvent(
@@ -358,6 +363,7 @@ export default function MoodNotificationPrompt() {
 
       setSlotKey(null)
       setSelectedMood(null)
+      setReason('')
     } catch (error) {
       setErrorMessage(
         error.message ||
@@ -451,6 +457,29 @@ export default function MoodNotificationPrompt() {
             </button>
           ))}
         </div>
+
+        <div className={styles.reasonHeader}>
+          <label
+            className={styles.reasonLabel}
+            htmlFor="mood-notification-reason"
+          >
+            기분 사유 (선택)
+          </label>
+          <span className={styles.reasonCount} aria-hidden="true">
+            {reason.length}/{REASON_MAX_LENGTH}
+          </span>
+        </div>
+
+        <textarea
+          id="mood-notification-reason"
+          className={styles.reasonInput}
+          value={reason}
+          maxLength={REASON_MAX_LENGTH}
+          rows={3}
+          disabled={isSubmitting}
+          placeholder="지금 기분이 든 이유를 남겨보세요."
+          onChange={(event) => setReason(event.target.value)}
+        />
 
         {errorMessage && (
           <p
