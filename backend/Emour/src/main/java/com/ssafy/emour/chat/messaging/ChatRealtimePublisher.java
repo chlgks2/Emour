@@ -44,6 +44,10 @@ public class ChatRealtimePublisher {
         publish(roomDestination(roomId, "analysis"), payload);
     }
 
+    public void publishImage(Long roomId, Object payload) {
+        publish(roomDestination(roomId, "images"), payload);
+    }
+
     private void publish(String destination, Object payload) {
         if (!enabled) {
             return;
