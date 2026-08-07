@@ -388,6 +388,61 @@ export default function ChatRoomPage() {
           };
         });
       },
+      onImageDelete: (event) => {
+        if (!isActive) return;
+
+        const messageId = Number(event?.messageId);
+        const imageId = Number(event?.imageId);
+        if (!Number.isFinite(messageId) || !Number.isFinite(imageId)) return;
+
+        setMessages((previous) =>
+          previous.flatMap((message) => {
+            if (Number(message.messageId) !== messageId) return [message];
+            if (event.messageHidden === true) return [];
+
+            const remainingImages = (message.images ?? []).filter((image) => {
+              const currentImageId =
+                typeof image === "string" ? null : image.imageId ?? image.image_id;
+              return Number(currentImageId) !== imageId;
+            });
+
+            return remainingImages.length > 0
+              ? [{ ...message, images: remainingImages }]
+              : [];
+          }),
+        );
+
+        setImageViewer((previous) => {
+          if (!previous) return null;
+
+          const remainingImages = (previous.images ?? []).filter((image) => {
+            const currentImageId =
+              typeof image === "string" ? null : image.imageId ?? image.image_id;
+            return Number(currentImageId) !== imageId;
+          });
+
+          return remainingImages.length > 0
+            ? {
+                ...previous,
+                images: remainingImages,
+                startIndex: Math.min(previous.startIndex, remainingImages.length - 1),
+              }
+            : null;
+        });
+
+        if (event.messageHidden === true) {
+          setBookmarkedMessageIds((previous) => {
+            const next = new Set(previous);
+            next.delete(messageId);
+            return next;
+          });
+          setReactions((previous) => {
+            const next = { ...previous };
+            delete next[messageId];
+            return next;
+          });
+        }
+      },
       onRead: (readState) => {
         if (
           !isActive ||
