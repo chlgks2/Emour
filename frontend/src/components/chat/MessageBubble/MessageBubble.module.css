@@ -2,17 +2,9 @@
   display: flex;
   align-items: flex-end;
   gap: 6px;
-  margin: 4px 16px;
+  /* 북마크 리본과 공감 뱃지가 있어도 모든 메시지가 같은 간격을 사용한다. */
+  margin: 6px 16px 10px;
   max-width: 100%;
-}
-
-/* 말풍선 위로 걸치는 북마크 리본이 앞 메시지와 겹치지 않게 한다. */
-.rowBookmarked {
-  margin-top: 16px;
-}
-
-.rowReacted {
-  margin-bottom: 18px;
 }
 
 .rowPartner {
