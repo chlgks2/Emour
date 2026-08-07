@@ -37,7 +37,7 @@ def _predict(df, tok, model, device, single=False):
         for _, row in df.iterrows():
             ctx = row["context"]
             if (not single) and isinstance(ctx, str) and ctx.strip():
-                enc = tok(ctx, row["text"], truncation="only_first",
+                enc = tok(ctx, row["text"], truncation="longest_first",
                           max_length=MAXLEN, return_tensors="pt")
             else:
                 # single=True: 맥락 무시하고 대상만(=배포 단문모델과 동일 조건)
