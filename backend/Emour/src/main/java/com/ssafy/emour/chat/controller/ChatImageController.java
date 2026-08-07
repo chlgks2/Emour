@@ -2,6 +2,7 @@ package com.ssafy.emour.chat.controller;
 
 import com.ssafy.emour.chat.dto.ChatImageDeleteResponse;
 import com.ssafy.emour.chat.dto.ChatImageUploadResponse;
+import com.ssafy.emour.chat.messaging.ChatRealtimePublisher;
 import com.ssafy.emour.chat.service.ChatImageDeleteService;
 import com.ssafy.emour.chat.service.ChatImageUploadService;
 import com.ssafy.emour.global.response.ErrorResponse;
@@ -38,6 +39,7 @@ public class ChatImageController {
 
     private final ChatImageUploadService chatImageUploadService;
     private final ChatImageDeleteService chatImageDeleteService;
+    private final ChatRealtimePublisher realtimePublisher;
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
@@ -88,6 +90,8 @@ public class ChatImageController {
                 imageId,
                 SecurityUtil.getCurrentUserId()
         );
+        // 같은 방을 보고 있는 상대방도 삭제된 사진을 즉시 화면에서 지웁니다.
+        realtimePublisher.publishImage(response.roomId(), response);
         return response;
     }
 }
