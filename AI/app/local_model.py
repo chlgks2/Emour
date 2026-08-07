@@ -88,8 +88,8 @@ class KcElectraEmotionLLM(EmotionLLM):
         self, texts_a: List[str], texts_b: List[str] | None = None
     ) -> List[str]:
         torch = self._torch
-        # 문장쌍이면 맥락(A)만 잘라 대상(B)은 온전히 보존. 단일이면 평소대로 뒤에서 자른다.
-        truncation = "only_first" if texts_b is not None else True
+        # 문장쌍이면 긴 쪽(보통 맥락)부터 자른다. 대상이 아주 길면 대상도 잘려 truncation 에러를 막는다.
+        truncation = "longest_first" if texts_b is not None else True
         enc = self.tokenizer(
             texts_a, texts_b, padding=True, truncation=truncation,
             max_length=self.max_len, return_tensors="pt",

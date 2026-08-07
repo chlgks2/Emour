@@ -165,12 +165,6 @@ export default function LoginPage() {
           아직 계정이 없으신가요? <Link to="/signup">회원가입</Link>
         </p>
 
-        {/* 목업 단계에서 데모 계정을 안내 (백엔드 연동 시 이 블록만 삭제) */}
-        {import.meta.env.DEV && (
-          <p className={styles.demoHint}>
-            데모 계정 · demo@emour.app / demo1234
-          </p>
-        )}
       </form>
     </div>
   );

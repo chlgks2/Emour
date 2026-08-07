@@ -5,6 +5,7 @@ import {
   useRef,
   useState,
 } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 import {
   ImageOff,
@@ -80,6 +81,7 @@ function formatPhotoDate(value) {
 }
 
 function AlbumPage() {
+  const navigate = useNavigate()
   const fileInputRef = useRef(null)
   const currentUserId = getCurrentUser()?.userId ?? null
 
@@ -356,6 +358,19 @@ function AlbumPage() {
     }
 
     setSelectedPhoto(null)
+  }
+
+  const moveToChatPhoto = () => {
+    const messageId = Number(selectedPhoto?.messageId)
+
+    if (!Number.isFinite(messageId)) {
+      showNotice('사진이 등록된 채팅 정보를 찾지 못했습니다.')
+      return
+    }
+
+    navigate('/chat', {
+      state: { focusMessageId: messageId },
+    })
   }
 
   const openDeleteConfirm = (photo) => {
@@ -884,27 +899,45 @@ function AlbumPage() {
               </p>
             )}
 
-            {(selectedPhoto.source !== 'CHAT' ||
-              Number(selectedPhoto.senderId) === Number(currentUserId)) && (
-              <button
-                type="button"
-                className="album-photo-delete-button"
-                disabled={isDeleting}
-                onClick={() =>
-                  openDeleteConfirm(
-                    selectedPhoto,
-                  )
-                }
-              >
-                <Trash2
-                  size={17}
-                  strokeWidth={1.9}
-                  aria-hidden="true"
-                />
+            <div className="album-photo-actions">
+              {selectedPhoto.source === 'CHAT' && selectedPhoto.messageId != null && (
+                <button
+                  type="button"
+                  className="album-photo-chat-button"
+                  onClick={moveToChatPhoto}
+                >
+                  <MessageCircle
+                    size={17}
+                    strokeWidth={1.9}
+                    aria-hidden="true"
+                  />
 
-                <span>사진 삭제</span>
-              </button>
-            )}
+                  <span>채팅에서 보기</span>
+                </button>
+              )}
+
+              {(selectedPhoto.source !== 'CHAT' ||
+                Number(selectedPhoto.senderId) === Number(currentUserId)) && (
+                <button
+                  type="button"
+                  className="album-photo-delete-button"
+                  disabled={isDeleting}
+                  onClick={() =>
+                    openDeleteConfirm(
+                      selectedPhoto,
+                    )
+                  }
+                >
+                  <Trash2
+                    size={17}
+                    strokeWidth={1.9}
+                    aria-hidden="true"
+                  />
+
+                  <span>사진 삭제</span>
+                </button>
+              )}
+            </div>
           </section>
         </div>
       )}

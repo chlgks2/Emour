@@ -10,6 +10,7 @@ import com.ssafy.emour.home.dto.response.HomeSettingResponse;
 import com.ssafy.emour.home.entity.HomeImageSetting;
 import com.ssafy.emour.home.repository.HomeImageSettingRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -40,7 +41,7 @@ public class HomeSettingService {
 
     @Transactional(readOnly = true)
     public HomeSettingResponse getSetting(Long userId) {
-        Long roomId = getActiveRoomId(userId);
+        Long roomId = getReadableRoomId(userId);
         HomeImageSetting setting = homeImageSettingRepository.findById(roomId)
                 .orElseGet(() -> HomeImageSetting.defaults(roomId));
         return HomeSettingResponse.from(setting);
@@ -137,6 +138,21 @@ public class HomeSettingService {
 
     private Long getActiveRoomId(Long userId) {
         return coupleRoomRepository.findActiveRoomByUserId(userId)
+                .map(CoupleRoom::getId)
+                .orElseThrow(() -> new CustomException(
+                        ErrorCode.ACTIVE_COUPLE_NOT_FOUND
+                ));
+    }
+
+    /**
+     * 상대방이 나가 방이 INACTIVE가 된 뒤에도 남아 있는 사용자는
+     * 기존 홈 화면 설정을 계속 조회할 수 있습니다.
+     */
+    private Long getReadableRoomId(Long userId) {
+        return coupleRoomRepository
+                .findReadableRoomsByUserId(userId, PageRequest.of(0, 1))
+                .stream()
+                .findFirst()
                 .map(CoupleRoom::getId)
                 .orElseThrow(() -> new CustomException(
                         ErrorCode.ACTIVE_COUPLE_NOT_FOUND

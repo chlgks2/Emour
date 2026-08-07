@@ -6,6 +6,7 @@ import {
   UserRound,
 } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
+import { useChatUnread } from '../../../hooks/useChatUnread.js'
 
 import './BottomNavigation.css'
 
@@ -43,6 +44,8 @@ const NAVIGATION_ITEMS = [
 ]
 
 function BottomNavigation() {
+  const { unreadCount } = useChatUnread()
+
   return (
     <nav
       className="bottom-navigation"
@@ -66,6 +69,15 @@ function BottomNavigation() {
                 strokeWidth={1.8}
                 aria-hidden="true"
               />
+
+              {item.id === 'chat' && unreadCount > 0 && (
+                <span
+                  className="bottom-navigation-badge"
+                  aria-label={`읽지 않은 메시지 ${unreadCount}개`}
+                >
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
 
               <span className="bottom-navigation-label">
                 {item.label}
@@ -97,6 +109,15 @@ function BottomNavigation() {
                   strokeWidth={isActive ? 2.2 : 1.8}
                   aria-hidden="true"
                 />
+
+                {item.id === 'chat' && unreadCount > 0 && (
+                  <span
+                    className="bottom-navigation-badge"
+                    aria-label={`읽지 않은 메시지 ${unreadCount}개`}
+                  >
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
 
                 <span className="bottom-navigation-label">
                   {item.label}

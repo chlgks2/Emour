@@ -1,6 +1,14 @@
 ﻿import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { ArrowDown, CloudOff, MessageCircleHeart, Search, X } from "lucide-react";
+import {
+  ArrowDown,
+  ChevronDown,
+  ChevronUp,
+  CloudOff,
+  MessageCircleHeart,
+  Search,
+  X,
+} from "lucide-react";
 import EmptyState from "../../components/common/EmptyState/EmptyState";
 import ChatHeader from "../../components/chat/ChatHeader/ChatHeader";
 import MessageBubble from "../../components/chat/MessageBubble/MessageBubble";
@@ -22,6 +30,8 @@ import {
   fetchSuggestions,
   deleteChatImage,
   searchChatMessages,
+  getChatMessageContext,
+  getNewerChatMessages,
 } from "../../api/chatApi";
 import { connectChatSocket } from "../../api/chatSocket.js";
 import { fetchBookmarkedMessageIds, toggleBookmark } from "../../api/bookmarkApi";
@@ -101,7 +111,12 @@ export default function ChatRoomPage() {
   const [searchResults, setSearchResults] = useState([]);
   const [searchNextCursor, setSearchNextCursor] = useState(null);
   const [searchLoading, setSearchLoading] = useState(false);
+  const [searchNavigationActive, setSearchNavigationActive] = useState(false);
+  const [activeSearchResultIndex, setActiveSearchResultIndex] = useState(-1);
+  const [contextLoadingMessageId, setContextLoadingMessageId] = useState(null);
   const [focusedMessageId, setFocusedMessageId] = useState(null);
+  const [nextAfterMessageId, setNextAfterMessageId] = useState(null);
+  const [loadingNewer, setLoadingNewer] = useState(false);
 
   const openImageViewer = useCallback((images, startIndex) => {
     setImageViewer({ images, startIndex });
@@ -223,6 +238,7 @@ export default function ChatRoomPage() {
         setPartner(partnerInfo);
         setMessages(page.messages);
         setNextBeforeMessageId(page.nextBeforeMessageId);
+        setNextAfterMessageId(null);
         setBookmarkedMessageIds(myBookmarkedMessageIds);
         setReactions(allReactions);
         setPartnerLastReadMessageId(partnerReadState.lastReadMessageId);
@@ -550,45 +566,38 @@ export default function ChatRoomPage() {
     handledFocusMessageIdRef.current = targetMessageId;
 
     const focusBookmarkedMessage = async () => {
-      let collectedMessages = [...messages];
-      let cursor = nextBeforeMessageId;
-      const visitedCursors = new Set();
-
-      while (
-        !collectedMessages.some(
-          (message) => Number(message.messageId) === targetMessageId,
-        ) &&
-        cursor != null &&
-        !visitedCursors.has(cursor)
-      ) {
-        visitedCursors.add(cursor);
-        const page = await fetchMessages({
-          roomId,
-          beforeMessageId: cursor,
-        });
-        collectedMessages = dedupeChatMessages([
-          ...page.messages,
-          ...collectedMessages,
-        ]);
-        cursor = page.nextBeforeMessageId;
-      }
+      const response = await getChatMessageContext({
+        messageId: targetMessageId,
+        beforeSize: 30,
+        afterSize: 30,
+      });
+      const collectedMessages = dedupeChatMessages(
+        (response?.messages ?? [])
+          .map(normalizeChatMessage)
+          .filter(Boolean),
+      );
 
       const messageFound = collectedMessages.some(
         (message) => Number(message.messageId) === targetMessageId,
       );
 
       if (!messageFound) {
-        showToast("북마크한 메시지를 찾지 못했어요.", { tone: "error" });
+        showToast("해당 메시지를 찾지 못했어요.", { tone: "error" });
         return;
       }
 
       setMessages(collectedMessages);
-      setNextBeforeMessageId(cursor);
+      setNextBeforeMessageId(
+        response?.hasOlder ? response?.olderCursor ?? null : null,
+      );
+      setNextAfterMessageId(
+        response?.hasNewer ? response?.newerCursor ?? null : null,
+      );
       setFocusedMessageId(targetMessageId);
     };
 
     focusBookmarkedMessage().catch(() => {
-      showToast("북마크한 메시지 위치로 이동하지 못했어요.", { tone: "error" });
+      showToast("메시지 위치로 이동하지 못했어요.", { tone: "error" });
     });
   }, [
     initialLoading,
@@ -1020,6 +1029,93 @@ export default function ChatRoomPage() {
     setSearchedKeyword("");
     setSearchResults([]);
     setSearchNextCursor(null);
+    setSearchNavigationActive(false);
+    setActiveSearchResultIndex(-1);
+  };
+
+  const moveToSearchResult = async (messageId, { keepSearchOpen = false } = {}) => {
+    const targetMessageId = Number(messageId);
+    if (!Number.isFinite(targetMessageId) || contextLoadingMessageId !== null) return;
+
+    setContextLoadingMessageId(targetMessageId);
+    try {
+      const response = await getChatMessageContext({
+        messageId: targetMessageId,
+        beforeSize: 30,
+        afterSize: 30,
+      });
+      const contextMessages = dedupeChatMessages(
+        (response?.messages ?? [])
+          .map(normalizeChatMessage)
+          .filter(Boolean),
+      );
+
+      if (!contextMessages.some(
+        (message) => Number(message.messageId) === targetMessageId,
+      )) {
+        throw new Error("선택한 메시지를 찾지 못했어요.");
+      }
+
+      setMessages(contextMessages);
+      setNextBeforeMessageId(
+        response?.hasOlder ? response?.olderCursor ?? null : null,
+      );
+      setNextAfterMessageId(
+        response?.hasNewer ? response?.newerCursor ?? null : null,
+      );
+      if (!keepSearchOpen) closeSearch();
+      setFocusedMessageId(targetMessageId);
+    } catch (error) {
+      showToast(error?.message || "메시지 위치로 이동하지 못했어요.", {
+        tone: "error",
+      });
+    } finally {
+      setContextLoadingMessageId(null);
+    }
+  };
+
+  const moveBetweenSearchResults = async (nextIndex) => {
+    if (
+      nextIndex < 0 ||
+      nextIndex >= searchResults.length ||
+      contextLoadingMessageId !== null
+    ) {
+      return;
+    }
+
+    setActiveSearchResultIndex(nextIndex);
+    await moveToSearchResult(searchResults[nextIndex].messageId, {
+      keepSearchOpen: true,
+    });
+  };
+
+  const loadNewerMessages = async () => {
+    if (!roomId || nextAfterMessageId == null || loadingNewer) return;
+
+    setLoadingNewer(true);
+    try {
+      const response = await getNewerChatMessages({
+        roomId,
+        afterMessageId: nextAfterMessageId,
+        size: 50,
+      });
+      const newerMessages = (response?.messages ?? [])
+        .map(normalizeChatMessage)
+        .filter(Boolean);
+
+      setMessages((previous) =>
+        dedupeChatMessages([...previous, ...newerMessages]),
+      );
+      setNextAfterMessageId(
+        response?.hasNext ? response?.nextCursor ?? null : null,
+      );
+    } catch (error) {
+      showToast(error?.message || "다음 대화를 불러오지 못했어요.", {
+        tone: "error",
+      });
+    } finally {
+      setLoadingNewer(false);
+    }
   };
 
   const runSearch = async ({ append = false } = {}) => {
@@ -1038,7 +1134,27 @@ export default function ChatRoomPage() {
         .map(normalizeChatMessage)
         .filter(Boolean);
 
+      if (!append && found.length > 0) {
+        // 검색 API는 최신 결과 페이지를 오래된 순서로 돌려준다.
+        // 따라서 마지막 항목이 검색어와 일치하는 가장 최근 메시지다.
+        // 결과만 따로 보여주지 않고 주변 대화를 조회해 실제 위치로 바로 이동한다.
+        const latestResultIndex = found.length - 1;
+        setSearchedKeyword(keyword);
+        setSearchResults(found);
+        setSearchNextCursor(
+          response?.hasNext ? response?.nextCursor ?? null : null,
+        );
+        setSearchNavigationActive(true);
+        setActiveSearchResultIndex(latestResultIndex);
+        await moveToSearchResult(found[latestResultIndex].messageId, {
+          keepSearchOpen: true,
+        });
+        return;
+      }
+
       setSearchedKeyword(keyword);
+      setSearchNavigationActive(false);
+      setActiveSearchResultIndex(-1);
       setSearchResults((previous) =>
         append ? dedupeChatMessages([...found, ...previous]) : found,
       );
@@ -1050,7 +1166,10 @@ export default function ChatRoomPage() {
     }
   };
 
-  const displayedMessages = searchOpen && searchedKeyword ? searchResults : messages;
+  const displayedMessages =
+    searchOpen && searchedKeyword && !searchNavigationActive
+      ? searchResults
+      : messages;
 
   return (
     <div className={`app-shell ${styles.container || ""}`}>
@@ -1073,7 +1192,11 @@ export default function ChatRoomPage() {
           <input
             autoFocus
             value={searchKeyword}
-            onChange={(event) => setSearchKeyword(event.target.value)}
+            onChange={(event) => {
+              setSearchKeyword(event.target.value);
+              setSearchNavigationActive(false);
+              setActiveSearchResultIndex(-1);
+            }}
             placeholder="대화 내용 검색"
             aria-label="대화 내용 검색"
           />
@@ -1098,6 +1221,35 @@ export default function ChatRoomPage() {
             닫기
           </button>
         </form>
+      )}
+
+      {searchOpen && searchNavigationActive && searchResults.length > 0 && (
+        <div className={styles.searchNavigator} aria-label="검색 결과 이동">
+          <span>
+            {activeSearchResultIndex + 1} / {searchResults.length}
+          </span>
+          <button
+            type="button"
+            onClick={() => moveBetweenSearchResults(activeSearchResultIndex - 1)}
+            disabled={activeSearchResultIndex <= 0 || contextLoadingMessageId !== null}
+            aria-label="이전 검색 결과"
+            title="이전 검색 결과"
+          >
+            <ChevronUp size={18} />
+          </button>
+          <button
+            type="button"
+            onClick={() => moveBetweenSearchResults(activeSearchResultIndex + 1)}
+            disabled={
+              activeSearchResultIndex >= searchResults.length - 1 ||
+              contextLoadingMessageId !== null
+            }
+            aria-label="다음 검색 결과"
+            title="다음 검색 결과"
+          >
+            <ChevronDown size={18} />
+          </button>
+        </div>
       )}
 
       <div
@@ -1175,9 +1327,42 @@ export default function ChatRoomPage() {
                 else messageElementRefs.current.delete(messageId);
               }}
               className={
-                Number(message.messageId) === focusedMessageId
-                  ? styles.focusedMessage
+                [
+                  Number(message.messageId) === focusedMessageId
+                    ? styles.focusedMessage
+                    : "",
+                  searchOpen && searchedKeyword && !searchNavigationActive
+                    ? styles.searchResultMessage
+                    : "",
+                ].filter(Boolean).join(" ") || undefined
+              }
+              onClick={
+                searchOpen && searchedKeyword && !searchNavigationActive
+                  ? () => moveToSearchResult(message.messageId)
                   : undefined
+              }
+              role={
+                searchOpen && searchedKeyword && !searchNavigationActive
+                  ? "button"
+                  : undefined
+              }
+              tabIndex={
+                searchOpen && searchedKeyword && !searchNavigationActive
+                  ? 0
+                  : undefined
+              }
+              onKeyDown={
+                searchOpen && searchedKeyword && !searchNavigationActive
+                  ? (event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        moveToSearchResult(message.messageId);
+                      }
+                    }
+                  : undefined
+              }
+              aria-busy={
+                Number(message.messageId) === contextLoadingMessageId
               }
             >
               {showDateDivider && <DateDivider dateTime={message.sentAt} />}
@@ -1195,6 +1380,17 @@ export default function ChatRoomPage() {
             </div>
           );
         })}
+
+        {!searchOpen && nextAfterMessageId !== null && (
+          <button
+            type="button"
+            className={styles.loadSearchButton}
+            onClick={loadNewerMessages}
+            disabled={loadingNewer}
+          >
+            {loadingNewer ? "다음 대화를 불러오는 중..." : "다음 대화 더 보기"}
+          </button>
+        )}
       </div>
 
       {showScrollDown && (

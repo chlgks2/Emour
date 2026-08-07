@@ -13,10 +13,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Pageable;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Optional;
+import java.util.List;
 import java.math.BigDecimal;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -56,8 +58,10 @@ class HomeSettingServiceTest {
         CoupleRoom room = CoupleRoom.waiting("ROOM-CODE", null);
         ReflectionTestUtils.setField(room, "id", ROOM_ID);
         room.activate();
-        given(coupleRoomRepository.findActiveRoomByUserId(USER_ID))
-                .willReturn(Optional.of(room));
+        given(coupleRoomRepository.findReadableRoomsByUserId(
+                org.mockito.ArgumentMatchers.eq(USER_ID),
+                any(Pageable.class)
+        )).willReturn(List.of(room));
         given(homeImageSettingRepository.findById(ROOM_ID))
                 .willReturn(Optional.empty());
 
@@ -72,13 +76,16 @@ class HomeSettingServiceTest {
     }
 
     @Test
-    void returnsSharedCoupleSetting() {
+    void returnsSharedCoupleSettingAfterPartnerLeaves() {
         HomeImageSetting setting = HomeImageSetting.defaults(ROOM_ID);
         CoupleRoom room = CoupleRoom.waiting("ROOM-CODE", null);
         ReflectionTestUtils.setField(room, "id", ROOM_ID);
         room.activate();
-        given(coupleRoomRepository.findActiveRoomByUserId(USER_ID))
-                .willReturn(Optional.of(room));
+        room.deactivate();
+        given(coupleRoomRepository.findReadableRoomsByUserId(
+                org.mockito.ArgumentMatchers.eq(USER_ID),
+                any(Pageable.class)
+        )).willReturn(List.of(room));
         given(homeImageSettingRepository.findById(ROOM_ID))
                 .willReturn(Optional.of(setting));
 

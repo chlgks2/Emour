@@ -14,7 +14,7 @@ import os, sys
 
 # ══════════════════ CONFIG (여기만 수정하세요) ══════════════════
 # ── 데이터 비중 ──
-REAL_UPWEIGHT        = 4     # ★ 1차(best) 값. ×6은 희소감정 오히려 나빠져서 되돌림
+REAL_UPWEIGHT        = 1     # 실유저 데이터 2600+로 충분 → 복제 불필요(과반복 방지)
 CONTRASTIVE_UPWEIGHT = 2     # 대조쌍 복제배수
 SPACING_AUG          = False # ✗ 실험결과 효과 없음(데이터에 없는 붙임표기는 증강으로 못잡음) → 끔
 SPACING_DROP         = 0.5   # (SPACING_AUG=True 일 때만 의미) 공백 제거 확률

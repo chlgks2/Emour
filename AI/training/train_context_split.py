@@ -61,7 +61,7 @@ def make_encoder(tok):
     def encode(row):
         ctx = row["context"]
         if isinstance(ctx, str) and ctx.strip():
-            enc = tok(ctx, row["text"], truncation="only_first", max_length=MAXLEN)
+            enc = tok(ctx, row["text"], truncation="longest_first", max_length=MAXLEN)
         else:
             enc = tok(row["text"], truncation=True, max_length=MAXLEN)
         enc["labels"] = int(row["label_id"])

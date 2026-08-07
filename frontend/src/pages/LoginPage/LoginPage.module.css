@@ -124,14 +124,3 @@
 .signupLink a:hover {
   text-decoration: underline;
 }
-
-/* 개발 모드에서만 보이는 데모 계정 안내 */
-.demoHint {
-  margin-top: 16px;
-  padding: 7px 14px;
-  border-radius: var(--radius-pill);
-  background: var(--color-surface-tint);
-  color: var(--color-text-tertiary);
-  font-size: var(--font-micro);
-  letter-spacing: 0.01em;
-}
