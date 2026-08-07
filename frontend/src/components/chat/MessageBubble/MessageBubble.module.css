@@ -124,7 +124,8 @@
   width: 100%;
   aspect-ratio: 1;
   object-fit: cover;
-  background: var(--color-sub-bg);
+  /* 투명 PNG도 채팅 화면 위에 자연스럽게 놓이도록 채팅 배경색을 채운다. */
+  background: var(--color-bg);
   /* 눌러서 크게 볼 수 있다는 표시 */
   cursor: zoom-in;
 }

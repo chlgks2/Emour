@@ -22,7 +22,8 @@ function buildDayAriaLabel(day) {
  *   현재 보여줄 한 주(7일). moodDate 는 mood.mood_date 와 동일한 'YYYY-MM-DD'.
  * @param {() => void} onPrevWeek 이전 주로 이동
  * @param {() => void} onNextWeek 다음 주로 이동
- * @param {() => void} onMonthClick 월 라벨 클릭 시 월간 캘린더 모달 오픈
+ * @param {() => void} onToday 오늘이 포함된 주로 이동
+ * @param {boolean} isCurrentWeek 현재 주를 보고 있는지 여부
  * @param {string|null} selectedMoodDate 현재 확장되어 보이는 날짜
  * @param {(moodDate: string) => void} onSelectDate 원 클릭(토글) 핸들러
  * @param {{mySlots:Array, partnerSlots:Array}} detailMood 선택한 날짜의 무드 슬롯
@@ -35,7 +36,8 @@ export default function EmotionCalendarStrip({
   weekDays,
   onPrevWeek,
   onNextWeek,
-  onMonthClick,
+  onToday,
+  isCurrentWeek = false,
   selectedMoodDate,
   onSelectDate,
   detailMood = { mySlots: [], partnerSlots: [] },
@@ -84,18 +86,22 @@ export default function EmotionCalendarStrip({
         </HelpHint>
       </span>
 
+      <button
+        type="button"
+        className={styles.todayButton}
+        disabled={isCurrentWeek}
+        onClick={onToday}
+      >
+        오늘
+      </button>
+
       <div className={styles.monthRow}>
         <button type="button" aria-label="이전 주" className={styles.arrowBtn} onClick={onPrevWeek}>
           <ChevronLeft size={18} />
         </button>
-        <button
-          type="button"
-          className={styles.monthLabel}
-          onClick={onMonthClick}
-          aria-label={`${monthLabel} 월간 달력 열기`}
-        >
+        <span className={styles.monthLabel}>
           {monthLabel}
-        </button>
+        </span>
         <button type="button" aria-label="다음 주" className={styles.arrowBtn} onClick={onNextWeek}>
           <ChevronRight size={18} />
         </button>
@@ -136,7 +142,7 @@ export default function EmotionCalendarStrip({
       {selectedDay && isSlotListOpen && (
         <div className={styles.detail}>
           <p className={styles.detailLabel}>
-            {monthLabel} {selectedDay.dayOfMonth}일
+            {selectedDay.monthNumber}월 {selectedDay.dayOfMonth}일
           </p>
 
           <MoodSlotList
