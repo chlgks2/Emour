@@ -91,8 +91,8 @@ export default function LoginPage() {
       <AuthHeader showBack={false} />
       <form className={styles.content} onSubmit={handleSubmit} noValidate>
         <img src={logoWordmark} alt="Emour" className={styles.logo} />
-        <h1 className={styles.title}>다시 만나서 반가워요</h1>
-        <p className={styles.subtitle}>오늘 두 사람의 감정을 이어가 볼까요?</p>
+        <h1 className={styles.title}>함께 쌓아가는 감정 기록</h1>
+        <p className={styles.subtitle}>서로의 감정을 차곡차곡 쌓아볼까요?</p>
 
         {justSignedUp && (
           <p className={styles.noticeBanner} role="status">

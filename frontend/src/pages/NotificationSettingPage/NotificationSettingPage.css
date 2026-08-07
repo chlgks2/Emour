@@ -28,7 +28,7 @@
 .notification-setting-header h1 {
   margin: 0;
   color: var(--color-text-primary);
-  font-size: var(--font-heading);
+  font-size: var(--font-topbar-title);
   font-weight: 800;
   text-align: center;
 }
@@ -75,7 +75,7 @@
 .notification-setting-form {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 0;
 }
 
 /* =========================
@@ -101,7 +101,11 @@
   grid-template-columns: 48px minmax(0, 1fr) auto;
   align-items: center;
   gap: 12px;
-  padding: 17px;
+  padding: 6px 2px 20px;
+  border: 0;
+  border-bottom: 1px solid var(--color-divider);
+  border-radius: 0;
+  background: transparent;
 }
 
 .notification-setting-intro-icon {
@@ -110,7 +114,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--radius-md);
+  border-radius: 50%;
   background: var(--color-primary-faint);
   color: var(--color-primary);
 }
@@ -176,7 +180,11 @@
 ========================= */
 
 .notification-setting-card {
-  padding: 17px;
+  padding: 22px 2px;
+  border: 0;
+  border-bottom: 1px solid var(--color-divider);
+  border-radius: 0;
+  background: transparent;
 }
 
 .notification-setting-section-title {
@@ -186,15 +194,13 @@
 }
 
 .notification-setting-section-title > span {
-  width: 36px;
-  height: 36px;
+  width: 24px;
+  height: 24px;
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--radius-sm);
-  background: var(--color-surface-tint);
-  color: var(--color-text-secondary);
+  color: var(--color-text-tertiary);
 }
 
 .notification-setting-section-title h2 {
@@ -244,7 +250,7 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   outline: none;
-  background: var(--color-background);
+  background: var(--color-surface);
   color: var(--color-text-primary);
   font: inherit;
   font-size: var(--font-label);
@@ -290,7 +296,7 @@
   padding: 0;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-pill);
-  background: var(--color-background);
+  background: var(--color-surface);
   color: var(--color-text-secondary);
   font-size: var(--font-micro);
   font-weight: 700;
@@ -319,34 +325,18 @@
 ========================= */
 
 .notification-setting-preview-card {
-  padding: 18px 17px;
-  background: linear-gradient(
-    148deg,
-    var(--color-primary-faint) 0%,
-    var(--color-surface) 68%
-  );
+  padding: 22px 2px;
+  border: 0;
+  border-bottom: 1px solid var(--color-divider);
+  border-radius: 0;
+  background: transparent;
 }
 
 .notification-setting-preview-header {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
-}
-
-.notification-setting-preview-header p {
-  margin: 0 0 4px;
-  color: var(--color-primary);
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.1em;
-}
-
-.notification-setting-preview-header h2 {
-  margin: 0;
-  color: var(--color-text-primary);
-  font-size: var(--font-heading);
-  font-weight: 800;
 }
 
 .notification-setting-preview-header > span {
@@ -375,7 +365,7 @@
   padding: 0 12px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-pill);
-  background: rgba(255, 255, 255, 0.82);
+  background: var(--color-surface);
   color: var(--color-text-primary);
   font-size: var(--font-micro);
   font-weight: 700;
@@ -392,7 +382,7 @@
   margin-top: 15px;
   padding: 17px;
   border-radius: var(--radius-sm);
-  background: rgba(255, 255, 255, 0.72);
+  background: var(--color-surface);
   color: var(--color-text-tertiary);
   font-size: var(--font-micro);
   text-align: center;
@@ -406,6 +396,7 @@
   display: flex;
   align-items: flex-start;
   gap: 10px;
+  margin-top: 12px;
   padding: 14px;
   border-color: transparent;
   background: var(--color-warning-bg);
@@ -430,7 +421,7 @@
 ========================= */
 
 .notification-setting-result-message {
-  margin: 0;
+  margin: 12px 0 0;
   padding: 12px 14px;
   border-radius: var(--radius-sm);
   font-size: var(--font-caption);
@@ -552,7 +543,7 @@
   .notification-setting-intro-card {
     grid-template-columns: 44px minmax(0, 1fr) auto;
     gap: 9px;
-    padding: 14px;
+    padding: 6px 2px 18px;
   }
 
   .notification-setting-intro-icon {
