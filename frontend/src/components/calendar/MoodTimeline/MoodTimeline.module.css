@@ -42,12 +42,12 @@
 
 .headMine {
   text-align: right;
-  padding-right: 4px;
+  padding-right: 10px;
 }
 
 .headPartner {
   text-align: left;
-  padding-left: 4px;
+  padding-left: 10px;
 }
 
 /* 축(세로선). 줄마다 그으면 칸 사이에서 끊겨 흐름이 아니라 눈금처럼 보인다. */
@@ -177,10 +177,13 @@
 }
 
 .reason {
+  max-width: 100%;
   color: var(--color-text-secondary);
   font-size: var(--font-micro);
   line-height: 1.5;
-  word-break: keep-all;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 /*

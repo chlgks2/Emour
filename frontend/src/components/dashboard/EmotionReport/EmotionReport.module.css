@@ -98,52 +98,67 @@
   gap: 12px;
 }
 
+.filterPanel {
+  width: 100%;
+}
+
 .filterPanel summary {
-  width: fit-content;
+  margin-left: auto;
+  width: 154px;
   min-height: 36px;
-  display: flex;
+  display: grid;
+  grid-template-columns: 24px 1fr 22px;
   align-items: center;
-  gap: 7px;
-  padding: 0 12px;
-  border: 1px solid var(--color-border);
+  gap: 4px;
+  padding: 0 6px;
+  border: 1px solid var(--color-sub-bg);
   border-radius: var(--radius-pill);
-  background: var(--color-surface);
+  background: var(--color-sub-bg);
   color: var(--color-text-primary);
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
   list-style: none;
-  box-shadow: 0 2px 7px rgb(83 58 51 / 8%);
-  transition:
-    border-color var(--duration-fast) var(--ease-out),
-    background-color var(--duration-fast) var(--ease-out),
-    box-shadow var(--duration-fast) var(--ease-out),
-    transform var(--duration-fast) var(--ease-out);
+  box-shadow: none;
+  transition: color var(--duration-fast) var(--ease-out);
 }
 
 .filterPanel summary::-webkit-details-marker {
   display: none;
 }
 
+.filterPanel summary span {
+  text-align: center;
+  white-space: nowrap;
+}
+
 .filterPanel summary:hover {
-  border-color: var(--color-primary-soft);
-  background: var(--color-primary-faint);
-  box-shadow: 0 4px 11px rgb(83 58 51 / 11%);
+  background: var(--color-sub-bg);
 }
 
 .filterPanel summary:active {
-  transform: translateY(1px);
-  box-shadow: 0 1px 4px rgb(83 58 51 / 9%);
+  color: var(--color-text-accent);
 }
 
 .filterPanel[open] summary {
-  border-color: var(--color-primary-soft);
-  background: var(--color-primary-faint);
+  background: var(--color-sub-bg);
   color: var(--color-text-accent);
 }
 
 .filterChevron {
+  justify-self: center;
+  color: var(--color-text-tertiary);
   transition: transform var(--duration-fast) var(--ease-out);
+}
+
+.filterIcon {
+  width: 24px;
+  height: 24px;
+  padding: 5px;
+  box-sizing: border-box;
+  border-radius: 50%;
+  background: var(--color-surface);
+  color: var(--color-text-accent);
 }
 
 .filterPanel[open] .filterChevron {
@@ -178,4 +193,8 @@
   background: color-mix(in srgb, var(--filter-emotion-color) 16%, white);
   color: var(--filter-emotion-color);
   opacity: 1;
+}
+
+.filterChip[aria-disabled="true"] {
+  cursor: default;
 }

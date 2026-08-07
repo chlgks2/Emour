@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useMemo, useState } from "react";
+﻿import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   CalendarDays,
   Calendar1,
@@ -15,7 +15,6 @@ import DashboardTopBar from "../../components/dashboard/DashboardTopBar/Dashboar
 import DashboardSkeleton from "../../components/dashboard/DashboardSkeleton/DashboardSkeleton";
 import DashboardStats from "../../components/dashboard/DashboardStats/DashboardStats";
 import EmotionCalendarStrip from "../../components/dashboard/EmotionCalendarStrip/EmotionCalendarStrip";
-import MonthCalendarModal from "../../components/dashboard/MonthCalendarModal/MonthCalendarModal";
 import MoodFormModal from "../../components/dashboard/MoodFormModal/MoodFormModal";
 import TodaySchedule from "../../components/dashboard/TodaySchedule/TodaySchedule";
 import EmotionReport from "../../components/dashboard/EmotionReport/EmotionReport";
@@ -162,6 +161,33 @@ function shiftPeriod(period, date, direction) {
 
 export default function DashboardPage() {
   const { showToast } = useToast();
+  const scrollAreaRef = useRef(null);
+  const [showTopScrollHint, setShowTopScrollHint] = useState(false);
+
+  const updateScrollHints = useCallback(() => {
+    const element = scrollAreaRef.current;
+    if (!element) return;
+
+    const next = element.scrollTop > 2;
+    setShowTopScrollHint((current) => (current === next ? current : next));
+  }, []);
+
+  useEffect(() => {
+    const element = scrollAreaRef.current;
+    if (!element) return undefined;
+
+    const frameId = requestAnimationFrame(updateScrollHints);
+    const resizeObserver = new ResizeObserver(updateScrollHints);
+    const mutationObserver = new MutationObserver(updateScrollHints);
+    resizeObserver.observe(element);
+    mutationObserver.observe(element, { childList: true, subtree: true });
+
+    return () => {
+      cancelAnimationFrame(frameId);
+      resizeObserver.disconnect();
+      mutationObserver.disconnect();
+    };
+  }, [updateScrollHints]);
 
   // { room, daysTogether, dashboard, todaySchedules, recentPhotos } — dashboardApi.fetchDashboard 참고
   const [dashboardData, setDashboardData] = useState(null);
@@ -183,7 +209,6 @@ export default function DashboardPage() {
 
   // 감정 캘린더 상태
   const [weekStart, setWeekStart] = useState(() => getWeekStart(new Date()));
-  const [monthCursor, setMonthCursor] = useState(() => new Date());
   const [moodRecords, setMoodRecords] = useState({}); // moodDate('YYYY-MM-DD') -> { myMood, partnerMood }
   /*
    * 스트립에서 펼쳐진 날짜.
@@ -193,7 +218,6 @@ export default function DashboardPage() {
   const [selectedMoodDate, setSelectedMoodDate] = useState(() =>
     formatDateKey(new Date())
   );
-  const [monthModalOpen, setMonthModalOpen] = useState(false);
   // { mode, slot, initialMoodType, initialReason } — slot 이 없으면 지금 시간대에 새로 등록
   const [moodFormModal, setMoodFormModal] = useState(null);
 
@@ -259,11 +283,6 @@ export default function DashboardPage() {
       });
   }, [showToast]);
 
-  // 현재 보이는 월 + 주가 걸쳐있는 달의 데이터를 함께 로드
-  useEffect(() => {
-    loadMonth(monthCursor);
-  }, [monthCursor, loadMonth]);
-
   useEffect(() => {
     loadMonth(weekStart);
     loadMonth(addDays(weekStart, 6));
@@ -294,11 +313,10 @@ export default function DashboardPage() {
     await Promise.allSettled([
       loadDashboard(),
       loadPeriodDashboard(),
-      loadMonth(monthCursor),
       loadMonth(weekStart),
       loadMonth(addDays(weekStart, 6)),
     ]);
-  }, [loadDashboard, loadMonth, loadPeriodDashboard, monthCursor, weekStart]);
+  }, [loadDashboard, loadMonth, loadPeriodDashboard, weekStart]);
 
   // 상대방이 다른 브라우저에서 무드를 등록해도 주기적으로 GET /moods를
   // 다시 호출해 내 화면에 반영한다.
@@ -313,6 +331,7 @@ export default function DashboardPage() {
       const record = moodRecords[moodDate];
       return {
         dayOfMonth: d.getDate(),
+        monthNumber: d.getMonth() + 1,
         moodDate,
         myMood: record?.myMood ?? null,
         partnerMood: record?.partnerMood ?? null,
@@ -346,8 +365,13 @@ export default function DashboardPage() {
     return now.getHours() * 60 + now.getMinutes();
   }, [selectedMoodDate]);
 
-  // 주의 대표 월(주 시작일 기준)을 라벨로 사용
-  const stripMonthLabel = `${weekStart.getMonth() + 1}월`;
+  const stripWeekEnd = addDays(weekStart, 6);
+  const stripMonthLabel =
+    weekStart.getFullYear() !== stripWeekEnd.getFullYear()
+      ? `${weekStart.getFullYear()}년 ${weekStart.getMonth() + 1}월 / ${stripWeekEnd.getFullYear()}년 ${stripWeekEnd.getMonth() + 1}월`
+      : weekStart.getMonth() !== stripWeekEnd.getMonth()
+        ? `${weekStart.getMonth() + 1}/${stripWeekEnd.getMonth() + 1}월`
+        : `${weekStart.getMonth() + 1}월`;
 
   const moveReportDate = (direction) => {
     setReportDate((current) => shiftPeriod(reportPeriod, current, direction));
@@ -422,24 +446,22 @@ export default function DashboardPage() {
 
   const handlePrevWeek = () => {
     setSelectedMoodDate(null);
-    setWeekStart((w) => {
-      const next = addDays(w, -7);
-      setMonthCursor(next);
-      return next;
-    });
+    setWeekStart((w) => addDays(w, -7));
   };
 
   const handleNextWeek = () => {
     setSelectedMoodDate(null);
-    setWeekStart((w) => {
-      const next = addDays(w, 7);
-      setMonthCursor(next);
-      return next;
-    });
+    setWeekStart((w) => addDays(w, 7));
   };
 
   const handleSelectDate = (moodDate) => {
     setSelectedMoodDate((cur) => (cur === moodDate ? null : moodDate));
+  };
+
+  const handleGoToToday = () => {
+    const today = new Date();
+    setWeekStart(getWeekStart(today));
+    setSelectedMoodDate(formatDateKey(today));
   };
 
   /**
@@ -458,13 +480,6 @@ export default function DashboardPage() {
     });
   };
 
-  // 스트립/월달력에서 날짜를 고르면 그날의 마지막 기록을 수정 대상으로 삼는다.
-  const handleEditMyMood = (moodDate) => {
-    // 월간 달력에서는 그날을 선택 상태로 만들고 스트립 상세에서 시간대를 고르게 한다.
-    setSelectedMoodDate(moodDate);
-    setMonthModalOpen(false);
-  };
-
   const handleMoodFormSubmit = async ({ moodType, reason }) => {
     const { mode, slot } = moodFormModal;
     try {
@@ -477,8 +492,8 @@ export default function DashboardPage() {
         dateKey: moodFormModal.dateKey,
       });
       setMoodFormModal(null);
-      // 저장한 날짜가 속한 달을 다시 불러온다. (주가 달을 걸칠 때 monthCursor 만 보면 누락된다)
-      loadMonth(moodFormModal.dateKey ? parseDateKey(moodFormModal.dateKey) : monthCursor);
+      // 저장한 날짜가 속한 달을 다시 불러온다.
+      loadMonth(moodFormModal.dateKey ? parseDateKey(moodFormModal.dateKey) : weekStart);
       showToast(mode === "edit" ? "기분을 수정했어요." : "지금 기분을 기록했어요.", {
         tone: "success",
       });
@@ -518,15 +533,24 @@ export default function DashboardPage() {
     <div className="app-shell">
       <DashboardTopBar daysTogether={dashboardData.daysTogether} />
 
-      {/* data-scroll-container: 모달이 열리면 global.css 가 이 영역의 스크롤을 잠근다 */}
-      <div className={styles.scrollArea} data-scroll-container>
+      <div className={styles.scrollFrame}>
+        {showTopScrollHint && <div className={styles.scrollHintTop} aria-hidden="true" />}
+
+        {/* data-scroll-container: 모달이 열리면 global.css 가 이 영역의 스크롤을 잠근다 */}
+        <div
+          ref={scrollAreaRef}
+          className={styles.scrollArea}
+          data-scroll-container
+          onScroll={updateScrollHints}
+        >
         {/* 기분 상세는 이 분홍 카드 안에 함께 들어간다 (별도 카드로 분리하지 않는다) */}
         <EmotionCalendarStrip
           monthLabel={stripMonthLabel}
           weekDays={weekDays}
           onPrevWeek={handlePrevWeek}
           onNextWeek={handleNextWeek}
-          onMonthClick={() => setMonthModalOpen(true)}
+          onToday={handleGoToToday}
+          isCurrentWeek={getWeekStart(new Date()).getTime() === weekStart.getTime()}
           selectedMoodDate={selectedMoodDate}
           onSelectDate={handleSelectDate}
           detailMood={detailMood}
@@ -685,19 +709,9 @@ export default function DashboardPage() {
 
         <BookmarkPreview />
 
-        <RecentPhotos photos={dashboardData.recentPhotos} />
+          <RecentPhotos photos={dashboardData.recentPhotos} />
+        </div>
       </div>
-
-
-      <MonthCalendarModal
-        open={monthModalOpen}
-        onClose={() => setMonthModalOpen(false)}
-        cursorDate={monthCursor}
-        onChangeMonth={(next) => setMonthCursor(next)}
-        moodRecords={moodRecords}
-        onEditMyMood={handleEditMyMood}
-      />
-
       {moodFormModal && (
         <MoodFormModal
           open
