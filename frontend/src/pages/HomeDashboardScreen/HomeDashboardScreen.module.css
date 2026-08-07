@@ -6,7 +6,8 @@
   overflow-y: scroll;
   scroll-snap-type: y mandatory;
   scrollbar-width: none;
-  background: #000;
+  /* 하단 내비게이션 경계의 서브픽셀 틈에도 검은 바탕이 비치지 않게 한다. */
+  background: var(--color-background);
   box-shadow: var(--shadow-float);
   /* 내부 스크롤이 끝에 닿아도 페이지 전체가 당겨지지 않도록 */
   overscroll-behavior-y: contain;
