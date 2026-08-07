@@ -18,6 +18,7 @@ import { ChatUnreadContext } from '../hooks/useChatUnread.js'
 
 const REFRESH_INTERVAL_MS = 30000
 const REALTIME_REFRESH_DELAY_MS = 1200
+const ROOM_RESOLVE_RETRY_MS = 5000
 
 export function ChatUnreadProvider({ children }) {
   const { isAuthenticated, user } = useAuth()
@@ -33,25 +34,47 @@ export function ChatUnreadProvider({ children }) {
 
   useEffect(() => {
     let cancelled = false
+    let retryTimerId = null
 
     if (!isAuthenticated || !user?.userId) {
       return undefined
     }
 
-    resolveRoomId()
-      .then((resolvedRoomId) => {
-        if (!cancelled) setRoomId(resolvedRoomId)
-      })
-      .catch(() => {
-        if (!cancelled) setRoomId(null)
-      })
+    const loadRoomId = async () => {
+      try {
+        const resolvedRoomId = await resolveRoomId()
+        if (cancelled) return
+
+        setRoomId(resolvedRoomId)
+
+        // 로그인 직후 방 조회가 아직 준비되지 않았거나 일시적으로 실패해도
+        // Provider가 다시 마운트될 때까지 기다리지 않고 재조회한다.
+        if (!resolvedRoomId) {
+          retryTimerId = window.setTimeout(
+            loadRoomId,
+            ROOM_RESOLVE_RETRY_MS,
+          )
+        }
+      } catch {
+        if (cancelled) return
+
+        setRoomId(null)
+        retryTimerId = window.setTimeout(
+          loadRoomId,
+          ROOM_RESOLVE_RETRY_MS,
+        )
+      }
+    }
+
+    loadRoomId()
 
     return () => {
       cancelled = true
+      window.clearTimeout(retryTimerId)
     }
   }, [isAuthenticated, user?.userId])
 
-  const refreshUnreadCount = useCallback(async () => {
+  const refreshUnreadCount = useCallback(async (preserveHigher = false) => {
     if (!roomId || !isAuthenticated) {
       setUnreadCount(0)
       return
@@ -60,8 +83,14 @@ export function ChatUnreadProvider({ children }) {
     try {
       const response = await getUnreadChatCount(roomId)
       const unreadData = response?.data ?? response
-      setUnreadCount(
-        Math.max(0, Number(unreadData?.unreadCount) || 0),
+      const serverUnreadCount = Math.max(
+        0,
+        Number(unreadData?.unreadCount) || 0,
+      )
+      setUnreadCount((previous) =>
+        preserveHigher
+          ? Math.max(previous, serverUnreadCount)
+          : serverUnreadCount,
       )
     } catch {
       // 일시적인 조회 실패에는 기존 배지를 유지한다.
@@ -108,7 +137,7 @@ export function ChatUnreadProvider({ children }) {
         // 아주 짧게 기다린 뒤 미읽음 수를 조회한다.
         window.clearTimeout(realtimeRefreshTimerRef.current)
         realtimeRefreshTimerRef.current = window.setTimeout(
-          refreshUnreadCount,
+          () => refreshUnreadCount(true),
           REALTIME_REFRESH_DELAY_MS,
         )
       },
@@ -133,9 +162,9 @@ export function ChatUnreadProvider({ children }) {
     }
     document.addEventListener('visibilitychange', handleVisibilityChange)
 
-      return () => {
-        window.clearTimeout(realtimeRefreshTimerRef.current)
-        window.clearInterval(intervalId)
+    return () => {
+      window.clearTimeout(realtimeRefreshTimerRef.current)
+      window.clearInterval(intervalId)
       document.removeEventListener('visibilitychange', handleVisibilityChange)
       socket?.disconnect()
     }
