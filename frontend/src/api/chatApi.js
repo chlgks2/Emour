@@ -9,6 +9,9 @@ const CHAT_ENDPOINTS = {
   unreadCount: '/chats/unread-count',
   readStatus: '/chats/read-status',
   search: '/chats/search',
+  newerMessages: '/chats/after',
+  messageContext: (messageId) =>
+    `/chats/${messageId}/context`,
   bookmarks: '/chats/bookmarks',
   images: '/chats/images',
   image: (imageId) =>
@@ -233,6 +236,30 @@ export async function searchChatMessages({
 
   return apiRequest(
     `${CHAT_ENDPOINTS.search}?${query}`,
+  )
+}
+
+export async function getChatMessageContext({
+  messageId,
+  beforeSize = 30,
+  afterSize = 30,
+}) {
+  const query = createQuery({ beforeSize, afterSize })
+
+  return apiRequest(
+    `${CHAT_ENDPOINTS.messageContext(messageId)}?${query}`,
+  )
+}
+
+export async function getNewerChatMessages({
+  roomId,
+  afterMessageId,
+  size = 50,
+}) {
+  const query = createQuery({ roomId, afterMessageId, size })
+
+  return apiRequest(
+    `${CHAT_ENDPOINTS.newerMessages}?${query}`,
   )
 }
 
