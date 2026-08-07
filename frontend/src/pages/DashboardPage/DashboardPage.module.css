@@ -163,6 +163,7 @@
   display: grid;
   grid-template-columns: 36px 1fr 36px;
   align-items: center;
+  min-height: 36px;
   margin-top: 8px;
 }
 

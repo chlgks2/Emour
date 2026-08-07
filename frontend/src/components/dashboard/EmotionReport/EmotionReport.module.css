@@ -100,33 +100,71 @@
 
 .filterPanel summary {
   width: fit-content;
+  min-height: 36px;
   display: flex;
   align-items: center;
-  gap: 5px;
-  color: var(--color-text-secondary);
+  gap: 7px;
+  padding: 0 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
   list-style: none;
+  box-shadow: 0 2px 7px rgb(83 58 51 / 8%);
+  transition:
+    border-color var(--duration-fast) var(--ease-out),
+    background-color var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out);
 }
 
 .filterPanel summary::-webkit-details-marker {
   display: none;
 }
 
+.filterPanel summary:hover {
+  border-color: var(--color-primary-soft);
+  background: var(--color-primary-faint);
+  box-shadow: 0 4px 11px rgb(83 58 51 / 11%);
+}
+
+.filterPanel summary:active {
+  transform: translateY(1px);
+  box-shadow: 0 1px 4px rgb(83 58 51 / 9%);
+}
+
+.filterPanel[open] summary {
+  border-color: var(--color-primary-soft);
+  background: var(--color-primary-faint);
+  color: var(--color-text-accent);
+}
+
+.filterChevron {
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+
+.filterPanel[open] .filterChevron {
+  transform: rotate(180deg);
+}
+
 .filterOptions {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 6px;
   margin-top: 9px;
 }
 
 .filterChip {
-  display: inline-flex;
+  min-width: 0;
+  display: flex;
   align-items: center;
+  justify-content: center;
   gap: 4px;
   min-height: 28px;
-  padding: 0 9px;
+  padding: 0 4px;
   border: 1px solid var(--color-divider);
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.48);
