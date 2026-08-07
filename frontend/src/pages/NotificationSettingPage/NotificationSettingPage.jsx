@@ -155,7 +155,7 @@ function NotificationSettingPage() {
   const [
     intervalHours,
     setIntervalHours,
-  ] = useState(3)
+  ] = useState(2)
 
   const [isLoading, setIsLoading] =
     useState(true)
