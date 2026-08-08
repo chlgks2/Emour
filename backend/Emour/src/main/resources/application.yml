@@ -48,7 +48,14 @@ spring:
 # app.upload.dir : 파일이 저장될 실제 디렉토리
 #   - 로컬  : 기본값 ./uploads
 #   - EC2   : 환경변수 APP_UPLOAD_DIR=/app/uploads 로 주입됨 (하드코딩 금지)
+# Nginx가 TLS를 종료하는 배포 구조에서 X-Forwarded-Proto=https를 올바르게 인식합니다.
+server:
+  forward-headers-strategy: framework
+
 app:
+  websocket:
+    # WebSocket/SockJS 연결을 허용할 프런트 주소입니다. 운영에서는 실제 도메인만 남깁니다.
+    allowed-origin-patterns: ${WEBSOCKET_ALLOWED_ORIGIN_PATTERNS:http://localhost:*,https://localhost:*,https://i15b208.p.ssafy.io,http://i15b208.p.ssafy.io:8080}
   upload:
     dir: ${APP_UPLOAD_DIR:./uploads}
   # 이메일 발송 방식: console(기본, 콘솔 출력) | smtp(실제 발송)
@@ -84,7 +91,6 @@ chat:
   redis:
     # 모든 백엔드 서버가 같은 채널을 사용해야 서로의 채팅을 받을 수 있습니다.
     channel: ${CHAT_REDIS_CHANNEL:emour:chat:events}
-
 # 원본 데이터가 바뀐 방의 대시보드 변경을 묶어서 반영하는 간격입니다.
 dashboard:
   change-refresh-delay-ms: ${DASHBOARD_CHANGE_REFRESH_DELAY_MS:1000}
