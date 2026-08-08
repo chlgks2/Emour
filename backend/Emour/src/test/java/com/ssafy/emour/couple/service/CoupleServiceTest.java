@@ -267,6 +267,87 @@ class CoupleServiceTest {
         verify(coupleMemberRepository, never()).save(any(CoupleMember.class));
     }
 
+    @Test
+    void regenerateInvitationReplacesValidWaitingCode() {
+        CoupleRoom waitingRoom = CoupleRoom.waiting(
+                "KEEP-CODE",
+                LocalDateTime.now().plusHours(1)
+        );
+        ReflectionTestUtils.setField(waitingRoom, "id", ROOM_ID);
+
+        givenLockedMember();
+        given(coupleRoomRepository.findRetainedInactiveRoomsByUserIdForUpdate(
+                any(Long.class),
+                any(Pageable.class)
+        )).willReturn(List.of());
+        given(coupleRoomRepository.findWaitingRoomsByUserIdForUpdate(
+                any(Long.class),
+                any(Pageable.class)
+        )).willReturn(List.of(waitingRoom));
+        given(invitationCodeGenerator.generate()).willReturn(INVITATION_CODE);
+        given(coupleRoomRepository.existsByRoomCode(INVITATION_CODE)).willReturn(false);
+
+        LocalDateTime before = LocalDateTime.now().plusHours(24).minusSeconds(1);
+        CoupleInvitationResponse response = coupleService.regenerateInvitation(USER_ID);
+        LocalDateTime after = LocalDateTime.now().plusHours(24).plusSeconds(1);
+
+        assertThat(response.roomId()).isEqualTo(ROOM_ID);
+        assertThat(response.invitationCode()).isEqualTo(INVITATION_CODE);
+        assertThat(response.expiresAt()).isBetween(before, after);
+    }
+
+    @Test
+    void regenerateInvitationReplacesValidInactiveReconnectCode() {
+        CoupleRoom inactiveRoom = CoupleRoom.waiting(
+                "KEEP-CODE",
+                LocalDateTime.now().plusHours(1)
+        );
+        inactiveRoom.activate();
+        inactiveRoom.deactivate();
+        ReflectionTestUtils.setField(inactiveRoom, "id", ROOM_ID);
+
+        givenLockedMember();
+        given(coupleRoomRepository.findRetainedInactiveRoomsByUserIdForUpdate(
+                any(Long.class),
+                any(Pageable.class)
+        )).willReturn(List.of(inactiveRoom));
+        given(invitationCodeGenerator.generate()).willReturn(INVITATION_CODE);
+        given(coupleRoomRepository.existsByRoomCode(INVITATION_CODE)).willReturn(false);
+
+        LocalDateTime before = LocalDateTime.now().plusHours(24).minusSeconds(1);
+        CoupleInvitationResponse response = coupleService.regenerateInvitation(USER_ID);
+        LocalDateTime after = LocalDateTime.now().plusHours(24).plusSeconds(1);
+
+        assertThat(response.roomId()).isEqualTo(ROOM_ID);
+        assertThat(response.invitationCode()).isEqualTo(INVITATION_CODE);
+        assertThat(response.expiresAt()).isBetween(before, after);
+        verify(coupleRoomRepository, never()).findWaitingRoomsByUserIdForUpdate(
+                any(Long.class),
+                any(Pageable.class)
+        );
+    }
+
+    @Test
+    void regenerateInvitationFailsWhenInvitationRoomDoesNotExist() {
+        givenLockedMember();
+        given(coupleRoomRepository.findRetainedInactiveRoomsByUserIdForUpdate(
+                any(Long.class),
+                any(Pageable.class)
+        )).willReturn(List.of());
+        given(coupleRoomRepository.findWaitingRoomsByUserIdForUpdate(
+                any(Long.class),
+                any(Pageable.class)
+        )).willReturn(List.of());
+
+        assertThatThrownBy(() -> coupleService.regenerateInvitation(USER_ID))
+                .isInstanceOf(CustomException.class)
+                .satisfies(exception -> assertThat(
+                        ((CustomException) exception).getErrorCode()
+                ).isEqualTo(ErrorCode.INVITATION_CODE_NOT_FOUND));
+
+        verify(invitationCodeGenerator, never()).generate();
+    }
+
     private void givenLockedMember() {
         Member member = Member.builder()
                 .email("couple@example.com")
