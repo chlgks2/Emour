@@ -55,6 +55,16 @@ public class CoupleController {
                 .body(ApiResponse.success("커플 초대 코드가 생성되었습니다.", response));
     }
 
+    @PostMapping("/invitation/regenerate")
+    public ResponseEntity<ApiResponse<CoupleInvitationResponse>> regenerateInvitation() {
+        CoupleInvitationResponse response = coupleService.regenerateInvitation(
+                SecurityUtil.getCurrentUserId()
+        );
+        return ResponseEntity.ok(
+                ApiResponse.success("커플 초대 코드가 재발급되었습니다.", response)
+        );
+    }
+
     @PostMapping("/connect")
     public ResponseEntity<ApiResponse<CoupleConnectResponse>> connect(
             @Valid @RequestBody CoupleConnectRequest request
