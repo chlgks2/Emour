@@ -30,6 +30,7 @@ import styles from "./MoodTimeline.module.css";
  * @param {Array}  partnerSlots 상대 기록
  * @param {object} window       알림 설정 { startTime, endTime, intervalHours }
  * @param {number|null} nowMinutes 오늘이면 현재 시각(분). 지난 날짜면 null
+ * @param {boolean} currentOnly 접힌 요약에서는 현재 진행 중인 슬롯만 표시
  * @param {(payload:{slot, minutesOfDay}) => void} onEditSlot
  *   현재 진행 중인 슬롯에서만 수정 또는 등록
  */
@@ -39,10 +40,16 @@ export default function MoodTimeline({
   window,
   nowMinutes = null,
   onEditSlot,
+  currentOnly = false,
+  canEdit = true,
 }) {
   const grid = buildDaySlotGrid({ mySlots, partnerSlots, window, nowMinutes });
+  const visibleGrid = currentOnly
+    ? grid.filter((row) => row.isEditable)
+    : grid;
 
-  if (grid.length === 0) {
+  if (visibleGrid.length === 0) {
+    if (currentOnly) return null;
     return <p className={`empty-note ${styles.emptyText}`}>표시할 시간대가 없어요.</p>;
   }
 
@@ -51,19 +58,25 @@ export default function MoodTimeline({
    * 서버도 같은 규칙이라 지난 시간대는 등록도 수정도 거절된다.
    * 버튼이 하나도 없으면 고장 난 것처럼 보여서 이유를 적어둔다.
    */
-  const hasEditableSlot = grid.some((row) => row.isEditable);
+  const hasEditableSlot = canEdit && visibleGrid.some((row) => row.isEditable);
 
   return (
-    <div className={styles.timeline}>
-      <div className={styles.head}>
-        <span className={styles.headMine}>나</span>
-        <span className={styles.headAxis} aria-hidden="true" />
-        <span className={styles.headPartner}>상대방</span>
-      </div>
+    <div
+      className={`${styles.timeline} ${currentOnly ? styles.timelineCompact : ""}`}
+    >
+      {!currentOnly && (
+        <div className={styles.head}>
+          <span className={styles.headMine}>나</span>
+          <span className={styles.headAxis} aria-hidden="true" />
+          <span className={styles.headPartner}>상대방</span>
+        </div>
+      )}
 
       {!hasEditableSlot && (
         <p className={`empty-note ${styles.emptyText}`}>
-          {nowMinutes === null
+          {!canEdit
+            ? "연결된 상대방이 없어 기록을 수정할 수 없어요."
+            : nowMinutes === null
             ? "지난 날짜는 볼 수만 있어요."
             : "지금은 기록할 수 있는 시간대가 아니에요."}
         </p>
@@ -71,7 +84,7 @@ export default function MoodTimeline({
 
       {/* 축(세로선)은 ol 의 가상 요소다. 줄마다 그으면 칸 사이에서 끊긴다. */}
       <ol className={styles.rows}>
-        {grid.map((row) => (
+        {visibleGrid.map((row) => (
           <li
             key={row.minutesOfDay}
             className={[
@@ -85,7 +98,7 @@ export default function MoodTimeline({
                 slot={row.mine}
                 emptyLabel={row.isFuture ? "" : "기록 없음"}
                 onEdit={
-                  row.isEditable
+                  canEdit && row.isEditable
                     ? () =>
                         onEditSlot?.({
                           slot: row.mine,

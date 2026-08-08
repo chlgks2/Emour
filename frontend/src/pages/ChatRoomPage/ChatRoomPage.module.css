@@ -16,7 +16,17 @@
 }
 
 .focusedMessage {
-  border-radius: var(--radius-md);
+  position: relative;
+  isolation: isolate;
+  border-radius: 0;
+}
+
+.focusedMessage::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 -8px;
+  z-index: -1;
+  pointer-events: none;
   animation: bookmarked-message-focus 2.1s ease-out;
 }
 

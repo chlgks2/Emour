@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+﻿import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   ArrowDown,
@@ -1373,8 +1373,9 @@ export default function ChatRoomPage() {
             partnerLastReadMessageId !== null &&
             message.messageId <= partnerLastReadMessageId;
           return (
-            <div
-              key={message.messageId ?? message.clientMessageId}
+            <Fragment key={message.messageId ?? message.clientMessageId}>
+              {showDateDivider && <DateDivider dateTime={message.sentAt} />}
+              <div
               ref={(element) => {
                 const messageId = Number(message.messageId);
                 if (!Number.isFinite(messageId)) return;
@@ -1419,20 +1420,20 @@ export default function ChatRoomPage() {
               aria-busy={
                 Number(message.messageId) === contextLoadingMessageId
               }
-            >
-              {showDateDivider && <DateDivider dateTime={message.sentAt} />}
-              <MessageBubble
-                message={message}
-                myUserId={myUserId}
-                isBookmarked={bookmarkedMessageIds.has(Number(message.messageId))}
-                reactions={reactions[message.messageId] ?? []}
-                isReadByPartner={isReadByPartner}
-                onLongPressMessage={handleLongPressMessage}
-                onDoubleTapMessage={handleDoubleTapMessage}
-                onOpenImages={openImageViewer}
-                onDeleteImage={requestImageDelete}
-              />
-            </div>
+              >
+                <MessageBubble
+                  message={message}
+                  myUserId={myUserId}
+                  isBookmarked={bookmarkedMessageIds.has(Number(message.messageId))}
+                  reactions={reactions[message.messageId] ?? []}
+                  isReadByPartner={isReadByPartner}
+                  onLongPressMessage={handleLongPressMessage}
+                  onDoubleTapMessage={handleDoubleTapMessage}
+                  onOpenImages={openImageViewer}
+                  onDeleteImage={requestImageDelete}
+                />
+              </div>
+            </Fragment>
           );
         })}
 

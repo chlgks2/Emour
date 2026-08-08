@@ -66,13 +66,15 @@
  * 구분선 대신 왼쪽 괘선과 여백으로 항목을 나눈다.
  */
 .item {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 10px;
   margin-bottom: 18px;
   padding-left: 12px;
   border-left: 2px solid var(--color-primary-faint);
+}
+
+.itemMain {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .itemBody {
@@ -89,17 +91,13 @@
 
 .itemMeta {
   margin-top: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   color: var(--color-text-tertiary);
   font-size: 11px;
   font-variant-numeric: tabular-nums;
-}
-
-.itemActions {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 4px;
-  flex-shrink: 0;
 }
 
 .imageGrid {
@@ -118,8 +116,7 @@
   background: var(--color-sub-bg);
 }
 
-.moveBtn,
-.removeBtn {
+.moveBtn {
   flex-shrink: 0;
   min-height: 32px;
   font-size: 12px;
@@ -140,8 +137,15 @@
 }
 
 .removeBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 50%;
   color: var(--color-text-sub);
-  background: var(--color-sub-bg);
   transition: background-color var(--duration-fast) var(--ease-out),
     color var(--duration-fast) var(--ease-out);
 }

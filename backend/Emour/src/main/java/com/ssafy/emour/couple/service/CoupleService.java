@@ -104,6 +104,39 @@ public class CoupleService {
     }
 
     @Transactional
+    public CoupleInvitationResponse regenerateInvitation(Long userId) {
+        memberRepository.findByIdForUpdate(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        LocalDateTime expiresAt = LocalDateTime.now()
+                .plusHours(invitationValidityHours);
+
+        List<CoupleRoom> inactiveRooms =
+                coupleRoomRepository.findRetainedInactiveRoomsByUserIdForUpdate(
+                        userId,
+                        PageRequest.of(0, 1)
+                );
+        if (!inactiveRooms.isEmpty()) {
+            CoupleRoom inactiveRoom = inactiveRooms.get(0);
+            inactiveRoom.refreshReconnectInvitation(generateUniqueCode(), expiresAt);
+            return CoupleInvitationResponse.from(inactiveRoom);
+        }
+
+        List<CoupleRoom> waitingRooms =
+                coupleRoomRepository.findWaitingRoomsByUserIdForUpdate(
+                        userId,
+                        PageRequest.of(0, 1)
+                );
+        if (waitingRooms.isEmpty()) {
+            throw new CustomException(ErrorCode.INVITATION_CODE_NOT_FOUND);
+        }
+
+        CoupleRoom waitingRoom = waitingRooms.get(0);
+        waitingRoom.refreshInvitation(generateUniqueCode(), expiresAt);
+        return CoupleInvitationResponse.from(waitingRoom);
+    }
+
+    @Transactional
     public CoupleConnectResponse connect(Long userId, CoupleConnectRequest request) {
         memberRepository.findByIdForUpdate(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));

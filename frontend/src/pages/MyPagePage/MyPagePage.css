@@ -164,6 +164,7 @@
   height: 100%;
   display: block;
   object-fit: cover;
+  background: var(--color-white);
 }
 
 .mypage-profile-information {
@@ -345,6 +346,7 @@
   height: 100%;
   display: block;
   object-fit: cover;
+  background: var(--color-white);
 }
 
 /*
