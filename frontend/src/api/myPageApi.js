@@ -7,6 +7,7 @@ import {
   disconnectCouple,
   getCoupleStartDate,
   getMyCoupleRoom,
+  regenerateCoupleInvitation,
 } from './coupleApi.js'
 
 import {
@@ -341,7 +342,7 @@ export async function updatePartnerNickname({
 export async function regenerateRoomCode() {
   const [invitation, profile] =
     await Promise.all([
-      createCoupleInvitation(),
+      regenerateCoupleInvitation(),
       getMyProfile(),
     ])
 

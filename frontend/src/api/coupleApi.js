@@ -2,6 +2,7 @@ import { apiRequest } from './httpClient.js'
 
 const COUPLE_ENDPOINTS = {
   invitation: '/couples/invitation',
+  regenerateInvitation: '/couples/invitation/regenerate',
   connect: '/couples/connect',
   reconnect: '/couples/reconnect',
   roomId: '/couples/room-id',
@@ -15,6 +16,17 @@ const COUPLE_NOT_FOUND_STATUS = 404
 export async function createCoupleInvitation() {
   const response = await apiRequest(
     COUPLE_ENDPOINTS.invitation,
+    {
+      method: 'POST',
+    },
+  )
+
+  return response?.data ?? null
+}
+
+export async function regenerateCoupleInvitation() {
+  const response = await apiRequest(
+    COUPLE_ENDPOINTS.regenerateInvitation,
     {
       method: 'POST',
     },
