@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Map;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -38,6 +39,7 @@ public class ChatMessageService {
     private static final int MAX_PAGE_SIZE = 100;
     private static final int DEFAULT_CONTEXT_SIZE = 30;
     private static final int MAX_CONTEXT_SIZE = 50;
+    private static final int SEARCH_SCAN_BATCH_SIZE = 200;
     private static final int MAX_IMAGE_COUNT = 10;
 
     private final ChatMessageRepository chatMessageRepository;
@@ -205,24 +207,66 @@ public class ChatMessageService {
         }
 
         int size = normalizePageSize(requestedSize);
-        PageRequest page = PageRequest.of(0, size + 1);
-
-        List<ChatMessage> found = beforeMessageId == null
-                ? chatMessageRepository
-                .findByRoomIdAndContentContainingIgnoreCaseOrderByMessageIdDesc(
-                        roomId,
-                        normalizedKeyword,
-                        page
-                )
-                : chatMessageRepository
-                .findByRoomIdAndContentContainingIgnoreCaseAndMessageIdLessThanOrderByMessageIdDesc(
-                        roomId,
-                        normalizedKeyword,
-                        beforeMessageId,
-                        page
-                );
+        List<ChatMessage> found = findEncryptedSearchMatches(
+                roomId,
+                beforeMessageId,
+                normalizedKeyword,
+                size + 1
+        );
 
         return toHistoryResponse(found, size);
+    }
+
+    /**
+     * DB에는 암호문만 있으므로 LIKE 검색을 할 수 없습니다.
+     * 메시지를 최신순으로 작은 묶음씩 복호화해 실제 검색어 포함 여부를 확인합니다.
+     */
+    private List<ChatMessage> findEncryptedSearchMatches(
+            Long roomId,
+            Long beforeMessageId,
+            String keyword,
+            int matchLimit
+    ) {
+        String loweredKeyword = keyword.toLowerCase(Locale.ROOT);
+        Long scanCursor = beforeMessageId;
+        List<ChatMessage> matches = new ArrayList<>(matchLimit);
+        PageRequest scanPage = PageRequest.of(0, SEARCH_SCAN_BATCH_SIZE);
+
+        while (matches.size() < matchLimit) {
+            List<ChatMessage> batch = scanCursor == null
+                    ? chatMessageRepository.findByRoomIdOrderByMessageIdDesc(
+                            roomId,
+                            scanPage
+                    )
+                    : chatMessageRepository
+                    .findByRoomIdAndMessageIdLessThanOrderByMessageIdDesc(
+                            roomId,
+                            scanCursor,
+                            scanPage
+                    );
+
+            if (batch.isEmpty()) {
+                break;
+            }
+
+            for (ChatMessage message : batch) {
+                String content = message.getContent();
+                if (content != null
+                        && content.toLowerCase(Locale.ROOT).contains(loweredKeyword)) {
+                    matches.add(message);
+                    if (matches.size() == matchLimit) {
+                        break;
+                    }
+                }
+            }
+
+            if (batch.size() < SEARCH_SCAN_BATCH_SIZE) {
+                break;
+            }
+            scanCursor = batch.get(batch.size() - 1).getMessageId();
+        }
+
+        return matches;
     }
 
     @Transactional(readOnly = true)
