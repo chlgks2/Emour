@@ -44,6 +44,7 @@ export default function EmotionCalendarStrip({
   moodWindow,
   detailNowMinutes = null,
   onEditSlot,
+  canEditMood = true,
 }) {
   const selectedDay = weekDays.find((d) => d.moodDate === selectedMoodDate) ?? null;
 
@@ -151,6 +152,7 @@ export default function EmotionCalendarStrip({
             window={moodWindow}
             nowMinutes={detailNowMinutes}
             onEditSlot={onEditSlot}
+            canEdit={canEditMood}
           />
         </div>
       )}

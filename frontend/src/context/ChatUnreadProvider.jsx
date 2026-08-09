@@ -12,18 +12,24 @@ import {
   normalizeChatMessage,
 } from '../api/chatApi.js'
 import { connectChatSocket } from '../api/chatSocket.js'
-import { resolveRoomId } from '../api/coupleRoomContext.js'
+import { getCoupleStatus } from '../api/coupleApi.js'
+import {
+  COUPLE_ROOM_CHANGED_EVENT,
+  resolveRoomId,
+} from '../api/coupleRoomContext.js'
 import { useAuth } from '../hooks/useAuth.js'
 import { ChatUnreadContext } from '../hooks/useChatUnread.js'
 
 const REFRESH_INTERVAL_MS = 30000
 const REALTIME_REFRESH_DELAY_MS = 1200
+const ROOM_RESOLVE_RETRY_MS = 5000
 
 export function ChatUnreadProvider({ children }) {
   const { isAuthenticated, user } = useAuth()
   const location = useLocation()
   const [unreadCount, setUnreadCount] = useState(0)
   const [roomId, setRoomId] = useState(null)
+  const [roomStatus, setRoomStatus] = useState(null)
   const pathnameRef = useRef(location.pathname)
   const realtimeRefreshTimerRef = useRef(null)
 
@@ -33,25 +39,66 @@ export function ChatUnreadProvider({ children }) {
 
   useEffect(() => {
     let cancelled = false
+    let retryTimerId = null
 
     if (!isAuthenticated || !user?.userId) {
       return undefined
     }
 
-    resolveRoomId()
-      .then((resolvedRoomId) => {
-        if (!cancelled) setRoomId(resolvedRoomId)
-      })
-      .catch(() => {
-        if (!cancelled) setRoomId(null)
-      })
+    const loadRoomId = async () => {
+      window.clearTimeout(retryTimerId)
+
+      try {
+        const resolvedRoomId = await resolveRoomId()
+        if (cancelled) return
+
+        setRoomId(resolvedRoomId)
+
+        const coupleStatus = resolvedRoomId
+          ? await getCoupleStatus().catch(() => null)
+          : null
+        if (cancelled) return
+
+        const resolvedStatus = coupleStatus?.status ?? null
+        setRoomStatus(resolvedStatus)
+
+        // 방 생성 직후 WAITING 상태에서는 WebSocket 구독이 서버에서 거부된다.
+        // 상대가 참여해 ACTIVE가 될 때까지 확인한 뒤 자동으로 구독을 시작한다.
+        if (!resolvedRoomId || resolvedStatus !== 'ACTIVE') {
+          retryTimerId = window.setTimeout(
+            loadRoomId,
+            ROOM_RESOLVE_RETRY_MS,
+          )
+        }
+      } catch {
+        if (cancelled) return
+
+        setRoomId(null)
+        setRoomStatus(null)
+        retryTimerId = window.setTimeout(
+          loadRoomId,
+          ROOM_RESOLVE_RETRY_MS,
+        )
+      }
+    }
+
+    loadRoomId()
+    window.addEventListener(
+      COUPLE_ROOM_CHANGED_EVENT,
+      loadRoomId,
+    )
 
     return () => {
       cancelled = true
+      window.clearTimeout(retryTimerId)
+      window.removeEventListener(
+        COUPLE_ROOM_CHANGED_EVENT,
+        loadRoomId,
+      )
     }
   }, [isAuthenticated, user?.userId])
 
-  const refreshUnreadCount = useCallback(async () => {
+  const refreshUnreadCount = useCallback(async (preserveHigher = false) => {
     if (!roomId || !isAuthenticated) {
       setUnreadCount(0)
       return
@@ -60,8 +107,14 @@ export function ChatUnreadProvider({ children }) {
     try {
       const response = await getUnreadChatCount(roomId)
       const unreadData = response?.data ?? response
-      setUnreadCount(
-        Math.max(0, Number(unreadData?.unreadCount) || 0),
+      const serverUnreadCount = Math.max(
+        0,
+        Number(unreadData?.unreadCount) || 0,
+      )
+      setUnreadCount((previous) =>
+        preserveHigher
+          ? Math.max(previous, serverUnreadCount)
+          : serverUnreadCount,
       )
     } catch {
       // 일시적인 조회 실패에는 기존 배지를 유지한다.
@@ -80,7 +133,13 @@ export function ChatUnreadProvider({ children }) {
   }, [location.pathname, refreshUnreadCount, roomId])
 
   useEffect(() => {
-    if (!roomId || !isAuthenticated) return undefined
+    if (
+      !roomId ||
+      roomStatus !== 'ACTIVE' ||
+      !isAuthenticated
+    ) {
+      return undefined
+    }
 
     const socket = connectChatSocket({
       roomId,
@@ -108,7 +167,7 @@ export function ChatUnreadProvider({ children }) {
         // 아주 짧게 기다린 뒤 미읽음 수를 조회한다.
         window.clearTimeout(realtimeRefreshTimerRef.current)
         realtimeRefreshTimerRef.current = window.setTimeout(
-          refreshUnreadCount,
+          () => refreshUnreadCount(true),
           REALTIME_REFRESH_DELAY_MS,
         )
       },
@@ -133,13 +192,19 @@ export function ChatUnreadProvider({ children }) {
     }
     document.addEventListener('visibilitychange', handleVisibilityChange)
 
-      return () => {
-        window.clearTimeout(realtimeRefreshTimerRef.current)
-        window.clearInterval(intervalId)
+    return () => {
+      window.clearTimeout(realtimeRefreshTimerRef.current)
+      window.clearInterval(intervalId)
       document.removeEventListener('visibilitychange', handleVisibilityChange)
       socket?.disconnect()
     }
-  }, [isAuthenticated, refreshUnreadCount, roomId, user?.userId])
+  }, [
+    isAuthenticated,
+    refreshUnreadCount,
+    roomId,
+    roomStatus,
+    user?.userId,
+  ])
 
   const visibleUnreadCount =
     isAuthenticated && location.pathname !== '/chat'
