@@ -23,6 +23,8 @@ import {
 let cachedEntry = null
 // 같은 순간에 여러 화면이 물어봐도 요청은 한 번만 나가게 묶는다.
 let inflightRequest = null
+export const COUPLE_ROOM_CHANGED_EVENT =
+  'emour:couple-room-changed'
 
 function currentUserId() {
   return getCurrentUser()?.userId ?? null
@@ -32,6 +34,14 @@ function currentUserId() {
 export function invalidateCoupleRoom() {
   cachedEntry = null
   inflightRequest = null
+
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(
+      new CustomEvent(
+        COUPLE_ROOM_CHANGED_EVENT,
+      ),
+    )
+  }
 }
 
 async function fetchCoupleRoom(userId) {

@@ -41,6 +41,7 @@ export default function MoodTimeline({
   nowMinutes = null,
   onEditSlot,
   currentOnly = false,
+  canEdit = true,
 }) {
   const grid = buildDaySlotGrid({ mySlots, partnerSlots, window, nowMinutes });
   const visibleGrid = currentOnly
@@ -57,7 +58,7 @@ export default function MoodTimeline({
    * 서버도 같은 규칙이라 지난 시간대는 등록도 수정도 거절된다.
    * 버튼이 하나도 없으면 고장 난 것처럼 보여서 이유를 적어둔다.
    */
-  const hasEditableSlot = visibleGrid.some((row) => row.isEditable);
+  const hasEditableSlot = canEdit && visibleGrid.some((row) => row.isEditable);
 
   return (
     <div
@@ -73,7 +74,9 @@ export default function MoodTimeline({
 
       {!hasEditableSlot && (
         <p className={`empty-note ${styles.emptyText}`}>
-          {nowMinutes === null
+          {!canEdit
+            ? "연결된 상대방이 없어 기록을 수정할 수 없어요."
+            : nowMinutes === null
             ? "지난 날짜는 볼 수만 있어요."
             : "지금은 기록할 수 있는 시간대가 아니에요."}
         </p>
@@ -95,7 +98,7 @@ export default function MoodTimeline({
                 slot={row.mine}
                 emptyLabel={row.isFuture ? "" : "기록 없음"}
                 onEdit={
-                  row.isEditable
+                  canEdit && row.isEditable
                     ? () =>
                         onEditSlot?.({
                           slot: row.mine,
