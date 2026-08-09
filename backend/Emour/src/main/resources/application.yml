@@ -55,7 +55,7 @@ server:
 app:
   websocket:
     # WebSocket/SockJS 연결을 허용할 프런트 주소입니다. 운영에서는 실제 도메인만 남깁니다.
-    allowed-origin-patterns: ${WEBSOCKET_ALLOWED_ORIGIN_PATTERNS:http://localhost:*,https://localhost:*,https://i15b208.p.ssafy.io,http://i15b208.p.ssafy.io:8080}
+    allowed-origin-patterns: ${WEBSOCKET_ALLOWED_ORIGIN_PATTERNS:http://localhost:*,https://localhost:*,https://i15b208.p.ssafy.io,http://i15b208.p.ssafy.io:8080,https://i15b208.p.ssafy.io:8080}
   upload:
     dir: ${APP_UPLOAD_DIR:./uploads}
   # 이메일 발송 방식: console(기본, 콘솔 출력) | smtp(실제 발송)
