@@ -75,19 +75,6 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
             Pageable pageable
     );
 
-    List<ChatMessage> findByRoomIdAndContentContainingIgnoreCaseOrderByMessageIdDesc(
-            Long roomId,
-            String keyword,
-            Pageable pageable
-    );
-
-    List<ChatMessage> findByRoomIdAndContentContainingIgnoreCaseAndMessageIdLessThanOrderByMessageIdDesc(
-            Long roomId,
-            String keyword,
-            Long messageId,
-            Pageable pageable
-    );
-
     // 채팅을 한 번도 읽지 않은 경우 상대방이 보낸 전체 메시지를 셉니다.
     long countByRoomIdAndSenderIdNot(
             Long roomId,

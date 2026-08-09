@@ -2,6 +2,7 @@ package com.ssafy.emour.global.config;
 
 import com.ssafy.emour.chat.security.ChatWebSocketAuthInterceptor;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.ChannelRegistration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
@@ -17,11 +18,15 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     private final ChatWebSocketAuthInterceptor chatWebSocketAuthInterceptor;
 
+    @Value("${app.websocket.allowed-origin-patterns}")
+    private String[] allowedOriginPatterns;
+
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         // 브라우저는 이 주소를 통해 채팅 서버와 처음 연결합니다.
         registry.addEndpoint("/ws")
-                .setAllowedOriginPatterns("*")
+                // 임의의 사이트가 사용자의 브라우저로 연결하지 못하도록 허용 출처를 제한합니다.
+                .setAllowedOriginPatterns(allowedOriginPatterns)
                 .withSockJS();
     }
 

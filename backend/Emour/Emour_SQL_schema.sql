@@ -246,8 +246,8 @@ CREATE TABLE `chat_message`
     -- 클라이언트에서 생성한 중복 전송 방지용 UUID
     `client_message_id` CHAR(36)               NOT NULL,
     `message_type`      ENUM ('TEXT', 'IMAGE') NOT NULL DEFAULT 'TEXT',
-    -- 텍스트 내용 또는 이미지 설명
-    `content`           VARCHAR(2000)          NULL,
+    -- AES-256-GCM으로 암호화된 텍스트. 평문보다 길어지므로 TEXT를 사용합니다.
+    `content`           TEXT                   NULL,
     `sent_at`           DATETIME(6)            NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
 
     UNIQUE (`sender_id`, `client_message_id`),

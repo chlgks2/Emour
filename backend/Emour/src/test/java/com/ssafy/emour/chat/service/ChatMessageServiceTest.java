@@ -237,6 +237,35 @@ class ChatMessageServiceTest {
         assertThat(response.hasNewer()).isTrue();
     }
 
+    // DB에는 암호문이 저장되므로 검색은 조회한 메시지의 복호화된 내용을 비교합니다.
+    @Test
+    void searchesDecryptedMessageContent() {
+        allowActiveMember(10L, 1L);
+        when(chatMessageRepository.findByRoomIdOrderByMessageIdDesc(
+                1L,
+                PageRequest.of(0, 200)
+        )).thenReturn(List.of(
+                message(103L, "치킨 말고 피자"),
+                message(102L, "오늘은 파스타"),
+                message(101L, "치킨 먹을까?")
+        ));
+        when(chatAnalysisRepository.findByMessageMessageIdIn(any()))
+                .thenReturn(List.of());
+
+        var response = chatMessageService.searchMessages(
+                1L,
+                10L,
+                "치킨",
+                null,
+                20
+        );
+
+        assertThat(response.messages())
+                .extracting(ChatMessageResponse::messageId)
+                .containsExactly(101L, 103L);
+        assertThat(response.hasNext()).isFalse();
+    }
+
     private void allowActiveMember(Long userId, Long roomId) {
         when(coupleMemberRepository.existsByIdAndStatus(
                 new CoupleMemberId(userId, roomId),
