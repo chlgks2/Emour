@@ -28,6 +28,16 @@ class PromptTemplate:
 # 공통 헬퍼
 # ---------------------------------------------------------------------------
 
+# 실험 결과에 따라 v5를 프로덕션 기본값으로 채택 (docs/suggest_experiment_report.md 7절)
+DEFAULT_PROMPT_VERSION = "v5"
+
+
+def get_prompt(version: str | None) -> PromptTemplate:
+    key = version or DEFAULT_PROMPT_VERSION
+    if key not in PROMPT_REGISTRY:
+        raise KeyError(f"unknown prompt version: {key} (available: {list(PROMPT_REGISTRY)})")
+    return PROMPT_REGISTRY[key]
+
 def _format_history(history: List[ChatTurn], my_speaker_id: str) -> str:
     # 실제 speaker_id 를 요청자 관점의 '나'/'상대'로 변환해 프롬프트에 넣는다.
     if not history:
@@ -149,19 +159,89 @@ logical과 gentle이 비슷한 문장이 되는 것은 가장 흔한 실패입�
 
 PROMPT_V3 = PromptTemplate(version="v3", system=_V3_SYSTEM, build_user=_v1_user)
 
+# v4 추가분 — app/prompts_suggest.py 하단 (PROMPT_REGISTRY 선언부 위)에 삽입
+#
+# 왜 v3가 아니라 v1 위에 새로 얹었는가
+#   v3는 "logical=반드시 질문"을 강제해 style_distinct(구분도)는 올렸지만,
+#   그 대가로 화행(질문/평문/제안)을 스타일이 결정해버렸다.
+#   결과: 초안이 평문이어도 logical·empathetic 두 개가 질문으로 바뀌어
+#   "왜 다 물어보기만 하냐"는 작위성 피드백으로 이어짐.
+#   v4는 이 강제를 걷어내고, 화행은 초안에서 상속하되 구분은
+#   질문 유무가 아니라 "톤·어휘·문장 구조"로 만든다.
+ 
+_V4_SYSTEM = _V1_SYSTEM + """
+ 
+[화행 유지 규칙 - 최우선]
+초안이 원래 담고 있던 화행(질문 / 평문·진술 / 제안 / 사과 / 거절)을
+세 스타일 모두 유지하세요. 스타일 때문에 화행 자체를 바꾸지 마세요.
+ 
+- 초안이 질문이면 → 세 스타일 모두 질문 형태를 유지해도 됩니다.
+- 초안이 평문·진술이면 → 세 스타일 모두 원칙적으로 평문으로 답합니다.
+  logical에 한해서만, 문맥상 자연스럽게 궁금한 지점이 있을 때 질문이나
+  "다음 행동 제안"을 덧붙일 수 있습니다. 자연스러운 지점이 없다면
+  억지로 만들지 말고 평문 그대로 두세요.
+- empathetic과 gentle은 초안이 평문일 때 질문을 추가하지 않습니다.
+  감정 반응이나 어미 조정만으로 스타일을 구분합니다.
+ 
+[스타일은 질문 유무가 아니라 톤으로 구분합니다]
+세 스타일이 전부 평문이어도 아래 기준으로 서로 달라야 합니다.
+ 
+- logical: 군더더기 없이 담백하고 짧은 문장. 감정 표현을 절제합니다.
+           예: "그럼 이따 전화할게" / "알겠어, 다음에 다시 얘기하자"
+- empathetic: 감탄사·의성어로 감정이 먼저 드러남. (헐, 아이고, ㅠㅠ, 오 등)
+           예: "헐 진짜? 완전 놀랐겠다" / "아이고 고생했겠네ㅠㅠ"
+- gentle: 초안의 문장 구조를 그대로 두고 어미만 부드럽게.
+           예: "알겠어" → "응 알겠어~" (질문도 정보도 추가하지 않음)
+ 
+[출력 전 자가 점검 - 구체적 기준으로만 판단]
+"어색한가?" 같은 모호한 질문 대신, 아래 항목을 순서대로 직접 세어 확인하세요.
+1. 초안이 평문인데 logical·empathetic 중 물음표(?)가 있는 문구가 있는가?
+   → empathetic에 있다면 삭제. logical에 있다면 "자연스러운 지점"인지
+     재확인하고, 아니면 삭제.
+2. 세 문구가 전부 물음표 없이 끝나는가? (초안이 평문인 경우)
+   → 그렇다면 통과. 셋 다 질문이 없어도 정상입니다. 억지로 질문을
+     추가하지 마세요.
+3. logical과 gentle의 문장 뼈대(주어-서술어 구조)가 완전히 같은가?
+   → 같다면 logical의 어휘를 더 담백하게, gentle의 감탄사를 더 살려
+     차이를 냅니다. 질문을 추가해서 구분하지 마세요.
+"""
+ 
+PROMPT_V4 = PromptTemplate(version="v4", system=_V4_SYSTEM, build_user=_v1_user)
+
+
+#   v4까지도 "아, 빵 샀구나.", "김치찌개 먹었어." 처럼 문장 끝에 마침표가
+#   새는 사례가 반복 관측됨(35건 실험 결과 CSV 확인).
+#   기존 v1 규칙 3 "문어체 금지"는 추상적이라 마침표를 구체적으로 못 막음.
+#   → "물음표 몇 개인가" 처럼 셀 수 있는 규칙으로 바꾼 것과 같은 원리로,
+#      "마침표를 쓰지 마라"는 구체적 지시로 교체.
+ 
+_V5_SYSTEM = _V4_SYSTEM + """
+ 
+[문장부호 - 카톡체 규칙]
+- 문장 끝에 마침표(.)를 쓰지 마세요. 실제 카톡에서는 문장을 마침표로
+  끝내지 않습니다.
+    ❌ "알겠어."  "김치찌개 먹었어."  "그랬구나."
+    ✅ "알겠어"   "김치찌개 먹었어"   "그랬구나"
+- 물음표(?), 느낌표(!), 물결표(~), ㅠㅠ/ㅎㅎ 같은 표현은 그대로 써도
+  됩니다. 문장을 마침표 없이 그냥 끝내도 어색하지 않습니다.
+- 한 문구 안에 문장이 2개 이상 이어질 때, 중간 문장 끝에도 마침표
+  대신 쉼표나 띄어쓰기로 자연스럽게 이으세요.
+    ❌ "회의가 길어졌어. 미안해."
+    ✅ "회의가 길어졌어, 미안해" / "회의가 길어졌어 미안해"
+ 
+[출력 전 자가 점검에 추가]
+4. 각 문구가 마침표(.)로 끝나는가?
+   → 끝난다면 마침표를 삭제하세요. 예외 없이 전부 삭제합니다.
+"""
+ 
+PROMPT_V5 = PromptTemplate(version="v5", system=_V5_SYSTEM, build_user=_v1_user)
+
 
 PROMPT_REGISTRY: Dict[str, PromptTemplate] = {
     "v1": PROMPT_V1,
     "v2": PROMPT_V2,
     "v3": PROMPT_V3,
+    "v4": PROMPT_V4,
+    "v5": PROMPT_V5,
 }
 
-# 실험 결과에 따라 v3를 프로덕션 기본값으로 채택 (docs/suggest_experiment_report.md 7절)
-DEFAULT_PROMPT_VERSION = "v3"
-
-
-def get_prompt(version: str | None) -> PromptTemplate:
-    key = version or DEFAULT_PROMPT_VERSION
-    if key not in PROMPT_REGISTRY:
-        raise KeyError(f"unknown prompt version: {key} (available: {list(PROMPT_REGISTRY)})")
-    return PROMPT_REGISTRY[key]
