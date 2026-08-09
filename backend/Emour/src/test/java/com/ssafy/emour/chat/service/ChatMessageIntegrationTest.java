@@ -301,7 +301,7 @@ class ChatMessageIntegrationTest {
     // 같은 채팅방에서 검색어가 포함된 메시지만 찾습니다.
     @Test
     void searchesMessages() {
-        chatMessageService.sendMessage(
+        ChatMessageResponse encryptedMessage = chatMessageService.sendMessage(
                 1L,
                 10L,
                 textRequest(
@@ -329,6 +329,15 @@ class ChatMessageIntegrationTest {
         assertThat(result.messages()).hasSize(1);
         assertThat(result.messages().get(0).content())
                 .isEqualTo("오늘 저녁에 치킨 먹을까?");
+
+        entityManager.flush();
+        String storedContent = jdbcTemplate.queryForObject(
+                "SELECT content FROM chat_message WHERE message_id = ?",
+                String.class,
+                encryptedMessage.messageId()
+        );
+        assertThat(storedContent).startsWith("enc:v1:");
+        assertThat(storedContent).doesNotContain("치킨");
     }
 
     // 메시지 북마크의 저장, 조회, 취소 과정을 확인합니다.

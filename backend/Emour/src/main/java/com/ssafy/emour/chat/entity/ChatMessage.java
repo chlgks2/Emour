@@ -1,7 +1,9 @@
 package com.ssafy.emour.chat.entity;
 
+import com.ssafy.emour.chat.crypto.ChatContentAttributeConverter;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -58,7 +60,8 @@ public class ChatMessage {
     @Column(name = "message_type", nullable = false, length = 10)
     private MessageType messageType;
 
-    @Column(name = "content", length = 2000)
+    @Convert(converter = ChatContentAttributeConverter.class)
+    @Column(name = "content", columnDefinition = "TEXT")
     private String content;
 
     @Column(name = "sent_at", nullable = false)
