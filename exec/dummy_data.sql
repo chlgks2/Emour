@@ -1,67 +1,32 @@
--- test1@ssafy.com / test2@ssafy.com 3년치 현실형 더미데이터
+-- ============================================================================
+-- test1@ssafy.com / test2@ssafy.com 대시보드 + 채팅 시연용 더미데이터 (최종본)
 -- MySQL 8 기준
--- 비밀번호: password123!
---
--- 포함 데이터
--- 1. 매일 2~12건으로 양이 달라지는 자연스러운 대화
--- 2. 채팅 이미지, 감정 분석, 공감, 북마크, 읽음 상태
--- 3. 아침/저녁 기분, 주간 한줄 일기, 격주 앨범 사진
--- 4. 기념일, 생일, 월별 데이트, 여행, 병원, 공연 등의 일정
--- 5. 기존 대시보드 스냅샷 제거(다음 조회 때 원본 데이터로 재집계)
---
--- 같은 파일을 여러 번 실행해도 채팅과 부가 데이터가 중복되지 않도록 작성했습니다.
+-- ============================================================================
 
--- 기존 emour 스키마와 같은 collation으로 임시 테이블의 문자열 컬럼을 생성합니다.
--- MySQL 8 기본값인 utf8mb4_0900_ai_ci가 섞이면 client_message_id JOIN이 실패합니다.
 SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE emour;
 
-SET @old_cte_max_recursion_depth := @@SESSION.cte_max_recursion_depth;
-SET SESSION cte_max_recursion_depth = 5000;
-
--- ==========================================================================
--- 1. 테스트 회원과 커플방 준비
--- ==========================================================================
-
+-- ---------------------------------------------------------------------------
+-- 0. 계정 / 방 준비
+-- ---------------------------------------------------------------------------
 INSERT INTO app_user (
-    email,
-    password_hash,
-    nickname,
-    birth,
-    profile_image_url,
-    status_message,
-    status,
-    created_at,
-    updated_at,
-    is_email_verified,
-    deleted_at
+    email, password_hash, nickname, birth, profile_image_url,
+    status_message, status, created_at, updated_at, is_email_verified, deleted_at
 )
 VALUES
     (
         'test1@ssafy.com',
-        '$2a$10$QPnJeVv2CJwbn8gzDPUGIuEJ8elPb.wdMZ0cYJZOZ3v60J54f5SbS',
-        '하나',
-        '1999-01-15',
-        'https://placehold.co/300x300/png?text=HANA',
-        '오늘도 같이 웃기',
-        'ACTIVE',
-        DATE_SUB(NOW(), INTERVAL 3 YEAR),
-        NOW(),
-        TRUE,
-        NULL
+        '$2a$10$fRMPsbDHwJj56Y2BixuQRuoH1Bqp/kkXsimtvqunnup5yBc9zcPZa',
+        '하나', '1999-01-15',
+        'https://placehold.co/300x300/png?text=Test+1',
+        '오늘도 행복한 하루', 'ACTIVE', NOW(), NOW(), TRUE, NULL
     ),
     (
         'test2@ssafy.com',
-        '$2a$10$QPnJeVv2CJwbn8gzDPUGIuEJ8elPb.wdMZ0cYJZOZ3v60J54f5SbS',
-        '두리',
-        '2000-05-20',
-        'https://placehold.co/300x300/png?text=DURI',
-        '천천히 오래오래',
-        'ACTIVE',
-        DATE_SUB(NOW(), INTERVAL 3 YEAR),
-        NOW(),
-        TRUE,
-        NULL
+        '$2a$10$fRMPsbDHwJj56Y2BixuQRuoH1Bqp/kkXsimtvqunnup5yBc9zcPZa',
+        '두리', '2000-05-20',
+        'https://placehold.co/300x300/png?text=Test+2',
+        '함께라서 즐거워', 'ACTIVE', NOW(), NOW(), TRUE, NULL
     )
 ON DUPLICATE KEY UPDATE
     password_hash = VALUES(password_hash),
@@ -71,15 +36,11 @@ ON DUPLICATE KEY UPDATE
     deleted_at = NULL,
     updated_at = NOW();
 
-SET @test1_id := (
-    SELECT user_id FROM app_user WHERE email = 'test1@ssafy.com' LIMIT 1
-);
-SET @test2_id := (
-    SELECT user_id FROM app_user WHERE email = 'test2@ssafy.com' LIMIT 1
-);
-SET @dummy_start_date := DATE_SUB(CURDATE(), INTERVAL 3 YEAR);
+SET @test1_id := (SELECT user_id FROM app_user WHERE email = 'test1@ssafy.com' LIMIT 1);
+SET @test2_id := (SELECT user_id FROM app_user WHERE email = 'test2@ssafy.com' LIMIT 1);
+SET @test1_nickname := (SELECT nickname FROM app_user WHERE user_id = @test1_id LIMIT 1);
+SET @test2_nickname := (SELECT nickname FROM app_user WHERE user_id = @test2_id LIMIT 1);
 
--- 두 테스트 회원이 함께 속한 방이 있으면 그 방을 사용합니다.
 SET @room_id := (
     SELECT first_member.room_id
     FROM couple_member first_member
@@ -91,22 +52,14 @@ SET @room_id := (
     LIMIT 1
 );
 
--- 공통방이 없을 때만 새 테스트 방을 만듭니다.
 INSERT INTO couple_room (
-    room_code,
-    room_code_expires_at,
-    dating_start_date,
-    status,
-    created_at,
-    updated_at
+    room_code, room_code_expires_at, dating_start_date, status, created_at, updated_at
 )
 SELECT
-    CONCAT('MY3-', LEFT(REPLACE(UUID(), '-', ''), 28)),
+    CONCAT('DASH-', LEFT(REPLACE(UUID(), '-', ''), 27)),
     NULL,
-    @dummy_start_date,
-    'ACTIVE',
-    TIMESTAMP(@dummy_start_date, '00:00:00'),
-    NOW()
+    DATE_SUB(CURDATE(), INTERVAL 100 DAY),
+    'ACTIVE', NOW(), NOW()
 WHERE @room_id IS NULL
   AND @test1_id IS NOT NULL
   AND @test2_id IS NOT NULL;
@@ -115,897 +68,1004 @@ SET @created_room_id := IF(ROW_COUNT() = 1, LAST_INSERT_ID(), NULL);
 SET @room_id := COALESCE(@room_id, @created_room_id);
 
 UPDATE couple_room
-SET dating_start_date = CASE
-        WHEN dating_start_date IS NULL OR dating_start_date > @dummy_start_date
-            THEN @dummy_start_date
-        ELSE dating_start_date
-    END,
-    status = 'ACTIVE',
+SET status = 'ACTIVE',
+    dating_start_date = COALESCE(dating_start_date, DATE_SUB(CURDATE(), INTERVAL 100 DAY)),
     updated_at = NOW()
 WHERE room_id = @room_id;
 
 INSERT INTO couple_member (
-    room_id,
-    user_id,
-    partner_nickname,
-    status,
-    joined_at,
-    left_at
+    room_id, user_id, partner_nickname, status, joined_at, left_at
 )
-VALUES
-    (
-        @room_id,
-        @test1_id,
-        '두리',
-        'ACTIVE',
-        TIMESTAMP(@dummy_start_date, '00:00:00'),
-        NULL
-    ),
-    (
-        @room_id,
-        @test2_id,
-        '하나',
-        'ACTIVE',
-        TIMESTAMP(@dummy_start_date, '00:00:00'),
-        NULL
-    )
+SELECT @room_id, @test1_id, @test2_nickname, 'ACTIVE', NOW(), NULL
+WHERE @room_id IS NOT NULL AND @test1_id IS NOT NULL
+UNION ALL
+SELECT @room_id, @test2_id, @test1_nickname, 'ACTIVE', NOW(), NULL
+WHERE @room_id IS NOT NULL AND @test2_id IS NOT NULL
 ON DUPLICATE KEY UPDATE
     partner_nickname = VALUES(partner_nickname),
     status = 'ACTIVE',
-    joined_at = LEAST(joined_at, VALUES(joined_at)),
     left_at = NULL;
 
--- ==========================================================================
--- 2. 3년치 날짜와 대화 원본 생성
--- ==========================================================================
+SELECT @test1_id AS test1_user_id, @test2_id AS test2_user_id, @room_id AS room_id;
 
-DROP TEMPORARY TABLE IF EXISTS tmp_dummy_days;
-CREATE TEMPORARY TABLE tmp_dummy_days AS
-WITH RECURSIVE day_sequence AS (
-    SELECT 0 AS day_index, @dummy_start_date AS chat_date
-    UNION ALL
-    SELECT day_index + 1, DATE_ADD(chat_date, INTERVAL 1 DAY)
-    FROM day_sequence
-    WHERE chat_date < CURDATE()
-)
-SELECT
-    day_index,
-    chat_date,
-    MOD(day_index, 12) AS conversation_theme,
-    DAYOFWEEK(chat_date) IN (1, 7) AS is_weekend
-FROM day_sequence;
+-- ---------------------------------------------------------------------------
+-- 1. 기존 더미 메시지 제거
+--
+-- message_id는 AUTO_INCREMENT라 ON DUPLICATE KEY UPDATE로는 절대 재정렬되지 않는다.
+-- 이미 잘못된 순서로 들어간 행이 있으면 반드시 지우고 다시 넣어야 한다.
+-- 삭제 대상은 client_message_id가 'd3000000-%' / 'd4000000-%'인 더미 행뿐이며,
+-- 실제 사용자 메시지는 건드리지 않는다.
+-- ---------------------------------------------------------------------------
+SET SQL_SAFE_UPDATES = 0;
 
-DROP TEMPORARY TABLE IF EXISTS tmp_message_slots;
-CREATE TEMPORARY TABLE tmp_message_slots (
-    slot_no INT NOT NULL PRIMARY KEY,
-    base_time TIME NOT NULL
+-- 읽음 상태가 삭제될 메시지를 참조하고 있으면 FK 때문에 삭제가 막힌다.
+DELETE FROM chat_read_state
+WHERE room_id = @room_id;
+
+DELETE reaction
+FROM chat_reaction reaction
+JOIN chat_message message ON message.message_id = reaction.message_id
+WHERE message.room_id = @room_id
+  AND (message.client_message_id LIKE 'd3000000-%'
+       OR message.client_message_id LIKE 'd4000000-%');
+
+DELETE bookmark
+FROM chat_bookmark bookmark
+JOIN chat_message message ON message.message_id = bookmark.message_id
+WHERE message.room_id = @room_id
+  AND (message.client_message_id LIKE 'd3000000-%'
+       OR message.client_message_id LIKE 'd4000000-%');
+
+DELETE image
+FROM chat_message_image image
+JOIN chat_message message ON message.message_id = image.message_id
+WHERE message.room_id = @room_id
+  AND (message.client_message_id LIKE 'd3000000-%'
+       OR message.client_message_id LIKE 'd4000000-%');
+
+DELETE analysis
+FROM chat_analysis analysis
+JOIN chat_message message ON message.message_id = analysis.message_id
+WHERE message.room_id = @room_id
+  AND (message.client_message_id LIKE 'd3000000-%'
+       OR message.client_message_id LIKE 'd4000000-%');
+
+DELETE FROM chat_message
+WHERE room_id = @room_id
+  AND (client_message_id LIKE 'd3000000-%'
+       OR client_message_id LIKE 'd4000000-%');
+
+-- ---------------------------------------------------------------------------
+-- 2. 기준 시각
+-- ---------------------------------------------------------------------------
+SET @week_start  := DATE_SUB(CURDATE(), INTERVAL (DAYOFWEEK(CURDATE()) - 1) DAY);
+SET @month_start := DATE_SUB(CURDATE(), INTERVAL (DAY(CURDATE()) - 1) DAY);
+SET @year_start  := MAKEDATE(YEAR(CURDATE()), 1);
+
+SET @week_time := IF(
+    @week_start < CURDATE(),
+    TIMESTAMP(@week_start, '20:00:00'),
+    DATE_SUB(NOW(), INTERVAL 3 HOUR)
+);
+SET @month_time := IF(
+    DAY(CURDATE()) > 3,
+    TIMESTAMP(DATE_ADD(@month_start, INTERVAL 2 DAY), '19:00:00'),
+    DATE_SUB(NOW(), INTERVAL 4 HOUR)
+);
+SET @year_time := IF(
+    DAYOFYEAR(CURDATE()) > 15,
+    TIMESTAMP(DATE_ADD(@year_start, INTERVAL 14 DAY), '18:00:00'),
+    DATE_SUB(NOW(), INTERVAL 5 HOUR)
 );
 
-INSERT INTO tmp_message_slots (slot_no, base_time)
-VALUES
-    (1, '07:35:00'),
-    (2, '07:43:00'),
-    (3, '11:48:00'),
-    (4, '12:05:00'),
-    (5, '17:52:00'),
-    (6, '18:14:00'),
-    (7, '21:18:00'),
-    (8, '21:31:00'),
-    (9, '14:02:00'),
-    (10, '14:10:00'),
-    (11, '23:01:00'),
-    (12, '23:09:00');
-
+-- ---------------------------------------------------------------------------
+-- 3. chat_message 통합 INSERT
+-- ---------------------------------------------------------------------------
 DROP TEMPORARY TABLE IF EXISTS tmp_dummy_messages;
-CREATE TEMPORARY TABLE tmp_dummy_messages AS
+
+CREATE TEMPORARY TABLE tmp_dummy_messages (
+    sender_id          BIGINT NOT NULL,
+    client_message_id  VARCHAR(64)  CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+    message_type       VARCHAR(16)  CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+    content             VARCHAR(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL,
+    sent_at             DATETIME NOT NULL
+) ENGINE = InnoDB;
+
+-- 3-1. 35일치 아침/저녁 리포트 대화를 임시 테이블에 적재
+INSERT INTO tmp_dummy_messages (sender_id, client_message_id, message_type, content, sent_at)
+WITH RECURSIVE report_days AS (
+    SELECT 0 AS day_offset
+    UNION ALL
+    SELECT day_offset + 1 FROM report_days WHERE day_offset < 34
+),
+message_slots AS (
+    SELECT 1 AS slot_number, '08:30:00' AS message_time
+    UNION ALL SELECT 2, '08:34:00'
+    UNION ALL SELECT 3, '08:38:00'
+    UNION ALL SELECT 4, '08:42:00'
+    UNION ALL SELECT 5, '20:00:00'
+    UNION ALL SELECT 6, '20:04:00'
+    UNION ALL SELECT 7, '20:08:00'
+    UNION ALL SELECT 8, '20:12:00'
+)
 SELECT
-    days.day_index,
-    days.chat_date,
-    slots.slot_no,
-    CASE
-        WHEN MOD(days.day_index + FLOOR((slots.slot_no - 1) / 2), 2) = 0
-            THEN CASE WHEN MOD(slots.slot_no, 2) = 1 THEN @test1_id ELSE @test2_id END
-        ELSE CASE WHEN MOD(slots.slot_no, 2) = 1 THEN @test2_id ELSE @test1_id END
-    END AS sender_id,
+    CASE WHEN MOD(message_slots.slot_number, 2) = 1
+         THEN @test1_id ELSE @test2_id END AS sender_id,
     CONCAT(
-        'e6000000-',
-        DATE_FORMAT(days.chat_date, '%Y'), '-',
-        DATE_FORMAT(days.chat_date, '%m%d'), '-',
-        LPAD(slots.slot_no, 4, '0'), '-',
-        LPAD(days.day_index * 100 + slots.slot_no, 12, '0')
+        'd4000000-0000-0000-0000-',
+        DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL report_days.day_offset DAY), '%Y%m%d'),
+        LPAD(message_slots.slot_number, 4, '0')
     ) AS client_message_id,
-    TIMESTAMP(days.chat_date, slots.base_time)
-        + INTERVAL MOD(days.day_index * 7 + slots.slot_no * 3, 23) MINUTE AS sent_at,
-    CASE slots.slot_no
-        WHEN 1 THEN CASE days.conversation_theme
-            WHEN 0 THEN '잘 잤어? 오늘 아침은 생각보다 안 춥다'
-            WHEN 1 THEN '일어났어? 어제 늦게 자서 피곤하지'
-            WHEN 2 THEN '좋은 아침! 오늘 중요한 일 있다고 했지?'
-            WHEN 3 THEN '나 출근하는 중이야, 지하철 사람이 엄청 많아'
-            WHEN 4 THEN '밖에 비 온다. 우산 꼭 챙겨'
-            WHEN 5 THEN '눈 뜨자마자 네 생각나서 연락했어'
-            WHEN 6 THEN '오늘 아침 뭐 먹을 거야? 굶지 마'
-            WHEN 7 THEN '나 오늘 조금 긴장돼. 잘할 수 있겠지?'
-            WHEN 8 THEN '어제 보내준 사진 다시 봤는데 너무 웃겨'
-            WHEN 9 THEN '주말 계획 슬슬 정해볼까?'
-            WHEN 10 THEN '오늘도 파이팅! 끝나고 맛있는 거 먹자'
-            ELSE '어제 내가 말이 좀 짧았지. 마음에 걸렸어'
+    'TEXT' AS message_type,
+    CASE message_slots.slot_number
+        WHEN 1 THEN CASE MOD(report_days.day_offset, 7)
+            WHEN 0 THEN CASE FLOOR(report_days.day_offset / 7)
+                WHEN 0 THEN '좋은 아침 오늘도 사랑해'
+                WHEN 1 THEN '굿모닝 오늘도 사랑해'
+                WHEN 2 THEN '좋은 아침이야 잘 잤어?'
+                WHEN 3 THEN '일어났어? 오늘도 사랑해'
+                ELSE '아침이다 오늘 하루도 파이팅'
+            END
+            WHEN 1 THEN CASE FLOOR(report_days.day_offset / 7)
+                WHEN 0 THEN '오늘 회의가 많아서 벌써 지친다'
+                WHEN 1 THEN '오늘 일정이 빡빡해서 벌써 피곤하다'
+                WHEN 2 THEN '오전부터 미팅이 몰려서 정신없어'
+                WHEN 3 THEN '오늘따라 할 일이 산더미다'
+                ELSE '아침부터 처리할 게 너무 많다'
+            END
+            WHEN 2 THEN CASE FLOOR(report_days.day_offset / 7)
+                WHEN 0 THEN '이번 주말에 어디로 갈까?'
+                WHEN 1 THEN '이번 주말에는 뭐 하고 놀까?'
+                WHEN 2 THEN '주말에 시간 되면 나갈까?'
+                WHEN 3 THEN '이번 주말 계획 있어?'
+                ELSE '주말에 어디 가고 싶은 데 있어?'
+            END
+            WHEN 3 THEN CASE FLOOR(report_days.day_offset / 7)
+                WHEN 0 THEN '어제 답장이 없어서 조금 서운했어'
+                WHEN 1 THEN '어제 연락이 늦어서 좀 섭섭했어'
+                WHEN 2 THEN '어제 톡 씹혀서 살짝 서운했어'
+                WHEN 3 THEN '어제 답장 안 와서 신경 쓰였어'
+                ELSE '어제 조용해서 무슨 일 있나 걱정했어'
+            END
+            WHEN 4 THEN CASE FLOOR(report_days.day_offset / 7)
+                WHEN 0 THEN '오늘 퇴근하고 잠깐 볼 수 있어?'
+                WHEN 1 THEN '오늘 저녁에 시간 잠깐 될까?'
+                WHEN 2 THEN '이따 끝나고 얼굴 볼 수 있어?'
+                WHEN 3 THEN '오늘 저녁에 잠깐 만날래?'
+                ELSE '퇴근하고 잠깐이라도 보자'
+            END
+            WHEN 5 THEN CASE FLOOR(report_days.day_offset / 7)
+                WHEN 0 THEN '어제 그렇게 말한 건 진짜 화났어'
+                WHEN 1 THEN '어제 그 말 진짜 서운하고 화났어'
+                WHEN 2 THEN '솔직히 어제 말투 때문에 화났었어'
+                WHEN 3 THEN '어제 그렇게 말할 줄 몰랐어 화났어'
+                ELSE '어제 일 아직도 좀 화 안 풀렸어'
+            END
+            WHEN 6 THEN CASE FLOOR(report_days.day_offset / 7)
+                WHEN 0 THEN '오늘 점심은 뭐 먹었어?'
+                WHEN 1 THEN '점심은 뭐 먹었어 맛있었어?'
+                WHEN 2 THEN '오늘 밥은 챙겨 먹었어?'
+                WHEN 3 THEN '점심 뭐 시켰어?'
+                ELSE '오늘 점심 메뉴 뭐였어?'
+            END
         END
-        WHEN 2 THEN CASE days.conversation_theme
-            WHEN 0 THEN '응 잘 잤어! 너도 따뜻하게 입고 나가'
-            WHEN 1 THEN '조금 피곤한데 괜찮아. 커피 마시면 살아날 듯'
-            WHEN 2 THEN '응 기억해줬네 고마워. 끝나면 바로 알려줄게'
-            WHEN 3 THEN '나도 막 나왔어. 사람 많으니까 조심해서 가'
-            WHEN 4 THEN '알려줘서 다행이다. 현관에서 다시 챙겼어'
-            WHEN 5 THEN '아침부터 왜 이렇게 설레게 해'
-            WHEN 6 THEN '토스트 먹으려고. 너도 꼭 뭐라도 먹어'
-            WHEN 7 THEN '당연하지. 준비한 만큼 잘할 거야'
-            WHEN 8 THEN '그걸 또 봤어? 삭제하고 싶은 흑역사야'
-            WHEN 9 THEN '좋아! 날씨 좋으면 한강 걷고 싶어'
-            WHEN 10 THEN '너도 파이팅. 저녁 메뉴는 내가 고를게'
-            ELSE '괜찮아. 나도 예민하게 받아들인 것 같아'
+        WHEN 2 THEN CASE MOD(report_days.day_offset, 7)
+            WHEN 0 THEN CASE FLOOR(report_days.day_offset / 7)
+                WHEN 0 THEN '나도 사랑해 오늘도 행복하게 보내자'
+                WHEN 1 THEN '나도 사랑해 오늘 하루도 힘내자'
+                WHEN 2 THEN '나도야 오늘도 좋은 하루 보내'
+                WHEN 3 THEN '나도 사랑해 오늘도 웃으면서 지내자'
+                ELSE '나도 많이 사랑해 좋은 하루 돼'
+            END
+            WHEN 1 THEN CASE FLOOR(report_days.day_offset / 7)
+                WHEN 0 THEN '많이 힘들겠다 무리하지 말고 쉬어가면서 해'
+                WHEN 1 THEN '고생 많다 너무 무리하지는 마'
+                WHEN 2 THEN '힘들겠다 잠깐씩이라도 쉬어가면서 해'
+                WHEN 3 THEN '많이 바쁘구나 무리하지 말고 천천히 해'
+                ELSE '고생이 많네 밥은 꼭 챙겨 먹고 해'
+            END
+            WHEN 2 THEN CASE FLOOR(report_days.day_offset / 7)
+                WHEN 0 THEN '바다 보러 가는 건 어때?'
+                WHEN 1 THEN '바다 쪽으로 드라이브 가는 거 어때?'
+                WHEN 2 THEN '이번엔 바다 보러 갈까?'
+                WHEN 3 THEN '바닷가 쪽으로 가보는 건 어때?'
+                ELSE '탁 트인 바다 보러 갈까?'
+            END
+            WHEN 3 THEN CASE FLOOR(report_days.day_offset / 7)
+                WHEN 0 THEN '미안해 정신없어서 확인을 못 했어'
+                WHEN 1 THEN '미안 너무 바빠서 못 봤어'
+                WHEN 2 THEN '미안해 알림을 못 봤나 봐'
+                WHEN 3 THEN '미안 정신없어서 답장이 늦었어'
+                ELSE '미안해 일하느라 폰을 못 봤어'
+            END
+            WHEN 4 THEN CASE FLOOR(report_days.day_offset / 7)
+                WHEN 0 THEN '갑자기 무슨 일 있어?'
+                WHEN 1 THEN '왜 갑자기 그래 무슨 일이야?'
+                WHEN 2 THEN '무슨 일 있어 갑자기?'
+                WHEN 3 THEN '갑자기 왜 그래?'
+                ELSE '어 왜 갑자기 그래 무슨 일이야'
+            END
+            WHEN 5 THEN CASE FLOOR(report_days.day_offset / 7)
+                WHEN 0 THEN '내가 너무 심하게 말했어 미안해'
+                WHEN 1 THEN '내 말투가 심했어 미안해'
+                WHEN 2 THEN '아까 내가 좀 심했다 미안해'
+                WHEN 3 THEN '말이 너무 세게 나갔어 미안해'
+                ELSE '내가 너무 예민하게 굴었어 미안해'
+            END
+            WHEN 6 THEN CASE FLOOR(report_days.day_offset / 7)
+                WHEN 0 THEN '회사 앞에서 김치찌개 먹었어'
+                WHEN 1 THEN '회사 근처에서 국밥 먹었어'
+                WHEN 2 THEN '오늘은 회사 앞 분식집 갔어'
+                WHEN 3 THEN '점심에 회사 앞에서 백반 먹었어'
+                ELSE '회사 앞 카페에서 샌드위치로 때웠어'
+            END
         END
-        WHEN 3 THEN CASE MOD(days.day_index, 6)
-            WHEN 0 THEN '점심 뭐 먹을지 아직도 못 정했어'
-            WHEN 1 THEN '오전 일이 이제 끝났어. 잠깐 숨 돌리는 중'
-            WHEN 2 THEN '오늘 회사 근처에 새로 생긴 가게 가보려고'
-            WHEN 3 THEN '아까 회의에서 살짝 실수해서 속상해'
-            WHEN 4 THEN '점심시간에 잠깐 통화 가능해?'
-            ELSE '배고프다. 너는 벌써 밥 먹었어?'
+        WHEN 3 THEN CASE MOD(report_days.day_offset, 7)
+            WHEN 0 THEN CASE FLOOR(report_days.day_offset / 7)
+                WHEN 0 THEN '오늘 저녁에 맛있는 거 같이 먹자'
+                WHEN 1 THEN '오늘 저녁 맛있는 거 먹으러 가자'
+                WHEN 2 THEN '저녁에 맛집 가서 먹자'
+                WHEN 3 THEN '오늘 저녁은 맛있는 거 먹자'
+                ELSE '저녁에 좋아하는 거 먹으러 가자'
+            END
+            WHEN 1 THEN CASE FLOOR(report_days.day_offset / 7)
+                WHEN 0 THEN '네 말 들으니까 마음이 좀 놓인다'
+                WHEN 1 THEN '그 말 들으니 한결 편해졌어'
+                WHEN 2 THEN '네 덕분에 마음이 놓이네'
+                WHEN 3 THEN '그렇게 말해 주니까 안심이 돼'
+                ELSE '네 말 들으니까 좀 나아졌어'
+            END
+            WHEN 2 THEN CASE FLOOR(report_days.day_offset / 7)
+                WHEN 0 THEN '좋다 벌써부터 설렌다'
+                WHEN 1 THEN '좋아 벌써 기대된다'
+                WHEN 2 THEN '완전 좋다 벌써 두근거려'
+                WHEN 3 THEN '기대된다 벌써 설레'
+                ELSE '좋아 생각만 해도 설레'
+            END
+            WHEN 3 THEN CASE FLOOR(report_days.day_offset / 7)
+                WHEN 0 THEN '연락이 안 되니까 많이 속상했어'
+                WHEN 1 THEN '연락이 끊겨서 진짜 속상했어'
+                WHEN 2 THEN '전화도 안 받아서 많이 서운했어'
+                WHEN 3 THEN '연락이 없어서 계속 신경 쓰였어'
+                ELSE '답이 없어서 혼자 많이 걱정했어'
+            END
+            WHEN 4 THEN CASE FLOOR(report_days.day_offset / 7)
+                WHEN 0 THEN '깜짝 선물이 있어서 그래'
+                WHEN 1 THEN '너 주려고 준비한 게 있어서'
+                WHEN 2 THEN '깜짝 놀랄 일이 있어서 그래'
+                WHEN 3 THEN '준비한 게 있어서 그래'
+                ELSE '너한테 줄 게 있어서 그랬어'
+            END
+            WHEN 5 THEN CASE FLOOR(report_days.day_offset / 7)
+                WHEN 0 THEN '이러다 또 싸울까 봐 걱정돼'
+                WHEN 1 THEN '또 다툴까 봐 조마조마해'
+                WHEN 2 THEN '이러다 또 감정 상할까 봐 걱정돼'
+                WHEN 3 THEN '이번에도 또 이럴까 봐 불안해'
+                ELSE '또 이런 일 생길까 봐 걱정돼'
+            END
+            WHEN 6 THEN CASE FLOOR(report_days.day_offset / 7)
+                WHEN 0 THEN '나는 그냥 편의점에서 때웠어'
+                WHEN 1 THEN '난 그냥 편의점 도시락 먹었어'
+                WHEN 2 THEN '오늘은 그냥 라면으로 때웠어'
+                WHEN 3 THEN '나는 대충 삼각김밥으로 때웠어'
+                ELSE '난 그냥 빵으로 대충 먹었어'
+            END
         END
-        WHEN 4 THEN CASE MOD(days.day_index, 6)
-            WHEN 0 THEN '따뜻한 국물 먹어. 어제도 대충 먹었잖아'
-            WHEN 1 THEN '고생했네. 물 마시고 천천히 밥 먹어'
-            WHEN 2 THEN '맛있으면 다음에 나도 데려가 줘'
-            WHEN 3 THEN '누구나 그럴 수 있어. 너무 오래 마음 쓰지 마'
-            WHEN 4 THEN '응 10분 정도 괜찮아. 내가 먼저 전화할게'
-            ELSE '나는 방금 먹었어. 사진 보낼 테니 메뉴 골라봐'
+        WHEN 4 THEN CASE MOD(report_days.day_offset, 7)
+            WHEN 0 THEN CASE FLOOR(report_days.day_offset / 7)
+                WHEN 0 THEN '좋아 저녁에 뭐 먹을지 같이 고르자'
+                WHEN 1 THEN '좋아 저녁 메뉴 같이 정하자'
+                WHEN 2 THEN '콜 저녁에 뭐 먹을지 고민해보자'
+                WHEN 3 THEN '좋아 이따 메뉴 같이 골라보자'
+                ELSE '좋다 저녁 뭐 먹을지 같이 정하자'
+            END
+            WHEN 1 THEN CASE FLOOR(report_days.day_offset / 7)
+                WHEN 0 THEN '힘든 일 있으면 언제든지 나한테 말해'
+                WHEN 1 THEN '힘들면 언제든 나한테 얘기해'
+                WHEN 2 THEN '무슨 일 있으면 바로 말해줘'
+                WHEN 3 THEN '혼자 참지 말고 나한테 말해'
+                ELSE '힘든 거 있으면 참지 말고 얘기해'
+            END
+            WHEN 2 THEN CASE FLOOR(report_days.day_offset / 7)
+                WHEN 0 THEN '숙소는 내가 알아볼게'
+                WHEN 1 THEN '숙소는 내가 찾아볼게'
+                WHEN 2 THEN '숙소 예약은 내가 할게'
+                WHEN 3 THEN '묵을 곳은 내가 찾아볼게'
+                ELSE '숙소 알아보는 건 내가 맡을게'
+            END
+            WHEN 3 THEN CASE FLOOR(report_days.day_offset / 7)
+                WHEN 0 THEN '앞으로는 꼭 미리 말할게 미안해'
+                WHEN 1 THEN '다음부터는 미리 얘기할게 미안해'
+                WHEN 2 THEN '앞으로 이런 일 없게 미리 말할게'
+                WHEN 3 THEN '이제부터 꼭 먼저 알려줄게 미안'
+                ELSE '다음엔 꼭 미리 말해줄게 미안해'
+            END
+            WHEN 4 THEN CASE FLOOR(report_days.day_offset / 7)
+                WHEN 0 THEN '헐 진짜 깜짝 놀랐어'
+                WHEN 1 THEN '헐 완전 놀랐잖아'
+                WHEN 2 THEN '와 진짜 깜짝이야'
+                WHEN 3 THEN '헐 진짜 놀랐어 심장 떨어질 뻔'
+                ELSE '와 이거 진짜 예상 못 했어'
+            END
+            WHEN 5 THEN CASE FLOOR(report_days.day_offset / 7)
+                WHEN 0 THEN '그럴 일 없게 내가 더 조심할게'
+                WHEN 1 THEN '앞으로 더 조심할게 걱정 마'
+                WHEN 2 THEN '내가 더 신경 써서 조심할게'
+                WHEN 3 THEN '이제 말 조심할게 미안해'
+                ELSE '앞으로는 더 신중하게 말할게'
+            END
+            WHEN 6 THEN CASE FLOOR(report_days.day_offset / 7)
+                WHEN 0 THEN '끼니 거르지 말고 잘 챙겨 먹어'
+                WHEN 1 THEN '밥 거르지 말고 꼭 챙겨 먹어'
+                WHEN 2 THEN '끼니 거르지 말고 든든히 먹어'
+                WHEN 3 THEN '밥때 놓치지 말고 챙겨 먹어'
+                ELSE '끼니는 꼭 챙겨 먹고 다녀'
+            END
         END
-        WHEN 5 THEN CASE MOD(days.day_index, 6)
-            WHEN 0 THEN '이제 끝났다! 오늘 유난히 길게 느껴졌어'
-            WHEN 1 THEN '퇴근 중인데 길이 많이 막혀'
-            WHEN 2 THEN '오늘 운동 갈까 말까 계속 고민 중이야'
-            WHEN 3 THEN '장 보러 가는데 필요한 거 있어?'
-            WHEN 4 THEN '집 도착하면 바로 씻고 누울 거야'
-            ELSE '저녁에 잠깐 산책하고 싶다'
+        WHEN 5 THEN CASE MOD(report_days.day_offset, 7)
+            WHEN 0 THEN CASE FLOOR(report_days.day_offset / 7)
+                WHEN 0 THEN '오늘 저녁 데이트 정말 즐거웠어'
+                WHEN 1 THEN '오늘 데이트 진짜 즐거웠어'
+                WHEN 2 THEN '오늘 만나서 너무 좋았어'
+                WHEN 3 THEN '오늘 저녁 시간 정말 좋았어'
+                ELSE '오늘 같이 있어서 정말 즐거웠어'
+            END
+            WHEN 1 THEN CASE FLOOR(report_days.day_offset / 7)
+                WHEN 0 THEN '오늘 일이 많아서 정말 힘들었어'
+                WHEN 1 THEN '오늘 진짜 정신없이 힘들었어'
+                WHEN 2 THEN '오늘따라 유독 힘든 하루였어'
+                WHEN 3 THEN '오늘 일이 많아서 지쳤어'
+                ELSE '오늘 하루 진짜 고됐어'
+            END
+            WHEN 2 THEN CASE FLOOR(report_days.day_offset / 7)
+                WHEN 0 THEN '기차표는 몇 시로 예매할까?'
+                WHEN 1 THEN '기차는 몇 시 걸로 예매할까?'
+                WHEN 2 THEN '표는 오전이랑 오후 중 뭐가 나아?'
+                WHEN 3 THEN '기차표 예매는 언제 할까?'
+                ELSE '몇 시 기차로 예매하는 게 좋을까?'
+            END
+            WHEN 3 THEN CASE FLOOR(report_days.day_offset / 7)
+                WHEN 0 THEN '오늘은 네 얼굴 보니까 마음이 풀렸어'
+                WHEN 1 THEN '얼굴 보니까 화가 좀 풀리네'
+                WHEN 2 THEN '너 보니까 마음이 좀 놓였어'
+                WHEN 3 THEN '얼굴 보니까 서운했던 게 풀렸어'
+                ELSE '오늘 보니까 마음이 한결 편해졌어'
+            END
+            WHEN 4 THEN CASE FLOOR(report_days.day_offset / 7)
+                WHEN 0 THEN '마음에 든다니 나도 좋다'
+                WHEN 1 THEN '좋아해 주니까 나도 기쁘다'
+                WHEN 2 THEN '마음에 들어 한다니 나도 뿌듯해'
+                WHEN 3 THEN '좋아하니까 나도 덩달아 기분 좋다'
+                ELSE '마음에 든다니 준비한 보람 있다'
+            END
+            WHEN 5 THEN CASE FLOOR(report_days.day_offset / 7)
+                WHEN 0 THEN '오늘은 좀 진정하고 얘기하자'
+                WHEN 1 THEN '오늘은 서로 진정하고 얘기하자'
+                WHEN 2 THEN '일단 좀 가라앉히고 얘기하자'
+                WHEN 3 THEN '오늘은 차분하게 얘기 좀 하자'
+                ELSE '조금 진정된 다음에 얘기하자'
+            END
+            WHEN 6 THEN CASE FLOOR(report_days.day_offset / 7)
+                WHEN 0 THEN '저녁에는 뭐 하고 있었어?'
+                WHEN 1 THEN '저녁 시간에 뭐 하고 있었어?'
+                WHEN 2 THEN '아까 저녁엔 뭐 했어?'
+                WHEN 3 THEN '저녁 먹고 나서 뭐 했어?'
+                ELSE '저녁에 뭐 하느라 바빴어?'
+            END
         END
-        WHEN 6 THEN CASE MOD(days.day_index, 6)
-            WHEN 0 THEN '진짜 고생 많았어. 집 가서 푹 쉬자'
-            WHEN 1 THEN '천천히 와. 도착할 때쯤 맞춰서 연락할게'
-            WHEN 2 THEN '다녀오면 개운할 거야. 대신 무리하지는 마'
-            WHEN 3 THEN '과일 있으면 조금만 사줘. 돈은 내가 보낼게'
-            WHEN 4 THEN '오늘은 아무것도 하지 말고 쉬어도 돼'
-            ELSE '좋아. 저녁 먹고 평소 걷던 곳에서 만나자'
+        WHEN 6 THEN CASE MOD(report_days.day_offset, 7)
+            WHEN 0 THEN CASE FLOOR(report_days.day_offset / 7)
+                WHEN 0 THEN '나도 즐거웠어 다음에 또 데이트하자'
+                WHEN 1 THEN '나도 좋았어 다음에 또 만나자'
+                WHEN 2 THEN '나도 즐거웠어 또 이렇게 만나자'
+                WHEN 3 THEN '나도 좋았어 다음에도 이렇게 보내자'
+                ELSE '나도 재밌었어 다음에 또 놀자'
+            END
+            WHEN 1 THEN CASE FLOOR(report_days.day_offset / 7)
+                WHEN 0 THEN '오늘 고생 많았어 푹 쉬어'
+                WHEN 1 THEN '오늘 수고 많았어 푹 쉬어'
+                WHEN 2 THEN '오늘 고생했어 얼른 쉬어'
+                WHEN 3 THEN '오늘 정말 고생했어 푹 자'
+                ELSE '오늘 애썼어 이제 좀 쉬어'
+            END
+            WHEN 2 THEN CASE FLOOR(report_days.day_offset / 7)
+                WHEN 0 THEN '아침 일찍 출발하는 게 좋을 것 같아'
+                WHEN 1 THEN '일찍 출발하는 게 나을 것 같아'
+                WHEN 2 THEN '아침 일찍 나서는 게 좋겠어'
+                WHEN 3 THEN '조금 서둘러서 출발하는 게 좋겠다'
+                ELSE '아침 일찍 움직이는 게 편할 것 같아'
+            END
+            WHEN 3 THEN CASE FLOOR(report_days.day_offset / 7)
+                WHEN 0 THEN '그렇게 말해 줘서 고마워'
+                WHEN 1 THEN '그렇게 이해해 줘서 고마워'
+                WHEN 2 THEN '그런 말 해줘서 정말 고마워'
+                WHEN 3 THEN '먼저 그렇게 말해줘서 고마워'
+                ELSE '그렇게 생각해 줘서 고마워'
+            END
+            WHEN 4 THEN CASE FLOOR(report_days.day_offset / 7)
+                WHEN 0 THEN '이런 거 받으니까 좀 부끄럽다'
+                WHEN 1 THEN '이런 거 받으니까 쑥스럽네'
+                WHEN 2 THEN '갑자기 받으니까 좀 부끄러워'
+                WHEN 3 THEN '이렇게 챙겨주니까 부끄럽다'
+                ELSE '이런 서프라이즈는 좀 부끄럽네'
+            END
+            WHEN 5 THEN CASE FLOOR(report_days.day_offset / 7)
+                WHEN 0 THEN '응 천천히 얘기하면 괜찮아질 거야'
+                WHEN 1 THEN '응 시간 지나면 괜찮아질 거야'
+                WHEN 2 THEN '천천히 풀어가면 괜찮아질 거야'
+                WHEN 3 THEN '응 조금씩 얘기하면 나아질 거야'
+                ELSE '괜찮아질 거야 천천히 얘기하자'
+            END
+            WHEN 6 THEN CASE FLOOR(report_days.day_offset / 7)
+                WHEN 0 THEN '드라마 보다가 깜빡 잠들었어'
+                WHEN 1 THEN '영화 보다가 나도 모르게 잠들었어'
+                WHEN 2 THEN '드라마 보다가 스르륵 잠들어버렸어'
+                WHEN 3 THEN '누워서 보다가 깜빡 졸았어'
+                ELSE '드라마 틀어놓고 잠들어 버렸어'
+            END
         END
-        WHEN 7 THEN CASE days.conversation_theme
-            WHEN 0 THEN '오늘 하루 중에 제일 좋았던 순간은 뭐였어?'
-            WHEN 1 THEN '다음 데이트 때는 우리 사진 많이 찍자'
-            WHEN 2 THEN '아까 네가 응원해준 덕분에 잘 끝났어'
-            WHEN 3 THEN '요즘 서로 바빠서 오래 이야기 못 한 것 같아'
-            WHEN 4 THEN '주말에 같이 요리해 먹는 건 어때?'
-            WHEN 5 THEN '문득 처음 만났던 날 생각났어'
-            WHEN 6 THEN '오늘 네 목소리 들으니까 마음이 편해졌어'
-            WHEN 7 THEN '다음 여행은 바다랑 산 중에 어디가 좋아?'
-            WHEN 8 THEN '나 오늘 조금 서운했던 게 있었어'
-            WHEN 9 THEN '보고 싶은 영화가 생겼는데 같이 볼래?'
-            WHEN 10 THEN '우리 벌써 이렇게 오래 만난 게 신기해'
-            ELSE '아까는 미안했어. 제대로 이야기하고 싶어'
+        WHEN 7 THEN CASE MOD(report_days.day_offset, 7)
+            WHEN 0 THEN CASE FLOOR(report_days.day_offset / 7)
+                WHEN 0 THEN '늘 옆에 있어 줘서 고마워'
+                WHEN 1 THEN '항상 곁에 있어 줘서 고마워'
+                WHEN 2 THEN '늘 함께해 줘서 정말 고마워'
+                WHEN 3 THEN '항상 내 옆에 있어줘서 고마워'
+                ELSE '늘 곁에서 챙겨줘서 고마워'
+            END
+            WHEN 1 THEN CASE FLOOR(report_days.day_offset / 7)
+                WHEN 0 THEN '위로해 줘서 고마워 마음이 편해졌어'
+                WHEN 1 THEN '위로해 줘서 고마워 마음이 놓였어'
+                WHEN 2 THEN '따뜻하게 위로해 줘서 고마워'
+                WHEN 3 THEN '위로 덕분에 마음이 한결 편해졌어'
+                ELSE '위로해줘서 고마워 힘이 났어'
+            END
+            WHEN 2 THEN CASE FLOOR(report_days.day_offset / 7)
+                WHEN 0 THEN '숙소랑 가고 싶은 곳을 몇 군데 찾아볼게'
+                WHEN 1 THEN '숙소랑 갈 만한 곳 좀 찾아볼게'
+                WHEN 2 THEN '숙소랑 코스 몇 개 찾아볼게'
+                WHEN 3 THEN '숙소랑 근처 볼거리 찾아볼게'
+                ELSE '숙소랑 맛집 몇 군데 찾아볼게'
+            END
+            WHEN 3 THEN CASE FLOOR(report_days.day_offset / 7)
+                WHEN 0 THEN '앞으로 서운한 건 바로 말할게'
+                WHEN 1 THEN '이제 서운하면 바로 얘기할게'
+                WHEN 2 THEN '앞으로는 참지 않고 바로 말할게'
+                WHEN 3 THEN '서운한 게 있으면 바로바로 말할게'
+                ELSE '앞으로 쌓아두지 않고 바로 얘기할게'
+            END
+            WHEN 4 THEN CASE FLOOR(report_days.day_offset / 7)
+                WHEN 0 THEN '부끄러워하는 것도 귀엽네'
+                WHEN 1 THEN '부끄러워하는 모습 진짜 귀엽다'
+                WHEN 2 THEN '그렇게 부끄러워하니까 더 귀여워'
+                WHEN 3 THEN '부끄러워하는 거 너무 귀엽다'
+                ELSE '수줍어하는 모습이 귀엽네'
+            END
+            WHEN 5 THEN CASE FLOOR(report_days.day_offset / 7)
+                WHEN 0 THEN '풀려서 다행이다 사실 많이 속상했어'
+                WHEN 1 THEN '풀려서 다행이야 사실 나도 힘들었어'
+                WHEN 2 THEN '이제라도 풀려서 다행이다'
+                WHEN 3 THEN '다행이다 사실 계속 신경 쓰였어'
+                ELSE '풀려서 다행이야 마음이 좀 놓인다'
+            END
+            WHEN 6 THEN CASE FLOOR(report_days.day_offset / 7)
+                WHEN 0 THEN '피곤했나 보다 오늘도 고생했어'
+                WHEN 1 THEN '많이 피곤했구나 오늘도 고생했어'
+                WHEN 2 THEN '피곤했나 봐 오늘 하루도 고생 많았어'
+                WHEN 3 THEN '지쳤나 보다 오늘도 애썼어'
+                ELSE '피곤했나 보네 오늘도 수고했어'
+            END
         END
-        WHEN 8 THEN CASE days.conversation_theme
-            WHEN 0 THEN '너랑 이렇게 이야기하는 지금이 제일 좋아'
-            WHEN 1 THEN '좋아. 이번에는 내가 삼각대 꼭 챙길게'
-            WHEN 2 THEN '네가 잘한 거지! 그래도 내가 다 뿌듯하다'
-            WHEN 3 THEN '맞아. 오늘은 자기 전에 조금 오래 통화하자'
-            WHEN 4 THEN '완전 좋아. 실패해도 같이 먹으면 재미있을 듯'
-            WHEN 5 THEN '나도 가끔 생각나. 그때 우리 둘 다 어색했지'
-            WHEN 6 THEN '그렇게 말해줘서 고마워. 나도 편안해'
-            WHEN 7 THEN '이번엔 바다! 해 질 때 같이 걷고 싶어'
-            WHEN 8 THEN '말해줘서 고마워. 어떤 부분이었는지 듣고 싶어'
-            WHEN 9 THEN '당연하지. 예매 열리면 바로 잡자'
-            WHEN 10 THEN '앞으로도 지금처럼 서로 잘 챙겨주자'
-            ELSE '나도 미안해. 감정 상하지 않게 천천히 말해보자'
-        END
-        WHEN 9 THEN CASE MOD(days.day_index, 4)
-            WHEN 0 THEN '카페 도착했어. 창가 자리가 비어 있다'
-            WHEN 1 THEN '날씨 좋아서 공원에 사람 정말 많아'
-            WHEN 2 THEN '여기 전에 같이 왔던 길 맞지?'
-            ELSE '오늘은 계획 없이 천천히 돌아다니자'
-        END
-        WHEN 10 THEN CASE MOD(days.day_index, 4)
-            WHEN 0 THEN '잘했어. 나는 네가 좋아하는 음료 주문할게'
-            WHEN 1 THEN '그래도 햇빛 좋다. 손잡고 천천히 걷자'
-            WHEN 2 THEN '맞아. 저 앞에서 우리 사진도 찍었었어'
-            ELSE '좋아. 배고파지면 그때 먹고 싶은 거 고르자'
-        END
-        WHEN 11 THEN CASE MOD(days.day_index, 4)
-            WHEN 0 THEN '오늘 같이 있어줘서 고마워'
-            WHEN 1 THEN '집에 들어가니까 갑자기 또 보고 싶다'
-            WHEN 2 THEN '내일 일정 있으니까 너무 늦게 자지는 마'
-            ELSE '우리 다음 주에도 시간 꼭 만들자'
-        END
-        ELSE CASE MOD(days.day_index, 4)
-            WHEN 0 THEN '나도 고마워. 오늘 덕분에 많이 웃었어'
-            WHEN 1 THEN '나도 그래. 영상통화 잠깐만 할까?'
-            WHEN 2 THEN '알겠어. 너도 휴대폰 내려놓고 얼른 자'
-            ELSE '응 약속. 이번 주 일정 보고 바로 정하자'
+        WHEN 8 THEN CASE MOD(report_days.day_offset, 7)
+            WHEN 0 THEN CASE FLOOR(report_days.day_offset / 7)
+                WHEN 0 THEN '나야말로 고마워 오늘도 잘 자'
+                WHEN 1 THEN '나야말로 고마워 오늘도 잘 자고'
+                WHEN 2 THEN '내가 더 고마워 잘 자 오늘도'
+                WHEN 3 THEN '나야말로 고마웠어 오늘도 잘 자'
+                ELSE '고마운 건 나야 오늘도 잘 자'
+            END
+            WHEN 1 THEN CASE FLOOR(report_days.day_offset / 7)
+                WHEN 0 THEN '오늘은 일찍 쉬고 내일은 더 좋은 하루 보내자'
+                WHEN 1 THEN '오늘은 푹 쉬고 내일은 힘내자'
+                WHEN 2 THEN '오늘은 일찍 자고 내일 더 잘해보자'
+                WHEN 3 THEN '오늘은 쉬고 내일 다시 힘내자'
+                ELSE '오늘은 편히 쉬고 내일 좋게 보내자'
+            END
+            WHEN 2 THEN CASE FLOOR(report_days.day_offset / 7)
+                WHEN 0 THEN '응 우리 같이 계획하면 재미있을 것 같아'
+                WHEN 1 THEN '응 같이 짜면 진짜 재밌을 것 같아'
+                WHEN 2 THEN '응 함께 계획하면 더 신날 것 같아'
+                WHEN 3 THEN '응 같이 준비하면 재밌겠다'
+                ELSE '응 우리끼리 짜면 더 재미있을 거야'
+            END
+            WHEN 3 THEN CASE FLOOR(report_days.day_offset / 7)
+                WHEN 0 THEN '응 나도 더 신경 쓸게 잘 자'
+                WHEN 1 THEN '응 나도 더 챙길게 잘 자'
+                WHEN 2 THEN '응 나도 노력할게 잘 자'
+                WHEN 3 THEN '응 나도 더 조심할게 잘 자'
+                ELSE '응 나도 더 신경쓸게 오늘도 잘 자'
+            END
+            WHEN 4 THEN CASE FLOOR(report_days.day_offset / 7)
+                WHEN 0 THEN '그만 놀려 얼굴 빨개졌잖아'
+                WHEN 1 THEN '그만 놀려 얼굴 빨개지잖아'
+                WHEN 2 THEN '놀리지 마 진짜 부끄럽잖아'
+                WHEN 3 THEN '그만해 얼굴 다 빨개졌어'
+                ELSE '놀리지 마 얼굴 화끈거려'
+            END
+            WHEN 5 THEN CASE FLOOR(report_days.day_offset / 7)
+                WHEN 0 THEN '마음 아프게 해서 미안해 앞으로 잘할게'
+                WHEN 1 THEN '속상하게 해서 미안해 앞으로 잘할게'
+                WHEN 2 THEN '마음 아프게 한 거 미안해 잘할게'
+                WHEN 3 THEN '힘들게 해서 미안해 더 잘할게'
+                ELSE '아프게 해서 미안해 앞으로 노력할게'
+            END
+            WHEN 6 THEN CASE FLOOR(report_days.day_offset / 7)
+                WHEN 0 THEN '챙겨 줘서 고마워 내일 봐'
+                WHEN 1 THEN '챙겨줘서 고마워 내일 또 보자'
+                WHEN 2 THEN '오늘도 챙겨줘서 고마워 내일 봐'
+                WHEN 3 THEN '챙겨줘서 고마워 내일 얘기하자'
+                ELSE '고마워 챙겨줘서 내일 또 봐'
+            END
         END
     END AS content,
-    CASE slots.slot_no
-        WHEN 1 THEN CASE days.conversation_theme
-            WHEN 4 THEN 'WORRY'
-            WHEN 7 THEN 'WORRY'
-            WHEN 11 THEN 'APOLOGY'
-            ELSE 'COMFORT'
-        END
-        WHEN 2 THEN CASE days.conversation_theme
-            WHEN 2 THEN 'GRATITUDE'
-            WHEN 5 THEN 'EXCITEMENT'
-            WHEN 11 THEN 'APOLOGY'
-            ELSE 'COMFORT'
-        END
-        WHEN 3 THEN CASE MOD(days.day_index, 6)
-            WHEN 3 THEN 'HURT'
-            WHEN 4 THEN 'CURIOSITY'
-            ELSE 'NEUTRAL'
-        END
-        WHEN 4 THEN CASE MOD(days.day_index, 6)
-            WHEN 1 THEN 'COMFORT'
-            WHEN 3 THEN 'COMFORT'
-            ELSE 'NEUTRAL'
-        END
-        WHEN 5 THEN CASE MOD(days.day_index, 6)
-            WHEN 0 THEN 'DISTRESS'
-            WHEN 1 THEN 'DISTRESS'
-            ELSE 'NEUTRAL'
-        END
-        WHEN 6 THEN 'COMFORT'
-        WHEN 7 THEN CASE days.conversation_theme
-            WHEN 2 THEN 'GRATITUDE'
-            WHEN 5 THEN 'EXCITEMENT'
-            WHEN 7 THEN 'CURIOSITY'
-            WHEN 8 THEN 'HURT'
-            WHEN 11 THEN 'APOLOGY'
-            ELSE 'JOY'
-        END
-        WHEN 8 THEN CASE days.conversation_theme
-            WHEN 2 THEN 'JOY'
-            WHEN 7 THEN 'EXCITEMENT'
-            WHEN 8 THEN 'COMFORT'
-            WHEN 11 THEN 'APOLOGY'
-            ELSE 'JOY'
-        END
-        WHEN 9 THEN 'JOY'
-        WHEN 10 THEN 'COMFORT'
-        WHEN 11 THEN 'GRATITUDE'
-        ELSE 'JOY'
-    END AS emotion_type
-FROM tmp_dummy_days days
-CROSS JOIN tmp_message_slots slots
-WHERE (
-        -- 아주 가끔 서로 바빠서 아침 인사만 한 날도 만듭니다.
-        (MOD(days.day_index, 97) = 0 AND slots.slot_no IN (1, 2))
-        OR
-        (MOD(days.day_index, 97) <> 0 AND (
-            slots.slot_no IN (1, 2, 7, 8)
-            OR (slots.slot_no IN (3, 4) AND MOD(days.day_index, 4) <> 0)
-            OR (slots.slot_no IN (5, 6) AND MOD(days.day_index, 3) <> 0)
-            OR (slots.slot_no IN (9, 10) AND days.is_weekend = TRUE)
-            OR (slots.slot_no IN (11, 12) AND MOD(days.day_index, 7) = 0)
-        ))
-    )
-  AND TIMESTAMP(days.chat_date, slots.base_time)
-        + INTERVAL MOD(days.day_index * 7 + slots.slot_no * 3, 23) MINUTE <= NOW();
+    -- 슬롯 간격 4분 + 0~2분 지터. 지터가 최대 2분이라 슬롯 순서는 항상 유지된다.
+    DATE_ADD(
+        TIMESTAMP(
+            DATE_SUB(CURDATE(), INTERVAL report_days.day_offset DAY),
+            message_slots.message_time
+        ),
+        INTERVAL MOD(report_days.day_offset + message_slots.slot_number, 3) MINUTE
+    ) AS sent_at
+FROM report_days
+CROSS JOIN message_slots
+WHERE @room_id IS NOT NULL
+  AND @test1_id IS NOT NULL
+  AND @test2_id IS NOT NULL
+  AND DATE_ADD(
+        TIMESTAMP(
+            DATE_SUB(CURDATE(), INTERVAL report_days.day_offset DAY),
+            message_slots.message_time
+        ),
+        INTERVAL MOD(report_days.day_offset + message_slots.slot_number, 3) MINUTE
+      ) <= NOW();
 
+-- 3-2. 최근 100분 이내 스팟 대화(카페 대화, 주간/월간/연간 대표 대화, 이미지 2건)를
+--      같은 임시 테이블에 적재.
+INSERT INTO tmp_dummy_messages (sender_id, client_message_id, message_type, content, sent_at)
+VALUES
+    (@test1_id, 'd3000000-0000-0000-0000-000000000001', 'TEXT',  '오늘 저녁에 같이 맛있는 저녁 먹자', DATE_SUB(NOW(), INTERVAL 100 MINUTE)),
+    (@test2_id, 'd3000000-0000-0000-0000-000000000002', 'TEXT',  '좋아 오늘 정말 기대된다',                DATE_SUB(NOW(), INTERVAL 94 MINUTE)),
+    (@test1_id, 'd3000000-0000-0000-0000-000000000003', 'TEXT',  '어떤 메뉴가 먹고 싶어?',                  DATE_SUB(NOW(), INTERVAL 88 MINUTE)),
+    (@test2_id, 'd3000000-0000-0000-0000-000000000004', 'TEXT',  '나는 파스타가 먹고 싶어',                  DATE_SUB(NOW(), INTERVAL 81 MINUTE)),
+    (@test1_id, 'd3000000-0000-0000-0000-000000000005', 'TEXT',  '예약할 수 있는지 알아볼게',                 DATE_SUB(NOW(), INTERVAL 74 MINUTE)),
+    (@test2_id, 'd3000000-0000-0000-0000-000000000006', 'TEXT',  '항상 챙겨줘서 고마워',                     DATE_SUB(NOW(), INTERVAL 68 MINUTE)),
+    (@test1_id, 'd3000000-0000-0000-0000-000000000007', 'TEXT',  '오늘 일이 많아서 조금 걱정돼',               DATE_SUB(NOW(), INTERVAL 55 MINUTE)),
+    (@test2_id, 'd3000000-0000-0000-0000-000000000008', 'TEXT',  '천천히 해도 괜찮아 내가 응원할게',             DATE_SUB(NOW(), INTERVAL 48 MINUTE)),
+    (@test1_id, 'd3000000-0000-0000-0000-000000000009', 'TEXT',  '그 말 들으니까 마음이 편안해졌어',             DATE_SUB(NOW(), INTERVAL 35 MINUTE)),
+    (@test2_id, 'd3000000-0000-0000-0000-000000000010', 'TEXT',  '우리 오늘도 즐겁게 보내자',                  DATE_SUB(NOW(), INTERVAL 28 MINUTE)),
+
+    (@test1_id, 'd3000000-0000-0000-0000-000000000011', 'TEXT',  '이번 주말에 데이트 어디로 갈까?',              @week_time),
+    (@test2_id, 'd3000000-0000-0000-0000-000000000012', 'TEXT',  '한강 산책하면 즐거울 것 같아',                DATE_ADD(@week_time, INTERVAL 8 MINUTE)),
+    (@test1_id, 'd3000000-0000-0000-0000-000000000013', 'TEXT',  '날씨가 좋으면 사진도 많이 찍자',               DATE_ADD(@week_time, INTERVAL 16 MINUTE)),
+    (@test2_id, 'd3000000-0000-0000-0000-000000000014', 'TEXT',  '벌써부터 설레고 기대돼',                     DATE_ADD(@week_time, INTERVAL 23 MINUTE)),
+
+    (@test1_id, 'd3000000-0000-0000-0000-000000000015', 'TEXT',  '이번 달에는 같이 영화도 많이 봤네',             @month_time),
+    (@test2_id, 'd3000000-0000-0000-0000-000000000016', 'TEXT',  '같이 보내는 시간이 정말 좋아',                DATE_ADD(@month_time, INTERVAL 5 MINUTE)),
+    (@test1_id, 'd3000000-0000-0000-0000-000000000017', 'TEXT',  '내가 늦어서 미안해',                        DATE_ADD(@month_time, INTERVAL 12 MINUTE)),
+    (@test2_id, 'd3000000-0000-0000-0000-000000000018', 'TEXT',  '괜찮아 다음에는 미리 알려줘',                 DATE_ADD(@month_time, INTERVAL 19 MINUTE)),
+
+    (@test1_id, 'd3000000-0000-0000-0000-000000000019', 'TEXT',  '올해 처음 만났던 날 기억나?',                 @year_time),
+    (@test2_id, 'd3000000-0000-0000-0000-000000000020', 'TEXT',  '당연하지 그날 정말 행복했어',                 DATE_ADD(@year_time, INTERVAL 6 MINUTE)),
+    (@test1_id, 'd3000000-0000-0000-0000-000000000021', 'TEXT',  '앞으로도 좋은 추억 많이 만들자',               DATE_ADD(@year_time, INTERVAL 13 MINUTE)),
+    (@test2_id, 'd3000000-0000-0000-0000-000000000022', 'TEXT',  '늘 함께해 줘서 고마워 사랑해',                DATE_ADD(@year_time, INTERVAL 20 MINUTE)),
+
+    (@test1_id, 'd3000000-0000-0000-0000-000000000023', 'IMAGE', NULL, DATE_SUB(NOW(), INTERVAL 20 MINUTE)),
+    (@test2_id, 'd3000000-0000-0000-0000-000000000024', 'IMAGE', NULL, DATE_SUB(NOW(), INTERVAL 12 MINUTE));
+
+
+-- 3-3. 임시 테이블 하나에서만 SELECT하므로 UNION이 없다 -> 콜레이션 충돌 불가능
 INSERT INTO chat_message (
-    room_id,
-    sender_id,
-    client_message_id,
-    message_type,
-    content,
-    sent_at
+    room_id, sender_id, client_message_id, message_type, content, sent_at
 )
 SELECT
     @room_id,
-    sender_id,
-    client_message_id,
-    'TEXT',
-    content,
-    sent_at
-FROM tmp_dummy_messages
-WHERE @room_id IS NOT NULL
+    tmp.sender_id,
+    tmp.client_message_id,
+    tmp.message_type,
+    tmp.content,
+    tmp.sent_at
+FROM tmp_dummy_messages tmp
+ORDER BY tmp.sent_at, tmp.client_message_id
 ON DUPLICATE KEY UPDATE
-    room_id = VALUES(room_id),
-    message_type = 'TEXT',
-    content = VALUES(content),
-    sent_at = VALUES(sent_at);
+    room_id      = VALUES(room_id),
+    message_type = VALUES(message_type),
+    content      = VALUES(content),
+    sent_at      = VALUES(sent_at);
 
--- 모든 텍스트 메시지는 이미 AI 감정 분석이 완료된 상태로 넣습니다.
+DROP TEMPORARY TABLE IF EXISTS tmp_dummy_messages;
+
+
+-- ---------------------------------------------------------------------------
+-- 4. 스팟 대화(d3) 감정 분석 결과
+-- ---------------------------------------------------------------------------
 INSERT INTO chat_analysis (
-    message_id,
-    emotion_type,
-    analysis_status,
-    analyzed_at,
-    created_at
+    message_id, emotion_type, analysis_status, analyzed_at, created_at
 )
 SELECT
     message.message_id,
-    dummy_message.emotion_type,
+    CASE message.client_message_id
+        WHEN 'd3000000-0000-0000-0000-000000000001' THEN 'JOY'
+        WHEN 'd3000000-0000-0000-0000-000000000002' THEN 'EXCITEMENT'
+        WHEN 'd3000000-0000-0000-0000-000000000003' THEN 'CURIOSITY'
+        WHEN 'd3000000-0000-0000-0000-000000000004' THEN 'JOY'
+        WHEN 'd3000000-0000-0000-0000-000000000005' THEN 'NEUTRAL'
+        WHEN 'd3000000-0000-0000-0000-000000000006' THEN 'GRATITUDE'
+        WHEN 'd3000000-0000-0000-0000-000000000007' THEN 'WORRY'
+        WHEN 'd3000000-0000-0000-0000-000000000008' THEN 'COMFORT'
+        WHEN 'd3000000-0000-0000-0000-000000000009' THEN 'COMFORT'
+        WHEN 'd3000000-0000-0000-0000-000000000010' THEN 'JOY'
+        WHEN 'd3000000-0000-0000-0000-000000000011' THEN 'CURIOSITY'
+        WHEN 'd3000000-0000-0000-0000-000000000012' THEN 'JOY'
+        WHEN 'd3000000-0000-0000-0000-000000000013' THEN 'EXCITEMENT'
+        WHEN 'd3000000-0000-0000-0000-000000000014' THEN 'EXCITEMENT'
+        WHEN 'd3000000-0000-0000-0000-000000000015' THEN 'JOY'
+        WHEN 'd3000000-0000-0000-0000-000000000016' THEN 'JOY'
+        WHEN 'd3000000-0000-0000-0000-000000000017' THEN 'APOLOGY'
+        WHEN 'd3000000-0000-0000-0000-000000000018' THEN 'COMFORT'
+        WHEN 'd3000000-0000-0000-0000-000000000019' THEN 'CURIOSITY'
+        WHEN 'd3000000-0000-0000-0000-000000000020' THEN 'JOY'
+        WHEN 'd3000000-0000-0000-0000-000000000021' THEN 'EXCITEMENT'
+        WHEN 'd3000000-0000-0000-0000-000000000022' THEN 'GRATITUDE'
+        ELSE 'NEUTRAL'
+    END,
     'COMPLETED',
-    DATE_ADD(message.sent_at, INTERVAL 10 SECOND),
-    DATE_ADD(message.sent_at, INTERVAL 10 SECOND)
-FROM tmp_dummy_messages dummy_message
-JOIN chat_message message
-  ON message.sender_id = dummy_message.sender_id
- AND message.client_message_id = dummy_message.client_message_id
-WHERE TRUE
+    DATE_ADD(message.sent_at, INTERVAL 1 SECOND),
+    message.sent_at
+FROM chat_message message
+WHERE message.room_id = @room_id
+  AND message.message_type = 'TEXT'
+  AND message.client_message_id BETWEEN
+      'd3000000-0000-0000-0000-000000000001'
+      AND 'd3000000-0000-0000-0000-000000000022'
 ON DUPLICATE KEY UPDATE
     emotion_type = VALUES(emotion_type),
     analysis_status = 'COMPLETED',
     analyzed_at = VALUES(analyzed_at);
 
--- ==========================================================================
--- 3. 채팅 이미지: 약 9일마다 1~3장을 한 메시지로 전송
--- ==========================================================================
-
-DROP TEMPORARY TABLE IF EXISTS tmp_image_messages;
-CREATE TEMPORARY TABLE tmp_image_messages AS
-SELECT
-    days.day_index,
-    days.chat_date,
-    CASE WHEN MOD(days.day_index, 2) = 0 THEN @test1_id ELSE @test2_id END AS sender_id,
-    CONCAT(
-        'e6100000-',
-        DATE_FORMAT(days.chat_date, '%Y'), '-',
-        DATE_FORMAT(days.chat_date, '%m%d'), '-9000-',
-        LPAD(days.day_index, 12, '0')
-    ) AS client_message_id,
-    TIMESTAMP(days.chat_date, '19:42:00')
-        + INTERVAL MOD(days.day_index, 11) MINUTE AS sent_at,
-    1 + MOD(days.day_index, 3) AS image_count
-FROM tmp_dummy_days days
-WHERE MOD(days.day_index, 9) = 0
-  AND TIMESTAMP(days.chat_date, '19:42:00') <= NOW();
-
-INSERT INTO chat_message (
-    room_id,
-    sender_id,
-    client_message_id,
-    message_type,
-    content,
-    sent_at
+-- ---------------------------------------------------------------------------
+-- 5. 리포트 대화(d4) 감정 분석 결과
+-- ---------------------------------------------------------------------------
+INSERT INTO chat_analysis (
+    message_id, emotion_type, analysis_status, analyzed_at, created_at
 )
-SELECT
-    @room_id,
-    sender_id,
-    client_message_id,
-    'IMAGE',
-    NULL,
-    sent_at
-FROM tmp_image_messages
-WHERE @room_id IS NOT NULL
-ON DUPLICATE KEY UPDATE
-    room_id = VALUES(room_id),
-    message_type = 'IMAGE',
-    content = NULL,
-    sent_at = VALUES(sent_at);
-
-INSERT INTO chat_message_image (
-    message_id,
-    image_url,
-    display_order,
-    created_at
+WITH RECURSIVE report_days AS (
+    SELECT 0 AS day_offset
+    UNION ALL
+    SELECT day_offset + 1 FROM report_days WHERE day_offset < 34
+),
+message_slots AS (
+    SELECT 1 AS slot_number
+    UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4
+    UNION ALL SELECT 5 UNION ALL SELECT 6 UNION ALL SELECT 7 UNION ALL SELECT 8
+),
+generated_ids AS (
+    SELECT
+        report_days.day_offset,
+        message_slots.slot_number,
+        CONCAT(
+            'd4000000-0000-0000-0000-',
+            DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL report_days.day_offset DAY), '%Y%m%d'),
+            LPAD(message_slots.slot_number, 4, '0')
+        ) AS client_message_id
+    FROM report_days
+    CROSS JOIN message_slots
 )
 SELECT
     message.message_id,
-    CONCAT(
-        'https://placehold.co/1200x900/png?text=CHAT-',
-        DATE_FORMAT(image_message.chat_date, '%Y%m%d'), '-',
-        image_numbers.display_order
-    ),
-    image_numbers.display_order,
-    image_message.sent_at
-FROM tmp_image_messages image_message
-JOIN chat_message message
-  ON message.sender_id = image_message.sender_id
- AND message.client_message_id = image_message.client_message_id
-JOIN (
-    SELECT 1 AS display_order
-    UNION ALL SELECT 2
-    UNION ALL SELECT 3
-) image_numbers
-  ON image_numbers.display_order <= image_message.image_count
-WHERE TRUE
-ON DUPLICATE KEY UPDATE
-    image_url = VALUES(image_url),
-    created_at = VALUES(created_at);
-
--- ==========================================================================
--- 4. 공감, 북마크, 읽음 상태
--- ==========================================================================
-
-INSERT INTO chat_reaction (
-    room_id,
-    user_id,
-    message_id,
-    reaction_type,
-    created_at,
-    updated_at
-)
-SELECT
-    @room_id,
-    CASE WHEN message.sender_id = @test1_id THEN @test2_id ELSE @test1_id END,
-    message.message_id,
-    CASE MOD(dummy_message.day_index, 4)
-        WHEN 0 THEN 'HEART'
-        WHEN 1 THEN 'LIKE'
-        WHEN 2 THEN 'HUG'
-        ELSE 'SMILE'
+    CASE report_id.slot_number
+        WHEN 1 THEN CASE MOD(report_id.day_offset, 7)
+            WHEN 0 THEN 'JOY'       WHEN 1 THEN 'DISTRESS'  WHEN 2 THEN 'CURIOSITY'
+            WHEN 3 THEN 'HURT'      WHEN 4 THEN 'CURIOSITY' WHEN 5 THEN 'ANGER'
+            ELSE 'CURIOSITY' END
+        WHEN 2 THEN CASE MOD(report_id.day_offset, 7)
+            WHEN 0 THEN 'JOY'       WHEN 1 THEN 'COMFORT'   WHEN 2 THEN 'CURIOSITY'
+            WHEN 3 THEN 'APOLOGY'   WHEN 4 THEN 'SURPRISE'  WHEN 5 THEN 'APOLOGY'
+            ELSE 'NEUTRAL' END
+        WHEN 3 THEN CASE MOD(report_id.day_offset, 7)
+            WHEN 0 THEN 'EXCITEMENT' WHEN 1 THEN 'COMFORT'  WHEN 2 THEN 'EXCITEMENT'
+            WHEN 3 THEN 'SADNESS'    WHEN 4 THEN 'EXCITEMENT' WHEN 5 THEN 'WORRY'
+            ELSE 'NEUTRAL' END
+        WHEN 4 THEN CASE MOD(report_id.day_offset, 7)
+            WHEN 0 THEN 'EXCITEMENT' WHEN 1 THEN 'COMFORT'  WHEN 2 THEN 'NEUTRAL'
+            WHEN 3 THEN 'APOLOGY'    WHEN 4 THEN 'SURPRISE' WHEN 5 THEN 'COMFORT'
+            ELSE 'WORRY' END
+        WHEN 5 THEN CASE MOD(report_id.day_offset, 7)
+            WHEN 0 THEN 'JOY'        WHEN 1 THEN 'DISTRESS' WHEN 2 THEN 'CURIOSITY'
+            WHEN 3 THEN 'COMFORT'    WHEN 4 THEN 'JOY'      WHEN 5 THEN 'NEUTRAL'
+            ELSE 'CURIOSITY' END
+        WHEN 6 THEN CASE MOD(report_id.day_offset, 7)
+            WHEN 0 THEN 'JOY'        WHEN 1 THEN 'COMFORT'  WHEN 2 THEN 'NEUTRAL'
+            WHEN 3 THEN 'GRATITUDE'  WHEN 4 THEN 'SHYNESS'  WHEN 5 THEN 'COMFORT'
+            ELSE 'EMBARRASSMENT' END
+        WHEN 7 THEN CASE MOD(report_id.day_offset, 7)
+            WHEN 0 THEN 'GRATITUDE'  WHEN 1 THEN 'GRATITUDE' WHEN 2 THEN 'EXCITEMENT'
+            WHEN 3 THEN 'NEUTRAL'    WHEN 4 THEN 'SHYNESS'   WHEN 5 THEN 'SADNESS'
+            ELSE 'COMFORT' END
+        ELSE CASE MOD(report_id.day_offset, 7)
+            WHEN 0 THEN 'GRATITUDE'  WHEN 1 THEN 'COMFORT'  WHEN 2 THEN 'EXCITEMENT'
+            WHEN 3 THEN 'COMFORT'    WHEN 4 THEN 'EMBARRASSMENT' WHEN 5 THEN 'APOLOGY'
+            ELSE 'GRATITUDE' END
     END,
-    DATE_ADD(message.sent_at, INTERVAL 20 SECOND),
-    DATE_ADD(message.sent_at, INTERVAL 20 SECOND)
-FROM tmp_dummy_messages dummy_message
+    'COMPLETED',
+    DATE_ADD(message.sent_at, INTERVAL 1 SECOND),
+    message.sent_at
+FROM generated_ids report_id
 JOIN chat_message message
-  ON message.sender_id = dummy_message.sender_id
- AND message.client_message_id = dummy_message.client_message_id
-WHERE dummy_message.slot_no = 8
-  AND MOD(dummy_message.day_index, 3) = 0
+  ON message.client_message_id = report_id.client_message_id
+ AND message.room_id = @room_id
+ON DUPLICATE KEY UPDATE
+    emotion_type = VALUES(emotion_type),
+    analysis_status = 'COMPLETED',
+    analyzed_at = VALUES(analyzed_at);
+
+-- ---------------------------------------------------------------------------
+-- 6. 이미지 / 공감 / 북마크
+-- ---------------------------------------------------------------------------
+INSERT INTO chat_message_image (message_id, image_url, display_order, created_at)
+SELECT message_id, 'https://i15b208.p.ssafy.io/uploads/2026/08/10/07f735cfa03f42ac8cd72cc9d7a44822.jpg', 1, sent_at
+FROM chat_message
+WHERE room_id = @room_id AND client_message_id = 'd3000000-0000-0000-0000-000000000023'
+ON DUPLICATE KEY UPDATE image_url = VALUES(image_url);
+
+INSERT INTO chat_message_image (message_id, image_url, display_order, created_at)
+SELECT message_id, 'https://i15b208.p.ssafy.io/uploads/2026/08/10/89f5c625b905431c89ac8cb0e110cab1.jpg', 2, sent_at
+FROM chat_message
+WHERE room_id = @room_id AND client_message_id = 'd3000000-0000-0000-0000-000000000023'
+ON DUPLICATE KEY UPDATE image_url = VALUES(image_url);
+
+-- .avif 확장자: 일부 웹뷰/이미지 로더에서 미지원일 수 있음. 화면에서 깨져
+-- 보이면 이 파일만 jpg로 재업로드 후 URL 교체.
+INSERT INTO chat_message_image (message_id, image_url, display_order, created_at)
+SELECT message_id, 'https://i15b208.p.ssafy.io/uploads/2026/08/10/730470f2a14646a29f495983b6cd0f6a.avif', 1, sent_at
+FROM chat_message
+WHERE room_id = @room_id AND client_message_id = 'd3000000-0000-0000-0000-000000000024'
+ON DUPLICATE KEY UPDATE image_url = VALUES(image_url);
+
+INSERT INTO chat_reaction (room_id, user_id, message_id, reaction_type, created_at, updated_at)
+SELECT @room_id, @test2_id, message_id, 'HEART', sent_at, sent_at
+FROM chat_message
+WHERE room_id = @room_id
+  AND sender_id = @test1_id
+  AND client_message_id IN (
+      'd3000000-0000-0000-0000-000000000001',
+      'd3000000-0000-0000-0000-000000000007',
+      'd3000000-0000-0000-0000-000000000013'
+  )
 ON DUPLICATE KEY UPDATE
     reaction_type = VALUES(reaction_type),
+    created_at = VALUES(created_at),
     updated_at = VALUES(updated_at);
 
-INSERT INTO chat_bookmark (
-    room_id,
-    user_id,
-    message_id,
-    created_at
+INSERT INTO chat_reaction (room_id, user_id, message_id, reaction_type, created_at, updated_at)
+SELECT @room_id, @test1_id, message_id, 'LOVE', sent_at, sent_at
+FROM chat_message
+WHERE room_id = @room_id
+  AND sender_id = @test2_id
+  AND client_message_id IN (
+      'd3000000-0000-0000-0000-000000000006',
+      'd3000000-0000-0000-0000-000000000014',
+      'd3000000-0000-0000-0000-000000000022'
+  )
+ON DUPLICATE KEY UPDATE
+    reaction_type = VALUES(reaction_type),
+    created_at = VALUES(created_at),
+    updated_at = VALUES(updated_at);
+
+INSERT INTO chat_bookmark (room_id, user_id, message_id, created_at)
+SELECT @room_id, @test1_id, message_id, sent_at
+FROM chat_message
+WHERE room_id = @room_id
+  AND sender_id = @test2_id
+  AND client_message_id IN (
+      'd3000000-0000-0000-0000-000000000006',
+      'd3000000-0000-0000-0000-000000000014',
+      'd3000000-0000-0000-0000-000000000022'
+  )
+ON DUPLICATE KEY UPDATE created_at = VALUES(created_at);
+
+INSERT INTO chat_bookmark (room_id, user_id, message_id, created_at)
+SELECT @room_id, @test2_id, message_id, sent_at
+FROM chat_message
+WHERE room_id = @room_id
+  AND sender_id = @test1_id
+  AND client_message_id IN (
+      'd3000000-0000-0000-0000-000000000001',
+      'd3000000-0000-0000-0000-000000000013',
+      'd3000000-0000-0000-0000-000000000021'
+  )
+ON DUPLICATE KEY UPDATE created_at = VALUES(created_at);
+
+-- 날짜별 공감 개수 변화용: 매일 슬롯 8(두리의 마지막 메시지)에 공감
+INSERT INTO chat_reaction (room_id, user_id, message_id, reaction_type, created_at, updated_at)
+WITH RECURSIVE report_days AS (
+    SELECT 0 AS day_offset
+    UNION ALL
+    SELECT day_offset + 1 FROM report_days WHERE day_offset < 34
+),
+generated_ids AS (
+    SELECT
+        report_days.day_offset,
+        CONCAT(
+            'd4000000-0000-0000-0000-',
+            DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL report_days.day_offset DAY), '%Y%m%d'),
+            '0008'
+        ) AS client_message_id
+    FROM report_days
 )
 SELECT
     @room_id,
-    CASE WHEN message.sender_id = @test1_id THEN @test2_id ELSE @test1_id END,
+    @test1_id,
     message.message_id,
-    DATE_ADD(message.sent_at, INTERVAL 1 MINUTE)
-FROM tmp_dummy_messages dummy_message
+    CASE MOD(report_id.day_offset, 3)
+        WHEN 0 THEN 'HEART'
+        WHEN 1 THEN 'LOVE'
+        ELSE 'LIKE'
+    END,
+    message.sent_at,
+    message.sent_at
+FROM generated_ids report_id
 JOIN chat_message message
-  ON message.sender_id = dummy_message.sender_id
- AND message.client_message_id = dummy_message.client_message_id
-WHERE dummy_message.slot_no = 7
-  AND MOD(dummy_message.day_index, 15) = 0
+  ON message.client_message_id = report_id.client_message_id
+ AND message.room_id = @room_id
+ AND message.sender_id = @test2_id
 ON DUPLICATE KEY UPDATE
-    created_at = VALUES(created_at);
+    reaction_type = VALUES(reaction_type),
+    created_at = VALUES(created_at),
+    updated_at = VALUES(updated_at);
 
-SET @latest_message_id := (
-    SELECT message_id
-    FROM chat_message
-    WHERE room_id = @room_id
-    ORDER BY message_id DESC
-    LIMIT 1
-);
-
-INSERT INTO chat_read_state (
-    room_id,
-    user_id,
-    last_read_message_id,
-    read_at
-)
-VALUES
-    (@room_id, @test1_id, @latest_message_id, NOW()),
-    (@room_id, @test2_id, @latest_message_id, NOW())
-ON DUPLICATE KEY UPDATE
-    last_read_message_id = VALUES(last_read_message_id),
-    read_at = NOW();
-
--- ==========================================================================
--- 5. 3년치 오늘의 기분: 두 사람의 아침/저녁 기분
--- ==========================================================================
-
-INSERT INTO mood (
-    room_id,
-    user_id,
-    mood_datetime,
-    mood_type,
-    reason,
-    created_at,
-    updated_at
+-- ---------------------------------------------------------------------------
+-- 7. 무드 트래커 (원본 유지)
+-- ---------------------------------------------------------------------------
+INSERT INTO mood (room_id, user_id, mood_datetime, mood_type, reason, created_at, updated_at)
+WITH RECURSIVE mood_days AS (
+    SELECT 0 AS day_offset
+    UNION ALL
+    SELECT day_offset + 1 FROM mood_days WHERE day_offset < 34
+),
+members AS (
+    SELECT @test1_id AS user_id, 0 AS member_number
+    UNION ALL
+    SELECT @test2_id, 1
+),
+generated_moods AS (
+    SELECT
+        mood_days.day_offset,
+        members.user_id,
+        members.member_number,
+        TIMESTAMP(
+            DATE_SUB(CURDATE(), INTERVAL mood_days.day_offset DAY),
+            CASE members.member_number WHEN 0 THEN '09:00:00' ELSE '09:30:00' END
+        ) AS mood_datetime
+    FROM mood_days
+    CROSS JOIN members
 )
 SELECT
     @room_id,
-    members.user_id,
-    TIMESTAMP(
-        days.chat_date,
-        CASE
-            WHEN mood_slots.slot_no = 1 AND members.member_no = 1 THEN '08:15:00'
-            WHEN mood_slots.slot_no = 1 AND members.member_no = 2 THEN '08:45:00'
-            WHEN mood_slots.slot_no = 2 AND members.member_no = 1 THEN '21:15:00'
-            ELSE '21:45:00'
-        END
-    ),
-    CASE MOD(days.day_index + members.member_no + mood_slots.slot_no, 10)
+    report_mood.user_id,
+    report_mood.mood_datetime,
+    CASE MOD(report_mood.day_offset + report_mood.member_number, 5)
         WHEN 0 THEN 'VERY_HAPPY'
         WHEN 1 THEN 'HAPPY'
-        WHEN 2 THEN 'HAPPY'
-        WHEN 3 THEN 'NEUTRAL'
-        WHEN 4 THEN 'NEUTRAL'
-        WHEN 5 THEN 'SAD'
-        WHEN 6 THEN 'HAPPY'
-        WHEN 7 THEN 'VERY_HAPPY'
-        WHEN 8 THEN 'NEUTRAL'
+        WHEN 2 THEN 'NEUTRAL'
+        WHEN 3 THEN 'SAD'
         ELSE 'VERY_SAD'
     END,
-    CASE MOD(days.day_index + members.member_no + mood_slots.slot_no, 10)
-        WHEN 0 THEN '함께 좋은 시간을 보내서 정말 행복한 날'
-        WHEN 1 THEN '작은 일들이 잘 풀려서 기분이 좋다'
-        WHEN 2 THEN '서로 응원해줘서 힘이 났다'
-        WHEN 3 THEN '특별한 일 없이 편안하게 보낸 하루'
-        WHEN 4 THEN '조금 피곤하지만 무난한 하루'
-        WHEN 5 THEN '일이 뜻대로 풀리지 않아 속상했다'
-        WHEN 6 THEN '맛있는 것을 먹고 기분이 좋아졌다'
-        WHEN 7 THEN '기다리던 약속이 있어서 많이 설렌다'
-        WHEN 8 THEN '바쁜 하루였지만 잘 마무리했다'
-        ELSE '마음이 많이 지쳐서 위로가 필요하다'
+    CASE MOD(report_mood.day_offset + report_mood.member_number, 5)
+        WHEN 0 THEN '함께해서 정말 행복한 시간'
+        WHEN 1 THEN '기분 좋은 하루'
+        WHEN 2 THEN '평범하고 편안한 하루'
+        WHEN 3 THEN '조금 지치고 속상한 하루'
+        ELSE '많이 힘들어서 위로가 필요한 날'
     END,
-    TIMESTAMP(
-        days.chat_date,
-        CASE
-            WHEN mood_slots.slot_no = 1 AND members.member_no = 1 THEN '08:15:00'
-            WHEN mood_slots.slot_no = 1 AND members.member_no = 2 THEN '08:45:00'
-            WHEN mood_slots.slot_no = 2 AND members.member_no = 1 THEN '21:15:00'
-            ELSE '21:45:00'
-        END
-    ),
-    TIMESTAMP(
-        days.chat_date,
-        CASE
-            WHEN mood_slots.slot_no = 1 AND members.member_no = 1 THEN '08:15:00'
-            WHEN mood_slots.slot_no = 1 AND members.member_no = 2 THEN '08:45:00'
-            WHEN mood_slots.slot_no = 2 AND members.member_no = 1 THEN '21:15:00'
-            ELSE '21:45:00'
-        END
-    )
-FROM tmp_dummy_days days
-CROSS JOIN (
-    SELECT @test1_id AS user_id, 1 AS member_no
-    UNION ALL
-    SELECT @test2_id, 2
-) members
-CROSS JOIN (
-    SELECT 1 AS slot_no
-    UNION ALL
-    SELECT 2
-) mood_slots
-WHERE TIMESTAMP(
-        days.chat_date,
-        CASE WHEN mood_slots.slot_no = 1 THEN '08:45:00' ELSE '21:45:00' END
-    ) <= NOW()
-  AND NOT (MOD(days.day_index, 13) = 0 AND mood_slots.slot_no = 2)
+    report_mood.mood_datetime,
+    report_mood.mood_datetime
+FROM generated_moods report_mood
+WHERE @room_id IS NOT NULL
+  AND report_mood.user_id IS NOT NULL
+  AND report_mood.mood_datetime <= NOW()
 ON DUPLICATE KEY UPDATE
     mood_type = VALUES(mood_type),
     reason = VALUES(reason),
     updated_at = VALUES(updated_at);
 
--- ==========================================================================
--- 6. 한줄 일기: 약 일주일 간격, 사용자별 서로 다른 날짜
--- ==========================================================================
+-- ---------------------------------------------------------------------------
+-- 8. 읽음 상태 (앞에서 지웠으므로 다시 생성)
+-- ---------------------------------------------------------------------------
+SET @latest_message_id := (
+    SELECT message_id FROM chat_message
+    WHERE room_id = @room_id
+    ORDER BY sent_at DESC, message_id DESC
+    LIMIT 1
+);
 
-INSERT INTO diary (
-    room_id,
-    user_id,
-    diary_date,
-    content,
-    created_at,
-    updated_at
-)
-SELECT
-    @room_id,
-    CASE WHEN MOD(days.day_index, 2) = 0 THEN @test1_id ELSE @test2_id END,
-    days.chat_date,
-    CASE MOD(days.day_index, 8)
-        WHEN 0 THEN '퇴근 후 함께 걸었던 짧은 산책이 오래 기억에 남을 것 같다.'
-        WHEN 1 THEN '서로 바쁜 날이었지만 자기 전에 목소리를 들으니 마음이 놓였다.'
-        WHEN 2 THEN '새로 찾아간 식당이 맛있었다. 다음에는 다른 메뉴도 먹어보기로 했다.'
-        WHEN 3 THEN '사소하게 서운한 일이 있었지만 바로 이야기하고 풀어서 다행이다.'
-        WHEN 4 THEN '별 계획 없이 보낸 주말인데 같이 있어서 충분히 즐거웠다.'
-        WHEN 5 THEN '힘든 하루를 따뜻하게 위로해줘서 고마웠다.'
-        WHEN 6 THEN '예전 사진을 보며 한참 웃었다. 시간이 참 빠르게 흐른다.'
-        ELSE '다음 여행 계획을 세우기 시작했다. 벌써부터 기대된다.'
-    END,
-    TIMESTAMP(days.chat_date, '22:40:00'),
-    TIMESTAMP(days.chat_date, '22:40:00')
-FROM tmp_dummy_days days
-WHERE MOD(days.day_index, 7) IN (0, 3)
-  AND TIMESTAMP(days.chat_date, '22:40:00') <= NOW()
+INSERT INTO chat_read_state (room_id, user_id, last_read_message_id, read_at)
+SELECT @room_id, @test1_id, @latest_message_id, NOW()
+WHERE @room_id IS NOT NULL AND @test1_id IS NOT NULL AND @latest_message_id IS NOT NULL
+UNION ALL
+SELECT @room_id, @test2_id, @latest_message_id, NOW()
+WHERE @room_id IS NOT NULL AND @test2_id IS NOT NULL AND @latest_message_id IS NOT NULL
 ON DUPLICATE KEY UPDATE
-    content = VALUES(content),
-    updated_at = VALUES(updated_at);
+    last_read_message_id = VALUES(last_read_message_id),
+    read_at = VALUES(read_at);
 
--- ==========================================================================
--- 7. 앨범: 격주 추억 사진
--- ==========================================================================
+SET SQL_SAFE_UPDATES = 1;
 
-DELETE FROM album_photo
-WHERE room_id = @room_id
-  AND image_url LIKE 'https://placehold.co/1200x900/png?text=EMOUR-MY3-%';
-
-INSERT INTO album_photo (
-    room_id,
-    uploader_id,
-    image_url,
-    memo,
-    created_at
-)
-SELECT
-    @room_id,
-    CASE WHEN MOD(days.day_index, 2) = 0 THEN @test1_id ELSE @test2_id END,
-    CONCAT(
-        'https://placehold.co/1200x900/png?text=EMOUR-MY3-',
-        DATE_FORMAT(days.chat_date, '%Y%m%d')
-    ),
-    CASE MOD(days.day_index, 6)
-        WHEN 0 THEN '우리 동네 산책길에서'
-        WHEN 1 THEN '기다리던 주말 데이트'
-        WHEN 2 THEN '같이 먹어서 더 맛있었던 저녁'
-        WHEN 3 THEN '짧지만 즐거웠던 여행'
-        WHEN 4 THEN '처음 가본 카페에서'
-        ELSE '평범해서 더 소중한 하루'
-    END,
-    TIMESTAMP(days.chat_date, '20:30:00')
-FROM tmp_dummy_days days
-WHERE MOD(days.day_index, 14) = 0
-  AND TIMESTAMP(days.chat_date, '20:30:00') <= NOW();
-
--- ==========================================================================
--- 8. 일정: 기념일 + 매월 서로 다른 생활 일정
--- ==========================================================================
-
-DELETE FROM couple_schedule
-WHERE room_id = @room_id
-  AND description LIKE '%#EMOUR-MULTI-YEAR-DUMMY%';
-
--- 서비스 시작일과 생일은 매년 반복되는 기념일입니다.
-INSERT INTO couple_schedule (
-    room_id,
-    creator_id,
-    name,
-    description,
-    schedule_date,
-    schedule_time,
-    schedule_type,
-    yearly_recurring,
-    created_at,
-    updated_at
-)
-VALUES
-    (
-        @room_id,
-        @test1_id,
-        '우리 처음 만난 날',
-        '매년 함께 기념하기 #EMOUR-MULTI-YEAR-DUMMY',
-        @dummy_start_date,
-        '19:00:00',
-        'ANNIVERSARY',
-        TRUE,
-        TIMESTAMP(@dummy_start_date, '10:00:00'),
-        TIMESTAMP(@dummy_start_date, '10:00:00')
-    ),
-    (
-        @room_id,
-        @test2_id,
-        '하나 생일',
-        '미리 선물 준비하기 #EMOUR-MULTI-YEAR-DUMMY',
-        STR_TO_DATE(
-            CONCAT(
-                YEAR(@dummy_start_date)
-                    + (DATE_FORMAT(@dummy_start_date, '%m%d') > '0115'),
-                '-01-15'
-            ),
-            '%Y-%m-%d'
-        ),
-        NULL,
-        'ANNIVERSARY',
-        TRUE,
-        TIMESTAMP(@dummy_start_date, '10:00:00'),
-        TIMESTAMP(@dummy_start_date, '10:00:00')
-    ),
-    (
-        @room_id,
-        @test1_id,
-        '두리 생일',
-        '좋아하는 케이크 예약하기 #EMOUR-MULTI-YEAR-DUMMY',
-        STR_TO_DATE(
-            CONCAT(
-                YEAR(@dummy_start_date)
-                    + (DATE_FORMAT(@dummy_start_date, '%m%d') > '0520'),
-                '-05-20'
-            ),
-            '%Y-%m-%d'
-        ),
-        NULL,
-        'ANNIVERSARY',
-        TRUE,
-        TIMESTAMP(@dummy_start_date, '10:00:00'),
-        TIMESTAMP(@dummy_start_date, '10:00:00')
-    );
-
--- 각 달마다 데이트나 생활 일정이 하나씩 생기도록 만듭니다.
-INSERT INTO couple_schedule (
-    room_id,
-    creator_id,
-    name,
-    description,
-    schedule_date,
-    schedule_time,
-    schedule_type,
-    yearly_recurring,
-    created_at,
-    updated_at
-)
-SELECT
-    @room_id,
-    CASE WHEN MOD(months.month_index, 2) = 0 THEN @test1_id ELSE @test2_id END,
-    CASE MOD(months.month_index, 8)
-        WHEN 0 THEN '전시회 데이트'
-        WHEN 1 THEN '치과 정기 검진'
-        WHEN 2 THEN '주말 근교 여행'
-        WHEN 3 THEN '영화 예매일'
-        WHEN 4 THEN '부모님과 저녁 식사'
-        WHEN 5 THEN '공연 보러 가는 날'
-        WHEN 6 THEN '커플 사진 촬영'
-        ELSE '다음 달 여행 계획 세우기'
-    END,
-    CONCAT(
-        CASE MOD(months.month_index, 8)
-            WHEN 0 THEN '관심 있던 전시 함께 보기'
-            WHEN 1 THEN '검진 시간 10분 전에 도착하기'
-            WHEN 2 THEN '숙소와 기차표 다시 확인하기'
-            WHEN 3 THEN '퇴근 후 영화관 앞에서 만나기'
-            WHEN 4 THEN '예약한 식당에서 함께 식사하기'
-            WHEN 5 THEN '공연 티켓과 신분증 챙기기'
-            WHEN 6 THEN '맞춰 입을 옷 전날 준비하기'
-            ELSE '가고 싶은 장소를 각자 세 곳씩 정하기'
-        END,
-        ' #EMOUR-MULTI-YEAR-DUMMY'
-    ),
-    DATE_ADD(
-        DATE_ADD(
-            DATE_FORMAT(@dummy_start_date, '%Y-%m-01'),
-            INTERVAL months.month_index MONTH
-        ),
-        INTERVAL (4 + MOD(months.month_index * 7, 20)) DAY
-    ),
-    CASE MOD(months.month_index, 4)
-        WHEN 0 THEN '14:00:00'
-        WHEN 1 THEN '11:30:00'
-        WHEN 2 THEN '09:00:00'
-        ELSE '19:00:00'
-    END,
-    'SCHEDULE',
-    FALSE,
-    DATE_ADD(
-        DATE_ADD(
-            DATE_FORMAT(@dummy_start_date, '%Y-%m-01'),
-            INTERVAL months.month_index MONTH
-        ),
-        INTERVAL 1 DAY
-    ),
-    DATE_ADD(
-        DATE_ADD(
-            DATE_FORMAT(@dummy_start_date, '%Y-%m-01'),
-            INTERVAL months.month_index MONTH
-        ),
-        INTERVAL 1 DAY
-    )
-FROM (
-    SELECT ones.n + tens.n * 10 AS month_index
-    FROM (
-        SELECT 0 AS n UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3
-        UNION ALL SELECT 4 UNION ALL SELECT 5 UNION ALL SELECT 6 UNION ALL SELECT 7
-        UNION ALL SELECT 8 UNION ALL SELECT 9
-    ) ones
-    CROSS JOIN (
-        SELECT 0 AS n UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3
-    ) tens
-) months
-WHERE DATE_ADD(
-        DATE_FORMAT(@dummy_start_date, '%Y-%m-01'),
-        INTERVAL months.month_index MONTH
-    ) <= DATE_ADD(CURDATE(), INTERVAL 2 MONTH);
-
--- ==========================================================================
--- 9. 대시보드 재집계 준비
--- ==========================================================================
-
--- 대시보드는 원본 채팅/감정/이미지/반응을 기준으로 계산되는 파생 데이터입니다.
--- 이전 스냅샷을 제거하면 다음 대시보드 조회 시 DAY/WEEK/MONTH/YEAR/ALL 범위가
--- 방금 넣은 3년치 원본 데이터를 기준으로 다시 생성됩니다.
+-- ---------------------------------------------------------------------------
+-- 9. 대시보드 스냅샷 제거
+-- ---------------------------------------------------------------------------
 DELETE FROM member_dashboard WHERE room_id = @room_id;
 DELETE FROM couple_dashboard WHERE room_id = @room_id;
 
--- 홈 화면도 테스트할 수 있도록 기본 설정을 하나 넣습니다.
-INSERT INTO home_image_setting (
-    room_id,
-    image_url,
-    text_content,
-    text_position_x,
-    text_position_y,
-    text_size,
-    text_alignment,
-    background_transparency,
-    text_color,
-    created_at,
-    updated_at
-)
-VALUES (
-    @room_id,
-    'https://placehold.co/1600x1000/png?text=OUR+THREE+YEARS',
-    '오늘도 우리답게',
-    50.00,
-    82.00,
-    28,
-    'CENTER',
-    72,
-    'rgb(255, 255, 255)',
-    NOW(),
-    NOW()
-)
-ON DUPLICATE KEY UPDATE
-    image_url = VALUES(image_url),
-    text_content = VALUES(text_content),
-    text_position_x = VALUES(text_position_x),
-    text_position_y = VALUES(text_position_y),
-    text_size = VALUES(text_size),
-    text_alignment = VALUES(text_alignment),
-    background_transparency = VALUES(background_transparency),
-    text_color = VALUES(text_color),
-    updated_at = NOW();
+-- ============================================================================
+-- 검증 쿼리
+-- ============================================================================
 
--- ==========================================================================
--- 10. 실행 결과 확인
--- ==========================================================================
+-- (1) 핵심 검증: message_id 순서와 sent_at 순서가 일치하는가?
+--     out_of_order_count 가 0이어야 정상.
+SELECT COUNT(*) AS out_of_order_count
+FROM (
+    SELECT
+        sent_at,
+        LAG(sent_at) OVER (ORDER BY message_id) AS prev_sent_at
+    FROM chat_message
+    WHERE room_id = @room_id
+) ordered_check
+WHERE prev_sent_at IS NOT NULL
+  AND sent_at < prev_sent_at;
+
+-- (2) 앞부분 20건이 실제로 하루 안에서 두 사람이 주고받는 모양인지 눈으로 확인
+SELECT
+    message.message_id,
+    message.sent_at,
+    CASE WHEN message.sender_id = @test1_id THEN @test1_nickname ELSE @test2_nickname END AS sender,
+    analysis.emotion_type,
+    message.content
+FROM chat_message message
+LEFT JOIN chat_analysis analysis ON analysis.message_id = message.message_id
+WHERE message.room_id = @room_id
+ORDER BY message.message_id
+LIMIT 20;
+
+-- (3) 15개 감정 라벨이 모두 등장하는지 확인 (distinct_emotion_count = 15 기대)
+SELECT
+    COUNT(DISTINCT analysis.emotion_type) AS distinct_emotion_count
+FROM chat_analysis analysis
+JOIN chat_message message ON message.message_id = analysis.message_id
+WHERE message.room_id = @room_id;
 
 SELECT
-    @test1_id AS test1_user_id,
-    @test2_id AS test2_user_id,
-    @room_id AS room_id,
-    @dummy_start_date AS dummy_start_date,
-    CURDATE() AS dummy_end_date;
+    analysis.emotion_type,
+    COUNT(*) AS emotion_count
+FROM chat_analysis analysis
+JOIN chat_message message ON message.message_id = analysis.message_id
+WHERE message.room_id = @room_id
+GROUP BY analysis.emotion_type
+ORDER BY emotion_count DESC;
 
+-- (4) 정량 지표 원본 확인
 SELECT
-    YEAR(sent_at) AS report_year,
-    MONTH(sent_at) AS report_month,
-    COUNT(*) AS message_count,
-    SUM(message_type = 'IMAGE') AS image_message_count
-FROM chat_message
-WHERE room_id = @room_id
-  AND (
-      client_message_id LIKE 'e6000000-%'
-      OR client_message_id LIKE 'e6100000-%'
-  )
-GROUP BY YEAR(sent_at), MONTH(sent_at)
-ORDER BY report_year, report_month;
+    (SELECT COUNT(*) FROM chat_message WHERE room_id = @room_id) AS total_message_count,
+    (SELECT COUNT(*) FROM chat_message_image image
+      JOIN chat_message message ON message.message_id = image.message_id
+      WHERE message.room_id = @room_id) AS total_image_count,
+    (SELECT COUNT(*) FROM chat_reaction WHERE room_id = @room_id) AS total_reaction_count,
+    (SELECT COUNT(*) FROM chat_bookmark WHERE room_id = @room_id) AS total_bookmark_count,
+    (SELECT COUNT(*) FROM chat_analysis analysis
+      JOIN chat_message message ON message.message_id = analysis.message_id
+      WHERE message.room_id = @room_id
+        AND analysis.analysis_status = 'COMPLETED') AS analyzed_message_count,
+    (SELECT COUNT(*) FROM mood WHERE room_id = @room_id) AS total_mood_count;
 
+-- (5) 스냅샷이 비었는지 확인 (둘 다 0이면 정상)
 SELECT
-    COUNT(*) AS total_dummy_messages,
-    MIN(sent_at) AS first_message_at,
-    MAX(sent_at) AS last_message_at
-FROM chat_message
-WHERE room_id = @room_id
-  AND (
-      client_message_id LIKE 'e6000000-%'
-      OR client_message_id LIKE 'e6100000-%'
-  );
-
-SELECT COUNT(*) AS total_moods
-FROM mood
-WHERE room_id = @room_id
-  AND mood_datetime >= TIMESTAMP(@dummy_start_date, '00:00:00');
-
-SELECT COUNT(*) AS total_schedules
-FROM couple_schedule
-WHERE room_id = @room_id
-  AND description LIKE '%#EMOUR-MULTI-YEAR-DUMMY%';
-
-DROP TEMPORARY TABLE IF EXISTS tmp_image_messages;
-DROP TEMPORARY TABLE IF EXISTS tmp_dummy_messages;
-DROP TEMPORARY TABLE IF EXISTS tmp_message_slots;
-DROP TEMPORARY TABLE IF EXISTS tmp_dummy_days;
-
-SET SESSION cte_max_recursion_depth = @old_cte_max_recursion_depth;
+    (SELECT COUNT(*) FROM member_dashboard WHERE room_id = @room_id) AS remaining_member_snapshots,
+    (SELECT COUNT(*) FROM couple_dashboard WHERE room_id = @room_id) AS remaining_couple_snapshots;
