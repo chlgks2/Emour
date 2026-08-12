@@ -1,5 +1,0 @@
-﻿기능,METHOD,URL,담당자,상태
-사진 전체 조회 (피드/채팅 구분),GET,/photos,최 한,시작 전
-사진 업로드 (메모 포함),POST,/photos,최 한,시작 전
-사진 삭제,DELETE,/photos/{photoId},최 한,시작 전
-사진 메모 작성/수정,PATCH,/photos/{photoId}/memo,최 한,시작 전
