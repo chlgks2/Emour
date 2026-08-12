@@ -1,3 +1,5 @@
+https://github.com/user-attachments/assets/e54702f6-3a04-464d-8702-e6ad51ef7b2d
+
 <div align="center">
 
 # Emour
@@ -12,7 +14,12 @@
 ![MySQL](https://img.shields.io/badge/MySQL-8-4479A1?style=flat-square&logo=mysql&logoColor=white)
 ![Redis](https://img.shields.io/badge/Redis-Realtime-DC382D?style=flat-square&logo=redis&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-AI-009688?style=flat-square&logo=fastapi&logoColor=white)
+![Hugging Face](https://img.shields.io/badge/%F0%9F%A4%97_Hugging_Face-Model-FFD21E?style=flat-square&logoColor=black)
 
+### 🔗 바로가기
+
+[![HF 감정분석 모델](https://img.shields.io/badge/🤗_감정분석_모델-FFD21E?style=for-the-badge&logoColor=black)](https://huggingface.co/chlgks/emour-emotion-kcelectra-context)
+[![배포 서비스](https://img.shields.io/badge/🚀_배포_서비스-2088FF?style=for-the-badge)](https://i15b208.p.ssafy.io/login)
 </div>
 
 ---
@@ -36,6 +43,16 @@ Emour는 연인을 위한 실시간 메신저이자 감정 기록 서비스입�
 | 대시보드 | 감정 흐름, 주요 감정, 자주 쓰는 단어, 대화 흐름, 사진·공감 정량 기록 |
 | 기록 | 오늘의 기분, 일정, 기념일, 한 줄 일기, 커플 앨범 |
 | 홈 | 배경 이미지, 문구, 위치·크기·정렬·색상·투명도 설정 |
+
+## 🧠 AI 감정 분석 (핵심 차별점)
+
+단순히 한 문장만 보는 게 아니라, **직전 대화 맥락까지 함께 이해**해 `"됐어"`·`"괜찮아"`처럼 상황에 따라 의미가 달라지는 말도 제대로 읽어냅니다.
+
+- 배포된 **단문 분류 모델(KcELECTRA)** 을 **대화 맥락을 인식하는 문장쌍 모델**로 고도화
+- 실제 커플 대화 기준 **macro-F1 0.175 → 0.39 (약 2.2배 개선)**, 기존에 못 잡던 감정(놀람·당황·슬픔) 회복
+- 직접 데이터 수집·라벨링 + **키워드 암기 방지(대조쌍 데이터)** + **누수 없는 정직한 평가 체계** 설계
+- 붙여쓰기(`"기분나빠"`)에 강하도록 추론 단계 **띄어쓰기 교정** 적용
+- 🤗 공개 모델: **[chlgks/emour-emotion-kcelectra-context](https://huggingface.co/chlgks/emour-emotion-kcelectra-context)** · 자세한 과정은 상단 **📔 Notion 포트폴리오** 참고
 
 ## 서비스 구조
 
@@ -70,7 +87,7 @@ flowchart LR
 | Frontend | React, Vite, React Router, STOMP, SockJS |
 | Backend | Java 17, Spring Boot, Spring Security, Spring Data JPA, WebSocket |
 | Data | MySQL, Redis |
-| AI | Python, FastAPI, 감정 분류 모델 |
+| AI | Python, FastAPI, KcELECTRA, Hugging Face, PyTorch |
 | Auth | JWT, BCrypt, Google OAuth 2.0 |
 | API 문서 | Springdoc OpenAPI, Swagger UI |
 | Infra | Docker Compose, GitLab CI/CD |
