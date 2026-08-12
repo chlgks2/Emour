@@ -1,5 +1,0 @@
-﻿기능,METHOD,URL,담당자,상태
-기분 등록,POST,/moods,하영 기,시작 전
-기분 수정,PATCH,/moods/{moodId},하영 기,시작 전
-기분 조회 (본인/상대방),GET,/moods,하영 기,시작 전
-무드 트래킹 (시간별 감정 변화),GET,/moods/tracking,하영 기,시작 전
