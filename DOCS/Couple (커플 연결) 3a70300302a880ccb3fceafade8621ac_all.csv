@@ -1,6 +1,0 @@
-﻿기능,METHOD,URL,담당자,상태
-커플 초대 코드 생성,POST,/couples/invitation,하영 기,시작 전
-초대 코드 입력 후 커플 연결,POST,/couples/connect,하영 기,시작 전
-현재 커플 정보 조회,GET,/couples/me,하영 기,시작 전
-커플 연결 해제,DELETE,/couples,하영 기,시작 전
-기존 커플방 재연결,POST,/couples/reconnect,하영 기,시작 전

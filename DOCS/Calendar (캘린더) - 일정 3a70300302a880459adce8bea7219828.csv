@@ -1,5 +1,0 @@
-﻿기능,METHOD,URL,담당자,상태
-일정 목록 조회,GET,/schedules,하영 기,시작 전
-일정 등록,POST,/schedules,하영 기,시작 전
-일정 수정,PATCH,/schedules/{scheduleId},하영 기,시작 전
-일정 삭제,DELETE,/schedules/{scheduleId},하영 기,시작 전

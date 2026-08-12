@@ -1,7 +1,0 @@
-﻿기능,METHOD,URL,담당자,상태
-내 프로필 조회,GET,/users/me,최 한,시작 전
-내 프로필 수정,PATCH,/users/me,최 한,시작 전
-회원 탈퇴,DELETE,/users/me,최 한,시작 전
-비밀번호 변경,PATCH,/users/me/password,최 한,시작 전
-알림 설정 조회,GET,/users/me/notifications,최 한,시작 전
-알림 설정 변경,PATCH,/users/me/notifications,최 한,시작 전
