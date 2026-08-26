@@ -18,12 +18,16 @@ https://github.com/user-attachments/assets/e54702f6-3a04-464d-8702-e6ad51ef7b2d
 
 ### 🔗 바로가기
 
-[![HF 감정분석 모델](https://img.shields.io/badge/🤗_감정분석_모델-FFD21E?style=for-the-badge&logoColor=black)](https://huggingface.co/chlgks/emour-emotion-kcelectra-context)
+[![랜딩페이지](https://img.shields.io/badge/🌐_랜딩페이지-6C63FF?style=for-the-badge)](https://biainmaze0507-alt.github.io/emour-landing/index.html)
+[![HF 감정분석 모델](https://img.shields.io/badge/🤗_감정분석_모델-FFD21E?style=for-the-badge\&logoColor=black)](https://huggingface.co/chlgks/emour-emotion-kcelectra-context)
 [![배포 서비스](https://img.shields.io/badge/🚀_배포_서비스-2088FF?style=for-the-badge)](https://i15b208.p.ssafy.io/login)
+
+> ⚠️ **배포 서버는 2026년 8월 20일 이후 운영이 종료되었습니다.**
+> 현재는 서비스 접속이 제한될 수 있습니다.
+
 </div>
 
 ---
-
 ## Emour는 어떤 서비스인가요?
 
 Emour는 연인을 위한 실시간 메신저이자 감정 기록 서비스입니다.<br>
