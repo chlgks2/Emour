@@ -172,16 +172,25 @@ AI Hub 감성대화 말뭉치를 15종 라벨로 변환해 KcELECTRA를 파인�
 
 ### 모델 사용해보기
 
+이 모델은 `tokenizer(맥락, 대상)` **문장쌍(text pair)으로 학습**됐습니다. `"맥락 [SEP] 대상"` 처럼 한 개의 문자열로 넣으면 `token_type_ids`가 달라져 결과가 부정확합니다.
+
 ```python
-from transformers import pipeline
+import torch
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
-clf = pipeline(
-    "text-classification",
-    model="chlgks/emour-emotion-kcelectra-context-v2",
-)
+MODEL = "chlgks/emour-emotion-kcelectra-context-v2"
+tok = AutoTokenizer.from_pretrained(MODEL)
+model = AutoModelForSequenceClassification.from_pretrained(MODEL).eval()
 
-# 맥락 + 대상 문장을 함께 입력합니다.
-print(clf("오늘 약속 취소됐어 [SEP] 됐어"))
+# 맥락은 "화자: 발화" 를 줄바꿈으로 이어 붙입니다 (학습 때와 동일한 형식)
+context = "A: 오늘 약속 취소됐어\nB: 왜? 무슨 일 있어?"
+target  = "됐어"
+
+enc = tok(context, target, truncation="longest_first", max_length=128, return_tensors="pt")
+with torch.no_grad():
+    pred = model(**enc).logits.argmax(-1).item()
+
+print(model.config.id2label[pred])   # 예: 서운함
 ```
 
 ### 배운 것
