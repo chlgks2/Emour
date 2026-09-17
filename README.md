@@ -20,7 +20,7 @@ https://github.com/user-attachments/assets/e54702f6-3a04-464d-8702-e6ad51ef7b2d
 [![랜딩페이지](https://img.shields.io/badge/🌐_랜딩페이지-6C63FF?style=for-the-badge)](https://biainmaze0507-alt.github.io/emour-landing/index.html)
 [![HF 감정분석 모델](https://img.shields.io/badge/🤗_감정분석_모델-FFD21E?style=for-the-badge\&logoColor=black)](https://huggingface.co/chlgks/emour-emotion-kcelectra-context-v2)
 
-> ⚠️ **배포 서버는 2026년 8월 20일 이후 운영이 종료되었습니다.**
+> ⚠️ **배포 서버는 2026년 8월 10일 이후 운영이 종료되었습니다.**
 > 서비스 동작은 위 **시연 영상**과 **랜딩페이지**에서, 감정 분석 모델은 **Hugging Face**에서 직접 확인하실 수 있습니다.
 
 </div>
@@ -34,7 +34,7 @@ https://github.com/user-attachments/assets/e54702f6-3a04-464d-8702-e6ad51ef7b2d
 | 기간 | 2026.07.06 ~ 2026.08.14 (6주) |
 | 유형 | 팀 프로젝트 — 삼성 청년 SW·AI 아카데미(SSAFY) 15기 공통 PJT |
 | 인원 | 6명 (Backend 3 · Frontend 2 · AI/Infra 1) |
-| 실사용 검증 | 베타 테스트 2일간 **291명**(약 145쌍) 참여 |
+| 실사용 검증 | 베타 테스트(2026.08.05 ~ 08.07) **291명**(약 145쌍) 참여 |
 | 핵심 성과 | 감정 분석 macro-F1 **0.175 → 0.39** (2.2배) · 분석 지연 **10초 → 약 1초** |
 
 Emour는 연인을 위한 실시간 메신저이자 감정 기록 서비스입니다. 두 사람의 대화를 AI가 분석해 감정 흐름을 보여주고, 오늘의 기분·일정·사진·한 줄 일기를 한 공간에 기록할 수 있습니다.
